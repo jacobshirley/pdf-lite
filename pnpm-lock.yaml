@@ -28,11 +28,11 @@ importers:
         specifier: 2.1.0
         version: 2.1.0
       pki-lite:
-        specifier: file:../../../pki-lite/packages/pki-lite
-        version: file:../pki-lite/packages/pki-lite
+        specifier: ^1.0.10
+        version: 1.0.10
       pki-lite-crypto-extended:
         specifier: ^1.0.9
-        version: 1.0.9(pki-lite@file:../pki-lite/packages/pki-lite)
+        version: 1.0.9(pki-lite@1.0.10)
     devDependencies:
       '@types/node':
         specifier: ^20.19.17
@@ -976,12 +976,11 @@ packages:
 
   pki-lite-crypto-extended@1.0.9:
     resolution: {integrity: sha512-LvAvCWnISgnJpnbQZQcKom0iedIcrmnHZnLI+UDdltQj4L7VqV1JnYPC1eVda4LLNXEFzmIU2MUCNlCi+D/VyQ==}
-    version: 1.0.9
     peerDependencies:
       pki-lite: ^1.0.0
 
-  pki-lite@file:../pki-lite/packages/pki-lite:
-    resolution: {directory: ../pki-lite/packages/pki-lite, type: directory}
+  pki-lite@1.0.10:
+    resolution: {integrity: sha512-DJrqA+4dYYIY1vJQ4l3pgQ9uwttA2xIHup48pCo7HT8jUk3LV+ZkJgnq2X3gIrjdthiHjXwLotBI12SsVPvjnw==}
 
   playwright-core@1.56.1:
     resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
@@ -2149,14 +2148,14 @@ snapshots:
     dependencies:
       pngjs: 7.0.0
 
-  pki-lite-crypto-extended@1.0.9(pki-lite@file:../pki-lite/packages/pki-lite):
+  pki-lite-crypto-extended@1.0.9(pki-lite@1.0.10):
     dependencies:
       '@noble/ciphers': 2.0.1
       '@noble/hashes': 2.0.1
       node-forge: 1.3.1
-      pki-lite: file:../pki-lite/packages/pki-lite
+      pki-lite: 1.0.10
 
-  pki-lite@file:../pki-lite/packages/pki-lite:
+  pki-lite@1.0.10:
     dependencies:
       asn1js: 3.0.6
 

@@ -1,0 +1,118 @@
+import { ByteArray, PdfFilter } from '../types'
+
+// Minimal LZW implementation for PDF (no early change, no predictor)
+export function lzw(): PdfFilter {
+    return {
+        encode: (data: ByteArray) => {
+            // Minimal LZW encode for PDF (12-bit, no early change, no predictor)
+            const CLEAR = 256,
+                EOD = 257
+            let dict = new Map<string, number>()
+            for (let i = 0; i < 256; i++) dict.set(String.fromCharCode(i), i)
+            let codeSize = 9
+            let nextCode = 258
+            let out: number[] = [CLEAR]
+            let w = ''
+            for (let i = 0; i < data.length; i++) {
+                const c = String.fromCharCode(data[i])
+                const wc = w + c
+                if (dict.has(wc)) {
+                    w = wc
+                } else {
+                    out.push(dict.get(w)!)
+                    if (nextCode < 4096) {
+                        dict.set(wc, nextCode++)
+                        if (nextCode === 1 << codeSize && codeSize < 12)
+                            codeSize++
+                    }
+                    w = c
+                }
+            }
+            if (w) out.push(dict.get(w)!)
+            out.push(EOD)
+            // Bit packing
+            let bits = 0,
+                bitBuffer = 0
+            let result: number[] = []
+            codeSize = 9
+            nextCode = 258
+            for (let i = 0; i < out.length; i++) {
+                let code = out[i]
+                bitBuffer |= code << bits
+                bits += codeSize
+                while (bits >= 8) {
+                    result.push(bitBuffer & 0xff)
+                    bitBuffer >>= 8
+                    bits -= 8
+                }
+                if (code === CLEAR) {
+                    codeSize = 9
+                    nextCode = 258
+                } else {
+                    if (nextCode < 4096) {
+                        nextCode++
+                        if (nextCode === 1 << codeSize && codeSize < 12)
+                            codeSize++
+                    }
+                }
+            }
+            if (bits > 0) result.push(bitBuffer & 0xff)
+            return new Uint8Array(result)
+        },
+        decode: (data: ByteArray) => {
+            // Simple LZW decode for PDF (12-bit, no early change)
+            // Adapted from public domain sources for educational use
+            let pos = 0
+            let bits = 0
+            let bitBuffer = 0
+            function readBits(n: number) {
+                while (bits < n) {
+                    if (pos >= data.length) return null
+                    bitBuffer |= data[pos++] << bits
+                    bits += 8
+                }
+                const out = bitBuffer & ((1 << n) - 1)
+                bitBuffer >>= n
+                bits -= n
+                return out
+            }
+            const CLEAR = 256,
+                EOD = 257
+            let codeSize = 9
+            let dict: ByteArray[] = []
+            for (let i = 0; i < 256; i++) dict[i] = new Uint8Array([i])
+            dict[CLEAR] = undefined as any
+            dict[EOD] = undefined as any
+            let out: number[] = []
+            let prev: ByteArray | undefined
+            let code: number | null
+            while ((code = readBits(codeSize)) !== null) {
+                if (code === CLEAR) {
+                    dict = []
+                    for (let i = 0; i < 256; i++) dict[i] = new Uint8Array([i])
+                    dict[CLEAR] = undefined as any
+                    dict[EOD] = undefined as any
+                    codeSize = 9
+                    prev = undefined
+                    continue
+                }
+                if (code === EOD) break
+                let entry: ByteArray
+                if (dict[code]) {
+                    entry = dict[code]
+                } else if (prev) {
+                    entry = new Uint8Array([...prev, prev[0]])
+                } else {
+                    continue
+                }
+                out.push(...entry)
+                if (prev) {
+                    dict.push(new Uint8Array([...prev, entry[0]]))
+                }
+                prev = entry
+                if (dict.length === 1 << codeSize && codeSize < 12) codeSize++
+            }
+            return new Uint8Array(out)
+        },
+    }
+}

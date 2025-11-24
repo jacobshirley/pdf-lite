@@ -1,0 +1,25 @@
+{
+    "name": "pdf-lite",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "A lightweight PDF library for Node.js and the browser",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "compile": "pnpm -r run compile && pnpm compile:examples && pnpm compile:test",
+        "compile:examples": "node ./scripts/build-examples.ts && prettier --write EXAMPLES.md",
+        "compile:test": "tsc --noEmit"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@10.14.0",
+    "dependencies": {
+        "pdf-lite": "file:./packages/pdf-lite"
+    },
+    "devDependencies": {
+        "@types/node": "^20.19.25",
+        "prettier": "^3.6.2",
+        "typescript": "5.8.3"
+    }
+}

@@ -1,0 +1,10 @@
+import { stringToBytes } from '../../utils/stringToBytes'
+import { PdfToken } from './token'
+
+const END_DICTIONARY_BYTES = stringToBytes('>>')
+
+export class PdfEndDictionaryToken extends PdfToken {
+    constructor() {
+        super(END_DICTIONARY_BYTES)
+    }
+}

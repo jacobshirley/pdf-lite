@@ -1,0 +1,94 @@
+import { DEFAULT_PADDING } from '../constants.js'
+import { md5 } from '../../utils/algos.js'
+import { int32ToLittleEndianBytes } from '../utils.js'
+import { concatUint8Arrays } from '../../utils/concatUint8Arrays.js'
+import { ByteArray } from '../../types.js'
+
+export function padPassword(password: ByteArray): ByteArray {
+    const padded = new Uint8Array(32)
+    if (password.length >= 32) {
+        padded.set(password.subarray(0, 32))
+    } else {
+        padded.set(password)
+        padded.set(
+            DEFAULT_PADDING.subarray(0, 32 - password.length),
+            password.length,
+        )
+    }
+    return padded
+}
+
+/**
+ * Compute the master encryption key for a PDF file.
+ *
+ * @param password User-supplied password (empty if no password)
+ * @param ownerKey Owner key (/O value)
+ * @param permissions /P value
+ * @param id0 First element of /ID array
+ * @param keyLengthBits Usually 40, 128 or 256
+ * @param encryptMetadata Whether /EncryptMetadata is false
+ */
+export async function computeMasterKey(
+    password: ByteArray,
+    ownerKey: ByteArray,
+    permissions: number,
+    id0: ByteArray,
+    keyLengthBits: number,
+    encryptMetadata: boolean,
+    revision: number = 3,
+): Promise<ByteArray> {
+    if (keyLengthBits % 8 !== 0) {
+        throw new Error(
+            `keyLengthBits must be a multiple of 8, got ${keyLengthBits}`,
+        )
+    }
+
+    const keyLengthBytes = keyLengthBits / 8
+
+    const paddedPassword = padPassword(password)
+    const permissionsBytes = int32ToLittleEndianBytes(permissions)
+
+    const hashInputParts = [paddedPassword, ownerKey, permissionsBytes, id0]
+
+    if (keyLengthBits > 40 && !encryptMetadata && revision >= 4) {
+        hashInputParts.push(new Uint8Array([0xff, 0xff, 0xff, 0xff]))
+    }
+
+    // Initial MD5 hash
+    let digest = await md5(concatUint8Arrays(...hashInputParts))
+
+    if (keyLengthBits > 40) {
+        // Perform 50 iterations of MD5 rehash
+        for (let i = 0; i < 50; i++) {
+            digest = await md5(digest.subarray(0, keyLengthBytes))
+        }
+    }
+
+    // Truncate to key length
+    return digest.subarray(0, keyLengthBytes)
+}
+
+export async function deriveObjectKey(
+    mkey: ByteArray,
+    objNumber: number,
+    objGeneration: number,
+    useAesSalt: boolean = true,
+): Promise<ByteArray> {
+    const extra = useAesSalt ? 4 : 0 // 4 extra bytes if AES salt
+    const buffer = new Uint8Array(mkey.length + 5 + extra) // <--- make room for salt if needed
+    buffer.set(mkey, 0)
+    buffer[mkey.length + 0] = objNumber & 0xff
+    buffer[mkey.length + 1] = (objNumber >> 8) & 0xff
+    buffer[mkey.length + 2] = (objNumber >> 16) & 0xff
+    buffer[mkey.length + 3] = objGeneration & 0xff
+    buffer[mkey.length + 4] = (objGeneration >> 8) & 0xff
+
+    if (useAesSalt) {
+        buffer.set([0x73, 0x41, 0x6c, 0x54], mkey.length + 5) // append 'sAlT'
+    }
+
+    const digest = await md5(buffer)
+
+    const keySize = Math.min(mkey.length + 5, 16)
+    return new Uint8Array(digest.subarray(0, keySize))
+}

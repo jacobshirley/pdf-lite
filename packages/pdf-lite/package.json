@@ -1,0 +1,59 @@
+{
+    "name": "pdf-lite",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./*": {
+            "types": "./dist/*.d.ts",
+            "default": "./dist/*"
+        }
+    },
+    "scripts": {
+        "test:acceptance": "vitest run test/acceptance",
+        "test:unit": "vitest run test/unit",
+        "test": "vitest run",
+        "compile": "pnpm compile:validate && tsc -p tsconfig.prod.json",
+        "compile:validate": "tsc -p tsconfig.json --noEmit",
+        "gen:pipe": "tsx ./scripts/gen-pipe.ts > src/pipe.ts",
+        "watch": "tsc -watch -p ."
+    },
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/node": "^20.19.17",
+        "@types/pako": "^2.0.4",
+        "@types/safe-json-stringify": "^1.1.5",
+        "@vitest/browser-playwright": "^4.0.13",
+        "deep-object-diff": "^1.1.9",
+        "diff": "^8.0.2",
+        "fast-xml-parser": "^5.2.5",
+        "file-type": "^21.0.0",
+        "madge": "^8.0.0",
+        "playwright": "^1.56.1",
+        "safe-json-stringify": "^1.2.0",
+        "typescript": "5.8.3",
+        "vitest": "4.0.13"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/jacobshirley/pdf-lite.git"
+    },
+    "bugs": {
+        "url": "https://github.com/jacobshirley/pdf-lite/issues"
+    },
+    "homepage": "https://jacobshirley.github.io/pdf-lite",
+    "description": "",
+    "files": [
+        "dist"
+    ],
+    "dependencies": {
+        "pako": "2.1.0",
+        "pki-lite": "file:../../../pki-lite/packages/pki-lite",
+        "pki-lite-crypto-extended": "^1.0.9"
+    }
+}

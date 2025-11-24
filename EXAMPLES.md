@@ -584,6 +584,7 @@ await fs.writeFile("signed-output.pdf", document.toBytes());
 
 ```typescript
 import { PdfArray } from "pdf-lite/core/objects/pdf-array";
+import { PdfBoolean } from "pdf-lite/core/objects/pdf-boolean";
 import { PdfDictionary } from "pdf-lite/core/objects/pdf-dictionary";
 import { PdfIndirectObject } from "pdf-lite/core/objects/pdf-indirect-object";
 import { PdfName } from "pdf-lite/core/objects/pdf-name";
@@ -818,7 +819,7 @@ acroForm.set(
   ]),
 );
 // NeedAppearances flag tells PDF readers to generate appearance streams
-acroForm.set("NeedAppearances", new PdfName("true"));
+acroForm.set("NeedAppearances", new PdfBoolean(true));
 
 // Default resources for the form (font)
 const formResources = new PdfDictionary();
@@ -843,15 +844,20 @@ document.trailerDict.set("Root", catalog.reference);
 await document.commit();
 
 // Save the empty form
+// This demonstrates creating a blank form that users can fill in
 await fs.writeFile("form-empty.pdf", document.toBytes());
 console.log("Created form-empty.pdf with empty form fields");
 
 // ============================================
 // PART 2: Fill in the form fields
 // ============================================
-
-// To fill form fields, we modify the field objects directly
-// In a real scenario, you would read an existing PDF and find the fields
+// This demonstrates how to programmatically fill in form fields.
+// We're continuing to use the same document object here, but in a
+// real-world scenario, you would typically:
+// 1. Read an existing PDF with PdfDocument.fromBytes()
+// 2. Find the form fields in the AcroForm dictionary
+// 3. Update the field values
+// 4. Save the modified PDF
 
 // Update the name field value
 nameField.content.set("V", new PdfString("John Doe"));

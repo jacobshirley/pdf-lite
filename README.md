@@ -1,8 +1,14 @@
-# pdf-lite: a low-level, zero-dependency, type-safe PDF library that works in the browser and Node.js
+# pdf-lite
 
-Please note, this library is still in its early stages and may not support all PDF features. However, it is designed to be extensible and can be improved over time.
+A low-level, zero-dependency, type-safe PDF library that works in the browser and Node.js.
+
+> **Note**: This library is actively developed and may not support all PDF features yet. However, it is designed to be extensible and can be improved over time.
 
 PRs and issues are welcome!
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## Features
 
@@ -51,7 +57,7 @@ Supports encrypting and decrypting PDF files using standard algorithms, ensuring
 
 ### Compression
 
-Handles various compression algorithms, including Flate, LZW, and JPEG, for efficient file size management.
+Handles various compression algorithms, including Flate, LZW, and RunLength for efficient file size management. Note: image compression such as JPEG is not supported for encoding due to patent restrictions, but decoding of JPEG-compressed streams is supported.
 
 **Compression algorithms supported:**
 
@@ -69,7 +75,7 @@ Supports streaming PDF content, enabling efficient handling of large files and r
 
 ### Signing
 
-Provides support for digitally signing PDF documents, ensuring authenticity and integrity. See package `pdf-lite-signature` for more details.
+Provides support for digitally signing PDF documents, ensuring authenticity and integrity. All signing functionality is integrated into the main `pdf-lite` package.
 
 **Signing algorithms supported:**
 
@@ -100,6 +106,48 @@ Long-Term Validation (LTV) support ensures that digital signatures remain valid 
 
 - **Writing Linearized PDF**: Writing linearized PDFs for faster web viewing, improving user experience when accessing documents online.
 
+## Development
+
+This project uses pnpm for package management.
+
+### Setup
+
+```bash
+pnpm install
+```
+
+### Building
+
+```bash
+pnpm compile
+```
+
+### Testing
+
+```bash
+# Run all tests
+pnpm test
+
+# Run unit tests only
+pnpm test:unit
+
+# Run acceptance tests
+pnpm test:acceptance
+```
+
+### Package Structure
+
+The main package (`packages/pdf-lite`) contains:
+- **src/core/** - Low-level PDF constructs (objects, parser, tokenizer)
+- **src/pdf/** - High-level PDF document handling
+- **src/signing/** - Digital signature support
+- **src/security/** - Encryption and security handlers
+- **src/filters/** - Compression/decompression filters
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
 ## Installation
 
 ```bash
@@ -120,6 +168,119 @@ pnpm add pdf-lite
 
 ## Usage
 
+The library provides both low-level and high-level APIs for working with PDF documents.
+
+### Reading a PDF
+
 ```typescript
-import { pdfReader } from 'pdf-lite'
+import { PdfReader } from 'pdf-lite/pdf/pdf-reader'
+import { readFile } from 'fs/promises'
+
+const pdfBytes = await readFile('document.pdf')
+const doc = await PdfReader.fromBytes([pdfBytes])
+```
+
+### Creating a PDF from Scratch
+
+```typescript
+import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
+import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
+import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
+import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
+import { PdfName } from 'pdf-lite/core/objects/pdf-name'
+import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
+import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
+
+// Create the document
+const document = new PdfDocument()
+
+// Create content stream
+const contentStream = new PdfIndirectObject({
+    content: new PdfStream({
+        header: new PdfDictionary(),
+        original: 'BT /F1 24 Tf 100 700 Td (Hello, PDF-Lite!) Tj ET',
+    }),
+})
+
+// Create and commit objects
+document.commit(contentStream)
+// ... create pages, catalog, etc.
+
+// Output the PDF
+console.log(document.toString())
+```
+
+### Working with Encryption
+
+```typescript
+import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
+import { V2SecurityHandler } from 'pdf-lite/security/handlers/v2'
+
+const document = new PdfDocument()
+// ... build your PDF structure
+
+// Set up encryption
+document.securityHandler = new V2SecurityHandler({
+    password: 'user-password',
+    documentId: 'unique-doc-id',
+    encryptMetadata: true,
+})
+
+// Encrypt the document
+await document.encrypt()
+
+console.log(document.toString())
+```
+
+### Signing PDFs
+
+```typescript
+import { 
+  PdfAdbePkcs7DetachedSignatureObject,
+  PdfEtsiCadesDetachedSignatureObject 
+} from 'pdf-lite'
+
+// See examples directory for complete signing implementations
+```
+
+For more detailed examples, see the [EXAMPLES.md](EXAMPLES.md) file and the [examples/](examples/) directory.
+
+## Project Structure
+
+This project is organized as a monorepo:
+
+- **packages/pdf-lite** - Main library package
+- **examples/** - Example scripts demonstrating library usage
+- **scripts/** - Build and development scripts
+
+## API Reference
+
+The library uses TypeScript subpath exports for modular imports:
+
+```typescript
+// PDF Document
+import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
+import { PdfReader } from 'pdf-lite/pdf/pdf-reader'
+
+// Core PDF objects
+import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
+import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
+import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
+import { PdfString } from 'pdf-lite/core/objects/pdf-string'
+import { PdfName } from 'pdf-lite/core/objects/pdf-name'
+import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
+import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
+import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
+
+// Security
+import { V2SecurityHandler } from 'pdf-lite/security/handlers/v2'
+
+// Signing
+import { 
+  PdfAdbePkcs7DetachedSignatureObject,
+  PdfAdbePkcs7Sha1SignatureObject,
+  PdfAdbePkcsX509RsaSha1SignatureObject,
+  PdfEtsiCadesDetachedSignatureObject,
+  PdfEtsiRfc3161SignatureObject
+} from 'pdf-lite'
 ```

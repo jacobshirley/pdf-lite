@@ -12,7 +12,10 @@ import {
     PdfSignatureObject,
 } from '../../../src/signing/signatures/base'
 import { PdfAdbePkcs7DetachedSignatureObject } from '../../../src/signing/signatures/adbe-pkcs7-detached'
+import { PdfAdbePkcs7Sha1SignatureObject } from '../../../src/signing/signatures/adbe-pkcs7-sha1'
+import { PdfAdbePkcsX509RsaSha1SignatureObject } from '../../../src/signing/signatures/adbe-x509-rsa-sha1'
 import { PdfEtsiCadesDetachedSignatureObject } from '../../../src/signing/signatures/etsi-cades-detached'
+import { PdfEtsiRfc3161SignatureObject } from '../../../src/signing/signatures/etsi-rfc3161'
 import { PdfName } from '../../../src/core/objects/pdf-name'
 import { PdfString } from '../../../src/core/objects/pdf-string'
 import { PdfDate } from '../../../src/core/objects/pdf-date'
@@ -485,5 +488,327 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
         expect(bytesToHex(result.signedBytes)).toMatchInlineSnapshot(
             `"3082089806092A864886F70D010702A082088930820885020101310D300B0609608648016503040201300B06092A864886F70D010701A082058F3082058B30820373A00302010202140AD1000D5C4FCFA5D3F51739F2FACAE3817A281A300D06092A864886F70D01010B0500305C310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310B3009060355040B0C0243413111300F06035504030C084D79526F6F744341301E170D3235313132343137333835345A170D3236313132343137333835345A3061310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F72673110300E060355040B0C075369676E696E673111300F06035504030C084A6F686E20446F6530820122300D06092A864886F70D01010105000382010F003082010A028201010091E6734DB5BC6DA8AE1833DEE522762929E6354EF53FF06B1BD576AC87FA48161F52A14BE2D622505232539B5BB47E6CF09021057230E6D62076DFD26856128378AE7FE79F62E1EBCBC9C47A2BE752794844460A31E5887A19F03A6B2569EEC91E80718F18E7E5EF78DC33E100CE2ED50BC1C358F43AC93EDA3F77E78A97E0B089A917E9A36F3734E51D1C63CFB5C2504E77FC227AAE881624033468B8BE3E1F0A5C6E2D20528CAD7DAEA7E2A6EC7A4DCF846A97174827EF48D0166720A089CA20F765479C44945E91503B3F071DF3D7EE795CB04C43876D3B52872DF135116AC52621DFEAA2691ADC84960F76EAD089B591798F67D6F96DC75483B4BB5CC7930203010001A382013E3082013A30090603551D1304023000300B0603551D0F0404030206C0301D0603551D250416301406082B0601050507030406082B06010505070303302D0603551D1F042630243022A020A01E861C687474703A2F2F6C6F63616C686F73743A383038302F63612E63726C30819106082B06010505070101048184308181302806082B06010505073002861C687474703A2F2F6C6F63616C686F73743A383038302F63612E637274302606082B06010505073001861A687474703A2F2F6C6F63616C686F73743A383038302F6F637370302D06082B060105050730018621687474703A2F2F6C6F63616C686F73743A383038302F6F6373702D6261636B7570301D0603551D0E0416041478EA1C24BC756EA767DE5CF44A03051DAD58B62F301F0603551D23041830168014DC7B208D7FEA5ED9121A13C45A99C460131D070E300D06092A864886F70D01010B050003820201007E1585A5069BA843EAEC6CD15D6791AF98F02E745DAF15CEF93F69E92BE04FC2DDF096FD85C249A3026CF780877398D0A371ECF9A2E02F91FD3C75FA20B47207E3F0DE25AA2B8E444F07B237394D4DF5F98D3745EFCE5AEFF583C6A3C9EFF384EB692F6F3650483C0F7F0309AC2A9A741E75406710DA7154E501641445781E0404AA9D36EC862DA1E36B345D4B31B3E97C2DCC39C330A7FA79149D79E7E44B83646D697B0E3E017ACFAE3B202408CD4D7B9BA60CEB0019F977AD0C75C34BE24479CB4EE81ADF0ECE6FDB17C2A0B0DF04EE198602207B235AF7F782642D0B29373F48D2E593C13290880F66EF79B0877B68464B86016506BB63FEB9D611703FFD0DD239A992C77CF17A0E92DC79045B2287EF0B6CDF60C01A99B11841AA484FFE0FB8904DF223A498B90DF88B523893E997930517E644E269BA4624EB99B087D0CB1B4D30720C3466CB6771F2B6CE573B1D134EE3C7A3BF2B65166EC04214D8C65EDE29B148DFC61214CDB9DCC57D36E3B8AC97FBA1019BBDD61BE18B80E32E06C11D3DDA962B23578106C617847819C1AAC61BDC2273D061586DE08B2FA62721F563EB6C20C0C19AC21D6557514ECEC10E09E44D0C160DA5FF99724405983FE17103D5E7F9EF3C3AD49D3B7880FE26003DBC2E1E98DA255BBFC3BD75B2AEE178BFD7565924014A23372BDD04CE79B824FABDDB55338FF9B8AD9BDB1E43F32295318202CF308202CB0201013074305C310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310B3009060355040B0C0243413111300F06035504030C084D79526F6F74434102140AD1000D5C4FCFA5D3F51739F2FACAE3817A281A300B0609608648016503040201A082012E3081C2060B2A864886F70D010910022F3181B23081AF3081AC3081A9300B060960864801650304020104205CE7808A4A328A9D1568A6EF6B030D44B7D1C7FFA3BC25F881DA700A199C73EC30783060A45E305C310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310B3009060355040B0C0243413111300F06035504030C084D79526F6F74434102140AD1000D5C4FCFA5D3F51739F2FACAE3817A281A301C06092A864886F70D010905310F170D3234303130313132303030305A302F06092A864886F70D01090431220420E21FC8BC54A9E118BA076002544A1D20CA18D9E6DF08AC308D89CE63DE7D445B301806092A864886F70D010903310B06092A864886F70D010701300D06092A864886F70D01010B05000482010087C1548CA434BC1F45B70E3015C1F3679FC24B1EBBB3AAF12F5A84A118B8FDB6C3CED71E1D919DCE9CC3336BD04B2A16CA7645AE533078AB927718B541840CCBAF29F26BAB815820D28ED42DA33E1C39CCB19A8FF57D5ECED1E826505D1818759183CE5DB94ABD81235288476B852EB0AC4DF9CC204E40FB5F001F63A3A070A378D0D8D42A6CA7BFAC96FCE3ED302D46CB97FC7FB76F21C09B2FEBE3623144C292B83118DF862DEB6059A4AD3157F26E9650862FD96C80A4B79C135592F6FC5269488A1A22C90B215BC150FEB75E21E276DB24D7D3037C6F5D88FF2F97F282FD482B57CEAB28D533C885D2B06C9BA05A162260F1041B45E2BEE067C4C8B43A0A"`,
         )
+    })
+})
+
+describe('PdfAdbePkcs7Sha1SignatureObject', () => {
+    beforeAll(() => {
+        vi.stubGlobal('fetch', vi.fn(fetch))
+    })
+
+    it('should create Adobe PKCS7 SHA1 signature with required properties', () => {
+        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+        })
+
+        expect(sigObj.content.get('Filter')?.toString()).toBe('/Adobe.PPKLite')
+        expect(sigObj.content.get('SubFilter')?.toString()).toBe(
+            '/adbe.pkcs7.sha1',
+        )
+        expect(sigObj.content.get('Type')?.toString()).toBe('/Sig')
+    })
+
+    it('should include optional metadata in signature dictionary', () => {
+        const testDate = new Date('2024-01-01T12:00:00Z')
+        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            name: 'Jake Shirley',
+            reason: 'PKCS7 SHA1 Approval',
+            location: 'Earth',
+            contactInfo: 'test@test.com',
+            date: testDate,
+        })
+
+        expect(sigObj.content.get('Name')?.toString()).toContain('Jake Shirley')
+        expect(sigObj.content.get('Reason')?.toString()).toContain(
+            'PKCS7 SHA1 Approval',
+        )
+        expect(sigObj.content.get('Location')?.toString()).toContain('Earth')
+        expect(sigObj.content.get('ContactInfo')?.toString()).toContain(
+            'test@test.com',
+        )
+        expect(sigObj.content.get('M')).toBeInstanceOf(PdfDate)
+    })
+
+    it('should accept additional certificates', async () => {
+        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            issuerCertificate: rsaSigningKeys.caCert,
+            additionalCertificates: [rsaSigningKeys.caCert],
+        })
+
+        const signed = await sigObj.sign({ bytes: stringToBytes('test') })
+        const signedData = SignedData.fromCms(signed.signedBytes)
+
+        expect(signedData.certificates).toHaveLength(2)
+        expect(signedData.certificates?.[0].toDer()).toEqual(
+            rsaSigningKeys.cert,
+        )
+        expect(signedData.certificates?.[1].toDer()).toEqual(
+            rsaSigningKeys.caCert,
+        )
+    })
+
+    it('should support revocation info configuration', async () => {
+        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            revocationInfo: {
+                crls: [rsaSigningKeys.caCrl],
+                ocsps: [rsaSigningKeys.ocspResponse],
+                otherRevInfo: [],
+            },
+        })
+
+        const signed = await sigObj.sign({
+            bytes: stringToBytes('test'),
+            embedRevocationInfo: true,
+        })
+        const signedData = SignedData.fromCms(signed.signedBytes)
+        const revocationInfoAttribute =
+            signedData.signerInfos[0].signedAttrs?.find((x) =>
+                x.type.is(OIDs.ADOBE.REVOCATION_INFO_ARCHIVAL),
+            )
+        const revocationInfo = revocationInfoAttribute?.values[0].parseAs(
+            RevocationInfoArchival,
+        )
+
+        expect(revocationInfo?.crls?.[0].toDer()).toEqual(rsaSigningKeys.caCrl)
+        expect(revocationInfo?.ocsps?.[0].toDer()).toEqual(
+            rsaSigningKeys.ocspResponse,
+        )
+    })
+
+    it('should support automatic revocation info fetching', async () => {
+        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            revocationInfo: 'fetch',
+        })
+
+        await sigObj.sign({ bytes: stringToBytes('test') })
+        expect(fetch).toHaveBeenCalledWith('http://localhost:8080/ca.crl')
+        expect(fetch).toHaveBeenCalledWith('http://localhost:8080/ca.crt')
+    })
+
+    it('should support custom timestamp authority URL', async () => {
+        const customTSA = {
+            url: 'https://freetsa.org/tsr',
+        }
+        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            timeStampAuthority: customTSA,
+        })
+
+        const signed = await sigObj.sign({ bytes: stringToBytes('test') })
+        const signedData = SignedData.fromCms(signed.signedBytes)
+        const tsaAttr = signedData.signerInfos[0].unsignedAttrs?.find((attr) =>
+            attr.type.is('1.2.840.113549.1.9.16.2.14'),
+        )
+        expect(tsaAttr).toBeDefined()
+    })
+
+    it('should generate valid PKCS7 SHA1 signature', async () => {
+        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            issuerCertificate: rsaSigningKeys.caCert,
+            date: new Date('2024-01-01T12:00:00Z'),
+        })
+
+        const testData = stringToBytes('Hello, PDF!')
+        const result = await sigObj.sign({ bytes: testData })
+
+        expect(result.signedBytes).toBeInstanceOf(Uint8Array)
+        expect(result.signedBytes.length).toBeGreaterThan(0)
+        // PKCS7 signature should start with DER sequence tag (0x30)
+        expect(result.signedBytes[0]).toBe(0x30)
+    })
+})
+
+describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
+    beforeAll(() => {
+        vi.stubGlobal('fetch', vi.fn(fetch))
+    })
+
+    it('should create Adobe X509 RSA SHA1 signature with required properties', () => {
+        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+        })
+
+        expect(sigObj.content.get('Filter')?.toString()).toBe('/Adobe.PPKLite')
+        expect(sigObj.content.get('SubFilter')?.toString()).toBe(
+            '/adbe.x509.rsa_sha1',
+        )
+        expect(sigObj.content.get('Type')?.toString()).toBe('/Sig')
+    })
+
+    it('should include optional metadata in signature dictionary', () => {
+        const testDate = new Date('2024-01-01T12:00:00Z')
+        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            name: 'Jake Shirley',
+            reason: 'X509 RSA SHA1 Approval',
+            location: 'Earth',
+            contactInfo: 'test@test.com',
+            date: testDate,
+        })
+
+        expect(sigObj.content.get('Name')?.toString()).toContain('Jake Shirley')
+        expect(sigObj.content.get('Reason')?.toString()).toContain(
+            'X509 RSA SHA1 Approval',
+        )
+        expect(sigObj.content.get('Location')?.toString()).toContain('Earth')
+        expect(sigObj.content.get('ContactInfo')?.toString()).toContain(
+            'test@test.com',
+        )
+        expect(sigObj.content.get('M')).toBeInstanceOf(PdfDate)
+    })
+
+    it('should include certificate in Cert array', () => {
+        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+        })
+
+        const certArray = sigObj.content.get('Cert') as PdfArray
+        expect(certArray).toBeInstanceOf(PdfArray)
+        expect(certArray.items.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('should accept additional certificates', () => {
+        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            additionalCertificates: [rsaSigningKeys.caCert],
+        })
+
+        const certArray = sigObj.content.get('Cert') as PdfArray
+        expect(certArray).toBeInstanceOf(PdfArray)
+        expect(certArray.items.length).toBe(2)
+    })
+
+    it('should support revocation info configuration', async () => {
+        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            revocationInfo: {
+                crls: [rsaSigningKeys.caCrl],
+                ocsps: [rsaSigningKeys.ocspResponse],
+                otherRevInfo: [],
+            },
+        })
+
+        const signed = await sigObj.sign({ bytes: stringToBytes('test') })
+
+        expect(signed.revocationInfo?.crls?.[0]).toEqual(rsaSigningKeys.caCrl)
+        expect(signed.revocationInfo?.ocsps?.[0]).toEqual(
+            rsaSigningKeys.ocspResponse,
+        )
+    })
+
+    it('should support automatic revocation info fetching', async () => {
+        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            revocationInfo: 'fetch',
+        })
+
+        await sigObj.sign({ bytes: stringToBytes('test') })
+        expect(fetch).toHaveBeenCalledWith('http://localhost:8080/ca.crl')
+        expect(fetch).toHaveBeenCalledWith('http://localhost:8080/ca.crt')
+    })
+
+    it('should generate valid X509 RSA SHA1 signature', async () => {
+        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            date: new Date('2024-01-01T12:00:00Z'),
+        })
+
+        const testData = stringToBytes('Hello, PDF!')
+        const result = await sigObj.sign({ bytes: testData })
+
+        expect(result.signedBytes).toBeInstanceOf(Uint8Array)
+        expect(result.signedBytes.length).toBeGreaterThan(0)
+        // OctetString starts with 0x04 tag
+        expect(result.signedBytes[0]).toBe(0x04)
+    })
+})
+
+describe('PdfEtsiRfc3161SignatureObject', () => {
+    it('should create ETSI RFC3161 signature with required properties', () => {
+        const sigObj = new PdfEtsiRfc3161SignatureObject({})
+
+        expect(sigObj.content.get('Filter')?.toString()).toBe('/Adobe.PPKLite')
+        expect(sigObj.content.get('SubFilter')?.toString()).toBe(
+            '/ETSI.RFC3161',
+        )
+        expect(sigObj.content.get('Type')?.toString()).toBe('/Sig')
+    })
+
+    it('should use default timestamp authority URL', () => {
+        const sigObj = new PdfEtsiRfc3161SignatureObject({})
+
+        expect(sigObj.timeStampAuthority.url).toBe('https://freetsa.org/tsr')
+    })
+
+    it('should accept custom timestamp authority URL', () => {
+        const customTSA = {
+            url: 'https://custom-tsa.example.com/tsr',
+            username: 'user',
+            password: 'pass',
+        }
+        const sigObj = new PdfEtsiRfc3161SignatureObject({
+            timeStampAuthority: customTSA,
+        })
+
+        expect(sigObj.timeStampAuthority.url).toBe(
+            'https://custom-tsa.example.com/tsr',
+        )
+        expect(sigObj.timeStampAuthority.username).toBe('user')
+        expect(sigObj.timeStampAuthority.password).toBe('pass')
+    })
+
+    it('should include optional metadata in signature dictionary', () => {
+        const sigObj = new PdfEtsiRfc3161SignatureObject({
+            name: 'Timestamp Authority',
+            reason: 'Document Timestamping',
+            location: 'Server',
+            contactInfo: 'timestamp@example.com',
+        })
+
+        expect(sigObj.content.get('Name')?.toString()).toContain(
+            'Timestamp Authority',
+        )
+        expect(sigObj.content.get('Reason')?.toString()).toContain(
+            'Document Timestamping',
+        )
+        expect(sigObj.content.get('Location')?.toString()).toContain('Server')
+        expect(sigObj.content.get('ContactInfo')?.toString()).toContain(
+            'timestamp@example.com',
+        )
+    })
+
+    it('should generate valid RFC3161 timestamp signature', async () => {
+        const sigObj = new PdfEtsiRfc3161SignatureObject({
+            timeStampAuthority: {
+                url: 'https://freetsa.org/tsr',
+            },
+        })
+
+        const testData = stringToBytes('Hello, PDF!')
+        const result = await sigObj.sign({ bytes: testData })
+
+        expect(result.signedBytes).toBeInstanceOf(Uint8Array)
+        expect(result.signedBytes.length).toBeGreaterThan(0)
+        // Timestamp token starts with DER sequence tag (0x30)
+        expect(result.signedBytes[0]).toBe(0x30)
     })
 })

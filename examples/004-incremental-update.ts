@@ -71,10 +71,9 @@ console.log('Step 1: Creating initial PDF document...')
 const document = new PdfDocument()
 
 const font = createFont()
-document.commit(font)
-
+document.add(font)
 const resources = createResources(font.reference)
-document.commit(resources)
+document.add(resources)
 
 const contentStream = new PdfIndirectObject({
     content: new PdfStream({
@@ -85,18 +84,19 @@ const contentStream = new PdfIndirectObject({
 
 const page = createPage(contentStream.reference)
 page.content.set('Resources', resources.reference)
-document.commit(page)
+document.add(page)
 
 const pages = createPages([page])
 page.content.set('Parent', pages.reference)
-document.commit(pages)
+document.add(pages)
 
 const catalog = createCatalog(pages.reference)
-document.commit(catalog)
+document.add(catalog)
 
 document.trailerDict.set('Root', catalog.reference)
-document.commit(contentStream)
+document.add(contentStream)
 
+await document.commit()
 // Save the original PDF
 const originalPdfPath = '/tmp/original.pdf'
 await fs.writeFile(originalPdfPath, document.toBytes())
@@ -114,12 +114,11 @@ const loadedDocument = await PdfDocument.fromBytes([existingPdfBytes])
 // This ensures changes are added as new revisions instead of modifying existing ones
 loadedDocument.setIncremental(true)
 
-// Start a new revision for our changes
-loadedDocument.startNewRevision()
-
 // Create new content for the incremental update
 // In a real scenario, this could be adding annotations, form fields, signatures, etc.
 const newContentStream = new PdfIndirectObject({
+    objectNumber: contentStream.objectNumber,
+    generationNumber: contentStream.generationNumber,
     content: new PdfStream({
         header: new PdfDictionary(),
         original:
@@ -128,7 +127,8 @@ const newContentStream = new PdfIndirectObject({
 })
 
 // Add the new content to the document
-await loadedDocument.commit(newContentStream)
+loadedDocument.add(newContentStream)
+await loadedDocument.commit()
 
 // Save the incrementally updated PDF
 const updatedPdfPath = '/tmp/incremental-update.pdf'
@@ -171,17 +171,15 @@ console.log('\nStep 4: Adding another incremental revision...')
 
 const secondUpdate = await PdfDocument.fromBytes([updatedPdfBytes])
 secondUpdate.setIncremental(true)
-secondUpdate.startNewRevision()
 
 const thirdRevisionContent = new PdfIndirectObject({
-    content: new PdfStream({
-        header: new PdfDictionary(),
-        original:
-            'BT /F1 14 Tf 100 600 Td (Third revision - demonstrates multiple incremental updates) Tj ET',
-    }),
+    objectNumber: contentStream.objectNumber,
+    generationNumber: contentStream.generationNumber,
+    content: new PdfStream('BT /F1 14 Tf 100 600 Td (Third revision - demonstrates multiple incremental updates) Tj ET'),
 })
 
-await secondUpdate.commit(thirdRevisionContent)
+secondUpdate.add(thirdRevisionContent)
+await secondUpdate.commit()
 
 const multiRevisionPdfPath = '/tmp/multi-revision.pdf'
 await fs.writeFile(multiRevisionPdfPath, secondUpdate.toBytes())

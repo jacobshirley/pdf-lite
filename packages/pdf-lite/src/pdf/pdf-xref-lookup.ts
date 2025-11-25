@@ -16,14 +16,32 @@ import { PdfDictionary } from '../core/objects/pdf-dictionary'
 import { Ref } from '../core/ref'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference'
 
+/**
+ * Manages cross-reference (xref) lookup for PDF objects.
+ * Handles both traditional xref tables and xref streams, including hybrid documents.
+ * Supports linking multiple revisions through the Prev chain.
+ */
 export class PdfXrefLookup {
+    /** The underlying xref object (either a table or stream) */
     object: PdfIndirectObject<PdfXRefStream> | PdfXRefTable
+    /** Map of object numbers to their xref entries */
     entries: Map<number, PdfXRefStreamEntry>
+    /** Trailer dictionary containing document metadata references */
     trailerDict: PdfDictionary<PdfTrailerEntries>
+    /** Reference to the previous xref lookup in the revision chain */
     prev?: PdfXrefLookup
     private type?: 'table' | 'stream'
     private hybridXRefStream?: PdfIndirectObject<PdfXRefStream>
 
+    /**
+     * Creates a new xref lookup instance.
+     *
+     * @param options - Configuration options
+     * @param options.type - Type of xref ('table' or 'stream')
+     * @param options.object - Pre-existing xref table or stream object
+     * @param options.trailerDict - Pre-existing trailer dictionary
+     * @param options.prev - Previous xref lookup to link to
+     */
     constructor(options?: {
         type?: 'table' | 'stream'
         object?: PdfIndirectObject<PdfStream> | PdfXRefTable
@@ -58,6 +76,13 @@ export class PdfXrefLookup {
             this.object.orderIndex = PdfIndirectObject.MAX_ORDER_INDEX
     }
 
+    /**
+     * Links this xref to a previous xref lookup.
+     * Copies missing trailer entries from the previous xref.
+     *
+     * @param xref - The previous xref lookup to link to
+     * @throws Error if trying to set self as previous (would create circular reference) or if offsets match (would create ambiguous or invalid xref chain)
+     */
     setPrev(xref: PdfXrefLookup) {
         if (xref === this) {
             throw new Error('Cannot set XRef lookup as its own previous lookup')
@@ -86,14 +111,27 @@ export class PdfXrefLookup {
         }
     }
 
+    /**
+     * Sets the byte offset of the xref object.
+     */
     set offset(value: Ref<number>) {
         this.object.offset = value
     }
 
+    /**
+     * Gets the byte offset of the xref object.
+     */
     get offset(): Ref<number> {
         return this.object.offset
     }
 
+    /**
+     * Creates xref lookups from an array of PDF objects.
+     * Parses both xref tables and xref streams, linking them via the Prev chain.
+     *
+     * @param objects - Array of PDF objects to parse
+     * @returns The most recent xref lookup with linked previous lookups
+     */
     static fromObjects(objects: PdfObject[]): PdfXrefLookup {
         const lookups: PdfXrefLookup[] = []
 
@@ -142,6 +180,15 @@ export class PdfXrefLookup {
         return initialLookup
     }
 
+    /**
+     * Creates an xref lookup from a traditional xref table and trailer.
+     * Handles hybrid xref documents with both table and stream entries.
+     *
+     * @param xrefTable - The xref table object
+     * @param trailer - The trailer object
+     * @param objects - Optional array of objects for resolving hybrid xref streams
+     * @returns A new PdfXrefLookup instance
+     */
     static fromXrefTable(
         xrefTable: PdfXRefTable,
         trailer: PdfTrailer,
@@ -182,6 +229,12 @@ export class PdfXrefLookup {
         return lookup
     }
 
+    /**
+     * Creates an xref lookup from an xref stream object.
+     *
+     * @param streamObject - The indirect object containing the xref stream
+     * @returns A new PdfXrefLookup instance
+     */
     static fromXrefStream(
         streamObject: PdfIndirectObject<PdfStream>,
     ): PdfXrefLookup {
@@ -196,6 +249,10 @@ export class PdfXrefLookup {
         return lookup
     }
 
+    /**
+     * Gets the size of the xref table (highest object number + 1).
+     * Ensures size is at least as large as the previous revision.
+     */
     get size(): number {
         const trailerSize = this.trailerDict.get('Size')?.value ?? 0
         const prevSize = this.prev?.size ?? 0
@@ -210,14 +267,26 @@ export class PdfXrefLookup {
         return size
     }
 
+    /**
+     * Sets the size of the xref table.
+     */
     set size(value: number) {
         this.trailerDict.set('Size', new PdfNumber(value))
     }
 
+    /**
+     * Gets all xref entries as an array.
+     */
     get entriesValues(): PdfXRefStreamEntry[] {
         return Array.from(this.entries.values())
     }
 
+    /**
+     * Links xref entries to their corresponding indirect objects.
+     * Updates byte offset references to point to actual object offsets.
+     *
+     * @param objects - Array of indirect objects to link
+     */
     linkIndirectObjects(objects: PdfIndirectObject[]): void {
         for (const entry of this.entriesValues) {
             if (entry instanceof PdfXRefStreamCompressedEntry) {
@@ -243,6 +312,11 @@ export class PdfXrefLookup {
         }
     }
 
+    /**
+     * Links this xref to a previous xref lookup based on the Prev trailer entry.
+     *
+     * @param objects - Array of xref lookups to search for the previous one
+     */
     linkPrev(objects: PdfXrefLookup[]): void {
         const prevOffset = this.trailerDict.get('Prev')?.value
         if (prevOffset === undefined) {
@@ -264,6 +338,12 @@ export class PdfXrefLookup {
         this.setPrev(prevLookup[0])
     }
 
+    /**
+     * Updates the xref object with current entries.
+     * Handles both table and stream formats, including hybrid documents.
+     *
+     * @returns The updated xref object
+     */
     update(): PdfIndirectObject<PdfXRefStream> | PdfXRefTable {
         if (this.object instanceof PdfXRefTable) {
             const tableEntries = this.entriesValues.filter(
@@ -316,6 +396,16 @@ export class PdfXrefLookup {
         return this.object
     }
 
+    /**
+     * Adds an indirect object to the xref lookup.
+     * Assigns an object number if not already set.
+     *
+     * @param newObject - The indirect object to add
+     * @param options - Options for compressed objects
+     * @param options.parentObjectNumber - Object number of the containing object stream
+     * @param options.indexInStream - Index within the object stream
+     * @throws Error if trying to add compressed object with non-zero generation number
+     */
     addObject(
         newObject: PdfIndirectObject,
         options?: {
@@ -369,6 +459,12 @@ export class PdfXrefLookup {
         }
     }
 
+    /**
+     * Removes an indirect object from the xref lookup.
+     * Also removes any trailer references to the object.
+     *
+     * @param object - The indirect object to remove
+     */
     removeObject(object: PdfIndirectObject): void {
         this.entries.delete(object.objectNumber)
 
@@ -388,6 +484,13 @@ export class PdfXrefLookup {
         this.update()
     }
 
+    /**
+     * Gets an xref entry by object number.
+     * Falls back to the previous xref if not found in current entries.
+     *
+     * @param objectNumber - The object number to look up
+     * @returns The xref entry or undefined if not found
+     */
     getObject(objectNumber: number): PdfXRefStreamEntry | undefined {
         if (!this.entries.has(objectNumber) && this.prev) {
             return this.prev.getObject(objectNumber)
@@ -396,6 +499,12 @@ export class PdfXrefLookup {
         return this.entries.get(objectNumber)
     }
 
+    /**
+     * Generates the trailer section objects for this xref.
+     * Includes xref table/stream, trailer (if using table), startxref, and EOF.
+     *
+     * @returns Array of objects forming the trailer section
+     */
     toTrailerSection(): PdfObject[] {
         const objects: PdfObject[] = []
 

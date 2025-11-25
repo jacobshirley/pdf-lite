@@ -1,8 +1,8 @@
 import { ByteArray, PdfFilter } from '../types.js'
 
 /**
- * Creates a RunLength filter for encoding and decoding PDF stream data.
- * RunLength encoding is a simple compression algorithm that replaces
+ * Creates a Run-Length filter for encoding and decoding PDF stream data.
+ * Run-Length encoding is a simple compression algorithm that replaces
  * sequences of repeated bytes with a count and the byte value.
  *
  * @returns A PdfFilter object with encode and decode methods.
@@ -17,11 +17,11 @@ import { ByteArray, PdfFilter } from '../types.js'
 export function runLength(): PdfFilter {
     return {
         /**
-         * Compresses data using RunLength encoding.
+         * Compresses data using Run-Length encoding.
          * Appends 128 as the end-of-data marker.
          *
          * @param data - The data to compress.
-         * @returns The RunLength encoded data as a byte array.
+         * @returns The Run-Length encoded data as a byte array.
          */
         encode: (data: ByteArray) => {
             const out: number[] = []
@@ -61,10 +61,10 @@ export function runLength(): PdfFilter {
             return new Uint8Array(out)
         },
         /**
-         * Decompresses RunLength encoded data.
+         * Decompresses Run-Length encoded data.
          * Stops at the end-of-data marker (128).
          *
-         * @param data - The RunLength encoded data to decompress.
+         * @param data - The Run-Length encoded data to decompress.
          * @returns The decompressed data as a byte array.
          */
         decode: (data: ByteArray) => {

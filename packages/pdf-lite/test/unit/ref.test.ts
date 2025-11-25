@@ -141,20 +141,26 @@ describe('Ref', () => {
     })
 
     describe('onUpdate', () => {
-        it('should register a callback', () => {
+        it('should register a callback that is called on update', () => {
             const ref = new Ref(10)
             const callback = vi.fn()
             ref.onUpdate(callback)
-            expect(ref.callbacks).toContain(callback)
+            ref.update(20)
+            expect(callback).toHaveBeenCalledOnce()
+            expect(callback).toHaveBeenCalledWith(10, 20)
         })
 
-        it('should allow registering multiple callbacks', () => {
+        it('should allow registering multiple callbacks and call all of them', () => {
             const ref = new Ref(10)
             const callback1 = vi.fn()
             const callback2 = vi.fn()
             ref.onUpdate(callback1)
             ref.onUpdate(callback2)
-            expect(ref.callbacks).toHaveLength(2)
+            ref.update(30)
+            expect(callback1).toHaveBeenCalledOnce()
+            expect(callback2).toHaveBeenCalledOnce()
+            expect(callback1).toHaveBeenCalledWith(10, 30)
+            expect(callback2).toHaveBeenCalledWith(10, 30)
         })
     })
 })

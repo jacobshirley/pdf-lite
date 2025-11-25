@@ -105,7 +105,7 @@ describe('Utility Functions', () => {
         it('should throw error if bytes are longer than target length', () => {
             const bytes = new Uint8Array([1, 2, 3, 4, 5])
             expect(() => padBytes(bytes, 3)).toThrow(
-                'Cannot pad bytes: current length 5 is greater than or equal to target length 3',
+                'Cannot pad bytes: current length 5 is greater than or equal to target length 3.',
             )
         })
 

@@ -53,7 +53,7 @@
     ],
     "dependencies": {
         "pako": "2.1.0",
-        "pki-lite": "file:../../../pki-lite/packages/pki-lite",
-        "pki-lite-crypto-extended": "^1.0.9"
+        "pki-lite": "^1.0.10",
+        "pki-lite-crypto-extended": "^1.0.10"
     }
 }

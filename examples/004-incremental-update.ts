@@ -10,6 +10,9 @@ import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
 import fs from 'fs/promises'
 
+const tmpFolder = `${import.meta.dirname}/tmp`
+await fs.mkdir(tmpFolder, { recursive: true })
+
 // Helper functions for creating PDF objects
 function createPage(
     contentStreamRef: PdfObjectReference,
@@ -98,7 +101,7 @@ document.add(contentStream)
 
 await document.commit()
 // Save the original PDF
-const originalPdfPath = '/tmp/original.pdf'
+const originalPdfPath = `${tmpFolder}/original.pdf`
 await fs.writeFile(originalPdfPath, document.toBytes())
 console.log(`Original PDF saved to: ${originalPdfPath}`)
 console.log(`Original PDF has ${document.revisions.length} revision(s)`)
@@ -131,7 +134,7 @@ loadedDocument.add(newContentStream)
 await loadedDocument.commit()
 
 // Save the incrementally updated PDF
-const updatedPdfPath = '/tmp/incremental-update.pdf'
+const updatedPdfPath = `${tmpFolder}/incremental-update.pdf`
 await fs.writeFile(updatedPdfPath, loadedDocument.toBytes())
 console.log(`Incrementally updated PDF saved to: ${updatedPdfPath}`)
 console.log(`Updated PDF has ${loadedDocument.revisions.length} revision(s)`)
@@ -181,7 +184,7 @@ const thirdRevisionContent = new PdfIndirectObject({
 secondUpdate.add(thirdRevisionContent)
 await secondUpdate.commit()
 
-const multiRevisionPdfPath = '/tmp/multi-revision.pdf'
+const multiRevisionPdfPath = `${tmpFolder}/multi-revision.pdf`
 await fs.writeFile(multiRevisionPdfPath, secondUpdate.toBytes())
 console.log(`Multi-revision PDF saved to: ${multiRevisionPdfPath}`)
 console.log(`Multi-revision PDF has ${secondUpdate.revisions.length} revision(s)`)

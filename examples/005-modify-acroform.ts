@@ -12,6 +12,9 @@ import { PdfString } from 'pdf-lite/core/objects/pdf-string'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
 import fs from 'fs/promises'
 
+const tmpFolder = `${import.meta.dirname}/tmp`
+await fs.mkdir(tmpFolder, { recursive: true })
+
 // Helper function to create a basic page
 function createPage(
     contentStreamRef: PdfObjectReference,
@@ -262,7 +265,7 @@ await document.commit()
 
 // Save the empty form
 // This demonstrates creating a blank form that users can fill in
-await fs.writeFile('form-empty.pdf', document.toBytes())
+await fs.writeFile(`${tmpFolder}/form-empty.pdf`, document.toBytes())
 console.log('Created form-empty.pdf with empty form fields')
 
 // ============================================
@@ -293,7 +296,7 @@ subscribeField.content.set('AS', new PdfName('Yes'))
 await document.commit()
 
 // Save the filled form
-await fs.writeFile('form-filled.pdf', document.toBytes())
+await fs.writeFile(`${tmpFolder}/form-filled.pdf`, document.toBytes())
 console.log('Created form-filled.pdf with filled form fields')
 
 console.log('\nForm field values:')

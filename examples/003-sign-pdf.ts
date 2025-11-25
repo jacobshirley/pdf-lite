@@ -342,6 +342,6 @@ allSignatures.forEach((sig) => {
 
 await document.commit()
 
-//console.log(document.toString())
-
-await fs.writeFile('signed-output.pdf', document.toBytes())
+const tmpFolder = `${import.meta.dirname}/tmp`
+await fs.mkdir(tmpFolder, { recursive: true })
+await fs.writeFile(`${tmpFolder}/signed-output.pdf`, document.toBytes())

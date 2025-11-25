@@ -81,7 +81,7 @@ export class PdfXrefLookup {
      * Copies missing trailer entries from the previous xref.
      *
      * @param xref - The previous xref lookup to link to
-     * @throws Error if trying to set self as previous or if offsets match
+     * @throws Error if trying to set self as previous (would create circular reference) or if offsets match (would create ambiguous or invalid xref chain)
      */
     setPrev(xref: PdfXrefLookup) {
         if (xref === this) {

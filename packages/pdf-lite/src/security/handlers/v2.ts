@@ -9,19 +9,51 @@ import { bytesToString } from '../../utils/bytesToString'
 import { stringToBytes } from '../../utils/stringToBytes'
 import { V1SecurityHandler } from './v1'
 
+/**
+ * V2 security handler implementing 128-bit RC4 encryption.
+ * Extends V1 with stronger key length (PDF 1.4).
+ *
+ * @example
+ * ```typescript
+ * const handler = new V2SecurityHandler({
+ *     password: 'user123',
+ *     ownerPassword: 'admin456'
+ * })
+ * ```
+ */
 export class V2SecurityHandler extends V1SecurityHandler {
+    /**
+     * Gets the encryption revision number.
+     *
+     * @returns 3 for V2 encryption.
+     */
     getRevision(): number {
         return 3
     }
 
+    /**
+     * Gets the encryption version number.
+     *
+     * @returns 2 for 128-bit RC4 encryption.
+     */
     getVersion(): number {
         return 2
     }
 
+    /**
+     * Gets the encryption key length in bits.
+     *
+     * @returns 128 for V2 encryption.
+     */
     getKeyBits(): number {
         return 128
     }
 
+    /**
+     * Computes the owner key (O value) using RC4-128 algorithm.
+     *
+     * @returns The computed owner key.
+     */
     protected async computeOwnerKey(): Promise<ByteArray> {
         return await computeOValueRc4_128(
             this.ownerPassword ?? this.password,
@@ -29,6 +61,12 @@ export class V2SecurityHandler extends V1SecurityHandler {
         )
     }
 
+    /**
+     * Computes the user key (U value) using RC4-128 algorithm.
+     *
+     * @returns The computed user key.
+     * @throws Error if document ID, owner key, or permissions are not set.
+     */
     protected async computeUserKey(): Promise<ByteArray> {
         if (!this.documentId) {
             throw new Error('Document ID is required to compute U value')
@@ -52,6 +90,13 @@ export class V2SecurityHandler extends V1SecurityHandler {
         )
     }
 
+    /**
+     * Gets an RC4 cipher for the specified object.
+     *
+     * @param objectNumber - The PDF object number.
+     * @param generationNumber - The PDF generation number.
+     * @returns An RC4 cipher instance.
+     */
     protected async getCipher(
         objectNumber?: number,
         generationNumber?: number,
@@ -61,6 +106,12 @@ export class V2SecurityHandler extends V1SecurityHandler {
         return rc4(key)
     }
 
+    /**
+     * Recovers the user password from the owner password.
+     *
+     * @param ownerPassword - The owner password.
+     * @returns The recovered user password as a string.
+     */
     async recoverUserPassword(
         ownerPassword?: ByteArray | string,
     ): Promise<string> {

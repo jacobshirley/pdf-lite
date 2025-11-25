@@ -10,10 +10,25 @@ import { PdfDocument } from '../pdf/pdf-document'
 import { ByteArray } from '../types'
 import { RevocationInfo } from './types'
 
+/**
+ * Indirect object containing a certificate stream.
+ */
 export class PdfCertObject extends PdfIndirectObject<PdfStream> {}
+
+/**
+ * Indirect object containing a CRL stream.
+ */
 export class PdfCrlObject extends PdfIndirectObject<PdfStream> {}
+
+/**
+ * Indirect object containing an OCSP response stream.
+ */
 export class PdfOcspObject extends PdfIndirectObject<PdfStream> {}
 
+/**
+ * Validation Related Information (VRI) dictionary.
+ * Associates revocation data with specific certificate hashes.
+ */
 export type PdfVriObject = PdfIndirectObject<
     PdfDictionary<{
         [CertHash: string]: PdfDictionary<{
@@ -27,6 +42,10 @@ export type PdfVriObject = PdfIndirectObject<
     }>
 >
 
+/**
+ * Dictionary for the Document Security Store (DSS).
+ * Contains arrays of certificates, CRLs, OCSPs, and VRI entries.
+ */
 export class PdfDocumentSecurityStoreDictionary extends PdfDictionary<{
     Type?: PdfName<'DSS'>
     VRI?: PdfObjectReference
@@ -35,9 +54,28 @@ export class PdfDocumentSecurityStoreDictionary extends PdfDictionary<{
     Certs?: PdfArray<PdfObjectReference>
 }> {}
 
+/**
+ * Document Security Store (DSS) object for PAdES LTV signatures.
+ * Stores validation data (certificates, CRLs, OCSPs) for long-term validation.
+ *
+ * @example
+ * ```typescript
+ * const dss = new PdfDocumentSecurityStoreObject(document)
+ * await dss.addCert(certificateBytes)
+ * await dss.addCrl(crlBytes)
+ * await dss.addOcsp(ocspBytes)
+ * ```
+ */
 export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumentSecurityStoreDictionary> {
+    /** Reference to the parent document. */
     private document: PdfDocument
 
+    /**
+     * Creates a new DSS object.
+     *
+     * @param document - The parent PDF document.
+     * @param content - Optional pre-existing DSS dictionary.
+     */
     constructor(
         document: PdfDocument,
         content?: PdfDocumentSecurityStoreDictionary,
@@ -46,6 +84,12 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
         this.document = document
     }
 
+    /**
+     * Adds an OCSP response to the DSS, avoiding duplicates.
+     *
+     * @param ocsp - The DER-encoded OCSP response.
+     * @returns The created or existing OCSP object.
+     */
     async addOcsp(ocsp: ByteArray): Promise<PdfOcspObject> {
         const newOcsp = new PdfStream(ocsp)
         let ocspArray = this.content.get('OCSPs')
@@ -76,6 +120,12 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
         return ocspObject
     }
 
+    /**
+     * Adds a CRL to the DSS, avoiding duplicates.
+     *
+     * @param crl - The DER-encoded CRL.
+     * @returns The created or existing CRL object.
+     */
     async addCrl(crl: ByteArray): Promise<PdfCrlObject> {
         let crlArray = this.content.get('CRLs')
 
@@ -105,6 +155,12 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
         return crlObject
     }
 
+    /**
+     * Adds a certificate to the DSS, avoiding duplicates.
+     *
+     * @param cert - The DER-encoded certificate.
+     * @returns The created or existing certificate object.
+     */
     async addCert(cert: ByteArray): Promise<PdfCertObject> {
         let certArray = this.content.get('Certs')
 
@@ -134,6 +190,11 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
         return certObject
     }
 
+    /**
+     * Adds revocation information (CRLs and OCSPs) to the DSS.
+     *
+     * @param revocationInfo - The revocation information to add.
+     */
     async addRevocationInfo(revocationInfo: RevocationInfo): Promise<void> {
         for (const ocsp of revocationInfo.ocsps ?? []) {
             await this.addOcsp(ocsp)
@@ -144,6 +205,11 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
         }
     }
 
+    /**
+     * Checks if the DSS is empty (contains no certificates, CRLs, or OCSPs).
+     *
+     * @returns True if the DSS has no stored data.
+     */
     isEmpty(): boolean {
         const certs = this.content.get('Certs')
         const crls = this.content.get('CRLs')

@@ -444,14 +444,34 @@ export class PdfXRefStream extends PdfStream {
         headerDict.delete('DecodeParms')
         headerDict.delete('Filter')
         headerDict.set('Type', new PdfName('XRef'))
+        entries.sort((a, b) => a.objectNumber.value - b.objectNumber.value)
 
         const W = this.calculateW(entries)
         headerDict.set('W', new PdfArray(W.map((w) => new PdfNumber(w))))
 
+        // Build Index array - pairs of [start, count] for each contiguous range
         const indexArray: number[] = []
         if (entries.length > 0) {
-            const firstObjNum = entries[0].objectNumber.value
-            indexArray.push(firstObjNum, entries.length)
+            let rangeStart = entries[0].objectNumber.value
+            let rangeCount = 1
+
+            for (let i = 1; i < entries.length; i++) {
+                const currentNum = entries[i].objectNumber.value
+                const prevNum = entries[i - 1].objectNumber.value
+
+                if (currentNum === prevNum + 1) {
+                    // Contiguous - extend current range
+                    rangeCount++
+                } else {
+                    // Gap found - save current range and start new one
+                    indexArray.push(rangeStart, rangeCount)
+                    rangeStart = currentNum
+                    rangeCount = 1
+                }
+            }
+
+            // Add final range
+            indexArray.push(rangeStart, rangeCount)
         }
 
         headerDict.set(

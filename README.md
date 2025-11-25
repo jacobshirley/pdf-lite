@@ -138,6 +138,7 @@ pnpm test:acceptance
 ### Package Structure
 
 The main package (`packages/pdf-lite`) contains:
+
 - **src/core/** - Low-level PDF constructs (objects, parser, tokenizer)
 - **src/pdf/** - High-level PDF document handling
 - **src/signing/** - Digital signature support
@@ -235,9 +236,9 @@ console.log(document.toString())
 ### Signing PDFs
 
 ```typescript
-import { 
-  PdfAdbePkcs7DetachedSignatureObject,
-  PdfEtsiCadesDetachedSignatureObject 
+import {
+    PdfAdbePkcs7DetachedSignatureObject,
+    PdfEtsiCadesDetachedSignatureObject,
 } from 'pdf-lite'
 
 // See examples directory for complete signing implementations
@@ -276,11 +277,11 @@ import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
 import { V2SecurityHandler } from 'pdf-lite/security/handlers/v2'
 
 // Signing
-import { 
-  PdfAdbePkcs7DetachedSignatureObject,
-  PdfAdbePkcs7Sha1SignatureObject,
-  PdfAdbePkcsX509RsaSha1SignatureObject,
-  PdfEtsiCadesDetachedSignatureObject,
-  PdfEtsiRfc3161SignatureObject
+import {
+    PdfAdbePkcs7DetachedSignatureObject,
+    PdfAdbePkcs7Sha1SignatureObject,
+    PdfAdbePkcsX509RsaSha1SignatureObject,
+    PdfEtsiCadesDetachedSignatureObject,
+    PdfEtsiRfc3161SignatureObject,
 } from 'pdf-lite'
 ```

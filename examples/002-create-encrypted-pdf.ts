@@ -70,11 +70,11 @@ const document = new PdfDocument()
 
 // Create font
 const font = createFont()
-document.commit(font)
+document.add(font)
 
 // Create resources with the font
 const resources = createResources(font.reference)
-document.commit(resources)
+document.add(resources)
 
 // Create content stream
 const contentStream = new PdfIndirectObject({
@@ -88,22 +88,23 @@ const contentStream = new PdfIndirectObject({
 const page = createPage(contentStream.reference)
 // Add resources to the page
 page.content.set('Resources', resources.reference)
-document.commit(page)
+document.add(page)
 
 // Create pages collection
 const pages = createPages([page])
 // Set parent reference for the page
 page.content.set('Parent', pages.reference)
-document.commit(pages)
+document.add(pages)
 
 // Create catalog
 const catalog = createCatalog(pages.reference)
-document.commit(catalog)
+document.add(catalog)
 
 // Set the catalog as the root
 document.trailerDict.set('Root', catalog.reference)
 
-document.commit(contentStream)
+document.add(contentStream)
+await document.commit()
 
 document.securityHandler = new V2SecurityHandler({
     password: 'up',

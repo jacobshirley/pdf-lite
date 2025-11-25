@@ -444,7 +444,7 @@ export class PdfXRefStream extends PdfStream {
         headerDict.delete('DecodeParms')
         headerDict.delete('Filter')
         headerDict.set('Type', new PdfName('XRef'))
-        entries.sort((a, b) => a.objectNumber.value - b.objectNumber.value  )
+        entries.sort((a, b) => a.objectNumber.value - b.objectNumber.value)
 
         const W = this.calculateW(entries)
         headerDict.set('W', new PdfArray(W.map((w) => new PdfNumber(w))))

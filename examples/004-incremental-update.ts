@@ -10,6 +10,9 @@ import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
 import fs from 'fs/promises'
 
+const tmpFolder = `${import.meta.dirname}/tmp`
+await fs.mkdir(tmpFolder, { recursive: true })
+
 // Helper functions for creating PDF objects
 function createPage(
     contentStreamRef: PdfObjectReference,
@@ -78,7 +81,8 @@ document.add(resources)
 const contentStream = new PdfIndirectObject({
     content: new PdfStream({
         header: new PdfDictionary(),
-        original: 'BT /F1 24 Tf 100 700 Td (Original Document - Revision 1) Tj ET',
+        original:
+            'BT /F1 24 Tf 100 700 Td (Original Document - Revision 1) Tj ET',
     }),
 })
 
@@ -98,7 +102,7 @@ document.add(contentStream)
 
 await document.commit()
 // Save the original PDF
-const originalPdfPath = '/tmp/original.pdf'
+const originalPdfPath = `${tmpFolder}/original.pdf`
 await fs.writeFile(originalPdfPath, document.toBytes())
 console.log(`Original PDF saved to: ${originalPdfPath}`)
 console.log(`Original PDF has ${document.revisions.length} revision(s)`)
@@ -131,7 +135,7 @@ loadedDocument.add(newContentStream)
 await loadedDocument.commit()
 
 // Save the incrementally updated PDF
-const updatedPdfPath = '/tmp/incremental-update.pdf'
+const updatedPdfPath = `${tmpFolder}/incremental-update.pdf`
 await fs.writeFile(updatedPdfPath, loadedDocument.toBytes())
 console.log(`Incrementally updated PDF saved to: ${updatedPdfPath}`)
 console.log(`Updated PDF has ${loadedDocument.revisions.length} revision(s)`)
@@ -159,12 +163,13 @@ const originalBytesMatch = updatedPdfBytes
     .slice(0, originalPdfBytesForComparison.length - 10) // Exclude the %%EOF marker area
     .toString()
     .includes(
-        originalPdfBytesForComparison.slice(0, -10).toString().substring(0, 100),
+        originalPdfBytesForComparison
+            .subarray(0, -10)
+            .toString()
+            .substring(0, 100),
     )
 
-console.log(
-    `Original content preserved: ${originalBytesMatch ? 'Yes' : 'No'}`,
-)
+console.log(`Original content preserved: ${originalBytesMatch ? 'Yes' : 'No'}`)
 
 // Step 4: Add another incremental revision
 console.log('\nStep 4: Adding another incremental revision...')
@@ -175,16 +180,20 @@ secondUpdate.setIncremental(true)
 const thirdRevisionContent = new PdfIndirectObject({
     objectNumber: contentStream.objectNumber,
     generationNumber: contentStream.generationNumber,
-    content: new PdfStream('BT /F1 14 Tf 100 600 Td (Third revision - demonstrates multiple incremental updates) Tj ET'),
+    content: new PdfStream(
+        'BT /F1 14 Tf 100 600 Td (Third revision - demonstrates multiple incremental updates) Tj ET',
+    ),
 })
 
 secondUpdate.add(thirdRevisionContent)
 await secondUpdate.commit()
 
-const multiRevisionPdfPath = '/tmp/multi-revision.pdf'
+const multiRevisionPdfPath = `${tmpFolder}/multi-revision.pdf`
 await fs.writeFile(multiRevisionPdfPath, secondUpdate.toBytes())
 console.log(`Multi-revision PDF saved to: ${multiRevisionPdfPath}`)
-console.log(`Multi-revision PDF has ${secondUpdate.revisions.length} revision(s)`)
+console.log(
+    `Multi-revision PDF has ${secondUpdate.revisions.length} revision(s)`,
+)
 
 const multiRevisionStats = await fs.stat(multiRevisionPdfPath)
 console.log(`Multi-revision PDF size: ${multiRevisionStats.size} bytes`)

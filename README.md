@@ -1,3 +1,5 @@
+**[Examples](./EXAMPLES.md)** | **[Documentation](https://jacobshirley.github.io/pdf-lite/v1)**
+
 # pdf-lite
 
 A low-level, zero-dependency, type-safe PDF library that works in the browser and Node.js.
@@ -57,7 +59,7 @@ Supports encrypting and decrypting PDF files using standard algorithms, ensuring
 
 ### Compression
 
-Handles various compression algorithms, including Flate, LZW, and RunLength for efficient file size management. Note: image compression such as JPEG is not supported for encoding due to patent restrictions, but decoding of JPEG-compressed streams is supported.
+Handles various compression algorithms, including Flate, LZW, and RunLength for efficient file size management. Note: image compression such as JPEG is not supported.
 
 **Compression algorithms supported:**
 

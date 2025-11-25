@@ -32,15 +32,47 @@ import { ByteArray } from '../types'
 import { PdfReader } from './pdf-reader'
 import { PdfSigner } from '../signing/signer'
 
+/**
+ * Represents a PDF document with support for reading, writing, and modifying PDF files.
+ * Handles document structure, revisions, encryption, and digital signatures.
+ *
+ * @example
+ * ```typescript
+ * // Create a new document
+ * const document = new PdfDocument()
+ *
+ * // Read from bytes
+ * const document = await PdfDocument.fromBytes(fileBytes)
+ *
+ * // Add objects and commit
+ * document.add(pdfObject)
+ * await document.commit()
+ * ```
+ */
 export class PdfDocument extends PdfObject {
+    /** PDF version comment header */
     header: PdfComment = PdfComment.versionComment('1.7')
+    /** List of document revisions for incremental updates */
     revisions: PdfRevision[]
+    /** Signer instance for digital signature operations */
     signer: PdfSigner
+    /** Security handler for encryption/decryption operations */
     securityHandler?: PdfSecurityHandler
 
     private hasEncryptionDictionary?: boolean = false
     private toBeCommitted: PdfObject[] = []
 
+    /**
+     * Creates a new PDF document instance.
+     *
+     * @param options - Configuration options for the document
+     * @param options.revisions - Pre-existing revisions for the document
+     * @param options.version - PDF version string (e.g., '1.7', '2.0') or version comment
+     * @param options.password - User password for encryption
+     * @param options.ownerPassword - Owner password for encryption
+     * @param options.securityHandler - Custom security handler for encryption
+     * @param options.signer - Custom signer for digital signatures
+     */
     constructor(options?: {
         revisions?: PdfRevision[]
         version?: string | PdfComment
@@ -76,6 +108,13 @@ export class PdfDocument extends PdfObject {
         this.calculateOffsets()
     }
 
+    /**
+     * Creates a PdfDocument from an array of PDF objects.
+     * Parses objects into revisions based on EOF comments.
+     *
+     * @param objects - Array of PDF objects to construct the document from
+     * @returns A new PdfDocument instance
+     */
     static fromObjects(objects: PdfObject[]): PdfDocument {
         let header: PdfComment | undefined
         const revisions: PdfRevision[] = []
@@ -101,6 +140,12 @@ export class PdfDocument extends PdfObject {
         return new PdfDocument({ revisions, version: header })
     }
 
+    /**
+     * Starts a new revision for incremental updates.
+     * Creates a new revision linked to the previous one.
+     *
+     * @returns The document instance for method chaining
+     */
     startNewRevision(): PdfDocument {
         const newRevision = new PdfRevision({ prev: this.latestRevision })
         this.revisions.push(newRevision)
@@ -115,6 +160,12 @@ export class PdfDocument extends PdfObject {
         return this
     }
 
+    /**
+     * Adds objects to the document's latest revision.
+     * Automatically starts a new revision if the current one is locked.
+     *
+     * @param objects - PDF objects to add to the document
+     */
     add(...objects: PdfObject[]): void {
         if (this.latestRevision.locked) {
             this.startNewRevision()
@@ -126,6 +177,12 @@ export class PdfDocument extends PdfObject {
         }
     }
 
+    /**
+     * Gets the latest (most recent) revision of the document.
+     *
+     * @returns The latest PdfRevision
+     * @throws Error if the revision for the last StartXRef cannot be found
+     */
     get latestRevision(): PdfRevision {
         const lastStartXRef = this.objects.findLast(
             (x) => x instanceof PdfStartXRef,
@@ -148,18 +205,39 @@ export class PdfDocument extends PdfObject {
         return revision
     }
 
+    /**
+     * Gets the cross-reference lookup table for the latest revision.
+     *
+     * @returns The PdfXrefLookup for the latest revision
+     */
     get xrefLookup(): PdfXrefLookup {
         return this.latestRevision.xref
     }
 
+    /**
+     * Gets the trailer dictionary from the cross-reference lookup.
+     *
+     * @returns The trailer dictionary containing document metadata references
+     */
     get trailerDict(): PdfDictionary<PdfTrailerEntries> {
         return this.xrefLookup.trailerDict
     }
 
+    /**
+     * Gets all objects across all revisions in the document.
+     *
+     * @returns A readonly array of all PDF objects
+     */
     get objects(): ReadonlyArray<PdfObject> {
         return this.revisions.flatMap((rev) => rev.objects)
     }
 
+    /**
+     * Gets the encryption dictionary from the document if present.
+     *
+     * @returns The encryption dictionary object or undefined if not encrypted
+     * @throws Error if the encryption dictionary reference points to a non-dictionary object
+     */
     get encryptionDictionary(): PdfEncryptionDictionaryObject | undefined {
         const encryptionDictionaryRef = this.trailerDict
             .get('Encrypt')
@@ -183,6 +261,12 @@ export class PdfDocument extends PdfObject {
         return encryptionDictObject as PdfEncryptionDictionaryObject
     }
 
+    /**
+     * Gets the document catalog (root) dictionary.
+     *
+     * @returns The root dictionary or undefined if not found
+     * @throws Error if the Root reference points to a non-dictionary object
+     */
     get rootDictionary(): PdfDictionary | undefined {
         const rootRef = this.trailerDict.get('Root')?.as(PdfObjectReference)
 
@@ -201,6 +285,11 @@ export class PdfDocument extends PdfObject {
         return rootObject.content
     }
 
+    /**
+     * Gets the reference to the metadata stream from the document catalog.
+     *
+     * @returns The metadata stream reference or undefined if not present
+     */
     get metadataStreamReference(): PdfObjectReference | undefined {
         const root = this.rootDictionary
         if (!root) {
@@ -262,6 +351,12 @@ export class PdfDocument extends PdfObject {
         })
     }
 
+    /**
+     * Sets the user password for document encryption.
+     *
+     * @param password - The user password to set
+     * @throws Error if the security handler doesn't support password setting
+     */
     setPassword(password: string): void {
         if (this.securityHandler instanceof PdfStandardSecurityHandler) {
             this.securityHandler.setPassword(password)
@@ -274,6 +369,12 @@ export class PdfDocument extends PdfObject {
         }
     }
 
+    /**
+     * Sets the owner password for document encryption.
+     *
+     * @param ownerPassword - The owner password to set
+     * @throws Error if the security handler doesn't support password setting
+     */
     setOwnerPassword(ownerPassword: string): void {
         if (this.securityHandler instanceof PdfStandardSecurityHandler) {
             this.securityHandler.setOwnerPassword(ownerPassword)
@@ -286,6 +387,12 @@ export class PdfDocument extends PdfObject {
         }
     }
 
+    /**
+     * Checks if a PDF object exists in the document.
+     *
+     * @param obj - The PDF object to check
+     * @returns True if the object exists in the document
+     */
     hasObject(obj: PdfObject): boolean {
         return this.objects.includes(obj)
     }
@@ -313,6 +420,10 @@ export class PdfDocument extends PdfObject {
         return true
     }
 
+    /**
+     * Decrypts all encrypted objects in the document.
+     * Removes the security handler and encryption dictionary after decryption.
+     */
     async decrypt(): Promise<void> {
         if (!this.securityHandler) {
             return
@@ -342,6 +453,10 @@ export class PdfDocument extends PdfObject {
         await this.update()
     }
 
+    /**
+     * Encrypts all objects in the document using the security handler.
+     * Creates and adds an encryption dictionary to all revisions.
+     */
     async encrypt(): Promise<void> {
         this.initSecurityHandler({})
 
@@ -384,6 +499,13 @@ export class PdfDocument extends PdfObject {
         await this.update()
     }
 
+    /**
+     * Finds a compressed object by its object number within an object stream.
+     *
+     * @param options - Object identifier with objectNumber and optional generationNumber
+     * @returns The found indirect object or undefined if not found
+     * @throws Error if the object cannot be found in the expected object stream
+     */
     async findCompressedObject(
         options:
             | {
@@ -428,6 +550,13 @@ export class PdfDocument extends PdfObject {
         return decompressedObject
     }
 
+    /**
+     * Finds an uncompressed indirect object by its object number.
+     *
+     * @param options - Object identifier with objectNumber and optional generationNumber
+     * @returns The found indirect object or undefined if not found
+     * @throws FoundCompressedObjectError if the object is compressed (in an object stream)
+     */
     findUncompressedObject(
         options:
             | {
@@ -462,6 +591,16 @@ export class PdfDocument extends PdfObject {
         ) as PdfIndirectObject | undefined
     }
 
+    /**
+     * Reads and optionally decrypts an object by its object number.
+     * Handles both compressed and uncompressed objects.
+     *
+     * @param options - Object lookup options
+     * @param options.objectNumber - The object number to find
+     * @param options.generationNumber - Optional generation number filter
+     * @param options.allowUnindexed - If true, searches unindexed objects as fallback
+     * @returns A cloned and decrypted copy of the object, or undefined if not found
+     */
     async readObject(options: {
         objectNumber: number
         generationNumber?: number
@@ -504,6 +643,11 @@ export class PdfDocument extends PdfObject {
         return foundObject
     }
 
+    /**
+     * Deletes an object from all revisions in the document.
+     *
+     * @param obj - The PDF object to delete
+     */
     async deleteObject(obj: PdfObject | undefined): Promise<void> {
         if (!obj) return
 
@@ -514,6 +658,12 @@ export class PdfDocument extends PdfObject {
         await this.update()
     }
 
+    /**
+     * Sets the PDF version for the document.
+     *
+     * @param version - The PDF version string (e.g., '1.7', '2.0')
+     * @throws Error if attempting to change version after objects have been added in incremental mode
+     */
     setVersion(version: string): void {
         if (this.revisions[0].locked) {
             throw new Error(
@@ -524,12 +674,24 @@ export class PdfDocument extends PdfObject {
         this.header = PdfComment.versionComment(version)
     }
 
+    /**
+     * Sets whether the document should use incremental updates.
+     * When true, locks all existing revisions to preserve original content.
+     *
+     * @param value - True to enable incremental mode, false to disable
+     */
     setIncremental(value: boolean): void {
         for (const revision of this.revisions) {
             revision.locked = value
         }
     }
 
+    /**
+     * Commits pending objects to the document.
+     * Adds objects, applies encryption if configured, and updates the document structure.
+     *
+     * @param newObjects - Additional objects to add before committing
+     */
     async commit(...newObjects: PdfObject[]): Promise<void> {
         this.add(...newObjects)
 
@@ -565,6 +727,13 @@ export class PdfDocument extends PdfObject {
         await this.update()
     }
 
+    /**
+     * Sets the Document Security Store (DSS) for the document.
+     * Used for long-term validation of digital signatures.
+     *
+     * @param dss - The Document Security Store object to set
+     * @throws Error if the document has no root dictionary
+     */
     async setDocumentSecurityStore(
         dss: PdfDocumentSecurityStoreObject,
     ): Promise<void> {
@@ -579,6 +748,12 @@ export class PdfDocument extends PdfObject {
         }
     }
 
+    /**
+     * Returns tokens paired with their source objects.
+     * Useful for debugging and analysis of document structure.
+     *
+     * @returns Array of token-object pairs
+     */
     tokensWithObjects(): {
         token: PdfToken
         object: PdfObject | undefined
@@ -682,12 +857,22 @@ export class PdfDocument extends PdfObject {
         await this.signer?.sign(this)
     }
 
+    /**
+     * Serializes the document to a byte array.
+     *
+     * @returns The PDF document as a Uint8Array
+     */
     toBytes(): ByteArray {
         const serializer = new PdfTokenSerializer()
         serializer.feed(...this.toTokens())
         return serializer.toBytes()
     }
 
+    /**
+     * Creates a deep copy of the document.
+     *
+     * @returns A cloned PdfDocument instance
+     */
     clone(): this {
         const clonedRevisions = this.revisions.map((rev) => rev.clone())
         return new PdfDocument({
@@ -697,6 +882,12 @@ export class PdfDocument extends PdfObject {
         }) as this
     }
 
+    /**
+     * Creates a PdfDocument from a byte stream.
+     *
+     * @param input - Async or sync iterable of byte arrays
+     * @returns A promise that resolves to the parsed PdfDocument
+     */
     static fromBytes(
         input: AsyncIterable<ByteArray> | Iterable<ByteArray>,
     ): Promise<PdfDocument> {

@@ -31,6 +31,9 @@ import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { stringToBytes } from '../utils/stringToBytes.js'
 import { ByteArray } from '../types.js'
 
+/**
+ * Type alias for a parser that converts bytes to PDF tokens.
+ */
 export type PdfTokeniser = Parser<number, PdfToken>
 
 const ByteMap = {
@@ -67,6 +70,11 @@ const ByteMap = {
     TAB: 0x09, // Tab
     DOT: 0x2e, // .
 }
+
+/**
+ * Tokenizes a byte stream into PDF tokens.
+ * Handles all PDF syntax including objects, streams, and xref tables.
+ */
 export class PdfByteStreamTokeniser extends IncrementalParser<
     number,
     PdfToken
@@ -77,11 +85,22 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
     private lastSectionStartObjectNumber: number = 0
     private streamChunkSizeBytes: number
 
+    /**
+     * Creates a new byte stream tokenizer.
+     *
+     * @param options - Configuration options
+     * @param options.streamChunkSizeBytes - Size of stream chunks (default: 1024)
+     */
     constructor(options?: { streamChunkSizeBytes?: number }) {
         super()
         this.streamChunkSizeBytes = options?.streamChunkSizeBytes ?? 1024
     }
 
+    /**
+     * Feeds a byte array into the tokenizer.
+     *
+     * @param bytes - The bytes to process
+     */
     feedBytes(bytes: ByteArray) {
         for (const byte of bytes) {
             this.feed(byte)
@@ -616,10 +635,21 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
     }
 }
 
+/**
+ * Converts a PDF object to its token representation.
+ *
+ * @param object - The PDF object to tokenize
+ * @returns A generator yielding the object's tokens
+ */
 export function* objectToTokens(object: PdfObject): Generator<PdfToken> {
     return object.toTokens()
 }
 
+/**
+ * Creates a function that converts a stream of PDF objects to tokens.
+ *
+ * @returns A generator function that yields tokens from PDF objects
+ */
 export function pdfObjectStreamTokeniser() {
     return function* (objects: Iterable<PdfObject>): Generator<PdfToken> {
         for (const object of objects) {
@@ -628,13 +658,26 @@ export function pdfObjectStreamTokeniser() {
     }
 }
 
+/**
+ * Tokenizes PDF objects into a stream of PDF tokens.
+ */
 export class PdfObjectTokeniser extends Parser<PdfObject, PdfToken> {
     private buffer: PdfObject[] = []
 
+    /**
+     * Feeds PDF objects into the tokenizer buffer.
+     *
+     * @param input - PDF objects to tokenize
+     */
     feed(...input: PdfObject[]): void {
         this.buffer.push(...input)
     }
 
+    /**
+     * Generates tokens from the buffered PDF objects.
+     *
+     * @returns A generator yielding PDF tokens
+     */
     *nextItems(): Generator<PdfToken> {
         while (this.buffer.length) {
             const obj = this.buffer.shift()!

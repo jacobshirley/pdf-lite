@@ -47,10 +47,22 @@ import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { ByteArray } from '../types.js'
 
 const DEFAULT_MAX_BUFFER_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
+
+/**
+ * Decodes PDF tokens into PDF objects.
+ * Handles parsing of all PDF object types including dictionaries, arrays, streams, and xref tables.
+ */
 export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
     private ignoreWhitespace: boolean = false
     private maxBufferSizeBytes: number = DEFAULT_MAX_BUFFER_SIZE_BYTES
 
+    /**
+     * Creates a new PDF decoder.
+     *
+     * @param options - Configuration options
+     * @param options.ignoreWhitespace - If true, whitespace tokens are ignored
+     * @param options.maxBufferSizeBytes - Maximum buffer size before compaction (default: 10MB)
+     */
     constructor(options?: {
         ignoreWhitespace?: boolean
         maxBufferSizeBytes?: number

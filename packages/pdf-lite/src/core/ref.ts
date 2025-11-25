@@ -14,7 +14,7 @@ export type RefUpdateCallback<T> = (oldValue: T, newValue: T) => void
  * @example
  * ```typescript
  * const ref = new Ref(42)
- * ref.onUpdate((old, new) => console.log(`Changed from ${old} to ${new}`))
+ * ref.onUpdate((old, newVal) => console.log(`Changed from ${old} to ${newVal}`))
  * ref.update(100) // Logs: Changed from 42 to 100
  * ```
  */

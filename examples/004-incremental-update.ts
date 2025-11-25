@@ -164,7 +164,7 @@ const originalBytesMatch = updatedPdfBytes
     .toString()
     .includes(
         originalPdfBytesForComparison
-            .slice(0, -10)
+            .subarray(0, -10)
             .toString()
             .substring(0, 100),
     )

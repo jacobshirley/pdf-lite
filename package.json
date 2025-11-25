@@ -8,18 +8,33 @@
     "scripts": {
         "compile": "pnpm -r run compile && pnpm compile:examples && pnpm compile:test",
         "compile:examples": "node ./scripts/build-examples.ts && prettier --write EXAMPLES.md",
-        "compile:test": "tsc --noEmit"
+        "compile:test": "tsc --noEmit",
+        "prepublish": "pnpm -r run compile",
+        "test": "pnpm -r --no-sort run test",
+        "prepare": "husky || true",
+        "lint:staged": "lint-staged --allow-empty",
+        "lint:commit": "commitlint --edit $1",
+        "format": "prettier --write '**/*.{js,ts,json,md,yaml,yml}'"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "packageManager": "pnpm@10.14.0",
+    "lint-staged": {
+        "*.{js,ts,json,md}": "pnpm format"
+    },
     "dependencies": {
         "pdf-lite": "file:./packages/pdf-lite"
     },
     "devDependencies": {
+        "@commitlint/cli": "^20.1.0",
+        "@commitlint/config-conventional": "^20.0.0",
         "@types/node": "^20.19.25",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.7",
         "prettier": "^3.6.2",
+        "typedoc": "^0.28.14",
+        "typedoc-plugin-markdown": "^4.9.0",
         "typescript": "5.8.3"
     }
 }

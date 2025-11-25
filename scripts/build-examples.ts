@@ -1,8 +1,8 @@
 import fs from 'fs/promises'
 
-let markdown = `# PKI-Lite Examples
+let markdown = `# PDF-Lite Examples
 
-This directory contains example scripts demonstrating how to use the PKI-Lite library.
+This directory contains example scripts demonstrating how to use the PDF-Lite library.
 
 `
 

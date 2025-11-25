@@ -889,6 +889,7 @@ PdfDocument {
             "preTokens": [],
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfXRefTable {
           "entries": [
             PdfXRefTableEntry {
@@ -1228,6 +1229,7 @@ PdfDocument {
             },
           ],
         },
+        "type": undefined,
       },
     },
     PdfRevision {
@@ -6424,6 +6426,7 @@ PdfDocument {
             },
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -6473,6 +6476,7 @@ PdfDocument {
           "postTokens": [],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
     PdfRevision {
@@ -10593,6 +10597,7 @@ PdfDocument {
             "preTokens": [],
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfXRefTable {
           "entries": [
             PdfXRefTableEntry {
@@ -11076,6 +11081,7 @@ PdfDocument {
               "preTokens": [],
             },
           },
+          "hybridXRefStream": undefined,
           "object": PdfXRefTable {
             "entries": [
               PdfXRefTableEntry {
@@ -11415,6 +11421,7 @@ PdfDocument {
               },
             ],
           },
+          "type": undefined,
         },
         "trailerDict": PdfDictionary {
           "innerTokens": [],
@@ -11443,6 +11450,7 @@ PdfDocument {
             },
           ],
         },
+        "type": undefined,
       },
     },
   ],
@@ -12343,6 +12351,7 @@ PdfDocument {
             "preTokens": [],
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfXRefTable {
           "entries": [
             PdfXRefTableEntry {
@@ -12682,6 +12691,7 @@ PdfDocument {
             },
           ],
         },
+        "type": undefined,
       },
     },
     PdfRevision {
@@ -17941,6 +17951,7 @@ PdfDocument {
             },
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -17990,6 +18001,7 @@ PdfDocument {
           "postTokens": [],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
   ],
@@ -20233,6 +20245,7 @@ PdfDocument {
             "preTokens": undefined,
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -20378,6 +20391,7 @@ PdfDocument {
           ],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
   ],
@@ -22862,6 +22876,7 @@ PdfDocument {
             "preTokens": undefined,
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -23007,6 +23022,7 @@ PdfDocument {
           ],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
   ],
@@ -25555,6 +25571,7 @@ PdfDocument {
             "preTokens": undefined,
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -25700,6 +25717,7 @@ PdfDocument {
           ],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
   ],
@@ -28111,6 +28129,7 @@ PdfDocument {
             "preTokens": undefined,
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -28256,6 +28275,7 @@ PdfDocument {
           ],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
   ],
@@ -29012,6 +29032,7 @@ PdfDocument {
             "preTokens": undefined,
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -29536,6 +29557,7 @@ PdfDocument {
               },
             },
           },
+          "hybridXRefStream": undefined,
           "object": PdfIndirectObject {
             "content": PdfXRefStream {
               "header": PdfDictionary {
@@ -29649,12 +29671,14 @@ PdfDocument {
             "postTokens": [],
             "preTokens": [],
           },
+          "type": undefined,
         },
         "trailerDict": PdfDictionary {
           "innerTokens": [],
           "postTokens": [],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
     PdfRevision {
@@ -35004,6 +35028,7 @@ PdfDocument {
             },
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -35117,6 +35142,7 @@ PdfDocument {
           "postTokens": [],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
   ],
@@ -35705,6 +35731,7 @@ PdfDocument {
             "preTokens": undefined,
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -36229,6 +36256,7 @@ PdfDocument {
               },
             },
           },
+          "hybridXRefStream": undefined,
           "object": PdfIndirectObject {
             "content": PdfXRefStream {
               "header": PdfDictionary {
@@ -36342,12 +36370,14 @@ PdfDocument {
             "postTokens": [],
             "preTokens": [],
           },
+          "type": undefined,
         },
         "trailerDict": PdfDictionary {
           "innerTokens": [],
           "postTokens": [],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
     PdfRevision {
@@ -41697,6 +41727,7 @@ PdfDocument {
             },
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -41810,6 +41841,7 @@ PdfDocument {
           "postTokens": [],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
   ],
@@ -42398,6 +42430,7 @@ PdfDocument {
             "preTokens": undefined,
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -42922,6 +42955,7 @@ PdfDocument {
               },
             },
           },
+          "hybridXRefStream": undefined,
           "object": PdfIndirectObject {
             "content": PdfXRefStream {
               "header": PdfDictionary {
@@ -43035,12 +43069,14 @@ PdfDocument {
             "postTokens": [],
             "preTokens": [],
           },
+          "type": undefined,
         },
         "trailerDict": PdfDictionary {
           "innerTokens": [],
           "postTokens": [],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
     PdfRevision {
@@ -48390,6 +48426,7 @@ PdfDocument {
             },
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfIndirectObject {
           "content": PdfXRefStream {
             "header": PdfDictionary {
@@ -48503,6 +48540,7 @@ PdfDocument {
           "postTokens": [],
           "preTokens": [],
         },
+        "type": undefined,
       },
     },
   ],
@@ -49683,6 +49721,7 @@ PdfDocument {
             "preTokens": [],
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfXRefTable {
           "entries": [
             PdfXRefTableEntry {
@@ -50045,6 +50084,7 @@ PdfDocument {
             },
           ],
         },
+        "type": undefined,
       },
     },
   ],
@@ -51316,6 +51356,7 @@ PdfDocument {
             "preTokens": [],
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfXRefTable {
           "entries": [
             PdfXRefTableEntry {
@@ -51715,6 +51756,7 @@ PdfDocument {
             },
           ],
         },
+        "type": undefined,
       },
     },
   ],
@@ -53182,6 +53224,7 @@ PdfDocument {
             "preTokens": [],
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfXRefTable {
           "entries": [
             PdfXRefTableEntry {
@@ -53581,6 +53624,7 @@ PdfDocument {
             },
           ],
         },
+        "type": undefined,
       },
     },
   ],
@@ -55157,6 +55201,7 @@ PdfDocument {
             "preTokens": [],
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfXRefTable {
           "entries": [
             PdfXRefTableEntry {
@@ -55556,6 +55601,7 @@ PdfDocument {
             },
           ],
         },
+        "type": undefined,
       },
     },
   ],
@@ -56995,6 +57041,7 @@ PdfDocument {
             "preTokens": [],
           },
         },
+        "hybridXRefStream": undefined,
         "object": PdfXRefTable {
           "entries": [
             PdfXRefTableEntry {
@@ -57394,6 +57441,7 @@ PdfDocument {
             },
           ],
         },
+        "type": undefined,
       },
     },
   ],

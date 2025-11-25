@@ -8,6 +8,12 @@ import {
 } from '../../utils/algos'
 import { assert } from '../../utils/assert'
 
+/**
+ * Converts the first 16 bytes of input to a big-endian bigint.
+ *
+ * @param input - The byte array to convert.
+ * @returns A 128-bit bigint value.
+ */
 function getUint16ByteBigEndian(input: ByteArray): bigint {
     let value = 0n
     for (let i = 0; i < 16; i++) {
@@ -16,6 +22,21 @@ function getUint16ByteBigEndian(input: ByteArray): bigint {
     return value
 }
 
+/**
+ * Computes the Algorithm 2.B hash for PDF 2.0 AES-256 encryption.
+ * This iterative hash algorithm uses SHA-256, SHA-384, or SHA-512 based on
+ * intermediate results, running for at least 64 rounds.
+ *
+ * @param password - The user or owner password.
+ * @param salt - The 8-byte validation or key salt.
+ * @param userKey - The user key (required for owner password validation). Defaults to empty.
+ * @returns A promise that resolves to a 32-byte hash.
+ *
+ * @example
+ * ```typescript
+ * const hash = await computeAlgorithm2bHash(password, salt)
+ * ```
+ */
 export async function computeAlgorithm2bHash(
     password: ByteArray,
     salt: ByteArray,
@@ -68,6 +89,25 @@ export async function computeAlgorithm2bHash(
     return K.subarray(0, 32)
 }
 
+/**
+ * Validates a password against a stored hash using the Algorithm 2.B hash.
+ *
+ * @param password - The password to validate.
+ * @param key - The stored key containing the hash (first 32 bytes) and validation salt (bytes 32-40).
+ * @param extra - Extra data for owner password validation (user key).
+ * @returns A promise that resolves to the computed hash if validation succeeds.
+ * @throws Error if the password is invalid or salt/hash lengths are incorrect.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await validatePasswordHash(password, storedKey)
+ *   console.log('Password is valid')
+ * } catch (e) {
+ *   console.log('Invalid password')
+ * }
+ * ```
+ */
 export async function validatePasswordHash(
     password: ByteArray,
     key: ByteArray,
@@ -93,6 +133,24 @@ export async function validatePasswordHash(
     return hash
 }
 
+/**
+ * Retrieves the file encryption key using user or owner password.
+ * Tries owner password first, then falls back to user password.
+ *
+ * @param userPassword - The user password to try.
+ * @param ownerPassword - The owner password to try.
+ * @param u - The 48-byte /U value from the encryption dictionary.
+ * @param ue - The 32-byte /UE value (encrypted user key).
+ * @param o - The 48-byte /O value from the encryption dictionary.
+ * @param oe - The 32-byte /OE value (encrypted owner key).
+ * @returns A promise that resolves to the 32-byte file encryption key.
+ * @throws Error if both passwords are invalid.
+ *
+ * @example
+ * ```typescript
+ * const fileKey = await getFileKey(userPw, ownerPw, U, UE, O, OE)
+ * ```
+ */
 export async function getFileKey(
     userPassword: ByteArray,
     ownerPassword: ByteArray,

@@ -1,6 +1,19 @@
 import { ByteArray } from '../types.js'
 import { DEFAULT_PADDING } from './constants.js'
 
+/**
+ * Pads a password to exactly 32 bytes using the PDF standard padding.
+ * If the password is shorter than 32 bytes, it is padded with bytes from DEFAULT_PADDING.
+ * If the password is 32 bytes or longer, only the first 32 bytes are used.
+ *
+ * @param password - The password to pad.
+ * @returns A 32-byte padded password.
+ *
+ * @example
+ * ```typescript
+ * const padded = padPassword(new Uint8Array([1, 2, 3])) // Returns 32-byte array
+ * ```
+ */
 export function padPassword(password: ByteArray): ByteArray {
     const padded = new Uint8Array(32)
     if (password.length >= 32) {
@@ -15,6 +28,17 @@ export function padPassword(password: ByteArray): ByteArray {
     return padded
 }
 
+/**
+ * Converts a 32-bit integer to a 4-byte little-endian byte array.
+ *
+ * @param value - The 32-bit integer to convert.
+ * @returns A 4-byte array in little-endian order.
+ *
+ * @example
+ * ```typescript
+ * int32ToLittleEndianBytes(0x12345678) // Returns [0x78, 0x56, 0x34, 0x12]
+ * ```
+ */
 export function int32ToLittleEndianBytes(value: number): ByteArray {
     const bytes = new Uint8Array(4)
     bytes[0] = value & 0xff
@@ -24,6 +48,18 @@ export function int32ToLittleEndianBytes(value: number): ByteArray {
     return bytes
 }
 
+/**
+ * Removes PDF standard password padding from a buffer.
+ * Searches from the end of the buffer for the padding pattern and removes it.
+ *
+ * @param buffer - The buffer with potential password padding.
+ * @returns The buffer with padding removed.
+ *
+ * @example
+ * ```typescript
+ * const unpadded = removePdfPasswordPadding(paddedPassword)
+ * ```
+ */
 export function removePdfPasswordPadding(buffer: ByteArray) {
     const padding = DEFAULT_PADDING
     const len = buffer.length

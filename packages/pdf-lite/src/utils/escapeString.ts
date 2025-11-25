@@ -1,6 +1,18 @@
 import { ByteArray } from '../types'
 import { stringToBytes } from './stringToBytes'
 
+/**
+ * Escapes special characters in a PDF string according to PDF specification.
+ * Escapes parentheses, backslashes, line feeds, and carriage returns.
+ *
+ * @param bytes - The byte array or string to escape.
+ * @returns A new byte array with escaped characters.
+ *
+ * @example
+ * ```typescript
+ * escapeString('Hello (World)') // Escapes the parentheses
+ * ```
+ */
 export function escapeString(bytes: ByteArray | string): ByteArray {
     if (typeof bytes === 'string') {
         bytes = stringToBytes(bytes)

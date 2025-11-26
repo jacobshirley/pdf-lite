@@ -302,7 +302,10 @@ if (!acroFormRef || !(acroFormRef instanceof PdfObjectReference)) {
 const filledAcroFormObj = await filledDocument.readObject({
     objectNumber: acroFormRef.objectNumber,
 })
-if (!filledAcroFormObj || !(filledAcroFormObj.content instanceof PdfDictionary)) {
+if (
+    !filledAcroFormObj ||
+    !(filledAcroFormObj.content instanceof PdfDictionary)
+) {
     throw new Error('AcroForm object not found')
 }
 

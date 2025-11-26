@@ -22,7 +22,7 @@ export abstract class PdfObject {
     isModified(): boolean {
         return this.modified
     }
-    
+
     /** Sets the modified state of the object. Override this method if the modified state is determined differently */
     setModified(modified: boolean = true): void {
         this.modified = modified
@@ -104,5 +104,4 @@ export abstract class PdfObject {
 
         return true
     }
-
 }

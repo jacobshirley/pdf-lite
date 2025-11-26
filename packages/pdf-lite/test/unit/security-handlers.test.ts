@@ -317,7 +317,9 @@ describe('Security Handlers', () => {
                     if (handler instanceof PdfPublicKeySecurityHandler) {
                         const standardHandler =
                             handler.getStandardSecurityHandler()
-                        if (!(standardHandler instanceof PdfV4SecurityHandler)) {
+                        if (
+                            !(standardHandler instanceof PdfV4SecurityHandler)
+                        ) {
                             throw new Error(
                                 'Standard handler is not a PdfV4SecurityHandler',
                             )
@@ -424,7 +426,10 @@ describe('Security Handlers', () => {
                             const standardHandler =
                                 handler.getStandardSecurityHandler()
                             if (
-                                !(standardHandler instanceof PdfV4SecurityHandler)
+                                !(
+                                    standardHandler instanceof
+                                    PdfV4SecurityHandler
+                                )
                             ) {
                                 throw new Error(
                                     'Standard handler is not a PdfV4SecurityHandler',

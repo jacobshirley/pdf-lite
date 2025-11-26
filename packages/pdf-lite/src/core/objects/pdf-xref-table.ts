@@ -63,10 +63,12 @@ export class PdfXRefTableEntry extends PdfObject {
     }
 
     isModified(): boolean {
-        return super.isModified() ||
+        return (
+            super.isModified() ||
             this.byteOffset.isModified() ||
             this.objectNumber.isModified() ||
             this.generationNumber.isModified()
+        )
     }
 }
 
@@ -119,7 +121,12 @@ export class PdfXRefTable extends PdfObject {
     }
 
     isModified(): boolean {
-        return super.isModified() || this.sections.some((section) => section.isModified()) || this.entries.some((entry) => entry.isModified()) || this.offset.isModified
+        return (
+            super.isModified() ||
+            this.sections.some((section) => section.isModified()) ||
+            this.entries.some((entry) => entry.isModified()) ||
+            this.offset.isModified
+        )
     }
 
     addEntryForObject(obj: PdfIndirectObject): void {

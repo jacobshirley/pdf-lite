@@ -226,7 +226,7 @@ export abstract class PdfSecurityHandler {
                     objectNumber,
                     generationNumber,
                 )
-                
+
                 obj.raw = decryptedData
 
                 await decryptObject(obj.header)

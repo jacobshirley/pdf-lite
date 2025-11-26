@@ -51,12 +51,12 @@ export class Ref<T> {
 
         const resolvedNewValue =
             newValue instanceof Ref ? newValue.resolve() : newValue
-            
+
         const oldValue = this.resolve()
         if (oldValue !== resolvedNewValue) {
             this.isModified = true
         }
-        
+
         this.value = newValue
         this.callbacks.forEach((cb) => cb(oldValue, this.resolve()))
     }

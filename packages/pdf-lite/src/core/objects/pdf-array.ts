@@ -47,6 +47,8 @@ export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
     }
 
     isModified(): boolean {
-        return super.isModified() || this.items.some((item) => item.isModified())
+        return (
+            super.isModified() || this.items.some((item) => item.isModified())
+        )
     }
 }

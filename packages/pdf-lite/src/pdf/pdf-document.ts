@@ -619,14 +619,13 @@ export class PdfDocument extends PdfObject {
         }
 
         if (!foundObject && options.allowUnindexed) {
-            foundObject = this.objects
-                .find(
-                    (obj) =>
-                        obj instanceof PdfIndirectObject &&
-                        obj.objectNumber === options.objectNumber &&
-                        (options.generationNumber === undefined ||
-                            obj.generationNumber === options.generationNumber),
-                ) as PdfIndirectObject | undefined
+            foundObject = this.objects.find(
+                (obj) =>
+                    obj instanceof PdfIndirectObject &&
+                    obj.objectNumber === options.objectNumber &&
+                    (options.generationNumber === undefined ||
+                        obj.generationNumber === options.generationNumber),
+            ) as PdfIndirectObject | undefined
         }
 
         if (!foundObject) {
@@ -634,7 +633,7 @@ export class PdfDocument extends PdfObject {
         }
 
         if (this.securityHandler && this.isObjectEncryptable(foundObject)) {
-                    foundObject = foundObject.clone()
+            foundObject = foundObject.clone()
 
             await this.securityHandler.decryptObject(foundObject)
         } else if (this.isIncremental()) {
@@ -865,9 +864,9 @@ export class PdfDocument extends PdfObject {
             if (rev.isModified()) {
                 modified = true
             }
-            
+
             if (modified) {
-                rev.update() 
+                rev.update()
             }
         })
     }
@@ -918,6 +917,8 @@ export class PdfDocument extends PdfObject {
     }
 
     isModified(): boolean {
-        return super.isModified() || this.revisions.some((rev) => rev.isModified())
+        return (
+            super.isModified() || this.revisions.some((rev) => rev.isModified())
+        )
     }
 }

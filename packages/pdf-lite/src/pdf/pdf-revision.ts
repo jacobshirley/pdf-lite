@@ -19,7 +19,6 @@ export class PdfRevision extends PdfObject {
     /** Whether this revision is locked (cannot be modified) */
     locked: boolean = false
 
-
     /**
      * Creates a new PDF revision.
      *
@@ -171,7 +170,11 @@ export class PdfRevision extends PdfObject {
     }
 
     isModified(): boolean {
-        return super.isModified() || this.xref.trailerDict.isModified() || this.objects.some((obj) => obj.isModified())
+        return (
+            super.isModified() ||
+            this.xref.trailerDict.isModified() ||
+            this.objects.some((obj) => obj.isModified())
+        )
     }
 
     /**

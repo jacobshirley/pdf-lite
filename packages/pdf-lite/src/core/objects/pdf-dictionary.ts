@@ -64,7 +64,7 @@ export class PdfDictionary<
         if (this.has(key)) {
             this.modified = true
         }
-        
+
         if (key instanceof PdfName) {
             this.#entries.delete(key)
             return
@@ -163,6 +163,9 @@ export class PdfDictionary<
     }
 
     isModified(): boolean {
-        return super.isModified() || Array.from(this.#entries.values()).some((v) => v?.isModified())
+        return (
+            super.isModified() ||
+            Array.from(this.#entries.values()).some((v) => v?.isModified())
+        )
     }
 }

@@ -128,6 +128,10 @@ export class PdfIndirectObject<
     }
 
     isModified(): boolean {
-        return super.isModified() || this.content.isModified() || this.offset.isModified
+        return (
+            super.isModified() ||
+            this.content.isModified() ||
+            this.offset.isModified
+        )
     }
 }

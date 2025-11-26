@@ -295,7 +295,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
         }
 
         const xrefTable = new PdfXRefTable({
-            offset: xrefToken.byteOffset
+            offset: xrefToken.byteOffset,
         })
 
         while (true) {

@@ -1,0 +1,18 @@
+import { ByteArray } from '../types'
+import { hexBytesToBytes } from './hexBytesToBytes'
+import { stringToBytes } from './stringToBytes'
+
+/**
+ * Converts a hexadecimal string to a byte array.
+ *
+ * @param hex - The hexadecimal string to convert.
+ * @returns A byte array containing the decoded values.
+ *
+ * @example
+ * ```typescript
+ * hexToBytes('FF00') // Returns Uint8Array([255, 0])
+ * ```
+ */
+export function hexToBytes(hex: string): ByteArray {
+    return hexBytesToBytes(stringToBytes(hex))
+}

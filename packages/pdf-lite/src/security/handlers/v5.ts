@@ -1,0 +1,298 @@
+import { aes256 } from '../../crypto/ciphers/aes256'
+import { getFileKey } from '../../crypto/key-derivation/key-derivation-aes256'
+import {
+    generateOandOe,
+    generateUandUe,
+} from '../../crypto/key-gen/key-gen-aes256'
+import { ByteArray } from '../../types'
+import { aes256ecbEncrypt, getRandomBytes } from '../../utils/algos'
+import { assert } from '../../utils/assert'
+import { PdfEncryptionDictionary } from '../types'
+import { PdfV4SecurityHandler } from './v4'
+import { PdfStandardSecurityHandlerOptions } from './base'
+import { AesV3CryptFilter } from '../crypt-filters/aesv3'
+import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
+import { PdfString } from '../../core/objects/pdf-string'
+import { Cipher } from '../../crypto/types'
+
+/**
+ * V5 security handler implementing AES-256-CBC encryption.
+ * This is the most secure encryption method (PDF 2.0).
+ *
+ * @example
+ * ```typescript
+ * const handler = new PdfV5SecurityHandler({
+ *     password: 'strongPassword123',
+ *     ownerPassword: 'adminPassword456'
+ * })
+ * ```
+ */
+export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
+    /** User encrypted file key (UE value). */
+    protected userEncryptedFileKey?: ByteArray
+    /** Owner encrypted file key (OE value). */
+    protected ownerEncryptedFileKey?: ByteArray
+    /** Permissions entry (Perms value). */
+    protected perms?: ByteArray
+    /** Promise resolving to the file encryption key. */
+    protected fileKey?: Promise<ByteArray>
+
+    /**
+     * Creates a new V5 security handler with AES-256 encryption.
+     *
+     * @param options - Configuration options including optional pre-computed keys.
+     */
+    constructor(
+        options: PdfStandardSecurityHandlerOptions & {
+            userEncryptedFileKey?: ByteArray
+            ownerEncryptedFileKey?: ByteArray
+        },
+    ) {
+        super(options)
+        this.userEncryptedFileKey = options.userEncryptedFileKey
+        this.ownerEncryptedFileKey = options.ownerEncryptedFileKey
+
+        this.setCryptFilter(
+            'StdCF',
+            new AesV3CryptFilter({
+                authEvent: 'DocOpen',
+            }),
+        )
+
+        this.setCryptFilterForType('stream', 'StdCF')
+        this.setCryptFilterForType('string', 'StdCF')
+    }
+
+    /**
+     * Checks if the handler is ready (has user encrypted file key).
+     *
+     * @returns True if the handler has the required keys.
+     */
+    isReady(): boolean {
+        return !!this.userEncryptedFileKey
+    }
+
+    /**
+     * Initializes encryption keys, either deriving from existing values or generating new ones.
+     */
+    protected async initKeys(): Promise<void> {
+        this.fileKey ||= (async () => {
+            if (
+                this.userEncryptedFileKey &&
+                this.ownerEncryptedFileKey &&
+                this.userKey &&
+                this.ownerKey &&
+                this.perms
+            ) {
+                const derivedFileKey = await getFileKey(
+                    this.password,
+                    this.ownerPassword ?? this.password,
+                    this.userKey,
+                    this.userEncryptedFileKey,
+                    this.ownerKey,
+                    this.ownerEncryptedFileKey,
+                )
+
+                return derivedFileKey
+            }
+            const fileKey = getRandomBytes(32)
+
+            const { U, UE } = await generateUandUe(this.password, fileKey)
+
+            this.userKey = U
+            this.userEncryptedFileKey = UE
+
+            const { O, OE } = await generateOandOe(
+                this.ownerPassword ?? this.password,
+                U,
+                fileKey,
+            )
+
+            this.ownerKey = O
+            this.ownerEncryptedFileKey = OE
+
+            this.perms = await this.buildPermsEntry(
+                this.permissions ?? 0,
+                this.encryptMetadata,
+                fileKey,
+            )
+
+            return fileKey
+        })()
+
+        await this.fileKey
+    }
+
+    /**
+     * Computes the master encryption key.
+     *
+     * @returns The file encryption key.
+     * @throws Error if file key is not initialized.
+     */
+    protected async computeMasterKey(): Promise<ByteArray> {
+        await this.initKeys()
+
+        if (!this.fileKey) {
+            throw new Error('File key not initialized')
+        }
+
+        return this.fileKey
+    }
+
+    /**
+     * Builds the Perms entry for the encryption dictionary.
+     *
+     * @param flags - The permission flags.
+     * @param encryptMetadata - Whether metadata is encrypted.
+     * @param fileKey - The file encryption key.
+     * @returns The encrypted permissions entry.
+     */
+    private async buildPermsEntry(
+        flags: number,
+        encryptMetadata: boolean,
+        fileKey: ByteArray,
+    ): Promise<ByteArray> {
+        const block = new Uint8Array(16)
+
+        // a + b) permissions + 0xFFFFFFFF (little-endian)
+        const view = new DataView(block.buffer)
+        view.setUint32(0, flags, true) // little-endian
+        view.setUint32(4, 0xffffffff, true) // upper 32 bits
+
+        // c) "T" or "F"
+        block[8] = encryptMetadata ? 'T'.charCodeAt(0) : 'F'.charCodeAt(0)
+
+        // d) "adb"
+        block[9] = 'a'.charCodeAt(0)
+        block[10] = 'd'.charCodeAt(0)
+        block[11] = 'b'.charCodeAt(0)
+
+        // e) random 4 bytes
+        const randomBytes = getRandomBytes(4)
+        block.set(randomBytes, 12)
+
+        return await aes256ecbEncrypt(fileKey, block)
+    }
+
+    /**
+     * Gets the encryption key length in bits.
+     *
+     * @returns 256 for V5 encryption.
+     */
+    getKeyBits(): number {
+        return 256
+    }
+
+    /**
+     * Gets an AES-256 cipher.
+     *
+     * @returns An AES-256 cipher instance.
+     */
+    protected async getCipher(): Promise<Cipher> {
+        this.masterKey ||= await this.computeMasterKey()
+
+        return aes256(this.masterKey)
+    }
+
+    /**
+     * Gets the encryption version number.
+     *
+     * @returns 5 for AES-256 encryption.
+     */
+    getVersion(): number {
+        return 5
+    }
+
+    /**
+     * Gets the encryption revision number.
+     *
+     * @returns 6 for V5 encryption.
+     */
+    getRevision(): number {
+        return 6
+    }
+
+    /**
+     * Writes the encryption dictionary including V5-specific entries.
+     *
+     * @throws Error if required keys are not computed.
+     */
+    async write(): Promise<void> {
+        await super.write()
+        const dict = this.dict
+
+        assert(this.userEncryptedFileKey, 'User Encrypted File Key not set')
+        assert(this.ownerEncryptedFileKey, 'Owner Encrypted File Key not set')
+        assert(this.perms, 'Permissions entry not set')
+
+        dict.set('UE', new PdfString(this.userEncryptedFileKey))
+        dict.set('OE', new PdfString(this.ownerEncryptedFileKey))
+        dict.set('Perms', new PdfString(this.perms))
+    }
+
+    /**
+     * Reads V5-specific encryption parameters from the dictionary.
+     *
+     * @param encryptionDictionary - The encryption dictionary from the PDF.
+     * @throws Error if required entries are missing or invalid.
+     */
+    readEncryptionDictionary(
+        encryptionDictionary: PdfEncryptionDictionary,
+    ): void {
+        super.readEncryptionDictionary(encryptionDictionary)
+
+        const { values } = encryptionDictionary
+
+        assert(
+            values['UE'] instanceof PdfHexadecimal ||
+                values['UE'] instanceof PdfString,
+            'Invalid or missing /UE entry',
+        )
+        assert(
+            values['OE'] instanceof PdfHexadecimal ||
+                values['OE'] instanceof PdfString,
+            'Invalid or missing /OE entry',
+        )
+        assert(
+            values['Perms'] instanceof PdfString ||
+                values['Perms'] instanceof PdfHexadecimal,
+            'Invalid or missing /Perms entry',
+        )
+
+        this.userEncryptedFileKey =
+            values['UE'] instanceof PdfHexadecimal
+                ? values['UE'].bytes
+                : values['UE'].raw
+        this.ownerEncryptedFileKey =
+            values['OE'] instanceof PdfHexadecimal
+                ? values['OE'].bytes
+                : values['OE'].raw
+        this.perms =
+            values['Perms'] instanceof PdfHexadecimal
+                ? values['Perms'].bytes
+                : values['Perms'].raw
+    }
+
+    /**
+     * Computes the object encryption key (same as master key for V5).
+     *
+     * @returns The master encryption key.
+     */
+    async computeObjectKey(): Promise<ByteArray> {
+        return await this.computeMasterKey()
+    }
+
+    /**
+     * Recovers the user password from the owner password.
+     * Not supported for AES-256 encryption.
+     *
+     * @throws Error always, as this operation is not supported for V5.
+     */
+    async recoverUserPassword(
+        ownerPassword?: ByteArray | string,
+    ): Promise<string> {
+        throw new Error(
+            'Recovering user password from owner password is not supported for AES-256',
+        )
+    }
+}

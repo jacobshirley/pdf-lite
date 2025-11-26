@@ -1,0 +1,58 @@
+import { PdfCryptFilter, CryptFilterOptions } from './base'
+import { aes128 } from '../../crypto/ciphers/aes128'
+import { Cipher } from '../../crypto/types'
+
+/**
+ * AESV2 crypt filter using AES-128-CBC encryption.
+ * Implements 128-bit AES encryption in CBC mode for PDF content.
+ *
+ * @example
+ * ```typescript
+ * const filter = new AesV2CryptFilter({
+ *     authEvent: 'DocOpen',
+ *     securityHandler
+ * })
+ * const encrypted = await filter.encrypt(data, objectNumber, generationNumber)
+ * ```
+ */
+export class AesV2CryptFilter extends PdfCryptFilter {
+    /**
+     * Creates a new AES-128 crypt filter.
+     *
+     * @param options - Configuration options with authentication event and security handler.
+     */
+    constructor(options: {
+        authEvent: CryptFilterOptions['authEvent']
+        securityHandler?: CryptFilterOptions['securityHandler']
+    }) {
+        super({ ...options, cfm: 'AESV2', length: 128 })
+    }
+
+    /**
+     * Gets an AES-128 cipher for encryption/decryption.
+     *
+     * @param objectNumber - The PDF object number for key derivation.
+     * @param generationNumber - The PDF generation number for key derivation.
+     * @returns An AES-128 cipher instance.
+     * @throws Error if security handler is not set.
+     */
+    async getCipher(
+        objectNumber?: number,
+        generationNumber?: number,
+    ): Promise<Cipher> {
+        const securityHandler = this.securityHandler
+        if (!securityHandler) {
+            throw new Error('Missing security handler for AESV2 crypt filter')
+        }
+
+        const objectKey = await securityHandler.computeObjectKey(
+            objectNumber,
+            generationNumber,
+            'AES-128-CBC',
+        )
+
+        return aes128(
+            objectKey.slice(0, 16), // AES-128 needs a 16-byte key
+        )
+    }
+}

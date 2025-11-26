@@ -1,0 +1,264 @@
+import { Ref } from '../ref'
+import { PdfByteOffsetToken } from '../tokens/byte-offset-token'
+import { PdfWhitespaceToken } from '../tokens/whitespace-token'
+import { PdfXRefTableEntryToken } from '../tokens/xref-table-entry-token'
+import { PdfXRefTableSectionStartToken } from '../tokens/xref-table-section-start-token'
+import { PdfXRefTableStartToken } from '../tokens/xref-table-start-token'
+import { PdfIndirectObject } from './pdf-indirect-object'
+import { PdfNumber } from './pdf-number'
+import { PdfObject } from './pdf-object'
+
+export class PdfXRefTableEntry extends PdfObject {
+    objectNumber: PdfNumber
+    generationNumber: PdfNumber
+    byteOffset: PdfNumber
+    inUse: boolean
+
+    constructor(options: {
+        byteOffset: number | PdfNumber | Ref<number>
+        objectNumber: number | PdfNumber
+        generationNumber: number | PdfNumber
+        inUse: boolean
+    }) {
+        super()
+
+        this.byteOffset =
+            options.byteOffset instanceof PdfNumber
+                ? options.byteOffset
+                : new PdfNumber({
+                      value: options.byteOffset,
+                      padTo: 10,
+                  })
+        this.byteOffset.isByteOffset = true
+
+        this.objectNumber = new PdfNumber(options.objectNumber)
+        this.generationNumber =
+            options.generationNumber instanceof PdfNumber
+                ? options.generationNumber
+                : new PdfNumber({
+                      value: options.generationNumber,
+                      padTo: 5,
+                  })
+        this.inUse = options.inUse
+    }
+
+    protected tokenize() {
+        return [
+            new PdfXRefTableEntryToken(
+                this.byteOffset.toToken(),
+                this.generationNumber.toToken(),
+                this.objectNumber.toToken(),
+                this.inUse,
+            ),
+        ]
+    }
+
+    clone(): this {
+        return new PdfXRefTableEntry({
+            byteOffset: this.byteOffset.clone(),
+            objectNumber: this.objectNumber.clone(),
+            generationNumber: this.generationNumber.clone(),
+            inUse: this.inUse,
+        }) as this
+    }
+
+    isModified(): boolean {
+        return (
+            super.isModified() ||
+            this.byteOffset.isModified() ||
+            this.objectNumber.isModified() ||
+            this.generationNumber.isModified()
+        )
+    }
+}
+
+export class PdfXRefTableSectionHeader extends PdfObject {
+    startObjectNumber: PdfNumber
+    entryCount: PdfNumber
+
+    constructor(options: {
+        startObjectNumber: number | PdfNumber
+        entryCount: number | PdfNumber
+    }) {
+        super()
+        this.startObjectNumber = new PdfNumber(options.startObjectNumber)
+        this.entryCount = new PdfNumber(options.entryCount)
+    }
+
+    protected tokenize() {
+        return [
+            new PdfXRefTableSectionStartToken(
+                this.startObjectNumber.value,
+                this.entryCount.value,
+            ),
+        ]
+    }
+
+    clone(): this {
+        return new PdfXRefTableSectionHeader({
+            startObjectNumber: this.startObjectNumber.clone(),
+            entryCount: this.entryCount.clone(),
+        }) as this
+    }
+}
+
+export class PdfXRefTable extends PdfObject {
+    sections: PdfXRefTableSectionHeader[]
+    entries: PdfXRefTableEntry[]
+    offset: Ref<number> = new Ref(0)
+
+    constructor(options?: {
+        sections?: PdfXRefTableSectionHeader[]
+        entries?: PdfXRefTableEntry[]
+        offset?: Ref<number> | number
+    }) {
+        super()
+        this.sections = options?.sections ?? []
+        this.entries = options?.entries ?? []
+        if (options?.offset) {
+            this.offset.update(options.offset)
+        }
+    }
+
+    isModified(): boolean {
+        return (
+            super.isModified() ||
+            this.sections.some((section) => section.isModified()) ||
+            this.entries.some((entry) => entry.isModified()) ||
+            this.offset.isModified
+        )
+    }
+
+    addEntryForObject(obj: PdfIndirectObject): void {
+        const foundEntry = this.entries.find(
+            (entry) => entry.objectNumber.value === obj.objectNumber,
+        )
+
+        if (foundEntry) {
+            return
+        }
+
+        const newEntry = new PdfXRefTableEntry({
+            objectNumber: obj.objectNumber,
+            generationNumber: obj.generationNumber,
+            byteOffset: obj.offset,
+            inUse: true,
+        })
+
+        this.entries.push(newEntry)
+    }
+
+    getEntry(objectNumber: number): PdfXRefTableEntry | undefined {
+        return this.entries.find(
+            (entry) => entry.objectNumber.value === objectNumber,
+        )
+    }
+
+    get lastSection(): PdfXRefTableSectionHeader | null {
+        if (this.sections.length === 0) {
+            return null
+        }
+        return this.sections[this.sections.length - 1]
+    }
+
+    protected tokenize() {
+        const innerTokens = this.sortEntriesIntoSections().flatMap(
+            ({ section, entries }) => [
+                ...section.toTokens(),
+                ...entries.flatMap((entry) => entry.toTokens()),
+            ],
+        )
+
+        for (let i = 0; i < innerTokens.length; i++) {
+            const previousToken = innerTokens[i - 1]
+            const currentToken = innerTokens[i]
+
+            // Only insert newline if previous token is not whitespace AND current token is not whitespace
+            const previousIsWhitespace =
+                previousToken instanceof PdfWhitespaceToken
+            const currentIsWhitespace =
+                currentToken instanceof PdfWhitespaceToken
+
+            if (!previousIsWhitespace && !currentIsWhitespace) {
+                innerTokens.splice(i, 0, PdfWhitespaceToken.NEWLINE)
+                i++ // Skip the newly inserted token
+            }
+        }
+
+        return [
+            new PdfByteOffsetToken(this.offset),
+            new PdfXRefTableStartToken(),
+            ...innerTokens,
+        ]
+    }
+
+    private sortEntriesIntoSections(): {
+        section: PdfXRefTableSectionHeader
+        entries: PdfXRefTableEntry[]
+    }[] {
+        const sections: {
+            section: PdfXRefTableSectionHeader
+            entries: PdfXRefTableEntry[]
+        }[] = []
+
+        let currentSection: PdfXRefTableSectionHeader | null = null
+        let currentEntries: PdfXRefTableEntry[] = []
+
+        const sortedEntries = this.entries.sort(
+            (a, b) => a.objectNumber.value - b.objectNumber.value,
+        )
+
+        for (let i = 0; i < sortedEntries.length; i++) {
+            const last = i > 0 ? sortedEntries[i - 1] : null
+            const entry = sortedEntries[i]
+
+            if (
+                !last ||
+                entry.objectNumber.value !== last.objectNumber.value + 1
+            ) {
+                if (currentSection) {
+                    sections.push({
+                        section: currentSection,
+                        entries: currentEntries,
+                    })
+                }
+
+                currentSection =
+                    this.sections.find(
+                        (x) =>
+                            x.startObjectNumber.value ===
+                            entry.objectNumber.value,
+                    ) ??
+                    new PdfXRefTableSectionHeader({
+                        startObjectNumber: entry.objectNumber,
+                        entryCount: 1,
+                    })
+
+                currentEntries = [entry]
+            } else {
+                currentEntries.push(entry)
+            }
+
+            if (currentSection) {
+                currentSection.entryCount.value = currentEntries.length
+            }
+        }
+
+        if (currentSection) {
+            sections.push({
+                section: currentSection,
+                entries: currentEntries,
+            })
+        }
+
+        return sections
+    }
+
+    clone(): this {
+        return new PdfXRefTable({
+            sections: this.sections.map((s) => s.clone()),
+            entries: this.entries.map((e) => e.clone()),
+            offset: new Ref(this.offset.resolve()),
+        }) as this
+    }
+}

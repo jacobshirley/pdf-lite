@@ -1,0 +1,42 @@
+/**
+ * Asserts that a value is truthy, throwing an error if it is not.
+ *
+ * @param value - The value to check.
+ * @param message - Optional error message to throw if the assertion fails.
+ * @throws Error if the value is falsy.
+ *
+ * @example
+ * ```typescript
+ * assert(user !== null, 'User must be defined')
+ * ```
+ */
+export function assert(value: unknown, message?: string): asserts value {
+    if (!value) {
+        throw new Error(message)
+    }
+}
+
+/**
+ * Conditionally asserts a condition only when a value is defined.
+ * Does nothing if the value is undefined or null.
+ *
+ * @param value - The value to check for definedness.
+ * @param condition - The condition to assert if value is defined.
+ * @param message - Optional error message to throw if the assertion fails.
+ * @throws Error if value is defined and condition is falsy.
+ *
+ * @example
+ * ```typescript
+ * assertIfDefined(user, user?.age >= 18, 'User must be an adult')
+ * ```
+ */
+export function assertIfDefined(
+    value: unknown,
+    condition: unknown,
+    message?: string,
+): asserts condition {
+    if (value === undefined || value === null) {
+        return
+    }
+    assert(condition, message)
+}

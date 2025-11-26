@@ -19,8 +19,9 @@
         "test": "vitest run",
         "compile": "pnpm compile:validate && tsc -p tsconfig.prod.json",
         "compile:validate": "tsc -p tsconfig.json --noEmit",
-        "gen:pipe": "tsx ./scripts/gen-pipe.ts > src/pipe.ts",
-        "watch": "tsc -watch -p ."
+        "watch": "tsc -watch -p tsconfig.prod.json",
+        "watch:all": "tsc -watch -p tsconfig.json",
+        "prepack": "cp ../../README.md . && cp ../../EXAMPLES.md ."
     },
     "keywords": [
         "pdf",

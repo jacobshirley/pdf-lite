@@ -2,7 +2,7 @@
 
 # pdf-lite
 
-A low-level, zero-dependency, type-safe PDF library that works in the browser and Node.js.
+A low-level, minimal-dependency, type-safe PDF library that works in the browser and Node.js.
 
 > **Note**: This library is actively developed and may not support all PDF features yet. However, it is designed to be extensible and can be improved over time.
 
@@ -70,6 +70,8 @@ Handles various compression algorithms, including Flate, LZW, and RunLength for 
 - [x] RunLength
 
 ### Signing
+
+PDF Signatures are powered by the [pki-lite](https://www.npmjs.com/package/pki-lite) library.
 
 Provides support for digitally signing PDF documents, ensuring authenticity and integrity. All signing functionality is integrated into the main `pdf-lite` package.
 

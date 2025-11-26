@@ -4,26 +4,94 @@ import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
 import 'pki-lite-crypto-extended'
 import { ByteArray } from '../types.js'
 
+/**
+ * Computes the SHA-1 hash of the input data.
+ *
+ * @param input - The data to hash.
+ * @returns A promise that resolves to the SHA-1 hash as a byte array.
+ *
+ * @example
+ * ```typescript
+ * const hash = await sha1(new Uint8Array([1, 2, 3]))
+ * ```
+ */
 export async function sha1(input: ByteArray): Promise<ByteArray> {
     return AlgorithmIdentifier.digestAlgorithm('SHA-1').digest(input)
 }
 
+/**
+ * Computes the SHA-256 hash of the input data.
+ *
+ * @param input - The data to hash.
+ * @returns A promise that resolves to the SHA-256 hash as a byte array.
+ *
+ * @example
+ * ```typescript
+ * const hash = await sha256(new Uint8Array([1, 2, 3]))
+ * ```
+ */
 export async function sha256(input: ByteArray): Promise<ByteArray> {
     return AlgorithmIdentifier.digestAlgorithm('SHA-256').digest(input)
 }
 
+/**
+ * Computes the SHA-384 hash of the input data.
+ *
+ * @param input - The data to hash.
+ * @returns A promise that resolves to the SHA-384 hash as a byte array.
+ *
+ * @example
+ * ```typescript
+ * const hash = await sha384(new Uint8Array([1, 2, 3]))
+ * ```
+ */
 export async function sha384(input: ByteArray): Promise<ByteArray> {
     return AlgorithmIdentifier.digestAlgorithm('SHA-384').digest(input)
 }
 
+/**
+ * Computes the SHA-512 hash of the input data.
+ *
+ * @param input - The data to hash.
+ * @returns A promise that resolves to the SHA-512 hash as a byte array.
+ *
+ * @example
+ * ```typescript
+ * const hash = await sha512(new Uint8Array([1, 2, 3]))
+ * ```
+ */
 export async function sha512(input: ByteArray): Promise<ByteArray> {
     return AlgorithmIdentifier.digestAlgorithm('SHA-512').digest(input)
 }
 
+/**
+ * Computes the MD5 hash of the input data.
+ *
+ * @param input - The data to hash.
+ * @returns A promise that resolves to the MD5 hash as a byte array.
+ *
+ * @example
+ * ```typescript
+ * const hash = await md5(new Uint8Array([1, 2, 3]))
+ * ```
+ */
 export async function md5(input: ByteArray): Promise<ByteArray> {
     return AlgorithmIdentifier.digestAlgorithm('MD5').digest(input)
 }
 
+/**
+ * Computes a cryptographic hash of the input data using the specified algorithm.
+ *
+ * @param input - The data to hash.
+ * @param algorithm - The hash algorithm to use. Defaults to 'SHA-256'.
+ * @returns A promise that resolves to the hash as a byte array.
+ * @throws Error if an unsupported hash algorithm is specified.
+ *
+ * @example
+ * ```typescript
+ * const hash = await hash(data, 'SHA-256')
+ * ```
+ */
 export async function hash(
     input: ByteArray,
     algorithm: 'SHA-256' | 'SHA-384' | 'SHA-512' | 'MD5' | 'SHA-1' = 'SHA-256',
@@ -44,11 +112,37 @@ export async function hash(
     }
 }
 
+/**
+ * Generates cryptographically secure random bytes.
+ *
+ * @param length - The number of random bytes to generate.
+ * @returns A byte array containing random bytes.
+ * @throws Error if length is not a positive integer.
+ *
+ * @example
+ * ```typescript
+ * const randomBytes = getRandomBytes(16) // 16 random bytes
+ * ```
+ */
 export function getRandomBytes(length: number): ByteArray {
     if (length <= 0) throw new Error('Length must be a positive integer')
     return AlgorithmIdentifier.randomBytes(length)
 }
 
+/**
+ * Encrypts data using AES-128-CBC mode.
+ *
+ * @param key - The 16-byte encryption key.
+ * @param data - The data to encrypt.
+ * @param iv - The 16-byte initialization vector. Defaults to zero IV.
+ * @returns A promise that resolves to the encrypted data.
+ * @throws Error if the key is not exactly 16 bytes.
+ *
+ * @example
+ * ```typescript
+ * const encrypted = await aes128cbcEncrypt(key, plaintext, iv)
+ * ```
+ */
 export async function aes128cbcEncrypt(
     key: ByteArray,
     data: ByteArray,
@@ -68,6 +162,20 @@ export async function aes128cbcEncrypt(
     }).encrypt(data, key)
 }
 
+/**
+ * Decrypts data using AES-128-CBC mode.
+ *
+ * @param key - The 16-byte decryption key.
+ * @param encrypted - The encrypted data to decrypt.
+ * @param iv - The 16-byte initialization vector. Defaults to zero IV.
+ * @returns A promise that resolves to the decrypted data.
+ * @throws Error if the key is not exactly 16 bytes or encrypted data is too short.
+ *
+ * @example
+ * ```typescript
+ * const decrypted = await aes128cbcDecrypt(key, ciphertext, iv)
+ * ```
+ */
 export async function aes128cbcDecrypt(
     key: ByteArray,
     encrypted: ByteArray,
@@ -90,6 +198,19 @@ export async function aes128cbcDecrypt(
     }).decrypt(encrypted, key)
 }
 
+/**
+ * Encrypts data using AES-256-CBC mode.
+ *
+ * @param fileKey - The 32-byte encryption key.
+ * @param block - The data to encrypt.
+ * @param iv - The 16-byte initialization vector. Defaults to zero IV.
+ * @returns A promise that resolves to the encrypted data.
+ *
+ * @example
+ * ```typescript
+ * const encrypted = await aes256cbcEncrypt(key, plaintext, iv)
+ * ```
+ */
 export async function aes256cbcEncrypt(
     fileKey: ByteArray,
     block: ByteArray,
@@ -103,6 +224,19 @@ export async function aes256cbcEncrypt(
     }).encrypt(block, fileKey)
 }
 
+/**
+ * Decrypts data using AES-256-CBC mode.
+ *
+ * @param fileKey - The 32-byte decryption key.
+ * @param ciphertext - The encrypted data to decrypt.
+ * @param iv - The 16-byte initialization vector. Defaults to zero IV.
+ * @returns A promise that resolves to the decrypted data.
+ *
+ * @example
+ * ```typescript
+ * const decrypted = await aes256cbcDecrypt(key, ciphertext, iv)
+ * ```
+ */
 export async function aes256cbcDecrypt(
     fileKey: ByteArray,
     ciphertext: ByteArray,
@@ -116,6 +250,19 @@ export async function aes256cbcDecrypt(
     }).decrypt(ciphertext, fileKey)
 }
 
+/**
+ * Encrypts data using AES-256-ECB mode.
+ *
+ * @param fileKey - The 32-byte encryption key.
+ * @param data - The data to encrypt.
+ * @returns A promise that resolves to the encrypted data.
+ * @throws Error if the key is not exactly 32 bytes.
+ *
+ * @example
+ * ```typescript
+ * const encrypted = await aes256ecbEncrypt(key, plaintext)
+ * ```
+ */
 export async function aes256ecbEncrypt(
     fileKey: ByteArray,
     data: ByteArray,
@@ -132,6 +279,19 @@ export async function aes256ecbEncrypt(
     }).encrypt(data, fileKey)
 }
 
+/**
+ * Decrypts data using AES-256-ECB mode.
+ *
+ * @param fileKey - The 32-byte decryption key.
+ * @param encrypted - The encrypted data to decrypt.
+ * @returns A promise that resolves to the decrypted data.
+ * @throws Error if the key is not exactly 32 bytes.
+ *
+ * @example
+ * ```typescript
+ * const decrypted = await aes256ecbDecrypt(key, ciphertext)
+ * ```
+ */
 export async function aes256ecbDecrypt(
     fileKey: ByteArray,
     encrypted: ByteArray,
@@ -148,6 +308,19 @@ export async function aes256ecbDecrypt(
     }).decrypt(encrypted, fileKey)
 }
 
+/**
+ * Encrypts data using AES-128-CBC mode without PKCS#7 padding.
+ *
+ * @param key - The 16-byte encryption key.
+ * @param data - The data to encrypt. Must be a multiple of 16 bytes.
+ * @param iv - The 16-byte initialization vector.
+ * @returns A promise that resolves to the encrypted data.
+ *
+ * @example
+ * ```typescript
+ * const encrypted = await aes128CbcNoPaddingEncrypt(key, data, iv)
+ * ```
+ */
 export async function aes128CbcNoPaddingEncrypt(
     key: ByteArray,
     data: ByteArray,
@@ -162,6 +335,19 @@ export async function aes128CbcNoPaddingEncrypt(
     }).encrypt(data, key)
 }
 
+/**
+ * Encrypts data using AES-256-CBC mode without PKCS#7 padding.
+ *
+ * @param key - The 32-byte encryption key.
+ * @param data - The data to encrypt. Must be a multiple of 16 bytes.
+ * @param iv - The 16-byte initialization vector.
+ * @returns A promise that resolves to the encrypted data.
+ *
+ * @example
+ * ```typescript
+ * const encrypted = await aes256CbcNoPaddingEncrypt(key, data, iv)
+ * ```
+ */
 export async function aes256CbcNoPaddingEncrypt(
     key: ByteArray,
     data: ByteArray,
@@ -176,6 +362,19 @@ export async function aes256CbcNoPaddingEncrypt(
     }).encrypt(data, key)
 }
 
+/**
+ * Decrypts data using AES-256-CBC mode without PKCS#7 padding.
+ *
+ * @param key - The 32-byte decryption key.
+ * @param ciphertext - The encrypted data to decrypt.
+ * @param iv - The 16-byte initialization vector. Defaults to zero IV.
+ * @returns A promise that resolves to the decrypted data.
+ *
+ * @example
+ * ```typescript
+ * const decrypted = await aes256CbcNoPaddingDecrypt(key, ciphertext, iv)
+ * ```
+ */
 export async function aes256CbcNoPaddingDecrypt(
     key: ByteArray,
     ciphertext: ByteArray,
@@ -190,6 +389,17 @@ export async function aes256CbcNoPaddingDecrypt(
     }).decrypt(ciphertext, key)
 }
 
+/**
+ * Compresses data using the DEFLATE algorithm.
+ *
+ * @param data - The data to compress.
+ * @returns The compressed data as a byte array.
+ *
+ * @example
+ * ```typescript
+ * const compressed = deflateData(rawData)
+ * ```
+ */
 export function deflateData(data: ByteArray): ByteArray {
     const output = deflate(data)
     if (!output) {
@@ -198,6 +408,18 @@ export function deflateData(data: ByteArray): ByteArray {
     return output
 }
 
+/**
+ * Decompresses data using the INFLATE algorithm (reverses DEFLATE).
+ *
+ * @param data - The compressed data to decompress.
+ * @returns The decompressed data as a byte array.
+ * @throws Error if inflation fails due to invalid or corrupted data.
+ *
+ * @example
+ * ```typescript
+ * const decompressed = inflateData(compressedData)
+ * ```
+ */
 export function inflateData(data: ByteArray): ByteArray {
     if (data.length === 0) {
         return new Uint8Array(0) // Return empty array for empty input

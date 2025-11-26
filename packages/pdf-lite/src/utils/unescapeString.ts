@@ -1,5 +1,19 @@
 import { ByteArray } from '../types'
 
+/**
+ * Unescapes a PDF literal string by processing escape sequences.
+ * Handles escape sequences for special characters including newlines, tabs,
+ * backslashes, parentheses, and octal character codes.
+ *
+ * @param input - The escaped byte array to unescape.
+ * @returns A new byte array with escape sequences converted to their literal values.
+ *
+ * @example
+ * ```typescript
+ * // Unescapes '\n' to a literal newline
+ * unescapeString(new Uint8Array([0x5c, 0x6e])) // Returns Uint8Array([0x0a])
+ * ```
+ */
 export function unescapeString(input: ByteArray): ByteArray {
     const buffer = input
     const bytes: number[] = []

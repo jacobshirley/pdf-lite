@@ -1,8 +1,27 @@
 import { ByteArray, PdfFilter } from '../types'
 
-// Minimal LZW implementation for PDF (no early change, no predictor)
+/**
+ * Creates an LZW filter for encoding and decoding PDF stream data.
+ * LZW (Lempel-Ziv-Welch) is a lossless compression algorithm.
+ * This is a minimal implementation for PDF (12-bit, no early change, no predictor).
+ *
+ * @returns A PdfFilter object with encode and decode methods.
+ *
+ * @example
+ * ```typescript
+ * const filter = lzw()
+ * const compressed = filter.encode(rawData)
+ * const decompressed = filter.decode(compressed)
+ * ```
+ */
 export function lzw(): PdfFilter {
     return {
+        /**
+         * Compresses data using the LZW algorithm.
+         *
+         * @param data - The data to compress.
+         * @returns The LZW compressed data as a byte array.
+         */
         encode: (data: ByteArray) => {
             // Minimal LZW encode for PDF (12-bit, no early change, no predictor)
             const CLEAR = 256,
@@ -59,6 +78,12 @@ export function lzw(): PdfFilter {
             if (bits > 0) result.push(bitBuffer & 0xff)
             return new Uint8Array(result)
         },
+        /**
+         * Decompresses LZW compressed data.
+         *
+         * @param data - The LZW compressed data to decompress.
+         * @returns The decompressed data as a byte array.
+         */
         decode: (data: ByteArray) => {
             // Simple LZW decode for PDF (12-bit, no early change)
             // Adapted from public domain sources for educational use

@@ -1,9 +1,28 @@
 import { ByteArray, PdfFilter } from '../types.js'
 import { stringToBytes } from '../utils/stringToBytes.js'
 
-// ASCII85 filter implementation
+/**
+ * Creates an ASCII85 filter for encoding and decoding PDF stream data.
+ * ASCII85 (also known as Base85) encodes binary data into ASCII characters,
+ * resulting in a 25% expansion compared to the original data.
+ *
+ * @returns A PdfFilter object with encode and decode methods.
+ *
+ * @example
+ * ```typescript
+ * const filter = ascii85()
+ * const encoded = filter.encode(binaryData)
+ * const decoded = filter.decode(encoded)
+ * ```
+ */
 export function ascii85(): PdfFilter {
     return {
+        /**
+         * Encodes binary data to ASCII85 format.
+         *
+         * @param data - The binary data to encode.
+         * @returns The ASCII85 encoded data as a byte array.
+         */
         encode: (data: ByteArray): ByteArray => {
             let result = ''
             let i = 0
@@ -42,6 +61,13 @@ export function ascii85(): PdfFilter {
             return stringToBytes(result)
         },
 
+        /**
+         * Decodes ASCII85 encoded data back to binary format.
+         *
+         * @param data - The ASCII85 encoded data.
+         * @returns The decoded binary data as a byte array.
+         * @throws Error if invalid ASCII85 characters are encountered.
+         */
         decode: (data: ByteArray): ByteArray => {
             let str = new TextDecoder().decode(data)
 

@@ -2,6 +2,18 @@ import { ByteArray } from '../types'
 
 const hexChars = '0123456789ABCDEF'
 
+/**
+ * Converts a byte array to a byte array containing hexadecimal character codes.
+ * Each byte becomes two bytes representing its hex digits.
+ *
+ * @param bytes - The byte array to convert.
+ * @returns A byte array with hexadecimal character codes.
+ *
+ * @example
+ * ```typescript
+ * bytesToHexBytes(new Uint8Array([255])) // Returns bytes for 'FF'
+ * ```
+ */
 export function bytesToHexBytes(bytes: ByteArray): ByteArray {
     const result = new Uint8Array(bytes.length * 2)
 

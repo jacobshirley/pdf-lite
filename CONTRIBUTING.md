@@ -80,7 +80,7 @@ Use JSDoc comments for public APIs:
 export function encryptStream(stream: PdfStream, algorithm: string): PdfStream {
     // Implementation
 }
-````
+```
 
 ### Testing
 

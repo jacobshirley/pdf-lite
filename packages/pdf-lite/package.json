@@ -28,7 +28,7 @@
         "typescript",
         "browser",
         "nodejs",
-        "zero-dependency",
+        "minimal-dependency",
         "type-safe",
         "pdf-parser",
         "pdf-reader",

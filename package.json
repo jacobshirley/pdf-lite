@@ -1,6 +1,7 @@
 {
-    "name": "pdf-lite",
+    "name": "pdf-lite-monorepo",
     "version": "1.0.1-alpha.2",
+    "private": true,
     "type": "module",
     "description": "A lightweight PDF library for Node.js and the browser",
     "main": "dist/index.js",

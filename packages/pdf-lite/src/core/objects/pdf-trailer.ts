@@ -46,4 +46,8 @@ export class PdfTrailer extends PdfObject {
     clone(): this {
         return new PdfTrailer(this.dict.clone()) as this
     }
+
+    isModified(): boolean {
+        return super.isModified() || this.dict.isModified() || this.offset.isModified
+    }
 }

@@ -18,7 +18,7 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference'
 import { PdfXrefLookup } from './pdf-xref-lookup'
 import { PdfTokenSerializer } from '../core/serializer'
 import { PdfRevision } from './pdf-revision'
-import { V5SecurityHandler } from '../security/handlers/v5'
+import { PdfV5SecurityHandler } from '../security/handlers/v5'
 import { PdfEncryptionDictionaryObject } from '../security/types'
 import { PdfByteOffsetToken } from '../core/tokens/byte-offset-token'
 import { PdfNumberToken } from '../core/tokens/number-token'
@@ -345,7 +345,7 @@ export class PdfDocument extends PdfObject {
             return
         }
 
-        this.securityHandler = new V5SecurityHandler({
+        this.securityHandler = new PdfV5SecurityHandler({
             password: options.password,
             ownerPassword: options.ownerPassword,
         })
@@ -569,7 +569,7 @@ export class PdfDocument extends PdfObject {
 
         if (xrefEntry instanceof PdfXRefStreamCompressedEntry) {
             throw new FoundCompressedObjectError(
-                'TODO: Cannot find object inside object stream via PdfDocument.findObject',
+                `TODO: Cannot find object ${options.objectNumber} inside object stream via PdfDocument.findObject`,
             )
         }
 
@@ -626,23 +626,23 @@ export class PdfDocument extends PdfObject {
                         obj.objectNumber === options.objectNumber &&
                         (options.generationNumber === undefined ||
                             obj.generationNumber === options.generationNumber),
-                )
-                ?.clone() as PdfIndirectObject | undefined
+                ) as PdfIndirectObject | undefined
         }
 
         if (!foundObject) {
             return undefined
         }
 
-        foundObject = foundObject.clone()
-
         if (this.securityHandler && this.isObjectEncryptable(foundObject)) {
+                    foundObject = foundObject.clone()
+
             await this.securityHandler.decryptObject(foundObject)
+        } else if (this.isIncremental()) {
+            foundObject = foundObject.clone() // Clone to prevent modifications in locked revisions
         }
 
         return foundObject
     }
-
     /**
      * Deletes an object from all revisions in the document.
      *
@@ -684,6 +684,15 @@ export class PdfDocument extends PdfObject {
         for (const revision of this.revisions) {
             revision.locked = value
         }
+    }
+
+    /**
+     * Checks if the document is in incremental mode.
+     *
+     * @returns True if all revisions are locked for incremental updates
+     */
+    isIncremental(): boolean {
+        return this.latestRevision.locked
     }
 
     /**
@@ -850,9 +859,22 @@ export class PdfDocument extends PdfObject {
         this.linkOffsets()
     }
 
+    private updateRevisions(): void {
+        let modified = false
+        this.revisions.forEach((rev, i) => {
+            if (rev.isModified()) {
+                modified = true
+            }
+            
+            if (modified) {
+                rev.update() 
+            }
+        })
+    }
+
     private async update(): Promise<void> {
         this.calculateOffsets()
-        this.revisions.forEach((rev) => rev.update())
+        this.updateRevisions()
         await this.signer?.sign(this)
     }
 
@@ -862,6 +884,8 @@ export class PdfDocument extends PdfObject {
      * @returns The PDF document as a Uint8Array
      */
     toBytes(): ByteArray {
+        this.calculateOffsets()
+        this.updateRevisions()
         const serializer = new PdfTokenSerializer()
         serializer.feed(...this.toTokens())
         return serializer.toBytes()
@@ -891,5 +915,9 @@ export class PdfDocument extends PdfObject {
         input: AsyncIterable<ByteArray> | Iterable<ByteArray>,
     ): Promise<PdfDocument> {
         return PdfReader.fromBytes(input)
+    }
+
+    isModified(): boolean {
+        return super.isModified() || this.revisions.some((rev) => rev.isModified())
     }
 }

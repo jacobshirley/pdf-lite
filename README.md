@@ -213,13 +213,13 @@ console.log(document.toString())
 
 ```typescript
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { V2SecurityHandler } from 'pdf-lite/security/handlers/v2'
+import { PdfV2SecurityHandler } from 'pdf-lite/security/handlers/v2'
 
 const document = new PdfDocument()
 // ... build your PDF structure
 
 // Set up encryption
-document.securityHandler = new V2SecurityHandler({
+document.securityHandler = new PdfV2SecurityHandler({
     password: 'user-password',
     documentId: 'unique-doc-id',
     encryptMetadata: true,
@@ -272,7 +272,7 @@ import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
 import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
 
 // Security
-import { V2SecurityHandler } from 'pdf-lite/security/handlers/v2'
+import { PdfV2SecurityHandler } from 'pdf-lite/security/handlers/v2'
 
 // Signing
 import {

@@ -22,13 +22,13 @@ import { PdfStandardSecurityHandler } from './base'
  *
  * @example
  * ```typescript
- * const handler = new V1SecurityHandler({
+ * const handler = new PdfV1SecurityHandler({
  *     password: 'user123',
  *     ownerPassword: 'admin456'
  * })
  * ```
  */
-export class V1SecurityHandler extends PdfStandardSecurityHandler {
+export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
     /**
      * Gets the encryption revision number.
      *

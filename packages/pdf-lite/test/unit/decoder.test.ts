@@ -44,6 +44,7 @@ function stringToPdfObject(
     })
 
     const removeWhitespace = (obj: PdfObject) => {
+        obj.setModified(true)
         obj.preTokens = undefined
         obj.postTokens = undefined
 
@@ -81,6 +82,7 @@ function stringToPdfObject(
         decoded.push(object)
     }
 
+    decoded[index].setModified(true)
     return decoded[index]
 }
 
@@ -414,6 +416,7 @@ describe('PDF decoder', () => {
                 ],
               },
             ],
+            "modified": true,
             "postTokens": [
               PdfWhitespaceToken {
                 "rawBytes": Uint8Array [

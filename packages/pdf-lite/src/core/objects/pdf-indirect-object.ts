@@ -126,4 +126,8 @@ export class PdfIndirectObject<
     order(): number {
         return this.orderIndex ?? 0
     }
+
+    isModified(): boolean {
+        return super.isModified() || this.content.isModified() || this.offset.isModified
+    }
 }

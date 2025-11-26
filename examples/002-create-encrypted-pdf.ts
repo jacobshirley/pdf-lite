@@ -9,7 +9,7 @@ import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { V2SecurityHandler } from 'pdf-lite/security/handlers/v2'
+import { PdfV2SecurityHandler } from 'pdf-lite/security/handlers/v2'
 
 function createPage(
     contentStreamRef: PdfObjectReference,
@@ -107,7 +107,7 @@ document.trailerDict.set('Root', catalog.reference)
 document.add(contentStream)
 await document.commit()
 
-document.securityHandler = new V2SecurityHandler({
+document.securityHandler = new PdfV2SecurityHandler({
     password: 'up',
     documentId: 'cafebabe',
     encryptMetadata: true,

@@ -4,15 +4,31 @@ import { PdfToken } from '../tokens/token.js'
 import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
 
 export abstract class PdfObject {
+    /** Optional tokens to prepend or append during serialization */
     preTokens?: PdfToken[]
+    /** Optional tokens to prepend or append during serialization */
     postTokens?: PdfToken[]
-
+    /** Indicates whether the object has been modified. By default, assume it has been modified because it's a new object */
+    protected modified: boolean = true
+    /** Tokenizes the object into an array of PdfTokens */
     protected abstract tokenize(): PdfToken[]
 
+    /** The type of this PDF object */
     get objectType(): string {
         return this.constructor.name
     }
 
+    /** Indicates whether the object has been modified. Override this method if the modified state is determined differently */
+    isModified(): boolean {
+        return this.modified
+    }
+    
+    /** Sets the modified state of the object. Override this method if the modified state is determined differently */
+    setModified(modified: boolean = true): void {
+        this.modified = modified
+    }
+
+    /** Converts the object to an array of PdfTokens, including any pre or post tokens */
     toTokens(): PdfToken[] {
         return [
             ...(this.preTokens ?? []),
@@ -21,6 +37,7 @@ export abstract class PdfObject {
         ]
     }
 
+    /** Converts the object to a ByteArray, optionally padding to a specified length */
     toBytes(padTo?: number): ByteArray {
         const tokens = this.toTokens()
 
@@ -35,6 +52,7 @@ export abstract class PdfObject {
         return byteArray
     }
 
+    /** Converts the object to a string representation */
     toString(): string {
         let str = ''
         for (const byte of this.toBytes()) {
@@ -43,6 +61,7 @@ export abstract class PdfObject {
         return str
     }
 
+    /** Attempts to cast the object to a specific PdfObject subclass */
     as<T extends PdfObject>(ctor: new (...args: any[]) => T): T {
         if (this instanceof ctor) {
             return this as T
@@ -53,8 +72,10 @@ export abstract class PdfObject {
         )
     }
 
+    /** Creates a deep clone of the object */
     abstract clone(): this
 
+    /** Compares this object to another for equality based on their token representations */
     equals(other?: PdfObject): boolean {
         if (!other) {
             return false
@@ -84,19 +105,4 @@ export abstract class PdfObject {
         return true
     }
 
-    addPreToken(token: PdfToken): this {
-        if (!this.preTokens) {
-            this.preTokens = []
-        }
-        this.preTokens.push(token)
-        return this
-    }
-
-    addPostToken(token: PdfToken): this {
-        if (!this.postTokens) {
-            this.postTokens = []
-        }
-        this.postTokens.push(token)
-        return this
-    }
 }

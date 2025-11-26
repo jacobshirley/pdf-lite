@@ -41,6 +41,11 @@ export class PdfDictionary<
     }
 
     set<K extends Extract<keyof T, string>>(key: PdfName<K> | K, value: T[K]) {
+        const currentValue = this.get(key)
+        if (currentValue !== value && !currentValue?.equals(value)) {
+            this.modified = true
+        }
+
         if (key instanceof PdfName) {
             this.#entries.set(key, value)
             return
@@ -52,11 +57,14 @@ export class PdfDictionary<
                 }
             }
         }
-
         this.#entries.set(new PdfName(key), value)
     }
 
     delete<K extends Extract<keyof T, string>>(key: PdfName<K> | K) {
+        if (this.has(key)) {
+            this.modified = true
+        }
+        
         if (key instanceof PdfName) {
             this.#entries.delete(key)
             return
@@ -143,6 +151,7 @@ export class PdfDictionary<
         for (const [key, value] of other.#entries) {
             this.#entries.set(key, value)
         }
+        this.modified = true
     }
 
     clone(): this {
@@ -151,5 +160,9 @@ export class PdfDictionary<
             clonedEntries.set(key.clone(), value ? value.clone() : undefined)
         }
         return new PdfDictionary(clonedEntries) as this
+    }
+
+    isModified(): boolean {
+        return super.isModified() || Array.from(this.#entries.values()).some((v) => v?.isModified())
     }
 }

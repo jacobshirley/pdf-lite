@@ -34,7 +34,7 @@ export type PdfSecurityHandlerOptions = {
  *
  * @example
  * ```typescript
- * const handler = new V5SecurityHandler({ password: 'secret' })
+ * const handler = new PdfV5SecurityHandler({ password: 'secret' })
  * await handler.write()
  * const encryptedData = await handler.encrypt('stream', data, objectNumber, generationNumber)
  * ```
@@ -226,8 +226,9 @@ export abstract class PdfSecurityHandler {
                     objectNumber,
                     generationNumber,
                 )
-
+                
                 obj.raw = decryptedData
+
                 await decryptObject(obj.header)
             } else if (obj instanceof PdfDictionary) {
                 for (const [key, value] of Object.entries(obj)) {
@@ -321,7 +322,7 @@ const DEFAULT_PERMISSIONS: PdfPermissions = {
  *
  * @example
  * ```typescript
- * const handler = new V5SecurityHandler({
+ * const handler = new PdfV5SecurityHandler({
  *     password: 'user123',
  *     ownerPassword: 'admin456',
  *     permissions: { print: true, copy: false }

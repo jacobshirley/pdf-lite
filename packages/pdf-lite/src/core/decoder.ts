@@ -45,6 +45,7 @@ import { PdfToken } from './tokens/token.js'
 import { IncrementalParser } from './incremental-parser.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { ByteArray } from '../types.js'
+import { Ref } from './ref.js'
 
 const DEFAULT_MAX_BUFFER_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
 
@@ -134,6 +135,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
 
         const postTokens = this.nextExtraTokens()
 
+        dictionary.setModified(false)
         dictionary.preTokens = preTokens
         dictionary.postTokens = postTokens
 
@@ -287,13 +289,14 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
     private nextXRefTable(): PdfXRefTable {
         const preTokens = this.nextExtraTokens()
         const xrefToken = this.expect(PdfXRefTableStartToken)
-        const xrefTable = new PdfXRefTable()
 
         if (xrefToken.byteOffset === undefined) {
             throw new Error('XRef table token missing byte offset')
         }
 
-        xrefTable.offset.update(xrefToken.byteOffset)
+        const xrefTable = new PdfXRefTable({
+            offset: xrefToken.byteOffset
+        })
 
         while (true) {
             const preTokens = this.nextExtraTokens()
@@ -311,6 +314,9 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
                     startObjectNumber: sectionToken.start.value,
                     entryCount: sectionToken.count.value,
                 })
+                section.startObjectNumber.setModified(false)
+                section.entryCount.setModified(false)
+                section.setModified(false)
 
                 section.preTokens = preTokens
                 section.postTokens = postTokens
@@ -326,6 +332,11 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
                     generationNumber: entryToken.generationNumber.value,
                     inUse: entryToken.inUse,
                 })
+
+                entry.objectNumber.setModified(false)
+                entry.generationNumber.setModified(false)
+                entry.byteOffset.setModified(false)
+                entry.setModified(false)
 
                 entry.preTokens = preTokens
                 entry.postTokens = postTokens
@@ -353,6 +364,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
         }
 
         trailer.offset.update(trailerToken.byteOffset)
+        trailer.offset.isModified = false
 
         trailer.preTokens = preTokens
         trailer.postTokens = postTokens
@@ -368,6 +380,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
         const offsetToken = this.expect(PdfNumberToken)
 
         const offset = new PdfNumber(offsetToken.value)
+        offset.setModified(false)
 
         const startXref = new PdfStartXRef(offset)
         startXref.preTokens = preTokens
@@ -409,6 +422,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
         const postTokens = this.nextExtraTokens(root)
         out.preTokens = [...preTokens, ...(out.preTokens ?? [])]
         out.postTokens = [...(out.postTokens ?? []), ...postTokens]
+        out.setModified(false)
 
         return out
     }

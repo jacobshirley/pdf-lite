@@ -123,7 +123,7 @@ export class PdfIndirectObject<
         }) as this
     }
 
-    insertOrder(): number {
+    order(): number {
         return this.orderIndex ?? 0
     }
 }

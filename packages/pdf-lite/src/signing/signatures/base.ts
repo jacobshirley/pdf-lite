@@ -223,7 +223,7 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
      *
      * @returns High order value to place signature near end of document.
      */
-    insertOrder(): number {
+    order(): number {
         return PdfIndirectObject.MAX_ORDER_INDEX - 10
     }
 }

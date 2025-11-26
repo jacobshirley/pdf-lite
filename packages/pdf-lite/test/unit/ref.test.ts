@@ -19,17 +19,9 @@ describe('Ref', () => {
             expect(outerRef.value).toBe(innerRef)
         })
 
-        it('should throw error when creating Ref to itself', () => {
-            // Need to use a workaround to test this since constructor checks for self-reference
-            const ref = {} as Ref<number>
-            expect(() => {
-                // Manually test the constructor logic
-                const value = ref
-                if (value === ref) {
-                    throw new Error('Cannot create Ref to itself')
-                }
-            }).toThrow('Cannot create Ref to itself')
-        })
+        // Note: The Ref constructor has a self-reference check (value === this),
+        // but this edge case cannot be practically tested because JavaScript/TypeScript
+        // doesn't allow passing an object to its own constructor before it's fully constructed.
     })
 
     describe('resolve', () => {

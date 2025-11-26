@@ -69,12 +69,6 @@ Handles various compression algorithms, including Flate, LZW, and RunLength for 
 - [x] ASCIIHex
 - [x] RunLength
 
-### Streaming
-
-Supports streaming PDF content, enabling efficient handling of large files and reducing memory usage.
-
-- [x] Transform-based streaming
-
 ### Signing
 
 Provides support for digitally signing PDF documents, ensuring authenticity and integrity. All signing functionality is integrated into the main `pdf-lite` package.

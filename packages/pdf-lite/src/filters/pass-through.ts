@@ -1,4 +1,5 @@
-import { ByteArray, PdfFilter } from '../types.js'
+import { ByteArray } from '../types.js'
+import { PdfFilter } from './types.js'
 
 /**
  * Creates a pass-through filter that performs no transformation.

@@ -4,7 +4,8 @@ import {
     computeUValueRc4_128,
     decryptUserPasswordRc4_128,
 } from '../../crypto/key-gen/key-gen-rc4-128'
-import { ByteArray, Cipher } from '../../types'
+import { Cipher } from '../../crypto/types'
+import { ByteArray } from '../../types'
 import { bytesToString } from '../../utils/bytesToString'
 import { stringToBytes } from '../../utils/stringToBytes'
 import { V1SecurityHandler } from './v1'

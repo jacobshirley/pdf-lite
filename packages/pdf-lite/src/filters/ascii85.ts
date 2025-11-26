@@ -1,5 +1,6 @@
-import { ByteArray, PdfFilter } from '../types.js'
+import { ByteArray } from '../types.js'
 import { stringToBytes } from '../utils/stringToBytes.js'
+import { PdfFilter } from './types.js'
 
 /**
  * Creates an ASCII85 filter for encoding and decoding PDF stream data.

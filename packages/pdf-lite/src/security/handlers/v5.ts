@@ -4,7 +4,7 @@ import {
     generateOandOe,
     generateUandUe,
 } from '../../crypto/key-gen/key-gen-aes256'
-import { ByteArray, Cipher } from '../../types'
+import { ByteArray } from '../../types'
 import { aes256ecbEncrypt, getRandomBytes } from '../../utils/algos'
 import { assert } from '../../utils/assert'
 import { PdfEncryptionDictionary } from '../types'
@@ -13,6 +13,7 @@ import { PdfStandardSecurityHandlerOptions } from './base'
 import { AesV3CryptFilter } from '../crypt-filters/aesv3'
 import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
 import { PdfString } from '../../core/objects/pdf-string'
+import { Cipher } from '../../crypto/types'
 
 /**
  * V5 security handler implementing AES-256-CBC encryption.

@@ -1,4 +1,5 @@
-import { ByteArray, PdfFilter } from '../types'
+import { ByteArray } from '../types'
+import { PdfFilter } from './types'
 
 /**
  * Creates an LZW filter for encoding and decoding PDF stream data.

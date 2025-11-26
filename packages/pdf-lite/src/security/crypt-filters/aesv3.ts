@@ -1,5 +1,5 @@
 import { aes256 } from '../../crypto/ciphers/aes256'
-import { Cipher } from '../../types'
+import { Cipher } from '../../crypto/types'
 import { PdfCryptFilter, CryptFilterOptions } from './base'
 
 /**

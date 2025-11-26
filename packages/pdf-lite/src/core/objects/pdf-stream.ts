@@ -13,13 +13,14 @@ import { ascii85 } from '../../filters/ascii85'
 import { lzw } from '../../filters/lzw'
 import { runLength } from '../../filters/runlength'
 import { passthroughFilter } from '../../filters/pass-through'
-import { ByteArray, PdfFilter, PdfStreamFilterType } from '../../types'
+import { ByteArray } from '../../types'
 import { PdfNumber } from './pdf-number'
 import { Predictor } from '../../utils/predictors'
 import { bytesToPdfObjects } from '../generators'
 import { PdfIndirectObject } from './pdf-indirect-object'
 import { PdfXRefTableEntry } from './pdf-xref-table'
 import { stringToBytes } from '../../utils/stringToBytes'
+import { PdfFilter, PdfStreamFilterType } from '../../filters/types'
 
 export class PdfStream<
     T extends PdfDictionary = PdfDictionary,

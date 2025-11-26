@@ -1,4 +1,5 @@
-import { ByteArray, Cipher } from '../../types'
+import { Cipher } from '../../crypto/types'
+import { ByteArray } from '../../types'
 import { PdfCryptFilter, CryptFilterOptions } from './base'
 
 /**

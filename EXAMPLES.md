@@ -750,7 +750,7 @@ const originalBytesMatch = updatedPdfBytes
     .toString()
     .includes(
         originalPdfBytesForComparison
-            .slice(0, -10)
+            .subarray(0, -10)
             .toString()
             .substring(0, 100),
     )
@@ -1101,208 +1101,336 @@ console.log('- Phone: +1 (555) 123-4567')
 console.log('- Subscribe: Yes')
 ```
 
-## Incremental PDF update example
+## Tokeniser usage example
 
 ```typescript
-import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
-import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
+import { PdfByteStreamTokeniser } from 'pdf-lite/core/tokeniser'
+import { PdfToken } from 'pdf-lite/core/tokens/token'
+import { stringToBytes } from 'pdf-lite/utils/stringToBytes'
+
+/**
+ * This example demonstrates how to use the PdfByteStreamTokeniser
+ * to tokenize PDF content into individual tokens.
+ *
+ * The tokeniser converts raw PDF bytes into a stream of tokens that can
+ * be further processed by the decoder or used for PDF analysis.
+ */
+
+// Sample PDF content to tokenize
+const pdfContent = `%PDF-2.0
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>
+endobj
+trailer
+<< /Size 4 /Root 1 0 R >>
+startxref
+0
+%%EOF`
+
+// Create the tokeniser
+const tokeniser = new PdfByteStreamTokeniser()
+
+// Convert the PDF content to bytes and feed it to the tokeniser
+const bytes = stringToBytes(pdfContent)
+tokeniser.feedBytes(bytes)
+
+// Signal end of input
+tokeniser.eof = true
+
+// Collect all tokens
+const tokens: PdfToken[] = []
+for (const token of tokeniser.nextItems()) {
+    tokens.push(token)
+}
+
+// Display tokenisation results
+console.log('PDF Tokenisation Example')
+console.log('========================\n')
+console.log(`Input: ${pdfContent.length} bytes`)
+console.log(`Output: ${tokens.length} tokens\n`)
+
+// Group tokens by type for summary
+const tokenCounts = new Map<string, number>()
+for (const token of tokens) {
+    const type = token.constructor.name
+    tokenCounts.set(type, (tokenCounts.get(type) ?? 0) + 1)
+}
+
+console.log('Token type counts:')
+for (const [type, count] of tokenCounts) {
+    console.log(`  ${type}: ${count}`)
+}
+
+console.log('\nFirst 20 tokens:')
+for (const token of tokens.slice(0, 20)) {
+    const tokenString = token.toString().slice(0, 40)
+    const displayString =
+        tokenString.length >= 40 ? tokenString + '...' : tokenString
+    console.log(
+        `  ${token.constructor.name.padEnd(30)} ${JSON.stringify(displayString)}`,
+    )
+}
+
+// Example: Tokenising incrementally (useful for streaming)
+console.log('\n\nIncremental Tokenisation Example')
+console.log('=================================\n')
+
+const incrementalTokeniser = new PdfByteStreamTokeniser()
+
+// Feed bytes in chunks (simulating streaming)
+const chunkSize = 50
+const numChunks = Math.ceil(bytes.length / chunkSize)
+
+console.log(`Processing ${numChunks} chunks of ~${chunkSize} bytes each...`)
+
+let totalTokens = 0
+for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize)
+    incrementalTokeniser.feedBytes(chunk)
+
+    // Process tokens as they become available
+    for (const token of incrementalTokeniser.nextItems()) {
+        totalTokens++
+    }
+}
+
+// Signal end of input and collect remaining tokens
+incrementalTokeniser.eof = true
+for (const token of incrementalTokeniser.nextItems()) {
+    totalTokens++
+}
+
+console.log(`Total tokens produced: ${totalTokens}`)
+
+// Example: Custom stream chunk size
+console.log('\n\nCustom Stream Chunk Size Example')
+console.log('================================\n')
+
+const customTokeniser = new PdfByteStreamTokeniser({
+    streamChunkSizeBytes: 512, // Customize the chunk size for stream content
+})
+
+const streamContent = `1 0 obj
+<< /Length 100 >>
+stream
+This is stream content that will be chunked by the tokeniser.
+The chunk size determines how the stream data is delivered.
+endstream
+endobj`
+
+customTokeniser.feedBytes(stringToBytes(streamContent))
+customTokeniser.eof = true
+
+console.log('Tokens from stream content:')
+for (const token of customTokeniser.nextItems()) {
+    const type = token.constructor.name
+    const preview = token.toString().slice(0, 50).replace(/\n/g, '\\n')
+    console.log(`  ${type.padEnd(25)} ${JSON.stringify(preview)}`)
+}
+```
+
+## Decoder usage example
+
+```typescript
+import { PdfDecoder } from 'pdf-lite/core/decoder'
+import { PdfByteStreamTokeniser } from 'pdf-lite/core/tokeniser'
+import { pdfDecoder } from 'pdf-lite/core/generators'
+import { PdfObject } from 'pdf-lite/core/objects/pdf-object'
 import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
-import { PdfName } from 'pdf-lite/core/objects/pdf-name'
-import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
-import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
+import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
-import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import fs from 'fs/promises'
+import { PdfTrailer } from 'pdf-lite/core/objects/pdf-trailer'
+import { PdfXRefTable } from 'pdf-lite/core/objects/pdf-xref-table'
+import { PdfComment } from 'pdf-lite/core/objects/pdf-comment'
+import { PdfStartXRef } from 'pdf-lite/core/objects/pdf-start-xref'
+import { stringToBytes } from 'pdf-lite/utils/stringToBytes'
 
-// Helper functions for creating PDF objects
-function createPage(
-    contentStreamRef: PdfObjectReference,
-): PdfIndirectObject<PdfDictionary> {
-    const pageDict = new PdfDictionary()
-    pageDict.set('Type', new PdfName('Page'))
-    pageDict.set(
-        'MediaBox',
-        new PdfArray([
-            new PdfNumber(0),
-            new PdfNumber(0),
-            new PdfNumber(612),
-            new PdfNumber(792),
-        ]),
-    )
-    pageDict.set('Contents', contentStreamRef)
-    return new PdfIndirectObject({ content: pageDict })
+/**
+ * This example demonstrates how to use the PdfDecoder
+ * to decode PDF tokens into PDF objects.
+ *
+ * The decoder transforms a stream of tokens (from the tokeniser)
+ * into high-level PDF objects like dictionaries, arrays, streams,
+ * and indirect objects.
+ */
+
+// Sample PDF content to decode
+const pdfContent = `%PDF-2.0
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 44 >>
+stream
+BT /F1 12 Tf 100 700 Td (Hello!) Tj ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f
+0000000010 00000 n
+0000000060 00000 n
+0000000118 00000 n
+0000000217 00000 n
+trailer
+<< /Size 5 /Root 1 0 R >>
+startxref
+310
+%%EOF`
+
+// Method 1: Using the pdfDecoder generator (recommended)
+console.log('PDF Decoder Example - Using pdfDecoder Generator')
+console.log('================================================\n')
+
+const bytes = stringToBytes(pdfContent)
+const objects: PdfObject[] = []
+
+for (const obj of pdfDecoder([bytes])) {
+    objects.push(obj)
 }
 
-function createPages(
-    pages: PdfIndirectObject<PdfDictionary>[],
-): PdfIndirectObject<PdfDictionary> {
-    const pagesDict = new PdfDictionary()
-    pagesDict.set('Type', new PdfName('Pages'))
-    pagesDict.set('Kids', new PdfArray(pages.map((x) => x.reference)))
-    pagesDict.set('Count', new PdfNumber(pages.length))
-    return new PdfIndirectObject({ content: pagesDict })
+console.log(`Decoded ${objects.length} PDF objects:\n`)
+
+for (const obj of objects) {
+    const type = obj.constructor.name
+
+    if (obj instanceof PdfComment) {
+        console.log(`  ${type}: ${obj.toString().trim()}`)
+    } else if (obj instanceof PdfIndirectObject) {
+        const contentType = obj.content.constructor.name
+        console.log(
+            `  ${type}: ${obj.objectNumber} ${obj.generationNumber} obj (${contentType})`,
+        )
+
+        // Show dictionary keys if content is a dictionary or stream
+        if (obj.content instanceof PdfDictionary) {
+            const keys = Object.keys(obj.content.values)
+            console.log(`    Keys: ${keys.join(', ')}`)
+        }
+        if (obj.content instanceof PdfStream) {
+            console.log(
+                `    Stream length: ${obj.content.original.length} bytes`,
+            )
+        }
+    } else if (obj instanceof PdfXRefTable) {
+        console.log(`  ${type}: ${obj.entries.length} entries`)
+    } else if (obj instanceof PdfTrailer) {
+        const size = obj.dict.get('Size')?.toString() ?? 'unknown'
+        console.log(`  ${type}: Size=${size}`)
+    } else if (obj instanceof PdfStartXRef) {
+        console.log(`  ${type}: offset=${obj.offset}`)
+    } else {
+        console.log(`  ${type}`)
+    }
 }
 
-function createCatalog(
-    pagesRef: PdfObjectReference,
-): PdfIndirectObject<PdfDictionary> {
-    const catalogDict = new PdfDictionary()
-    catalogDict.set('Type', new PdfName('Catalog'))
-    catalogDict.set('Pages', pagesRef)
-    return new PdfIndirectObject({ content: catalogDict })
+// Method 2: Using the PdfDecoder class directly with a tokeniser
+console.log('\n\nPDF Decoder Example - Manual Pipeline')
+console.log('======================================\n')
+
+const tokeniser = new PdfByteStreamTokeniser()
+const decoder = new PdfDecoder({ ignoreWhitespace: true })
+
+// Feed bytes to tokeniser
+tokeniser.feedBytes(bytes)
+tokeniser.eof = true
+
+// Feed tokens to decoder
+for (const token of tokeniser.nextItems()) {
+    decoder.feed(token)
+}
+decoder.eof = true
+
+// Collect decoded objects
+const manualObjects: PdfObject[] = []
+for (const obj of decoder.nextItems()) {
+    manualObjects.push(obj)
 }
 
-function createFont(): PdfIndirectObject<PdfDictionary> {
-    const fontDict = new PdfDictionary()
-    fontDict.set('Type', new PdfName('Font'))
-    fontDict.set('Subtype', new PdfName('Type1'))
-    fontDict.set('BaseFont', new PdfName('Helvetica'))
-    return new PdfIndirectObject({ content: fontDict })
+console.log(`Decoded ${manualObjects.length} objects with whitespace ignored\n`)
+
+// Count objects by type
+const typeCounts = new Map<string, number>()
+for (const obj of manualObjects) {
+    const type = obj.constructor.name
+    typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1)
 }
 
-function createResources(
-    fontRef: PdfObjectReference,
-): PdfIndirectObject<PdfDictionary> {
-    const resourcesDict = new PdfDictionary()
-    const fontDict = new PdfDictionary()
-    fontDict.set('F1', fontRef)
-    resourcesDict.set('Font', fontDict)
-    return new PdfIndirectObject({ content: resourcesDict })
+console.log('Object type counts:')
+for (const [type, count] of typeCounts) {
+    console.log(`  ${type}: ${count}`)
 }
 
-// Step 1: Create an initial PDF document
-console.log('Step 1: Creating initial PDF document...')
-const document = new PdfDocument()
+// Example: Incremental decoding (useful for streaming)
+console.log('\n\nIncremental Decoding Example')
+console.log('============================\n')
 
-const font = createFont()
-document.commit(font)
+const streamTokeniser = new PdfByteStreamTokeniser()
+const streamDecoder = new PdfDecoder()
 
-const resources = createResources(font.reference)
-document.commit(resources)
+// Simulate streaming by processing in chunks
+const chunkSize = 100
+let objectCount = 0
 
-const contentStream = new PdfIndirectObject({
-    content: new PdfStream({
-        header: new PdfDictionary(),
-        original:
-            'BT /F1 24 Tf 100 700 Td (Original Document - Revision 1) Tj ET',
-    }),
+for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize)
+    streamTokeniser.feedBytes(chunk)
+
+    // Process available tokens
+    for (const token of streamTokeniser.nextItems()) {
+        streamDecoder.feed(token)
+
+        // Collect any complete objects
+        for (const obj of streamDecoder.nextItems()) {
+            objectCount++
+            console.log(
+                `  Chunk ${Math.floor(i / chunkSize) + 1}: Found ${obj.constructor.name}`,
+            )
+        }
+    }
+}
+
+// Finalize
+streamTokeniser.eof = true
+streamDecoder.eof = true
+
+for (const token of streamTokeniser.nextItems()) {
+    streamDecoder.feed(token)
+}
+
+for (const obj of streamDecoder.nextItems()) {
+    objectCount++
+    console.log(`  Final: Found ${obj.constructor.name}`)
+}
+
+console.log(`\nTotal objects decoded incrementally: ${objectCount}`)
+
+// Example: Preserving whitespace for round-trip
+console.log('\n\nRound-Trip Example (Preserving Whitespace)')
+console.log('==========================================\n')
+
+const simpleDict = `<< /Type /Page /MediaBox [0 0 612 792] >>`
+const preservingDecoder = pdfDecoder([stringToBytes(simpleDict)], {
+    ignoreWhitespace: false,
 })
 
-const page = createPage(contentStream.reference)
-page.content.set('Resources', resources.reference)
-document.commit(page)
-
-const pages = createPages([page])
-page.content.set('Parent', pages.reference)
-document.commit(pages)
-
-const catalog = createCatalog(pages.reference)
-document.commit(catalog)
-
-document.trailerDict.set('Root', catalog.reference)
-document.commit(contentStream)
-
-// Save the original PDF
-const originalPdfPath = '/tmp/original.pdf'
-await fs.writeFile(originalPdfPath, document.toBytes())
-console.log(`Original PDF saved to: ${originalPdfPath}`)
-console.log(`Original PDF has ${document.revisions.length} revision(s)`)
-
-// Step 2: Load the PDF and perform an incremental update
-console.log('\nStep 2: Loading PDF and performing incremental update...')
-
-// Read the existing PDF
-const existingPdfBytes = await fs.readFile(originalPdfPath)
-const loadedDocument = await PdfDocument.fromBytes([existingPdfBytes])
-
-// Lock existing revisions to enable incremental mode
-// This ensures changes are added as new revisions instead of modifying existing ones
-loadedDocument.setIncremental(true)
-
-// Start a new revision for our changes
-loadedDocument.startNewRevision()
-
-// Create new content for the incremental update
-// In a real scenario, this could be adding annotations, form fields, signatures, etc.
-const newContentStream = new PdfIndirectObject({
-    content: new PdfStream({
-        header: new PdfDictionary(),
-        original:
-            'BT /F1 18 Tf 100 650 Td (This content was added in Revision 2) Tj ET',
-    }),
-})
-
-// Add the new content to the document
-await loadedDocument.commit(newContentStream)
-
-// Save the incrementally updated PDF
-const updatedPdfPath = '/tmp/incremental-update.pdf'
-await fs.writeFile(updatedPdfPath, loadedDocument.toBytes())
-console.log(`Incrementally updated PDF saved to: ${updatedPdfPath}`)
-console.log(`Updated PDF has ${loadedDocument.revisions.length} revision(s)`)
-
-// Step 3: Verify the incremental update preserved the original content
-console.log('\nStep 3: Verifying incremental update...')
-
-// Check file sizes to confirm incremental update (new file should be larger)
-const originalStats = await fs.stat(originalPdfPath)
-const updatedStats = await fs.stat(updatedPdfPath)
-
-console.log(`Original PDF size: ${originalStats.size} bytes`)
-console.log(`Updated PDF size: ${updatedStats.size} bytes`)
-console.log(
-    `Size difference: ${updatedStats.size - originalStats.size} bytes (new revision data)`,
-)
-
-// The updated PDF contains the original bytes plus the new revision
-// This is the key feature of incremental updates - the original PDF is preserved
-const updatedPdfBytes = await fs.readFile(updatedPdfPath)
-const originalPdfBytesForComparison = await fs.readFile(originalPdfPath)
-
-// Verify that the beginning of the updated PDF matches the original
-const originalBytesMatch = updatedPdfBytes
-    .slice(0, originalPdfBytesForComparison.length - 10) // Exclude the %%EOF marker area
-    .toString()
-    .includes(
-        originalPdfBytesForComparison
-            .slice(0, -10)
-            .toString()
-            .substring(0, 100),
-    )
-
-console.log(`Original content preserved: ${originalBytesMatch ? 'Yes' : 'No'}`)
-
-// Step 4: Add another incremental revision
-console.log('\nStep 4: Adding another incremental revision...')
-
-const secondUpdate = await PdfDocument.fromBytes([updatedPdfBytes])
-secondUpdate.setIncremental(true)
-secondUpdate.startNewRevision()
-
-const thirdRevisionContent = new PdfIndirectObject({
-    content: new PdfStream({
-        header: new PdfDictionary(),
-        original:
-            'BT /F1 14 Tf 100 600 Td (Third revision - demonstrates multiple incremental updates) Tj ET',
-    }),
-})
-
-await secondUpdate.commit(thirdRevisionContent)
-
-const multiRevisionPdfPath = '/tmp/multi-revision.pdf'
-await fs.writeFile(multiRevisionPdfPath, secondUpdate.toBytes())
-console.log(`Multi-revision PDF saved to: ${multiRevisionPdfPath}`)
-console.log(
-    `Multi-revision PDF has ${secondUpdate.revisions.length} revision(s)`,
-)
-
-const multiRevisionStats = await fs.stat(multiRevisionPdfPath)
-console.log(`Multi-revision PDF size: ${multiRevisionStats.size} bytes`)
-
-console.log('\n=== Summary ===')
-console.log('Incremental updates allow you to:')
-console.log('1. Preserve the original PDF content (important for signatures)')
-console.log('2. Add new content without modifying existing revisions')
-console.log('3. Maintain a complete history of document changes')
-console.log('4. Stack multiple revisions on top of each other')
+for (const obj of preservingDecoder) {
+    // toString() will recreate the original representation
+    const reconstructed = obj.toString()
+    console.log('Original:     ', JSON.stringify(simpleDict))
+    console.log('Reconstructed:', JSON.stringify(reconstructed))
+    console.log('Match:', simpleDict === reconstructed)
+}
 ```

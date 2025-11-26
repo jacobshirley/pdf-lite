@@ -1,5 +1,6 @@
-import { ByteArray, Cipher } from '../../types.js'
+import { ByteArray } from '../../types.js'
 import { aes256cbcDecrypt, aes256cbcEncrypt } from '../../utils/algos.js'
+import { Cipher } from '../types.js'
 
 /**
  * Creates an AES-256-CBC cipher for PDF encryption.

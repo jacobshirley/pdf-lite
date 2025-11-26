@@ -1132,7 +1132,7 @@ async function findField(
         const name = fieldObj.content.get('T')
         if (name instanceof PdfString) {
             // Convert bytes to string for comparison
-            const nameStr = new TextDecoder().decode(name.raw)
+            const nameStr = name.value
             if (nameStr === fieldName) {
                 return fieldObj as PdfIndirectObject<PdfDictionary>
             }
@@ -1165,9 +1165,6 @@ if (subscribeFieldObj) {
     subscribeFieldObj.content.set('V', new PdfName('Yes'))
     subscribeFieldObj.content.set('AS', new PdfName('Yes'))
 }
-
-// Commit the changes
-await filledDocument.commit()
 
 // Save the filled form
 await fs.writeFile(`${tmpFolder}/form-filled.pdf`, filledDocument.toBytes())

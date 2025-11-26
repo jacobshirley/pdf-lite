@@ -32,6 +32,8 @@ jobs:
         strategy:
             matrix:
                 version:
+                    - v1
+                    - latest
                     - ${{ github.ref_name }}
         steps:
             - name: Checkout ${{ matrix.version }}

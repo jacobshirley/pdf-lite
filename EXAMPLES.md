@@ -1195,14 +1195,14 @@ for (let i = 0; i < bytes.length; i += chunkSize) {
     incrementalTokeniser.feedBytes(chunk)
 
     // Process tokens as they become available
-    for (const token of incrementalTokeniser.nextItems()) {
+    for (const _ of incrementalTokeniser.nextItems()) {
         totalTokens++
     }
 }
 
 // Signal end of input and collect remaining tokens
 incrementalTokeniser.eof = true
-for (const token of incrementalTokeniser.nextItems()) {
+for (const _ of incrementalTokeniser.nextItems()) {
     totalTokens++
 }
 

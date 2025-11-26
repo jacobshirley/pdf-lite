@@ -11,6 +11,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      pdf-lite:
+        specifier: ^1.0.0
+        version: link:packages/pdf-lite
     devDependencies:
       '@commitlint/cli':
         specifier: ^20.1.0

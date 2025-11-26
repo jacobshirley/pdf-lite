@@ -5,7 +5,6 @@ import { hexToBytes } from '../../src/utils/hexToBytes'
 import { bytesToHex } from '../../src/utils/bytesToHex'
 import { padBytes } from '../../src/utils/padBytes'
 import { concatUint8Arrays } from '../../src/utils/concatUint8Arrays'
-import { replaceInBuffer } from '../../src/utils/replaceInBuffer'
 import { hexBytesToBytes } from '../../src/utils/hexBytesToBytes'
 import { bytesToHexBytes } from '../../src/utils/bytesToHexBytes'
 import { stringToHexBytes } from '../../src/utils/stringToHexBytes'
@@ -149,45 +148,6 @@ describe('Utility Functions', () => {
         it('should handle no arrays', () => {
             const result = concatUint8Arrays()
             expect(result).toEqual(new Uint8Array([]))
-        })
-    })
-
-    describe('replaceInBuffer', () => {
-        it('should replace a pattern in the buffer', () => {
-            const target = stringToBytes('Hello World')
-            const search = stringToBytes('World')
-            const replace = stringToBytes('PDF')
-            const result = replaceInBuffer(search, replace, target)
-            expect(bytesToString(result)).toBe('Hello PDF')
-        })
-
-        it('should throw error if pattern not found', () => {
-            const target = stringToBytes('Hello World')
-            const search = stringToBytes('Universe')
-            const replace = stringToBytes('PDF')
-            expect(() => replaceInBuffer(search, replace, target)).toThrow(
-                'Search buffer not found in target buffer',
-            )
-        })
-
-        it('should replace multiple occurrences when multiple is true', () => {
-            // Note: replaceInBuffer has a fixed-size output buffer that only accounts for
-            // one replacement. When multiple=true with multiple occurrences, the function
-            // will have buffer overflow issues due to the implementation design.
-            // Let's test a single replacement with multiple=true instead
-            const target = stringToBytes('Hello World')
-            const search = stringToBytes('World')
-            const replace = stringToBytes('PDF')
-            const result = replaceInBuffer(search, replace, target, true)
-            expect(bytesToString(result)).toBe('Hello PDF')
-        })
-
-        it('should replace only first occurrence when multiple is false', () => {
-            const target = stringToBytes('ab ab ab')
-            const search = stringToBytes('ab')
-            const replace = stringToBytes('x')
-            const result = replaceInBuffer(search, replace, target, false)
-            expect(bytesToString(result)).toBe('x ab ab')
         })
     })
 

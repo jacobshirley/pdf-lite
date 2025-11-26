@@ -3,7 +3,6 @@ import { PdfRevision } from '../../src/pdf/pdf-revision'
 import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
 import { PdfDictionary } from '../../src/core/objects/pdf-dictionary'
 import { PdfName } from '../../src/core/objects/pdf-name'
-import { PdfComment } from '../../src/core/objects/pdf-comment'
 
 describe('PdfRevision', () => {
     describe('constructor', () => {

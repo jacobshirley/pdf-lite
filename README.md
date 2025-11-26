@@ -72,6 +72,7 @@ Handles various compression algorithms, including Flate, LZW, and RunLength for 
 ### Signing
 
 PDF Signatures are powered by the [pki-lite)(https://www.npmjs.com/package/pki-lite) library.
+
 Provides support for digitally signing PDF documents, ensuring authenticity and integrity. All signing functionality is integrated into the main `pdf-lite` package.
 
 **Signing algorithms supported:**

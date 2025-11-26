@@ -848,12 +848,11 @@ export class PdfDocument extends PdfObject {
         serializer.feed(...this.toTokens())
         serializer.calculateOffsets()
         this.linkOffsets()
-        this.revisions.forEach((rev) => rev.update())
     }
 
     private async update(): Promise<void> {
-        this.revisions.forEach((rev) => rev.update())
         this.calculateOffsets()
+        this.revisions.forEach((rev) => rev.update())
         await this.signer?.sign(this)
     }
 

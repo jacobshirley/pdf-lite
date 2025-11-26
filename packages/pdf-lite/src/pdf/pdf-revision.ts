@@ -1,9 +1,7 @@
 import { PdfDictionary } from '../core/objects/pdf-dictionary'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
 import { PdfObject } from '../core/objects/pdf-object'
-import { PdfStream, PdfXRefStream } from '../core/objects/pdf-stream'
 import { PdfTrailerEntries } from '../core/objects/pdf-trailer'
-import { PdfXRefTable } from '../core/objects/pdf-xref-table'
 import { PdfToken } from '../core/tokens/token'
 import { PdfWhitespaceToken } from '../core/tokens/whitespace-token'
 import { PdfXrefLookup } from './pdf-xref-lookup'
@@ -140,6 +138,8 @@ export class PdfRevision extends PdfObject {
         if (object instanceof PdfIndirectObject) {
             this.xref.addObject(object)
         }
+
+        this.update()
     }
 
     /**
@@ -185,7 +185,7 @@ export class PdfRevision extends PdfObject {
                 a instanceof PdfIndirectObject &&
                 b instanceof PdfIndirectObject
             ) {
-                return a.insertOrder() - b.insertOrder()
+                return a.order() - b.order()
             } else if (a instanceof PdfIndirectObject) {
                 return -1
             } else if (b instanceof PdfIndirectObject) {

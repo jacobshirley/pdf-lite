@@ -1,5 +1,6 @@
 // PDF creation with encryption example
 
+import { writeFileSync } from 'fs'
 import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
 import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
 import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
@@ -114,4 +115,7 @@ document.securityHandler = new V2SecurityHandler({
 
 await document.encrypt()
 
-console.log(document.toString())
+const file = `${import.meta.dirname}/tmp/encrypted.pdf`
+console.log(`Writing encrypted PDF to: ${file}. Password: "up"`)
+
+await writeFileSync(`${file}`, document.toBytes())

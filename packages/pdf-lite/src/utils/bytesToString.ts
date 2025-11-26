@@ -1,5 +1,16 @@
 import { ByteArray } from '../types'
 
+/**
+ * Converts a byte array to a string using UTF-8 decoding.
+ *
+ * @param bytes - The byte array to decode.
+ * @returns The decoded string.
+ *
+ * @example
+ * ```typescript
+ * bytesToString(new Uint8Array([72, 101, 108, 108, 111])) // Returns 'Hello'
+ * ```
+ */
 export function bytesToString(bytes: ByteArray): string {
     const decoder = new TextDecoder()
     return decoder.decode(bytes)

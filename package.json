@@ -19,9 +19,30 @@
         "docs:gen:md": "./scripts/gen-md-docs.sh",
         "docs:gen:html": "./scripts/gen-html-docs.sh"
     },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
+    "keywords": [
+        "pdf",
+        "typescript",
+        "browser",
+        "nodejs",
+        "zero-dependency",
+        "type-safe",
+        "pdf-parser",
+        "pdf-reader",
+        "pdf-writer",
+        "digital-signature",
+        "encryption",
+        "decryption"
+    ],
+    "author": "Jacob Shirley",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jacobshirley/pdf-lite.git"
+    },
+    "bugs": {
+        "url": "https://github.com/jacobshirley/pdf-lite/issues"
+    },
+    "homepage": "https://jacobshirley.github.io/pdf-lite",
     "packageManager": "pnpm@10.14.0",
     "lint-staged": {
         "*.{js,ts,json,md}": "pnpm format"

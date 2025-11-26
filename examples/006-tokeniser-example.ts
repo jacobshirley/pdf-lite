@@ -68,7 +68,9 @@ for (const token of tokens.slice(0, 20)) {
     const tokenString = token.toString().slice(0, 40)
     const displayString =
         tokenString.length >= 40 ? tokenString + '...' : tokenString
-    console.log(`  ${token.constructor.name.padEnd(30)} ${JSON.stringify(displayString)}`)
+    console.log(
+        `  ${token.constructor.name.padEnd(30)} ${JSON.stringify(displayString)}`,
+    )
 }
 
 // Example: Tokenising incrementally (useful for streaming)

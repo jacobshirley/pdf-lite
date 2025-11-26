@@ -72,7 +72,9 @@ for (const obj of objects) {
         console.log(`  ${type}: ${obj.toString().trim()}`)
     } else if (obj instanceof PdfIndirectObject) {
         const contentType = obj.content.constructor.name
-        console.log(`  ${type}: ${obj.objectNumber} ${obj.generationNumber} obj (${contentType})`)
+        console.log(
+            `  ${type}: ${obj.objectNumber} ${obj.generationNumber} obj (${contentType})`,
+        )
 
         // Show dictionary keys if content is a dictionary or stream
         if (obj.content instanceof PdfDictionary) {
@@ -80,7 +82,9 @@ for (const obj of objects) {
             console.log(`    Keys: ${keys.join(', ')}`)
         }
         if (obj.content instanceof PdfStream) {
-            console.log(`    Stream length: ${obj.content.original.length} bytes`)
+            console.log(
+                `    Stream length: ${obj.content.original.length} bytes`,
+            )
         }
     } else if (obj instanceof PdfXRefTable) {
         console.log(`  ${type}: ${obj.entries.length} entries`)
@@ -153,7 +157,9 @@ for (let i = 0; i < bytes.length; i += chunkSize) {
         // Collect any complete objects
         for (const obj of streamDecoder.nextItems()) {
             objectCount++
-            console.log(`  Chunk ${Math.floor(i / chunkSize) + 1}: Found ${obj.constructor.name}`)
+            console.log(
+                `  Chunk ${Math.floor(i / chunkSize) + 1}: Found ${obj.constructor.name}`,
+            )
         }
     }
 }

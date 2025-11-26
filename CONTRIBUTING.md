@@ -41,7 +41,7 @@ All classes representing PDF constructs **must** include the PDF specification r
  * Represents a PDF Dictionary object.
  *
  * @spec PDF 32000-1:2008, Section 7.3.7
- * 
+ *
  * A dictionary object is an associative table containing pairs of objects,
  * known as the dictionary's entries. The key shall be a name object, and the
  * value may be any kind of object, including another dictionary.
@@ -120,7 +120,7 @@ export class PdfYourClass {
     serialize(): Uint8Array {
         /* ... */
     }
-    
+
     toString(): string {
         /* ... */
     }
@@ -148,36 +148,40 @@ pnpm format
 ### 2. Making Changes
 
 1. **Create a branch** for your feature or bugfix:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
 
 2. **Write tests first** (TDD approach recommended):
-   ```bash
-   # Create test file
-   touch src/your-module/YourClass.test.ts
-   
-   # Run tests in watch mode
-   cd packages/pdf-lite
-   pnpm test --watch
-   ```
+
+    ```bash
+    # Create test file
+    touch src/your-module/YourClass.test.ts
+
+    # Run tests in watch mode
+    cd packages/pdf-lite
+    pnpm test --watch
+    ```
 
 3. **Implement the feature** following the code standards above
 
 4. **Ensure all tests pass**:
-   ```bash
-   pnpm test
-   ```
+
+    ```bash
+    pnpm test
+    ```
 
 5. **Format your code**:
-   ```bash
-   pnpm format
-   ```
+
+    ```bash
+    pnpm format
+    ```
 
 6. **Compile to check for TypeScript errors**:
-   ```bash
-   pnpm compile
-   ```
+    ```bash
+    pnpm compile
+    ```
 
 ### 3. Commit Guidelines
 
@@ -217,17 +221,18 @@ The commit message format is enforced by commitlint.
 To add a new encryption algorithm:
 
 1. **Create the algorithm class** in `src/encryption/`:
-   ```typescript
-   export class NewEncryptionAlgorithm {
-       encrypt(data: Uint8Array, key: Uint8Array): Uint8Array {
-           // Implementation
-       }
-       
-       decrypt(data: Uint8Array, key: Uint8Array): Uint8Array {
-           // Implementation
-       }
-   }
-   ```
+
+    ```typescript
+    export class NewEncryptionAlgorithm {
+        encrypt(data: Uint8Array, key: Uint8Array): Uint8Array {
+            // Implementation
+        }
+
+        decrypt(data: Uint8Array, key: Uint8Array): Uint8Array {
+            // Implementation
+        }
+    }
+    ```
 
 2. **Add tests** covering encryption/decryption round-trips
 
@@ -240,17 +245,18 @@ To add a new encryption algorithm:
 To add a new compression algorithm:
 
 1. **Create the codec class** in `src/compression/`:
-   ```typescript
-   export class NewCompressionCodec {
-       encode(data: Uint8Array): Uint8Array {
-           // Implementation
-       }
-       
-       decode(data: Uint8Array): Uint8Array {
-           // Implementation
-       }
-   }
-   ```
+
+    ```typescript
+    export class NewCompressionCodec {
+        encode(data: Uint8Array): Uint8Array {
+            // Implementation
+        }
+
+        decode(data: Uint8Array): Uint8Array {
+            // Implementation
+        }
+    }
+    ```
 
 2. **Register the filter** in the filter registry
 
@@ -280,6 +286,7 @@ To add a new signature type:
 - Use descriptive test names
 
 Example:
+
 ```typescript
 import { describe, it, expect } from 'vitest'
 import { PdfDictionary } from './PdfDictionary'
@@ -295,7 +302,7 @@ describe('PdfDictionary', () => {
         dict.set('Type', new PdfName('Catalog'))
         expect(dict.toString()).toBe('<< /Type /Catalog >>')
     })
-    
+
     it('should handle nested dictionaries', () => {
         // Test implementation
     })
@@ -327,7 +334,8 @@ For performance-critical code:
 - Document parameters, return types, and exceptions
 
 Example:
-```typescript
+
+````typescript
 /**
  * Encrypts a PDF stream using the specified algorithm.
  *
@@ -345,11 +353,11 @@ Example:
  */
 export function encryptStream(
     stream: PdfStream,
-    algorithm: EncryptionAlgorithm
+    algorithm: EncryptionAlgorithm,
 ): PdfStream {
     // Implementation
 }
-```
+````
 
 ### README Updates
 
@@ -379,7 +387,7 @@ Use descriptive error messages:
 ```typescript
 if (!isValidPdfVersion(version)) {
     throw new Error(
-        `Invalid PDF version: ${version}. Expected format: 1.x where x is 0-7`
+        `Invalid PDF version: ${version}. Expected format: 1.x where x is 0-7`,
     )
 }
 ```
@@ -402,9 +410,7 @@ For large PDFs, use streaming:
 
 ```typescript
 // Good - streaming
-const stream = createReadStream(pdfPath)
-    .pipe(pdfParser)
-    .pipe(processStream)
+const stream = createReadStream(pdfPath).pipe(pdfParser).pipe(processStream)
 
 // Avoid - loading entire file
 const buffer = await readFile(pdfPath)

@@ -43,6 +43,7 @@
         "@types/pako": "^2.0.4",
         "@types/safe-json-stringify": "^1.1.5",
         "@vitest/browser-playwright": "^4.0.13",
+        "@vitest/coverage-v8": "^4.0.14",
         "deep-object-diff": "^1.1.9",
         "diff": "^8.0.2",
         "fast-xml-parser": "^5.2.5",

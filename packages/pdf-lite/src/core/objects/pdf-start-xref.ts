@@ -32,4 +32,8 @@ export class PdfStartXRef extends PdfObject {
     clone(): this {
         return new PdfStartXRef(this.offset.clone()) as this
     }
+
+    isModified(): boolean {
+        return super.isModified() || this.offset.isModified()
+    }
 }

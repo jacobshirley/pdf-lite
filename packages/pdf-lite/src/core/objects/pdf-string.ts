@@ -8,11 +8,20 @@ export class PdfString extends PdfObject {
     /**
      * The raw bytes of the PDF string.
      */
-    raw: ByteArray
+    private _raw: ByteArray
 
     constructor(raw: ByteArray | string) {
         super()
-        this.raw = typeof raw === 'string' ? stringToBytes(raw) : raw
+        this._raw = typeof raw === 'string' ? stringToBytes(raw) : raw
+    }
+
+    get raw(): ByteArray {
+        return this._raw
+    }
+
+    set raw(raw: ByteArray) {
+        this.setModified()
+        this._raw = raw
     }
 
     get value(): string {

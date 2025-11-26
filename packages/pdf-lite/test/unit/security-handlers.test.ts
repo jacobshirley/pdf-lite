@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { rsaSigningKeys } from './fixtures/rsa-2048'
-import { V1SecurityHandler } from '../../src/security/handlers/v1'
-import { V2SecurityHandler } from '../../src/security/handlers/v2'
-import { V4SecurityHandler } from '../../src/security/handlers/v4'
-import { V5SecurityHandler } from '../../src/security/handlers/v5'
-import { PublicKeySecurityHandler } from '../../src/security/handlers/pubSec'
+import { PdfV1SecurityHandler } from '../../src/security/handlers/v1'
+import { PdfV2SecurityHandler } from '../../src/security/handlers/v2'
+import { PdfV4SecurityHandler } from '../../src/security/handlers/v4'
+import { PdfV5SecurityHandler } from '../../src/security/handlers/v5'
+import { PdfPublicKeySecurityHandler } from '../../src/security/handlers/pubSec'
 import { PdfEncryptionDictionary } from '../../src/security/types'
 import { createFromDictionary } from '../../src/security/handlers/utils'
 import { PdfSecurityHandler } from '../../src/security/handlers/base'
@@ -33,21 +33,21 @@ describe('Security Handlers', () => {
         }
     } = {
         'RC4-40': {
-            handler: V1SecurityHandler,
+            handler: PdfV1SecurityHandler,
             r: 2,
             v: 1,
             length: 40,
             filter: 'Standard',
         },
         'RC4-128': {
-            handler: V2SecurityHandler,
+            handler: PdfV2SecurityHandler,
             r: 3,
             v: 2,
             length: 128,
             filter: 'Standard',
         },
         'AES-128': {
-            handler: V4SecurityHandler,
+            handler: PdfV4SecurityHandler,
             r: 4,
             v: 4,
             length: 128,
@@ -55,7 +55,7 @@ describe('Security Handlers', () => {
             testCryptFilters: true,
         },
         'AES-256': {
-            handler: V5SecurityHandler,
+            handler: PdfV5SecurityHandler,
             r: 5,
             v: 5,
             length: 256,
@@ -63,7 +63,7 @@ describe('Security Handlers', () => {
             testCryptFilters: true,
         },
         PubSec: {
-            handler: PublicKeySecurityHandler,
+            handler: PdfPublicKeySecurityHandler,
             r: 5,
             v: 5,
             filter: 'Adobe.PubSec',
@@ -306,20 +306,22 @@ describe('Security Handlers', () => {
                     })
 
                     if (
-                        !(handler instanceof V4SecurityHandler) &&
-                        !(handler instanceof PublicKeySecurityHandler)
+                        !(handler instanceof PdfV4SecurityHandler) &&
+                        !(handler instanceof PdfPublicKeySecurityHandler)
                     ) {
                         throw new Error(
-                            'Handler is not a V4SecurityHandler or PublicKeySecurityHandler',
+                            'Handler is not a PdfV4SecurityHandler or PdfPublicKeySecurityHandler',
                         )
                     }
 
-                    if (handler instanceof PublicKeySecurityHandler) {
+                    if (handler instanceof PdfPublicKeySecurityHandler) {
                         const standardHandler =
                             handler.getStandardSecurityHandler()
-                        if (!(standardHandler instanceof V4SecurityHandler)) {
+                        if (
+                            !(standardHandler instanceof PdfV4SecurityHandler)
+                        ) {
                             throw new Error(
-                                'Standard handler is not a V4SecurityHandler',
+                                'Standard handler is not a PdfV4SecurityHandler',
                             )
                         }
                         standardHandler.setCryptFilterForType(
@@ -409,25 +411,28 @@ describe('Security Handlers', () => {
                         })
 
                         if (
-                            !(handler instanceof V4SecurityHandler) &&
-                            !(handler instanceof PublicKeySecurityHandler)
+                            !(handler instanceof PdfV4SecurityHandler) &&
+                            !(handler instanceof PdfPublicKeySecurityHandler)
                         ) {
                             throw new Error(
-                                'Handler is not a V4SecurityHandler or PublicKeySecurityHandler',
+                                'Handler is not a PdfV4SecurityHandler or PdfPublicKeySecurityHandler',
                             )
                         }
 
                         cf.encrypt = vi.fn(cf.encrypt)
                         cf.decrypt = vi.fn(cf.decrypt)
 
-                        if (handler instanceof PublicKeySecurityHandler) {
+                        if (handler instanceof PdfPublicKeySecurityHandler) {
                             const standardHandler =
                                 handler.getStandardSecurityHandler()
                             if (
-                                !(standardHandler instanceof V4SecurityHandler)
+                                !(
+                                    standardHandler instanceof
+                                    PdfV4SecurityHandler
+                                )
                             ) {
                                 throw new Error(
-                                    'Standard handler is not a V4SecurityHandler',
+                                    'Standard handler is not a PdfV4SecurityHandler',
                                 )
                             }
                             standardHandler.setCryptFilter('StdCF', cf)
@@ -492,7 +497,7 @@ describe('Security Handlers', () => {
             const ownerPassword = 'owner456'
 
             // Test with V2 handler (RC4-128)
-            const handler = new V2SecurityHandler({
+            const handler = new PdfV2SecurityHandler({
                 password: userPassword,
                 ownerPassword: ownerPassword,
                 documentId: 'test',
@@ -506,7 +511,7 @@ describe('Security Handlers', () => {
                 ownerPassword: ownerPassword,
             })
 
-            expect(ownerHandler).toBeInstanceOf(V2SecurityHandler)
+            expect(ownerHandler).toBeInstanceOf(PdfV2SecurityHandler)
 
             // Test encryption/decryption works
             const data = stringToBytes('Test data')
@@ -525,7 +530,7 @@ describe('Security Handlers', () => {
             const password = 'samepassword'
 
             // Test when owner password is the same as user password
-            const handler = new V2SecurityHandler({
+            const handler = new PdfV2SecurityHandler({
                 password: password,
                 ownerPassword: password,
                 documentId: 'test',
@@ -539,7 +544,7 @@ describe('Security Handlers', () => {
                 password: password,
             })
 
-            expect(samePasswordHandler).toBeInstanceOf(V2SecurityHandler)
+            expect(samePasswordHandler).toBeInstanceOf(PdfV2SecurityHandler)
 
             // Test encryption/decryption works
             const data = stringToBytes('Same password test')
@@ -560,7 +565,7 @@ describe('Security Handlers', () => {
             const userPassword = 'userpass'
 
             // Test when no owner password is provided (should default to user password)
-            const handler = new V2SecurityHandler({
+            const handler = new PdfV2SecurityHandler({
                 password: userPassword,
                 documentId: 'test',
             })
@@ -573,7 +578,7 @@ describe('Security Handlers', () => {
                 password: userPassword,
             })
 
-            expect(userAsOwnerHandler).toBeInstanceOf(V2SecurityHandler)
+            expect(userAsOwnerHandler).toBeInstanceOf(PdfV2SecurityHandler)
 
             // Test encryption/decryption works
             const data = stringToBytes('Default owner password test')
@@ -594,11 +599,11 @@ describe('Security Handlers', () => {
 
 describe('PubSec Security Handler', () => {
     it('should encrypt and decrypt data correctly', async () => {
-        const standardHandler = new V4SecurityHandler({
+        const standardHandler = new PdfV4SecurityHandler({
             documentId: 'test',
         })
 
-        const encryptionHandler = new PublicKeySecurityHandler({
+        const encryptionHandler = new PdfPublicKeySecurityHandler({
             standardSecurityHandler: standardHandler,
             recipients: [
                 {
@@ -607,7 +612,7 @@ describe('PubSec Security Handler', () => {
             ],
         })
 
-        const decryptionHandler = new PublicKeySecurityHandler({
+        const decryptionHandler = new PdfPublicKeySecurityHandler({
             standardSecurityHandler: standardHandler,
             recipients: [
                 {

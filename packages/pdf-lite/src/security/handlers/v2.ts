@@ -8,7 +8,7 @@ import { Cipher } from '../../crypto/types'
 import { ByteArray } from '../../types'
 import { bytesToString } from '../../utils/bytesToString'
 import { stringToBytes } from '../../utils/stringToBytes'
-import { V1SecurityHandler } from './v1'
+import { PdfV1SecurityHandler } from './v1'
 
 /**
  * V2 security handler implementing 128-bit RC4 encryption.
@@ -16,13 +16,13 @@ import { V1SecurityHandler } from './v1'
  *
  * @example
  * ```typescript
- * const handler = new V2SecurityHandler({
+ * const handler = new PdfV2SecurityHandler({
  *     password: 'user123',
  *     ownerPassword: 'admin456'
  * })
  * ```
  */
-export class V2SecurityHandler extends V1SecurityHandler {
+export class PdfV2SecurityHandler extends PdfV1SecurityHandler {
     /**
      * Gets the encryption revision number.
      *

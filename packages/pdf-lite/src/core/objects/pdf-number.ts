@@ -87,6 +87,10 @@ export class PdfNumber extends PdfObject {
             decimalPlaces: this.decimalPlaces,
         }) as this
     }
+
+    isModified(): boolean {
+        return super.isModified() || this.#value.isModified
+    }
 }
 
 export class PdfByteOffsetNumber extends PdfNumber {

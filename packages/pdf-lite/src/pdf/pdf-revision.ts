@@ -33,6 +33,7 @@ export class PdfRevision extends PdfObject {
         locked?: boolean
     }) {
         super()
+        this.modified = false
         this.objects = options?.objects ?? []
 
         this.xref = PdfXrefLookup.fromObjects(this.objects)
@@ -159,6 +160,7 @@ export class PdfRevision extends PdfObject {
                 return
             }
 
+            this.modified = true
             this.objects.splice(index, 1)
 
             if (object instanceof PdfIndirectObject) {
@@ -167,12 +169,24 @@ export class PdfRevision extends PdfObject {
         }
     }
 
+    isModified(): boolean {
+        return (
+            super.isModified() ||
+            this.xref.trailerDict.isModified() ||
+            this.objects.some((obj) => obj.isModified())
+        )
+    }
+
     /**
      * Updates the revision by sorting objects and updating the xref table.
      */
     update(): void {
+        if (this.locked) {
+            return
+        }
         this.sortObjects()
         this.xref.update()
+        this.modified = false
     }
 
     /**
@@ -186,10 +200,6 @@ export class PdfRevision extends PdfObject {
                 b instanceof PdfIndirectObject
             ) {
                 return a.order() - b.order()
-            } else if (a instanceof PdfIndirectObject) {
-                return -1
-            } else if (b instanceof PdfIndirectObject) {
-                return 1
             } else {
                 return 0
             }

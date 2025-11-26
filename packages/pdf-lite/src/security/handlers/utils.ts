@@ -8,10 +8,10 @@ import {
 } from '../types'
 import { PdfSecurityHandler, PdfStandardSecurityHandler } from './base'
 import { assert, assertIfDefined } from '../../utils/assert'
-import { V1SecurityHandler } from './v1'
-import { V2SecurityHandler } from './v2'
-import { V4SecurityHandler } from './v4'
-import { V5SecurityHandler } from './v5'
+import { PdfV1SecurityHandler } from './v1'
+import { PdfV2SecurityHandler } from './v2'
+import { PdfV4SecurityHandler } from './v4'
+import { PdfV5SecurityHandler } from './v5'
 import { ByteArray } from '../../types'
 import { PdfCryptFilter } from '../crypt-filters/base'
 import { V2CryptFilter } from '../crypt-filters/v2'
@@ -20,7 +20,7 @@ import { AesV3CryptFilter } from '../crypt-filters/aesv3'
 import { IdentityCryptFilter } from '../crypt-filters/identity'
 import { PdfName } from '../../core/objects/pdf-name'
 import { PdfNumber } from '../../core/objects/pdf-number'
-import { PublicKeySecurityHandler } from './pubSec'
+import { PdfPublicKeySecurityHandler } from './pubSec'
 
 /**
  * Creates a security handler from an encryption dictionary.
@@ -62,7 +62,7 @@ export function createFromDictionary(
             documentId,
         })
     } else if (filter.value === 'Adobe.PubSec') {
-        const pubSecHandler = new PublicKeySecurityHandler({
+        const pubSecHandler = new PdfPublicKeySecurityHandler({
             standardSecurityHandler:
                 createStandardSecurityHandlerFromDictionary(dict, {
                     password,
@@ -125,25 +125,25 @@ export function createStandardSecurityHandlerFromDictionary(
     let standardSecurityHandler: PdfStandardSecurityHandler
 
     if (version === 1) {
-        standardSecurityHandler = new V1SecurityHandler({
+        standardSecurityHandler = new PdfV1SecurityHandler({
             password,
             ownerPassword,
             documentId,
         })
     } else if (version === 2) {
-        standardSecurityHandler = new V2SecurityHandler({
+        standardSecurityHandler = new PdfV2SecurityHandler({
             password,
             ownerPassword,
             documentId,
         })
     } else if (version === 4) {
-        standardSecurityHandler = new V4SecurityHandler({
+        standardSecurityHandler = new PdfV4SecurityHandler({
             password,
             ownerPassword,
             documentId,
         })
     } else if (version >= 5) {
-        standardSecurityHandler = new V5SecurityHandler({
+        standardSecurityHandler = new PdfV5SecurityHandler({
             password,
             ownerPassword,
             documentId,
@@ -225,22 +225,22 @@ export function createFromEncryptionOptions(
     let handler: PdfSecurityHandler
 
     if (defaultEncryption === 'RC4-40') {
-        handler = new V1SecurityHandler({
+        handler = new PdfV1SecurityHandler({
             password: options.password,
             ownerPassword: options.ownerPassword,
         })
     } else if (defaultEncryption === 'RC4-128') {
-        handler = new V2SecurityHandler({
+        handler = new PdfV2SecurityHandler({
             password: options.password,
             ownerPassword: options.ownerPassword,
         })
     } else if (defaultEncryption === 'AES-128-CBC') {
-        handler = new V4SecurityHandler({
+        handler = new PdfV4SecurityHandler({
             password: options.password,
             ownerPassword: options.ownerPassword,
         })
     } else if (defaultEncryption === 'AES-256-CBC') {
-        handler = new V5SecurityHandler({
+        handler = new PdfV5SecurityHandler({
             password: options.password,
             ownerPassword: options.ownerPassword,
         })
@@ -278,7 +278,7 @@ export function createFromEncryptionOptions(
         cryptFilterForType['string'] = options.method.strings
     }
 
-    if (handler instanceof V4SecurityHandler) {
+    if (handler instanceof PdfV4SecurityHandler) {
         const uniqueCryptFiltersArray = Array.from(uniqueCryptFilters)
         for (let i = 0; i < uniqueCryptFiltersArray.length; i++) {
             const cryptFilter = getCryptFilter(uniqueCryptFiltersArray[i])

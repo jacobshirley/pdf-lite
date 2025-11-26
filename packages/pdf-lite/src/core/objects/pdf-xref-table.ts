@@ -61,6 +61,15 @@ export class PdfXRefTableEntry extends PdfObject {
             inUse: this.inUse,
         }) as this
     }
+
+    isModified(): boolean {
+        return (
+            super.isModified() ||
+            this.byteOffset.isModified() ||
+            this.objectNumber.isModified() ||
+            this.generationNumber.isModified()
+        )
+    }
 }
 
 export class PdfXRefTableSectionHeader extends PdfObject {
@@ -109,6 +118,15 @@ export class PdfXRefTable extends PdfObject {
         if (options?.offset) {
             this.offset.update(options.offset)
         }
+    }
+
+    isModified(): boolean {
+        return (
+            super.isModified() ||
+            this.sections.some((section) => section.isModified()) ||
+            this.entries.some((entry) => entry.isModified()) ||
+            this.offset.isModified
+        )
     }
 
     addEntryForObject(obj: PdfIndirectObject): void {

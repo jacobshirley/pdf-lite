@@ -8,7 +8,7 @@ import { ByteArray } from '../../types'
 import { aes256ecbEncrypt, getRandomBytes } from '../../utils/algos'
 import { assert } from '../../utils/assert'
 import { PdfEncryptionDictionary } from '../types'
-import { V4SecurityHandler } from './v4'
+import { PdfV4SecurityHandler } from './v4'
 import { PdfStandardSecurityHandlerOptions } from './base'
 import { AesV3CryptFilter } from '../crypt-filters/aesv3'
 import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
@@ -21,13 +21,13 @@ import { Cipher } from '../../crypto/types'
  *
  * @example
  * ```typescript
- * const handler = new V5SecurityHandler({
+ * const handler = new PdfV5SecurityHandler({
  *     password: 'strongPassword123',
  *     ownerPassword: 'adminPassword456'
  * })
  * ```
  */
-export class V5SecurityHandler extends V4SecurityHandler {
+export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
     /** User encrypted file key (UE value). */
     protected userEncryptedFileKey?: ByteArray
     /** Owner encrypted file key (OE value). */

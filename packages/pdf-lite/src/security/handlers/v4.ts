@@ -18,7 +18,7 @@ import {
     PdfEncryptionDictionary,
 } from '../types'
 import { PdfStandardSecurityHandlerOptions } from './base'
-import { V2SecurityHandler } from './v2'
+import { PdfV2SecurityHandler } from './v2'
 
 const IDENTITY_CRYPT_FILTER = new IdentityCryptFilter({ authEvent: 'DocOpen' })
 
@@ -28,14 +28,14 @@ const IDENTITY_CRYPT_FILTER = new IdentityCryptFilter({ authEvent: 'DocOpen' })
  *
  * @example
  * ```typescript
- * const handler = new V4SecurityHandler({
+ * const handler = new PdfV4SecurityHandler({
  *     password: 'user123',
  *     ownerPassword: 'admin456'
  * })
  * handler.setCryptFilter('StmFilter', new AesV2CryptFilter({ authEvent: 'DocOpen' }))
  * ```
  */
-export class V4SecurityHandler extends V2SecurityHandler {
+export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
     /** Map of named crypt filters. */
     protected cryptFilters: Map<string, PdfCryptFilter> = new Map([
         ['Identity', IDENTITY_CRYPT_FILTER],

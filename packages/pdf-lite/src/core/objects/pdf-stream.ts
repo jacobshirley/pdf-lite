@@ -32,7 +32,7 @@ export class PdfStream<
 
     constructor(
         options:
-            | { header: T; original: ByteArray | string }
+            | { header: T; original: ByteArray | string; isModified?: boolean }
             | ByteArray
             | string,
     ) {
@@ -43,6 +43,7 @@ export class PdfStream<
         }
 
         this.header = options.header
+        this.modified = options.isModified ?? true
         this.original =
             typeof options.original === 'string'
                 ? stringToBytes(options.original)
@@ -60,6 +61,7 @@ export class PdfStream<
     }
 
     set raw(data: ByteArray) {
+        this.setModified()
         this.original = data
         this.header.set('Length', new PdfNumber(data.length))
     }
@@ -206,11 +208,13 @@ export class PdfStream<
         Class: new (options: {
             header: PdfDictionary
             original: ByteArray
+            isModified?: boolean
         }) => T,
     ): T {
         const instance = new Class({
             header: this.header,
             original: this.original,
+            isModified: this.isModified(),
         })
         instance.preTokens = this.preTokens
         instance.postTokens = this.postTokens
@@ -289,6 +293,7 @@ export class PdfObjStream extends PdfStream {
     constructor(options: {
         header: PdfDictionary
         original: ByteArray | string
+        isModified?: boolean
     }) {
         super(options)
 
@@ -411,10 +416,12 @@ export class PdfXRefStream extends PdfStream {
     constructor(options?: {
         header?: PdfDictionary
         original?: ByteArray | string
+        isModified?: boolean
     }) {
         super({
             header: options?.header ?? PdfXRefStream.createNewHeader(),
             original: options?.original ?? new Uint8Array(),
+            isModified: options?.isModified,
         })
 
         if (!this.isType('XRef')) {

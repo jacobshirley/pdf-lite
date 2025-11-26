@@ -5,6 +5,7 @@ This directory contains example scripts demonstrating how to use the PDF-Lite li
 ## PDF creation from scratch example
 
 ```typescript
+import { writeFileSync } from 'fs'
 import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
 import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
 import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
@@ -110,12 +111,16 @@ document.trailerDict.set('Root', catalog.reference)
 document.add(contentStream)
 await document.commit()
 
-console.log(document.toString())
+const file = `${import.meta.dirname}/tmp/created.pdf`
+console.log(`Writing PDF to: ${file}`)
+
+await writeFileSync(`${file}`, document.toBytes())
 ```
 
 ## PDF creation with encryption example
 
 ```typescript
+import { writeFileSync } from 'fs'
 import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
 import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
 import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
@@ -124,7 +129,7 @@ import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { V2SecurityHandler } from 'pdf-lite/security/handlers/v2'
+import { PdfV2SecurityHandler } from 'pdf-lite/security/handlers/v2'
 
 function createPage(
     contentStreamRef: PdfObjectReference,
@@ -222,7 +227,7 @@ document.trailerDict.set('Root', catalog.reference)
 document.add(contentStream)
 await document.commit()
 
-document.securityHandler = new V2SecurityHandler({
+document.securityHandler = new PdfV2SecurityHandler({
     password: 'up',
     documentId: 'cafebabe',
     encryptMetadata: true,
@@ -230,7 +235,10 @@ document.securityHandler = new V2SecurityHandler({
 
 await document.encrypt()
 
-console.log(document.toString())
+const file = `${import.meta.dirname}/tmp/encrypted.pdf`
+console.log(`Writing encrypted PDF to: ${file}. Password: "up"`)
+
+await writeFileSync(`${file}`, document.toBytes())
 ```
 
 ## PDF signature example
@@ -1067,31 +1075,102 @@ console.log('Created form-empty.pdf with empty form fields')
 // PART 2: Fill in the form fields
 // ============================================
 // This demonstrates how to programmatically fill in form fields.
-// We're continuing to use the same document object here, but in a
-// real-world scenario, you would typically:
-// 1. Read an existing PDF with PdfDocument.fromBytes()
-// 2. Find the form fields in the AcroForm dictionary
-// 3. Update the field values
-// 4. Save the modified PDF
+// We now read the previously saved empty form and modify it.
+
+// Read the empty form PDF
+const emptyFormBytes = await fs.readFile(`${tmpFolder}/form-empty.pdf`)
+const filledDocument = await PdfDocument.fromBytes([emptyFormBytes])
+
+// Get the catalog reference from trailer
+const catalogRef = filledDocument.trailerDict.get('Root')
+if (!catalogRef || !(catalogRef instanceof PdfObjectReference)) {
+    throw new Error('No catalog found in PDF')
+}
+
+// Read the catalog object
+const catalogObj = await filledDocument.readObject({
+    objectNumber: catalogRef.objectNumber,
+})
+if (!catalogObj || !(catalogObj.content instanceof PdfDictionary)) {
+    throw new Error('Catalog object not found')
+}
+
+// Get the AcroForm reference
+const acroFormRef = catalogObj.content.get('AcroForm')
+if (!acroFormRef || !(acroFormRef instanceof PdfObjectReference)) {
+    throw new Error('No AcroForm found in PDF')
+}
+
+// Read the AcroForm object
+const filledAcroFormObj = await filledDocument.readObject({
+    objectNumber: acroFormRef.objectNumber,
+})
+if (
+    !filledAcroFormObj ||
+    !(filledAcroFormObj.content instanceof PdfDictionary)
+) {
+    throw new Error('AcroForm object not found')
+}
+
+// Get the fields array
+const fieldsArray = filledAcroFormObj.content.get('Fields')
+if (!fieldsArray || !(fieldsArray instanceof PdfArray)) {
+    throw new Error('No fields found in AcroForm')
+}
+
+// Helper function to find a field by name
+async function findField(
+    fieldName: string,
+): Promise<PdfIndirectObject<PdfDictionary> | null> {
+    for (const fieldRef of fieldsArray.items) {
+        if (!(fieldRef instanceof PdfObjectReference)) continue
+        const fieldObj = await filledDocument.readObject({
+            objectNumber: fieldRef.objectNumber,
+        })
+        if (!fieldObj || !(fieldObj.content instanceof PdfDictionary)) continue
+
+        const name = fieldObj.content.get('T')
+        if (name instanceof PdfString) {
+            // Convert bytes to string for comparison
+            const nameStr = new TextDecoder().decode(name.raw)
+            if (nameStr === fieldName) {
+                return fieldObj as PdfIndirectObject<PdfDictionary>
+            }
+        }
+    }
+    return null
+}
 
 // Update the name field value
-nameField.content.set('V', new PdfString('John Doe'))
+const nameFieldObj = await findField('name')
+if (nameFieldObj) {
+    nameFieldObj.content.set('V', new PdfString('John Doe'))
+}
 
 // Update the email field value
-emailField.content.set('V', new PdfString('john.doe@example.com'))
+const emailFieldObj = await findField('email')
+if (emailFieldObj) {
+    emailFieldObj.content.set('V', new PdfString('john.doe@example.com'))
+}
 
 // Update the phone field value
-phoneField.content.set('V', new PdfString('+1 (555) 123-4567'))
+const phoneFieldObj = await findField('phone')
+if (phoneFieldObj) {
+    phoneFieldObj.content.set('V', new PdfString('+1 (555) 123-4567'))
+}
 
 // Check the subscribe checkbox
-subscribeField.content.set('V', new PdfName('Yes'))
-subscribeField.content.set('AS', new PdfName('Yes'))
+const subscribeFieldObj = await findField('subscribe')
+if (subscribeFieldObj) {
+    subscribeFieldObj.content.set('V', new PdfName('Yes'))
+    subscribeFieldObj.content.set('AS', new PdfName('Yes'))
+}
 
 // Commit the changes
-await document.commit()
+await filledDocument.commit()
 
 // Save the filled form
-await fs.writeFile(`${tmpFolder}/form-filled.pdf`, document.toBytes())
+await fs.writeFile(`${tmpFolder}/form-filled.pdf`, filledDocument.toBytes())
 console.log('Created form-filled.pdf with filled form fields')
 
 console.log('\nForm field values:')

@@ -9,7 +9,7 @@ import {
     PdfEncryptionRecipient,
     PdfId,
 } from '../types'
-import { V5SecurityHandler } from './v5'
+import { PdfV5SecurityHandler } from './v5'
 import { PdfSecurityHandler, PdfStandardSecurityHandler } from './base'
 import { createStandardSecurityHandlerFromDictionary } from './utils'
 import { PdfName } from '../../core/objects/pdf-name'
@@ -22,7 +22,7 @@ import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
  *
  * @example
  * ```typescript
- * const handler = new PublicKeySecurityHandler({
+ * const handler = new PdfPublicKeySecurityHandler({
  *     recipients: [{
  *         certificate: recipientCertBytes,
  *         privateKey: privateKeyBytes
@@ -30,7 +30,7 @@ import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
  * })
  * ```
  */
-export class PublicKeySecurityHandler extends PdfSecurityHandler {
+export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
     /** Underlying standard security handler for key derivation. */
     private standardSecurityHandler: PdfStandardSecurityHandler
     /** List of recipients with their certificates and optional private keys. */
@@ -55,7 +55,7 @@ export class PublicKeySecurityHandler extends PdfSecurityHandler {
         super(options)
 
         this.standardSecurityHandler =
-            options.standardSecurityHandler ?? new V5SecurityHandler({})
+            options.standardSecurityHandler ?? new PdfV5SecurityHandler({})
         this.recipients = options.recipients
         this.seed = options.seed ?? getRandomBytes(20)
 
@@ -164,7 +164,7 @@ export class PublicKeySecurityHandler extends PdfSecurityHandler {
         }
 
         let digest: ByteArray
-        if (this.standardSecurityHandler instanceof V5SecurityHandler) {
+        if (this.standardSecurityHandler instanceof PdfV5SecurityHandler) {
             digest = await sha256(digestBytes)
         } else {
             digest = await sha1(digestBytes)

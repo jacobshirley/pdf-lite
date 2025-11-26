@@ -23,6 +23,7 @@ export class Ref<T> {
     value: T | Ref<T>
     /** Registered callbacks for update notifications */
     callbacks: Array<RefUpdateCallback<T>> = []
+    isModified: boolean = false
 
     /**
      * Creates a new Ref with an initial value.
@@ -48,7 +49,14 @@ export class Ref<T> {
             return
         }
 
+        const resolvedNewValue =
+            newValue instanceof Ref ? newValue.resolve() : newValue
+
         const oldValue = this.resolve()
+        if (oldValue !== resolvedNewValue) {
+            this.isModified = true
+        }
+
         this.value = newValue
         this.callbacks.forEach((cb) => cb(oldValue, this.resolve()))
     }

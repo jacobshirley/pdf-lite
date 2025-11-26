@@ -98,7 +98,7 @@ for (let i = 0; i < bytes.length; i += chunkSize) {
 
 // Signal end of input and collect remaining tokens
 incrementalTokeniser.eof = true
-for (const token of incrementalTokeniser.nextItems()) {
+for (const _ of incrementalTokeniser.nextItems()) {
     totalTokens++
 }
 

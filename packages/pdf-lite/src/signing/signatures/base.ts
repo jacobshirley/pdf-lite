@@ -24,7 +24,16 @@ const PLACEHOLDER_HEX_BYTES = padBytes(
     PADDING,
 )
 
+/**
+ * PDF signature dictionary containing all signature-related entries.
+ * Manages the ByteRange and Contents fields with appropriate placeholder sizing.
+ */
 export class PdfSignatureDictionary extends PdfDictionary<PdfSignatureDictionaryEntries> {
+    /**
+     * Creates a new signature dictionary.
+     *
+     * @param entries - The signature dictionary entries, ByteRange and Contents are auto-populated if not provided.
+     */
     constructor(
         entries: Omit<
             PdfSignatureDictionaryEntries,
@@ -50,15 +59,43 @@ export class PdfSignatureDictionary extends PdfDictionary<PdfSignatureDictionary
     }
 }
 
+/**
+ * Options for signature metadata.
+ */
 export type PdfSignatureSignOptions = {
+    /** Signing date. */
     date?: Date
+    /** Signer name. */
     name?: string
+    /** Reason for signing. */
     reason?: string
+    /** Contact information. */
     contactInfo?: string
+    /** Signing location. */
     location?: string
 }
 
+/**
+ * Abstract base class for PDF signature objects.
+ * Subclasses implement specific signature formats (PKCS#7, CAdES, etc.).
+ *
+ * @example
+ * ```typescript
+ * const signature = new PdfAdbePkcs7DetachedSignatureObject({
+ *     privateKey,
+ *     certificate,
+ *     reason: 'Approval'
+ * })
+ * document.add(signature)
+ * await document.commit()
+ * ```
+ */
 export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureDictionary> {
+    /**
+     * Creates a new signature object.
+     *
+     * @param content - Either a signature dictionary or options to create one.
+     */
     constructor(
         content:
             | PdfSignatureDictionary
@@ -98,6 +135,12 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
         )
     }
 
+    /**
+     * Signs the document bytes and returns the signature.
+     *
+     * @param options - Signing options including bytes to sign.
+     * @returns The signed bytes and optional revocation information.
+     */
     abstract sign(options: {
         bytes: ByteArray
         embedRevocationInfo?: boolean
@@ -106,6 +149,12 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
         revocationInfo?: RevocationInfo
     }>
 
+    /**
+     * Gets the signature hexadecimal content.
+     *
+     * @returns The Contents entry as hexadecimal.
+     * @throws Error if Contents entry is missing.
+     */
     get signedHexadecimal(): PdfHexadecimal {
         const contents = this.content.get('Contents')
         if (!contents) {
@@ -115,10 +164,21 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
         return contents
     }
 
+    /**
+     * Gets the raw signature bytes.
+     *
+     * @returns The signature bytes.
+     */
     get signedBytes(): ByteArray {
         return this.signedHexadecimal.bytes
     }
 
+    /**
+     * Sets the signed bytes in the signature dictionary.
+     *
+     * @param signedBytes - The signature bytes to set.
+     * @throws Error if Contents entry is missing.
+     */
     setSignedBytes(signedBytes: ByteArray): void {
         const contents = this.content.get('Contents')
         if (!contents) {
@@ -132,6 +192,12 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
         this.content.set('Contents', newHexadecimal)
     }
 
+    /**
+     * Sets the byte range array for the signature.
+     *
+     * @param byteRange - Array of [offset1, length1, offset2, length2].
+     * @throws Error if ByteRange entry is missing.
+     */
     setByteRange(byteRange: number[]): void {
         const byteRangeEntry = this.content.get('ByteRange')
         if (!byteRangeEntry) {
@@ -152,6 +218,11 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
         )
     }
 
+    /**
+     * Gets the insertion order for this object in the PDF.
+     *
+     * @returns High order value to place signature near end of document.
+     */
     insertOrder(): number {
         return PdfIndirectObject.MAX_ORDER_INDEX - 10
     }

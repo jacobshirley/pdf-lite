@@ -13,16 +13,43 @@ import { fetchRevocationInfo } from '../utils'
 import { PdfSignatureObject, PdfSignatureSignOptions } from './base'
 import { ByteArray } from '../../types'
 
+/**
+ * PKCS#7 detached signature object (adbe.pkcs7.detached).
+ * Creates CMS SignedData with the document hash as external data.
+ *
+ * @example
+ * ```typescript
+ * const signature = new PdfAdbePkcs7DetachedSignatureObject({
+ *     privateKey: keyBytes,
+ *     certificate: certBytes,
+ *     reason: 'Document approval',
+ *     timeStampAuthority: true
+ * })
+ * ```
+ */
 export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
+    /** Private key for signing. */
     privateKey: ByteArray
+    /** Signer certificate. */
     certificate: ByteArray
+    /** Additional certificates for chain building. */
     additionalCertificates: ByteArray[]
+    /** Issuer certificate for OCSP requests. */
     issuerCertificate?: ByteArray
+    /** Signing date. */
     date?: Date
+    /** Signature algorithm parameters. */
     algorithm?: AsymmetricEncryptionAlgorithmParams
+    /** Revocation information or 'fetch' to retrieve automatically. */
     revocationInfo?: RevocationInfo | 'fetch'
+    /** Timestamp authority configuration. */
     timeStampAuthority?: TimeStampAuthority
 
+    /**
+     * Creates a new PKCS#7 detached signature object.
+     *
+     * @param options - Signature configuration options.
+     */
     constructor(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray
@@ -54,6 +81,12 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
                 : options.timeStampAuthority
     }
 
+    /**
+     * Signs the document bytes using PKCS#7 detached format.
+     *
+     * @param options - Signing options with bytes and revocation embedding flag.
+     * @returns The CMS SignedData and revocation information.
+     */
     sign: PdfSignatureObject['sign'] = async (options) => {
         const { bytes } = options
 

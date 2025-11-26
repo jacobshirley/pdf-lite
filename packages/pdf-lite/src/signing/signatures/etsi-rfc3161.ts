@@ -6,9 +6,26 @@ import { MessageImprint } from 'pki-lite/timestamp/MessageImprint'
 import { SignedData } from 'pki-lite/pkcs7/SignedData'
 import { fetchRevocationInfo } from '../utils'
 
+/**
+ * RFC 3161 timestamp signature object (ETSI.RFC3161).
+ * Creates document timestamps using a Time Stamp Authority (TSA).
+ *
+ * @example
+ * ```typescript
+ * const timestamp = new PdfEtsiRfc3161SignatureObject({
+ *     timeStampAuthority: { url: 'http://timestamp.example.com' }
+ * })
+ * ```
+ */
 export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
+    /** Timestamp authority configuration. */
     timeStampAuthority: TimeStampAuthority
 
+    /**
+     * Creates a new RFC 3161 timestamp signature object.
+     *
+     * @param options - Configuration including optional TSA settings.
+     */
     constructor(
         options: PdfSignatureSignOptions & {
             timeStampAuthority?: TimeStampAuthority
@@ -28,6 +45,13 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
         }
     }
 
+    /**
+     * Creates a timestamp for the document bytes.
+     *
+     * @param options - Signing options with bytes to timestamp.
+     * @returns The timestamp token and revocation information.
+     * @throws Error if no timestamp token is received.
+     */
     sign: PdfSignatureObject['sign'] = async (options) => {
         const { bytes } = options
 

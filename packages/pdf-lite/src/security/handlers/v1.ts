@@ -15,19 +15,51 @@ import { stringToBytes } from '../../utils/stringToBytes'
 import { PdfEncryptionAlgorithmType } from '../types'
 import { PdfStandardSecurityHandler } from './base'
 
+/**
+ * V1 security handler implementing 40-bit RC4 encryption.
+ * This is the original PDF encryption format (PDF 1.1).
+ *
+ * @example
+ * ```typescript
+ * const handler = new V1SecurityHandler({
+ *     password: 'user123',
+ *     ownerPassword: 'admin456'
+ * })
+ * ```
+ */
 export class V1SecurityHandler extends PdfStandardSecurityHandler {
+    /**
+     * Gets the encryption revision number.
+     *
+     * @returns 2 for V1 encryption.
+     */
     getRevision(): number {
         return 2
     }
 
+    /**
+     * Gets the encryption version number.
+     *
+     * @returns 1 for 40-bit RC4 encryption.
+     */
     getVersion(): number {
         return 1
     }
 
+    /**
+     * Gets the encryption key length in bits.
+     *
+     * @returns 40 for V1 encryption.
+     */
     getKeyBits(): number {
         return 40
     }
 
+    /**
+     * Computes the owner key (O value) using RC4-40 algorithm.
+     *
+     * @returns The computed owner key.
+     */
     protected async computeOwnerKey(): Promise<ByteArray> {
         return await computeORc4_40(
             this.ownerPassword ?? this.password,
@@ -35,6 +67,12 @@ export class V1SecurityHandler extends PdfStandardSecurityHandler {
         )
     }
 
+    /**
+     * Computes the user key (U value) using RC4-40 algorithm.
+     *
+     * @returns The computed user key.
+     * @throws Error if document ID, owner key, or permissions are not set.
+     */
     protected async computeUserKey(): Promise<ByteArray> {
         if (!this.documentId) {
             throw new Error('Document ID is required to compute U value')
@@ -56,6 +94,12 @@ export class V1SecurityHandler extends PdfStandardSecurityHandler {
         )
     }
 
+    /**
+     * Computes the master encryption key from the password.
+     *
+     * @returns The computed master key.
+     * @throws Error if required parameters are missing or password is incorrect.
+     */
     protected async computeMasterKey(): Promise<ByteArray> {
         await this.initKeys()
 
@@ -105,6 +149,15 @@ export class V1SecurityHandler extends PdfStandardSecurityHandler {
         )
     }
 
+    /**
+     * Computes the object-specific encryption key.
+     *
+     * @param objectNumber - The PDF object number.
+     * @param generationNumber - The PDF generation number.
+     * @param algorithm - Optional algorithm type for key derivation.
+     * @returns The computed object key.
+     * @throws Error if object or generation number is invalid.
+     */
     async computeObjectKey(
         objectNumber?: number,
         generationNumber?: number,
@@ -134,6 +187,13 @@ export class V1SecurityHandler extends PdfStandardSecurityHandler {
         return key
     }
 
+    /**
+     * Gets an RC4 cipher for the specified object.
+     *
+     * @param objectNumber - The PDF object number.
+     * @param generationNumber - The PDF generation number.
+     * @returns An RC4 cipher instance.
+     */
     protected async getCipher(
         objectNumber?: number,
         generationNumber?: number,
@@ -143,6 +203,12 @@ export class V1SecurityHandler extends PdfStandardSecurityHandler {
         return rc4(key)
     }
 
+    /**
+     * Recovers the user password from the owner password.
+     *
+     * @param ownerPassword - The owner password.
+     * @returns The recovered user password as a string.
+     */
     async recoverUserPassword(
         ownerPassword?: ByteArray | string,
     ): Promise<string> {

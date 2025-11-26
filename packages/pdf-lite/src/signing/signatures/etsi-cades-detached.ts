@@ -30,19 +30,49 @@ import {
 import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
 import { ByteArray } from '../../types'
 
+/**
+ * ETSI CAdES detached signature object (ETSI.CAdES.detached).
+ * Creates CAdES-compliant signatures with enhanced attributes.
+ *
+ * @example
+ * ```typescript
+ * const signature = new PdfEtsiCadesDetachedSignatureObject({
+ *     privateKey: keyBytes,
+ *     certificate: certBytes,
+ *     reason: 'Approval',
+ *     timeStampAuthority: true
+ * })
+ * ```
+ */
 export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
+    /** Private key for signing. */
     privateKey: ByteArray
+    /** Signer certificate. */
     certificate: ByteArray
+    /** Additional certificates for chain building. */
     additionalCertificates: ByteArray[]
+    /** Issuer certificate for OCSP requests. */
     issuerCertificate?: ByteArray
+    /** Signing date. */
     date?: Date
+    /** Reason for signing. */
     reason?: string
+    /** Signing location. */
     location?: string
+    /** Signature algorithm parameters. */
     algorithm?: AsymmetricEncryptionAlgorithmParams
+    /** Revocation information or 'fetch' to retrieve automatically. */
     revocationInfo?: RevocationInfo | 'fetch'
+    /** Timestamp authority configuration. */
     timeStampAuthority?: TimeStampAuthority
+    /** Signature policy document reference. */
     policyDocument?: SignaturePolicyDocument
 
+    /**
+     * Creates a new CAdES detached signature object.
+     *
+     * @param options - Signature configuration options.
+     */
     constructor(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray
@@ -86,6 +116,12 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
         this.policyDocument = options.policyDocument
     }
 
+    /**
+     * Signs the document bytes using CAdES detached format.
+     *
+     * @param options - Signing options with bytes and revocation embedding flag.
+     * @returns The CMS SignedData and revocation information.
+     */
     sign: PdfSignatureObject['sign'] = async (options) => {
         const { bytes } = options
 

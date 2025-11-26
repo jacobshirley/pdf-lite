@@ -14,7 +14,20 @@ import { PdfSignatureObject, PdfSignatureSignOptions } from './base'
 import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
 import { ByteArray } from '../../types'
 
+/**
+ * PKCS#7 SHA-1 signature object (adbe.pkcs7.sha1).
+ * Creates CMS SignedData with SHA-1 hash embedded as signed content.
+ *
+ * @example
+ * ```typescript
+ * const signature = new PdfAdbePkcs7Sha1SignatureObject({
+ *     privateKey: keyBytes,
+ *     certificate: certBytes
+ * })
+ * ```
+ */
 export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
+    /** Fixed algorithm for SHA-1 signatures. */
     static readonly ALGORITHM: AsymmetricEncryptionAlgorithmParams = {
         type: 'RSASSA_PKCS1_v1_5',
         params: {
@@ -22,14 +35,26 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
         },
     }
 
+    /** Private key for signing. */
     privateKey: ByteArray
+    /** Signer certificate. */
     certificate: ByteArray
+    /** Additional certificates for chain building. */
     additionalCertificates: ByteArray[]
+    /** Issuer certificate for OCSP requests. */
     issuerCertificate?: ByteArray
+    /** Signing date. */
     date?: Date
+    /** Revocation information or 'fetch' to retrieve automatically. */
     revocationInfo?: RevocationInfo | 'fetch'
+    /** Timestamp authority configuration. */
     timeStampAuthority?: TimeStampAuthority
 
+    /**
+     * Creates a new PKCS#7 SHA-1 signature object.
+     *
+     * @param options - Signature configuration options.
+     */
     constructor(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray
@@ -60,6 +85,12 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
                 : options.timeStampAuthority
     }
 
+    /**
+     * Signs the document bytes using PKCS#7 SHA-1 format.
+     *
+     * @param options - Signing options with bytes and revocation embedding flag.
+     * @returns The CMS SignedData and revocation information.
+     */
     sign: PdfSignatureObject['sign'] = async (options) => {
         const { bytes } = options
 

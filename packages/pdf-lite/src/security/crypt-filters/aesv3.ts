@@ -2,7 +2,26 @@ import { aes256 } from '../../crypto/ciphers/aes256'
 import { Cipher } from '../../types'
 import { PdfCryptFilter, CryptFilterOptions } from './base'
 
+/**
+ * AESV3 crypt filter using AES-256-CBC encryption.
+ * Implements 256-bit AES encryption in CBC mode for PDF content.
+ * This is the recommended encryption method for new documents.
+ *
+ * @example
+ * ```typescript
+ * const filter = new AesV3CryptFilter({
+ *     authEvent: 'DocOpen',
+ *     securityHandler
+ * })
+ * const encrypted = await filter.encrypt(data, objectNumber, generationNumber)
+ * ```
+ */
 export class AesV3CryptFilter extends PdfCryptFilter {
+    /**
+     * Creates a new AES-256 crypt filter.
+     *
+     * @param options - Configuration options with authentication event and security handler.
+     */
     constructor(options: {
         authEvent: CryptFilterOptions['authEvent']
         securityHandler?: CryptFilterOptions['securityHandler']
@@ -10,6 +29,14 @@ export class AesV3CryptFilter extends PdfCryptFilter {
         super({ ...options, cfm: 'AESV3', length: 256 })
     }
 
+    /**
+     * Gets an AES-256 cipher for encryption/decryption.
+     *
+     * @param objectNumber - The PDF object number (unused for AESV3).
+     * @param generationNumber - The PDF generation number (unused for AESV3).
+     * @returns An AES-256 cipher instance.
+     * @throws Error if security handler is not set.
+     */
     async getCipher(
         objectNumber?: number,
         generationNumber?: number,

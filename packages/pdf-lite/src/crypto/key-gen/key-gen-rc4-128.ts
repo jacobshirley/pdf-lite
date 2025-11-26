@@ -6,6 +6,13 @@ import { DEFAULT_PADDING } from '../constants'
 import { padPassword } from '../key-derivation/key-derivation'
 import { int32ToLittleEndianBytes, removePdfPasswordPadding } from '../utils'
 
+/**
+ * Encrypts data with RC4 using the provided key.
+ *
+ * @param key - The encryption key.
+ * @param data - The data to encrypt.
+ * @returns A promise that resolves to the encrypted data.
+ */
 async function rc4EncryptWithKey(
     key: ByteArray,
     data: ByteArray,
@@ -13,6 +20,19 @@ async function rc4EncryptWithKey(
     return await rc4(key).encrypt(data)
 }
 
+/**
+ * Decrypts the user password from the /O value using RC4-128.
+ * Used to recover the user password when the owner password is known.
+ *
+ * @param ownerPw - The owner password.
+ * @param ownerKey - The /O value from the encryption dictionary.
+ * @returns A promise that resolves to the decrypted user password (with padding removed).
+ *
+ * @example
+ * ```typescript
+ * const userPassword = await decryptUserPasswordRc4_128(ownerPw, O)
+ * ```
+ */
 export async function decryptUserPasswordRc4_128(
     ownerPw: ByteArray,
     ownerKey: ByteArray,
@@ -34,6 +54,19 @@ export async function decryptUserPasswordRc4_128(
     return removePdfPasswordPadding(data)
 }
 
+/**
+ * Computes the /O value for RC4-128 PDF encryption.
+ * The /O value is used to verify the owner password.
+ *
+ * @param ownerPassword - The owner password.
+ * @param userPassword - The user password.
+ * @returns A promise that resolves to the 32-byte /O value.
+ *
+ * @example
+ * ```typescript
+ * const O = await computeOValueRc4_128(ownerPassword, userPassword)
+ * ```
+ */
 export async function computeOValueRc4_128(
     ownerPassword: ByteArray,
     userPassword: ByteArray,
@@ -58,6 +91,17 @@ export async function computeOValueRc4_128(
     return data
 }
 
+/**
+ * Computes the 128-bit encryption key for RC4-128 PDF encryption.
+ *
+ * @param userPad - The padded user password.
+ * @param oValue - The /O value.
+ * @param permissions - The /P value (permissions flags).
+ * @param id - The first element of the /ID array.
+ * @param encryptMetadata - Whether to encrypt metadata.
+ * @param revision - The encryption revision number.
+ * @returns A promise that resolves to the 16-byte encryption key.
+ */
 async function computeEncryptionKeyRc4_128(
     userPad: ByteArray,
     oValue: ByteArray,
@@ -88,6 +132,23 @@ async function computeEncryptionKeyRc4_128(
     return digest.subarray(0, 16) // RC4-128
 }
 
+/**
+ * Computes the /U value for RC4-128 PDF encryption.
+ * The /U value is used to verify the user password.
+ *
+ * @param userPassword - The user password.
+ * @param oValue - The /O value.
+ * @param permissions - The /P value (permissions flags).
+ * @param id - The first element of the /ID array.
+ * @param encryptMetadata - Whether to encrypt metadata.
+ * @param revision - The encryption revision number.
+ * @returns A promise that resolves to the 32-byte /U value.
+ *
+ * @example
+ * ```typescript
+ * const U = await computeUValueRc4_128(userPassword, O, permissions, fileId, true)
+ * ```
+ */
 export async function computeUValueRc4_128(
     userPassword: ByteArray,
     oValue: ByteArray,

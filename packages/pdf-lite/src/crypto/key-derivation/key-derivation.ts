@@ -4,6 +4,19 @@ import { int32ToLittleEndianBytes } from '../utils.js'
 import { concatUint8Arrays } from '../../utils/concatUint8Arrays.js'
 import { ByteArray } from '../../types.js'
 
+/**
+ * Pads a password to exactly 32 bytes using the PDF standard padding.
+ * If the password is shorter than 32 bytes, it is padded with bytes from DEFAULT_PADDING.
+ * If the password is 32 bytes or longer, only the first 32 bytes are used.
+ *
+ * @param password - The password to pad.
+ * @returns A 32-byte padded password.
+ *
+ * @example
+ * ```typescript
+ * const padded = padPassword(new Uint8Array([1, 2, 3])) // Returns 32-byte array
+ * ```
+ */
 export function padPassword(password: ByteArray): ByteArray {
     const padded = new Uint8Array(32)
     if (password.length >= 32) {
@@ -68,6 +81,21 @@ export async function computeMasterKey(
     return digest.subarray(0, keyLengthBytes)
 }
 
+/**
+ * Derives an object-specific encryption key from the master key.
+ * Used to encrypt individual PDF objects with unique keys.
+ *
+ * @param mkey - The master encryption key.
+ * @param objNumber - The PDF object number.
+ * @param objGeneration - The PDF object generation number.
+ * @param useAesSalt - Whether to include the AES salt ('sAlT'). Defaults to true.
+ * @returns A promise that resolves to the derived object key.
+ *
+ * @example
+ * ```typescript
+ * const objectKey = await deriveObjectKey(masterKey, 5, 0)
+ * ```
+ */
 export async function deriveObjectKey(
     mkey: ByteArray,
     objNumber: number,

@@ -2,8 +2,29 @@ import { ByteArray, PdfFilter } from '../types'
 import { bytesToString } from '../utils/bytesToString'
 import { stringToBytes } from '../utils/stringToBytes'
 
+/**
+ * Creates an ASCIIHex filter for encoding and decoding PDF stream data.
+ * ASCIIHex encodes binary data as pairs of hexadecimal digits,
+ * resulting in a 100% expansion compared to the original data.
+ *
+ * @returns A PdfFilter object with encode and decode methods.
+ *
+ * @example
+ * ```typescript
+ * const filter = asciiHex()
+ * const encoded = filter.encode(binaryData)
+ * const decoded = filter.decode(encoded)
+ * ```
+ */
 export function asciiHex(): PdfFilter {
     return {
+        /**
+         * Encodes binary data to ASCIIHex format.
+         * Appends '>' as the end-of-data marker.
+         *
+         * @param data - The binary data to encode.
+         * @returns The ASCIIHex encoded data as a byte array.
+         */
         encode: (data: ByteArray) => {
             let out = ''
             for (let i = 0; i < data.length; i++) {
@@ -12,6 +33,13 @@ export function asciiHex(): PdfFilter {
             out += '>'
             return stringToBytes(out)
         },
+        /**
+         * Decodes ASCIIHex encoded data back to binary format.
+         * Handles whitespace and the '>' end-of-data marker.
+         *
+         * @param data - The ASCIIHex encoded data.
+         * @returns The decoded binary data as a byte array.
+         */
         decode: (data: ByteArray) => {
             let hex = bytesToString(data).replace(/\s+/g, '')
             if (hex.endsWith('>')) hex = hex.slice(0, -1)

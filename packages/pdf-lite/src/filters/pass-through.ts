@@ -1,10 +1,34 @@
 import { ByteArray, PdfFilter } from '../types.js'
 
+/**
+ * Creates a pass-through filter that performs no transformation.
+ * Returns data unchanged, useful for testing or as a placeholder filter.
+ *
+ * @returns A PdfFilter object with encode and decode methods that return data unchanged.
+ *
+ * @example
+ * ```typescript
+ * const filter = passthroughFilter()
+ * const result = filter.encode(data) // Returns data unchanged
+ * ```
+ */
 export function passthroughFilter(): PdfFilter {
     return {
+        /**
+         * Returns the data unchanged.
+         *
+         * @param data - The data to pass through.
+         * @returns The same data unchanged.
+         */
         decode: (data: ByteArray) => {
             return data
         },
+        /**
+         * Returns the data unchanged.
+         *
+         * @param data - The data to pass through.
+         * @returns The same data unchanged.
+         */
         encode: (data: ByteArray) => {
             return data
         },

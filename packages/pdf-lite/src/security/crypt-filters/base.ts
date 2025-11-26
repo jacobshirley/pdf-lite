@@ -5,19 +5,46 @@ import { ByteArray, Cipher } from '../../types'
 import { PdfSecurityHandler } from '../handlers/base'
 import { PdfCryptFilterDictionary } from '../types'
 
+/**
+ * Configuration options for creating a crypt filter.
+ */
 export type CryptFilterOptions = {
+    /** Security handler for key derivation and encryption operations. */
     securityHandler?: PdfSecurityHandler
+    /** Crypt filter method: 'None' (identity), 'V2' (RC4), 'AESV2' (AES-128), or 'AESV3' (AES-256). */
     cfm: 'None' | 'V2' | 'AESV2' | 'AESV3'
+    /** Event that triggers authentication: 'DocOpen' or 'EFOpen' (embedded file open). */
     authEvent: 'DocOpen' | 'EFOpen'
+    /** Key length in bits. */
     length?: number
 }
 
+/**
+ * Abstract base class for PDF crypt filters.
+ * Crypt filters define how specific types of data (strings, streams, files) are encrypted.
+ *
+ * @example
+ * ```typescript
+ * const filter = new AesV2CryptFilter({ authEvent: 'DocOpen' })
+ * filter.setSecurityHandler(securityHandler)
+ * const encrypted = await filter.encrypt(data, objectNumber, generationNumber)
+ * ```
+ */
 export abstract class PdfCryptFilter {
+    /** Crypt filter method identifier. */
     cfm: 'None' | 'V2' | 'AESV2' | 'AESV3'
+    /** Authentication event trigger. */
     authEvent: 'DocOpen' | 'EFOpen'
+    /** Key length in bits. */
     length: number
+    /** Security handler for cryptographic operations. */
     protected securityHandler?: PdfSecurityHandler
 
+    /**
+     * Creates a new crypt filter with the specified options.
+     *
+     * @param options - Configuration options for the crypt filter.
+     */
     constructor(options: CryptFilterOptions) {
         const { cfm, authEvent, length, securityHandler } = options
 
@@ -27,19 +54,44 @@ export abstract class PdfCryptFilter {
         this.length = length ?? 0
     }
 
+    /**
+     * Sets the security handler for this crypt filter.
+     *
+     * @param handler - The security handler to use for key derivation.
+     */
     setSecurityHandler(handler: PdfSecurityHandler) {
         this.securityHandler = handler
     }
 
+    /**
+     * Gets the current security handler.
+     *
+     * @returns The security handler, or undefined if not set.
+     */
     getSecurityHandler(): PdfSecurityHandler | undefined {
         return this.securityHandler
     }
 
+    /**
+     * Gets a cipher instance for encrypting/decrypting data.
+     *
+     * @param objectNumber - The PDF object number for key derivation.
+     * @param generationNumber - The PDF generation number for key derivation.
+     * @returns A cipher instance for encryption/decryption operations.
+     */
     abstract getCipher(
         objectNumber?: number,
         generationNumber?: number,
     ): Promise<Cipher>
 
+    /**
+     * Encrypts data using this crypt filter.
+     *
+     * @param data - The data to encrypt.
+     * @param objectNumber - The PDF object number for key derivation.
+     * @param generationNumber - The PDF generation number for key derivation.
+     * @returns The encrypted data.
+     */
     async encrypt(
         data: ByteArray,
         objectNumber?: number,
@@ -49,6 +101,14 @@ export abstract class PdfCryptFilter {
         return cipher.encrypt(data)
     }
 
+    /**
+     * Decrypts data using this crypt filter.
+     *
+     * @param data - The data to decrypt.
+     * @param objectNumber - The PDF object number for key derivation.
+     * @param generationNumber - The PDF generation number for key derivation.
+     * @returns The decrypted data.
+     */
     async decrypt(
         data: ByteArray,
         objectNumber?: number,
@@ -58,6 +118,11 @@ export abstract class PdfCryptFilter {
         return cipher.decrypt(data)
     }
 
+    /**
+     * Converts this crypt filter to a PDF dictionary representation.
+     *
+     * @returns The crypt filter dictionary.
+     */
     toDictionary(): PdfCryptFilterDictionary {
         const dict: PdfCryptFilterDictionary = new PdfDictionary({
             AuthEvent: new PdfName(this.authEvent),

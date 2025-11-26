@@ -7,6 +7,14 @@ import { PdfNumber } from '../core/objects/pdf-number'
 import { PdfString } from '../core/objects/pdf-string'
 import { ByteArray } from '../types'
 
+/**
+ * PDF signature subfilter types defining the signature format.
+ * - 'adbe.pkcs7.detached': PKCS#7 detached signature
+ * - 'adbe.pkcs7.sha1': PKCS#7 SHA-1 signature
+ * - 'adbe.x509.rsa_sha1': X.509 RSA-SHA1 signature
+ * - 'ETSI.CAdES.detached': CAdES detached signature
+ * - 'ETSI.RFC3161': RFC 3161 timestamp signature
+ */
 export type PdfSignatureSubType =
     | 'adbe.pkcs7.detached'
     | 'adbe.pkcs7.sha1'
@@ -14,8 +22,16 @@ export type PdfSignatureSubType =
     | 'ETSI.CAdES.detached'
     | 'ETSI.RFC3161'
 
+/**
+ * PDF signature type.
+ * - 'Sig': Standard digital signature
+ * - 'DocTimeStamp': Document timestamp
+ */
 export type PdfSignatureType = 'Sig' | 'DocTimeStamp'
 
+/**
+ * Entries in a PDF signature dictionary.
+ */
 export type PdfSignatureDictionaryEntries = {
     Type: PdfName<PdfSignatureType>
     Filter: PdfName
@@ -33,20 +49,38 @@ export type PdfSignatureDictionaryEntries = {
     Cert?: PdfArray<PdfString | PdfHexadecimal> | PdfString | PdfHexadecimal
 }
 
+/**
+ * Configuration for a timestamp authority (TSA).
+ */
 export type TimeStampAuthority = {
-    url: string // URL of the timestamp authority
-    username?: string // Username for the timestamp authority
-    password?: string // Password for the timestamp authority
+    /** URL of the timestamp authority service. */
+    url: string
+    /** Optional username for authentication. */
+    username?: string
+    /** Optional password for authentication. */
+    password?: string
 }
 
+/**
+ * Revocation information for certificate validation.
+ */
 export type RevocationInfo = {
-    crls?: ByteArray[] // Certificate Revocation Lists for revocation info
-    ocsps?: ByteArray[] // OCSP responses for revocation info
-    otherRevInfo?: { type: string; value: ByteArray }[] // Other
+    /** Certificate Revocation Lists (CRLs). */
+    crls?: ByteArray[]
+    /** OCSP responses. */
+    ocsps?: ByteArray[]
+    /** Other revocation information types. */
+    otherRevInfo?: { type: string; value: ByteArray }[]
 }
 
+/**
+ * Signature policy document reference for CAdES signatures.
+ */
 export type SignaturePolicyDocument = {
-    oid: string // Object Identifier for the signature policy
-    hash: ByteArray // Hash of the policy document
-    hashAlgorithm: HashAlgorithm // Hash algorithm used for the policy document
+    /** Object Identifier for the signature policy. */
+    oid: string
+    /** Hash of the policy document. */
+    hash: ByteArray
+    /** Hash algorithm used for the policy document. */
+    hashAlgorithm: HashAlgorithm
 }

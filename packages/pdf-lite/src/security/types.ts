@@ -8,14 +8,28 @@ import { PdfNumber } from '../core/objects/pdf-number'
 import { PdfString } from '../core/objects/pdf-string'
 import { ByteArray } from '../types'
 
+/**
+ * Represents the PDF document ID array containing two hexadecimal identifiers.
+ * The first element is the permanent ID assigned when the document is created,
+ * and the second is updated when the document is modified.
+ */
 export type PdfId = PdfArray<PdfHexadecimal>
 
+/**
+ * Dictionary defining a crypt filter for PDF encryption.
+ * Specifies the encryption method and authentication event trigger.
+ */
 export type PdfCryptFilterDictionary = PdfDictionary<{
     AuthEvent: PdfName<'DocOpen' | 'EFOpen'>
     CFM: PdfName<'None' | 'V2' | 'AESV2' | 'AESV3'>
     Length?: PdfNumber
 }>
 
+/**
+ * The encryption dictionary stored in the PDF trailer.
+ * Contains all encryption parameters including filter type, version, revision,
+ * owner/user keys, permissions, and crypt filter configurations.
+ */
 export type PdfEncryptionDictionary = PdfDictionary<{
     Filter: PdfName<'Standard' | 'Adobe.PubSec'>
     SubFilter?: PdfName<'adbe.pkcs7.s3' | 'adbe.pkcs7.s4' | 'adbe.pkcs7.s5'>
@@ -39,16 +53,37 @@ export type PdfEncryptionDictionary = PdfDictionary<{
     Recipients?: PdfArray<PdfHexadecimal>
 }>
 
+/**
+ * An indirect object containing the encryption dictionary.
+ */
 export type PdfEncryptionDictionaryObject =
     PdfIndirectObject<PdfEncryptionDictionary>
 
+/**
+ * Specifies the type of content being encrypted.
+ * - 'string': PDF string objects
+ * - 'stream': PDF stream objects
+ * - 'file': Embedded file streams
+ */
 export type CryptFilterType = 'string' | 'stream' | 'file'
 
+/**
+ * Recipient information for public key encryption.
+ * Contains the certificate for encryption and optional private key for decryption.
+ */
 export type PdfEncryptionRecipient = {
     certificate?: ByteArray
     privateKey?: ByteArray
 }
 
+/**
+ * Supported encryption algorithm types.
+ * - 'RC4-40': 40-bit RC4 encryption (weak, legacy)
+ * - 'RC4-128': 128-bit RC4 encryption (legacy)
+ * - 'AES-128-CBC': 128-bit AES in CBC mode
+ * - 'AES-256-CBC': 256-bit AES in CBC mode (recommended)
+ * - 'none': No encryption (identity filter)
+ */
 export type PdfEncryptionAlgorithmType =
     | 'RC4-40'
     | 'RC4-128'
@@ -56,20 +91,32 @@ export type PdfEncryptionAlgorithmType =
     | 'AES-256-CBC'
     | 'none'
 
+/**
+ * RC4-40 encryption configuration.
+ */
 type Rc40 = {
     default: 'RC4-40'
 }
 
+/**
+ * RC4-128 encryption configuration.
+ */
 type Rc128 = {
     default: 'RC4-128'
 }
 
+/**
+ * AES-128 encryption configuration with optional per-type crypt filters.
+ */
 type Aes128WithCryptFilters = {
     default: 'AES-128-CBC'
     streams?: 'AES-128-CBC' | 'RC4-128' | 'RC4-40' | 'none'
     strings?: 'AES-128-CBC' | 'RC4-128' | 'RC4-40' | 'none'
 }
 
+/**
+ * AES-256 encryption configuration with optional per-type crypt filters.
+ */
 type Aes256 = {
     default: 'AES-256-CBC' | 'none'
     streams?: 'AES-256-CBC' | 'AES-128-CBC' | 'RC4-128' | 'none'
@@ -77,12 +124,19 @@ type Aes256 = {
     strings?: 'AES-256-CBC' | 'AES-128-CBC' | 'RC4-128' | 'none'
 }
 
+/**
+ * Union of all encryption algorithm configuration options.
+ */
 export type PdfEncryptionAlgorithmOptions =
     | Rc40
     | Rc128
     | Aes128WithCryptFilters
     | Aes256
 
+/**
+ * Options for configuring PDF encryption.
+ * Includes encryption method, passwords, document ID, and permission settings.
+ */
 export type PdfEncryptionOptions = {
     method?: PdfEncryptionAlgorithmOptions
     password?: ByteArray | string

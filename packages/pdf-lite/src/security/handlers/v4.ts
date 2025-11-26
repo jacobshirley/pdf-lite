@@ -21,15 +21,35 @@ import { V2SecurityHandler } from './v2'
 
 const IDENTITY_CRYPT_FILTER = new IdentityCryptFilter({ authEvent: 'DocOpen' })
 
+/**
+ * V4 security handler implementing AES-128-CBC encryption with crypt filters.
+ * Supports different encryption methods for strings, streams, and embedded files (PDF 1.5).
+ *
+ * @example
+ * ```typescript
+ * const handler = new V4SecurityHandler({
+ *     password: 'user123',
+ *     ownerPassword: 'admin456'
+ * })
+ * handler.setCryptFilter('StmFilter', new AesV2CryptFilter({ authEvent: 'DocOpen' }))
+ * ```
+ */
 export class V4SecurityHandler extends V2SecurityHandler {
+    /** Map of named crypt filters. */
     protected cryptFilters: Map<string, PdfCryptFilter> = new Map([
         ['Identity', IDENTITY_CRYPT_FILTER],
     ])
 
+    /** Mapping of content types to crypt filter names. */
     protected cryptFiltersByType: {
         [key in CryptFilterType]?: string
     } = {}
 
+    /**
+     * Creates a new V4 security handler with AES-128 encryption.
+     *
+     * @param options - Configuration options for the handler.
+     */
     constructor(options: PdfStandardSecurityHandlerOptions) {
         super(options)
 
@@ -44,10 +64,22 @@ export class V4SecurityHandler extends V2SecurityHandler {
         this.setCryptFilterForType('string', 'StdCF')
     }
 
+    /**
+     * Gets a crypt filter by name.
+     *
+     * @param name - The crypt filter name.
+     * @returns The crypt filter, or undefined if not found.
+     */
     getCryptFilter(name: string): PdfCryptFilter | undefined {
         return this.cryptFilters.get(name)
     }
 
+    /**
+     * Gets the crypt filter assigned to a content type.
+     *
+     * @param type - The content type ('string', 'stream', or 'file').
+     * @returns The assigned crypt filter, or null if none.
+     */
     getCryptFilterByType(type: CryptFilterType): PdfCryptFilter | null {
         const name = this.cryptFiltersByType[type]
         if (name) {
@@ -56,23 +88,54 @@ export class V4SecurityHandler extends V2SecurityHandler {
         return null
     }
 
+    /**
+     * Assigns a crypt filter to a content type.
+     *
+     * @param type - The content type.
+     * @param name - The crypt filter name.
+     */
     setCryptFilterForType(type: CryptFilterType, name: string): void {
         this.cryptFiltersByType[type] = name
     }
 
+    /**
+     * Registers a named crypt filter.
+     *
+     * @param name - The filter name.
+     * @param filter - The crypt filter instance.
+     */
     setCryptFilter(name: string, filter: PdfCryptFilter): void {
         filter.setSecurityHandler(this)
         this.cryptFilters.set(name, filter)
     }
 
+    /**
+     * Gets the encryption revision number.
+     *
+     * @returns 4 for V4 encryption.
+     */
     getRevision(): number {
         return 4
     }
 
+    /**
+     * Gets the encryption version number.
+     *
+     * @returns 4 for crypt filter-based encryption.
+     */
     getVersion(): number {
         return 4
     }
 
+    /**
+     * Computes the object-specific encryption key.
+     *
+     * @param objectNumber - The PDF object number.
+     * @param generationNumber - The PDF generation number.
+     * @param algorithm - Optional algorithm type for key derivation.
+     * @returns The computed object key.
+     * @throws Error if object or generation number is invalid.
+     */
     async computeObjectKey(
         objectNumber?: number,
         generationNumber?: number,
@@ -102,6 +165,13 @@ export class V4SecurityHandler extends V2SecurityHandler {
         return key
     }
 
+    /**
+     * Gets an AES-128 cipher for the specified object.
+     *
+     * @param objectNumber - The PDF object number.
+     * @param generationNumber - The PDF generation number.
+     * @returns An AES-128 cipher instance.
+     */
     protected async getCipher(
         objectNumber?: number,
         generationNumber?: number,
@@ -111,6 +181,11 @@ export class V4SecurityHandler extends V2SecurityHandler {
         return aes128(key)
     }
 
+    /**
+     * Reads encryption parameters and crypt filter definitions from the dictionary.
+     *
+     * @param encryptionDictionary - The encryption dictionary from the PDF.
+     */
     readEncryptionDictionary(
         encryptionDictionary: PdfEncryptionDictionary,
     ): void {
@@ -220,6 +295,9 @@ export class V4SecurityHandler extends V2SecurityHandler {
         }
     }
 
+    /**
+     * Writes the encryption dictionary including crypt filter definitions.
+     */
     async write(): Promise<void> {
         await super.write()
 
@@ -252,6 +330,15 @@ export class V4SecurityHandler extends V2SecurityHandler {
         }
     }
 
+    /**
+     * Encrypts data using the appropriate crypt filter for the content type.
+     *
+     * @param type - The type of content being encrypted.
+     * @param data - The data to encrypt.
+     * @param objectNumber - The PDF object number.
+     * @param generationNumber - The PDF generation number.
+     * @returns The encrypted data.
+     */
     encrypt(
         type: 'string' | 'stream' | 'file',
         data: ByteArray,
@@ -266,6 +353,15 @@ export class V4SecurityHandler extends V2SecurityHandler {
         return super.encrypt(type, data, objectNumber, generationNumber)
     }
 
+    /**
+     * Decrypts data using the appropriate crypt filter for the content type.
+     *
+     * @param type - The type of content being decrypted.
+     * @param data - The encrypted data.
+     * @param objectNumber - The PDF object number.
+     * @param generationNumber - The PDF generation number.
+     * @returns The decrypted data.
+     */
     decrypt(
         type: 'string' | 'stream' | 'file',
         data: ByteArray,

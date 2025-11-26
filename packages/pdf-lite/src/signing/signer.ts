@@ -7,9 +7,27 @@ import { concatUint8Arrays } from '../utils/concatUint8Arrays'
 import { PdfDocumentSecurityStoreObject } from './document-security-store'
 import { PdfSignatureObject } from './signatures'
 
+/**
+ * Handles digital signing operations for PDF documents.
+ * Processes signature objects and optionally stores revocation information in the DSS.
+ *
+ * @example
+ * ```typescript
+ * const signer = new PdfSigner()
+ * const signedDoc = await signer.sign(document)
+ * ```
+ */
 export class PdfSigner {
+    /** Whether to use the Document Security Store for revocation information. */
     useDocumentSecurityStore: boolean = true
 
+    /**
+     * Signs all signature objects in the document.
+     * Computes byte ranges, generates signatures, and optionally adds revocation info to DSS.
+     *
+     * @param document - The PDF document to sign.
+     * @returns The signed document.
+     */
     async sign(document: PdfDocument): Promise<PdfDocument> {
         const signatures: PdfSignatureObject[] = [
             ...document.objects.filter((x) => x instanceof PdfSignatureObject),

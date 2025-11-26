@@ -1,6 +1,6 @@
 {
     "name": "pdf-lite",
-    "version": "1.0.0",
+    "version": "1.0.1-alpha.0",
     "type": "module",
     "description": "A lightweight PDF library for Node.js and the browser",
     "main": "dist/index.js",
@@ -67,6 +67,6 @@
         "typescript": "5.9.3"
     },
     "dependencies": {
-        "pdf-lite": "^1.0.0"
+        "pdf-lite": "^1.0.1-alpha.0"
     }
 }

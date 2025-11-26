@@ -1,0 +1,13 @@
+[**pdf-lite**](../../../README.md)
+
+---
+
+[pdf-lite](../../../README.md) / [security/types](../README.md) / PdfEncryptionDictionary
+
+# Type Alias: PdfEncryptionDictionary
+
+> **PdfEncryptionDictionary** = [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<\{ `CF?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<\{\[`key`: `string`\]: [`PdfCryptFilterDictionary`](PdfCryptFilterDictionary.md); \}\>; `EFF?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `EncryptMetadata?`: [`PdfBoolean`](../../../core/objects/pdf-boolean/classes/PdfBoolean.md); `Filter`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`"Standard"` \| `"Adobe.PubSec"`\>; `ID?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfHexadecimal`](../../../core/objects/pdf-hexadecimal/classes/PdfHexadecimal.md)\>; `Length`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `O`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfHexadecimal`](../../../core/objects/pdf-hexadecimal/classes/PdfHexadecimal.md); `OE?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfHexadecimal`](../../../core/objects/pdf-hexadecimal/classes/PdfHexadecimal.md); `P`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `Perms?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfHexadecimal`](../../../core/objects/pdf-hexadecimal/classes/PdfHexadecimal.md); `R`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `Recipients?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfHexadecimal`](../../../core/objects/pdf-hexadecimal/classes/PdfHexadecimal.md)\>; `StmF?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `StrF?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `SubFilter?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`"adbe.pkcs7.s3"` \| `"adbe.pkcs7.s4"` \| `"adbe.pkcs7.s5"`\>; `U`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfHexadecimal`](../../../core/objects/pdf-hexadecimal/classes/PdfHexadecimal.md); `UE?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfHexadecimal`](../../../core/objects/pdf-hexadecimal/classes/PdfHexadecimal.md); `V`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); \}\>
+
+The encryption dictionary stored in the PDF trailer.
+Contains all encryption parameters including filter type, version, revision,
+owner/user keys, permissions, and crypt filter configurations.

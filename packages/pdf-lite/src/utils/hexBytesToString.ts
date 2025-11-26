@@ -1,5 +1,16 @@
 import { ByteArray } from '../types'
 
+/**
+ * Converts a byte array to a lowercase hexadecimal string.
+ *
+ * @param bytes - The byte array to convert.
+ * @returns A lowercase hexadecimal string representation.
+ *
+ * @example
+ * ```typescript
+ * hexBytesToString(new Uint8Array([255, 0])) // Returns 'ff00'
+ * ```
+ */
 export function hexBytesToString(bytes: ByteArray): string {
     let hex = ''
     for (let i = 0; i < bytes.length; i++) {

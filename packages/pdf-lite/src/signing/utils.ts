@@ -2,6 +2,28 @@ import { Certificate } from 'pki-lite/x509/Certificate'
 import { RevocationInfo } from './types'
 import { ByteArray } from '../types'
 
+/**
+ * Fetches revocation information (CRLs and OCSPs) for certificates.
+ * Uses the certificate's embedded URLs to retrieve revocation data.
+ *
+ * @param options - Configuration for fetching revocation info.
+ * @param options.certificates - Array of DER-encoded certificates.
+ * @param options.issuerCertificate - Optional issuer certificate for OCSP requests.
+ * @param options.ocspUrls - Optional additional OCSP URLs.
+ * @param options.crlUrls - Optional additional CRL URLs.
+ * @param options.retrieveOcsps - Whether to fetch OCSP responses (default: true).
+ * @param options.retrieveCrls - Whether to fetch CRLs (default: true).
+ * @returns The fetched revocation information.
+ *
+ * @example
+ * ```typescript
+ * const revInfo = await fetchRevocationInfo({
+ *     certificates: [certBytes],
+ *     retrieveCrls: true,
+ *     retrieveOcsps: true
+ * })
+ * ```
+ */
 export async function fetchRevocationInfo(options: {
     certificates: ByteArray[]
     issuerCertificate?: ByteArray

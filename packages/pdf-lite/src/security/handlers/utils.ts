@@ -22,6 +22,20 @@ import { PdfName } from '../../core/objects/pdf-name'
 import { PdfNumber } from '../../core/objects/pdf-number'
 import { PublicKeySecurityHandler } from './pubSec'
 
+/**
+ * Creates a security handler from an encryption dictionary.
+ * Automatically detects the handler type (Standard or Adobe.PubSec) and version.
+ *
+ * @param dict - The encryption dictionary from the PDF trailer.
+ * @param options - Optional configuration including passwords and recipients.
+ * @returns The appropriate security handler instance.
+ * @throws Error if the filter type is unsupported.
+ *
+ * @example
+ * ```typescript
+ * const handler = createFromDictionary(encryptDict, { password: 'secret' })
+ * ```
+ */
 export function createFromDictionary(
     dict: PdfEncryptionDictionary,
     options?: {
@@ -63,6 +77,23 @@ export function createFromDictionary(
     }
 }
 
+/**
+ * Creates a standard security handler from an encryption dictionary.
+ * Selects the appropriate version (V1-V5) based on the dictionary parameters.
+ *
+ * @param dict - The encryption dictionary from the PDF trailer.
+ * @param options - Optional configuration including passwords and document ID.
+ * @returns The appropriate standard security handler instance.
+ * @throws Error if the version/revision combination is unsupported.
+ *
+ * @example
+ * ```typescript
+ * const handler = createStandardSecurityHandlerFromDictionary(encryptDict, {
+ *     password: 'user',
+ *     ownerPassword: 'owner'
+ * })
+ * ```
+ */
 export function createStandardSecurityHandlerFromDictionary(
     dict: PdfEncryptionDictionary,
     options?: {
@@ -128,6 +159,18 @@ export function createStandardSecurityHandlerFromDictionary(
     return standardSecurityHandler
 }
 
+/**
+ * Creates a crypt filter for the specified encryption algorithm.
+ *
+ * @param method - The encryption algorithm type.
+ * @returns The appropriate crypt filter instance.
+ * @throws Error if the method is unsupported.
+ *
+ * @example
+ * ```typescript
+ * const filter = getCryptFilter('AES-256-CBC')
+ * ```
+ */
 export function getCryptFilter(
     method: PdfEncryptionAlgorithmType,
 ): PdfCryptFilter {
@@ -158,6 +201,23 @@ export function getCryptFilter(
     }
 }
 
+/**
+ * Creates a security handler from encryption options.
+ * Automatically selects the appropriate handler version based on the encryption method.
+ *
+ * @param options - The encryption configuration options.
+ * @returns A configured security handler.
+ * @throws Error if no encryption is selected or the type is unsupported.
+ *
+ * @example
+ * ```typescript
+ * const handler = createFromEncryptionOptions({
+ *     method: { default: 'AES-256-CBC' },
+ *     password: 'secret',
+ *     permissions: { print: true, copy: false }
+ * })
+ * ```
+ */
 export function createFromEncryptionOptions(
     options: PdfEncryptionOptions,
 ): PdfSecurityHandler {

@@ -22,8 +22,22 @@
         "gen:pipe": "tsx ./scripts/gen-pipe.ts > src/pipe.ts",
         "watch": "tsc -watch -p ."
     },
-    "author": "",
-    "license": "ISC",
+    "keywords": [
+        "pdf",
+        "typescript",
+        "browser",
+        "nodejs",
+        "zero-dependency",
+        "type-safe",
+        "pdf-parser",
+        "pdf-reader",
+        "pdf-writer",
+        "digital-signature",
+        "encryption",
+        "decryption"
+    ],
+    "author": "Jacob Shirley",
+    "license": "MIT",
     "devDependencies": {
         "@types/node": "^20.19.17",
         "@types/pako": "^2.0.4",
@@ -47,7 +61,7 @@
         "url": "https://github.com/jacobshirley/pdf-lite/issues"
     },
     "homepage": "https://jacobshirley.github.io/pdf-lite",
-    "description": "",
+    "description": "A low-level, zero-dependency, type-safe PDF library for Node.js and the browser",
     "files": [
         "dist"
     ],

@@ -2,7 +2,26 @@ import { rc4 } from '../../crypto/ciphers/rc4.js'
 import { Cipher } from '../../types'
 import { PdfCryptFilter, CryptFilterOptions } from './base'
 
+/**
+ * V2 crypt filter using RC4 encryption.
+ * Implements the legacy RC4 stream cipher for PDF encryption.
+ *
+ * @example
+ * ```typescript
+ * const filter = new V2CryptFilter({
+ *     authEvent: 'DocOpen',
+ *     securityHandler,
+ *     length: 128
+ * })
+ * const encrypted = await filter.encrypt(data, objectNumber, generationNumber)
+ * ```
+ */
 export class V2CryptFilter extends PdfCryptFilter {
+    /**
+     * Creates a new V2 crypt filter with RC4 encryption.
+     *
+     * @param options - Configuration options including key length.
+     */
     constructor(options: {
         authEvent: CryptFilterOptions['authEvent']
         securityHandler?: CryptFilterOptions['securityHandler']
@@ -11,6 +30,14 @@ export class V2CryptFilter extends PdfCryptFilter {
         super({ ...options, cfm: 'V2', length: options.length || 40 })
     }
 
+    /**
+     * Gets an RC4 cipher for encryption/decryption.
+     *
+     * @param objectNumber - The PDF object number for key derivation.
+     * @param generationNumber - The PDF generation number for key derivation.
+     * @returns An RC4 cipher instance.
+     * @throws Error if security handler is not set.
+     */
     async getCipher(
         objectNumber?: number,
         generationNumber?: number,

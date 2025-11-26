@@ -178,11 +178,6 @@ export class PdfRevision extends PdfObject {
      * Updates the revision by sorting objects and updating the xref table.
      */
     update(): void {
-        console.log({
-            modified: this.modified,
-            xrefModified: this.xref.trailerDict.isModified(),
-            objectsModified: this.objects.some((obj) => obj.isModified()),
-        })
         if (this.locked) {
             return
         }

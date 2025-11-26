@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { escapeString } from '../../src/utils/escapeString'
-import { stringToBytes } from '../../src/utils/stringToBytes'
+import { escapeString } from '../../../src/utils/escapeString.js'
+import { stringToBytes } from '../../../src/utils/stringToBytes.js'
 
 describe('String Escaping for PDF', () => {
     it('should escape parentheses', () => {

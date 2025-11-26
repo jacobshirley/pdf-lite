@@ -1,20 +1,20 @@
 import { assert, describe, expect, it } from 'vitest'
-import { PdfXrefLookup } from '../../src/pdf/pdf-xref-lookup.js'
-import { PdfObject } from '../../src/core/objects/pdf-object'
-import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object.js'
+import { PdfXrefLookup } from '../../../src/pdf/pdf-xref-lookup.js'
+import { PdfObject } from '../../../src/core/objects/pdf-object.js'
+import { PdfIndirectObject } from '../../../src/core/objects/pdf-indirect-object.js'
 import {
     PdfXRefStream,
     PdfXRefStreamCompressedEntry,
     PdfXRefStreamStandardEntry,
-} from '../../src/core/objects/pdf-stream'
+} from '../../../src/core/objects/pdf-stream.js'
 import {
     PdfXRefTable,
     PdfXRefTableEntry,
-} from '../../src/core/objects/pdf-xref-table.js'
-import { PdfTrailer } from '../../src/core/objects/pdf-trailer'
-import { PdfNumber } from '../../src/core/objects/pdf-number'
-import { PdfStartXRef } from '../../src/core/objects/pdf-start-xref'
-import { PdfComment } from '../../src/core/objects/pdf-comment'
+} from '../../../src/core/objects/pdf-xref-table.js'
+import { PdfTrailer } from '../../../src/core/objects/pdf-trailer.js'
+import { PdfNumber } from '../../../src/core/objects/pdf-number.js'
+import { PdfStartXRef } from '../../../src/core/objects/pdf-start-xref.js'
+import { PdfComment } from '../../../src/core/objects/pdf-comment.js'
 
 describe('PDF Xref Lookup', () => {
     const xrefStream = new PdfIndirectObject({

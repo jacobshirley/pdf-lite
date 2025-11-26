@@ -1,13 +1,13 @@
-import { PdfTokenSerializer } from '../../src/core/serializer'
-import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
-import { PdfDictionary } from '../../src/core/objects/pdf-dictionary'
-import { PdfName } from '../../src/core/objects/pdf-name'
+import { PdfTokenSerializer } from '../../../src/core/serializer.js'
+import { PdfIndirectObject } from '../../../src/core/objects/pdf-indirect-object.js'
+import { PdfDictionary } from '../../../src/core/objects/pdf-dictionary.js'
+import { PdfName } from '../../../src/core/objects/pdf-name.js'
 import { describe, it, expect } from 'vitest'
 import {
     PdfXRefTable,
     PdfXRefTableEntry,
-} from '../../src/core/objects/pdf-xref-table'
-import { PdfWhitespaceToken } from '../../src/core/tokens/whitespace-token'
+} from '../../../src/core/objects/pdf-xref-table.js'
+import { PdfWhitespaceToken } from '../../../src/core/tokens/whitespace-token.js'
 
 describe('PDF Serializer', () => {
     it('should turn a stream of PDF tokens into a byte array', () => {

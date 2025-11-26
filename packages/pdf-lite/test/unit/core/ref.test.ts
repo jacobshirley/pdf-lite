@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { Ref } from '../../src/core/ref'
+import { Ref } from '../../../src/core/ref.js'
 
 describe('Ref', () => {
     describe('constructor', () => {

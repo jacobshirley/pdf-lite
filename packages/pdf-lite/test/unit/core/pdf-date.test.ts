@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PdfDate } from '../../src/core/objects/pdf-date'
+import { PdfDate } from '../../../src/core/objects/pdf-date.js'
 
 describe('PdfDate', () => {
     describe('constructor', () => {

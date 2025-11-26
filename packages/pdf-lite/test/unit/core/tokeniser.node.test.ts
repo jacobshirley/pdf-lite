@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { PdfByteStreamTokeniser } from '../../src/core/tokeniser.js'
-import { PdfToken } from '../../src/core/tokens/token.js'
-import { bytesToString } from '../../src/utils/bytesToString.js'
+import { PdfByteStreamTokeniser } from '../../../src/core/tokeniser.js'
+import { PdfToken } from '../../../src/core/tokens/token.js'
+import { bytesToString } from '../../../src/utils/bytesToString.js'
 import fs from 'fs'
-import { concatUint8Arrays } from '../../src/utils/concatUint8Arrays.js'
+import { concatUint8Arrays } from '../../../src/utils/concatUint8Arrays.js'
 
 describe('PDF tokeniser', () => {
     it('should read and write a file, ensuring it is byte-for-byte the same', () => {
         const pdfBuffer = fs.readFileSync(
-            __dirname + '/fixtures/protectedAdobeLivecycle.pdf',
+            __dirname + '/../fixtures/protectedAdobeLivecycle.pdf',
         )
 
         const tokeniser = new PdfByteStreamTokeniser({

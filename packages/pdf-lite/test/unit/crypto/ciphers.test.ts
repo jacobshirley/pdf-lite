@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { aes128 } from '../../src/crypto/ciphers/aes128.js'
-import { rc4 } from '../../src/crypto/ciphers/rc4.js'
-import { aes256 } from '../../src/crypto/ciphers/aes256.js'
-import { getRandomBytes } from '../../src/utils/algos.js'
-import { stringToBytes } from '../../src/utils/stringToBytes.js'
+import { aes128 } from '../../../src/crypto/ciphers/aes128.js'
+import { rc4 } from '../../../src/crypto/ciphers/rc4.js'
+import { aes256 } from '../../../src/crypto/ciphers/aes256.js'
+import { getRandomBytes } from '../../../src/utils/algos.js'
+import { stringToBytes } from '../../../src/utils/stringToBytes.js'
 
 describe('PDF Ciphers', () => {
     describe('AES-128-CBC', () => {

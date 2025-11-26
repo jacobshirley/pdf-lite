@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { pdfDecoder } from '../../src/core/generators.js'
-import { PdfObject } from '../../src/core/objects/pdf-object.js'
+import { pdfDecoder } from '../../../src/core/generators.js'
+import { PdfObject } from '../../../src/core/objects/pdf-object.js'
 import { readFileSync } from 'fs'
 
 describe('PDF decoder', () => {

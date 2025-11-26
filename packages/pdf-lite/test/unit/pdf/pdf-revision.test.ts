@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { PdfRevision } from '../../src/pdf/pdf-revision'
-import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
-import { PdfDictionary } from '../../src/core/objects/pdf-dictionary'
-import { PdfName } from '../../src/core/objects/pdf-name'
+import { PdfRevision } from '../../../src/pdf/pdf-revision.js'
+import { PdfIndirectObject } from '../../../src/core/objects/pdf-indirect-object.js'
+import { PdfDictionary } from '../../../src/core/objects/pdf-dictionary.js'
+import { PdfName } from '../../../src/core/objects/pdf-name.js'
 
 describe('PdfRevision', () => {
     describe('constructor', () => {

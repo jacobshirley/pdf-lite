@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { Predictor } from '../../src/utils/predictors.js'
-import { ByteArray } from '../../src/types.js'
+import { Predictor } from '../../../src/utils/predictors.js'
+import { ByteArray } from '../../../src/types.js'
 
 describe('PDF predictors', () => {
     describe('TIFFPredictor', () => {

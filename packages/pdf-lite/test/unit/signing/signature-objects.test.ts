@@ -10,24 +10,24 @@ import {
 import {
     PdfSignatureDictionary,
     PdfSignatureObject,
-} from '../../../src/signing/signatures/base'
-import { PdfAdbePkcs7DetachedSignatureObject } from '../../../src/signing/signatures/adbe-pkcs7-detached'
-import { PdfAdbePkcs7Sha1SignatureObject } from '../../../src/signing/signatures/adbe-pkcs7-sha1'
-import { PdfAdbePkcsX509RsaSha1SignatureObject } from '../../../src/signing/signatures/adbe-x509-rsa-sha1'
-import { PdfEtsiCadesDetachedSignatureObject } from '../../../src/signing/signatures/etsi-cades-detached'
-import { PdfEtsiRfc3161SignatureObject } from '../../../src/signing/signatures/etsi-rfc3161'
-import { PdfName } from '../../../src/core/objects/pdf-name'
-import { PdfString } from '../../../src/core/objects/pdf-string'
-import { PdfDate } from '../../../src/core/objects/pdf-date'
-import { PdfArray } from '../../../src/core/objects/pdf-array'
-import { PdfNumber } from '../../../src/core/objects/pdf-number'
-import { PdfHexadecimal } from '../../../src/core/objects/pdf-hexadecimal'
+} from '../../../src/signing/signatures/base.js'
+import { PdfAdbePkcs7DetachedSignatureObject } from '../../../src/signing/signatures/adbe-pkcs7-detached.js'
+import { PdfAdbePkcs7Sha1SignatureObject } from '../../../src/signing/signatures/adbe-pkcs7-sha1.js'
+import { PdfAdbePkcsX509RsaSha1SignatureObject } from '../../../src/signing/signatures/adbe-x509-rsa-sha1.js'
+import { PdfEtsiCadesDetachedSignatureObject } from '../../../src/signing/signatures/etsi-cades-detached.js'
+import { PdfEtsiRfc3161SignatureObject } from '../../../src/signing/signatures/etsi-rfc3161.js'
+import { PdfName } from '../../../src/core/objects/pdf-name.js'
+import { PdfString } from '../../../src/core/objects/pdf-string.js'
+import { PdfDate } from '../../../src/core/objects/pdf-date.js'
+import { PdfArray } from '../../../src/core/objects/pdf-array.js'
+import { PdfNumber } from '../../../src/core/objects/pdf-number.js'
+import { PdfHexadecimal } from '../../../src/core/objects/pdf-hexadecimal.js'
 import { rsaSigningKeys } from '../fixtures/rsa-2048'
-import { stringToBytes } from '../../../src/utils/stringToBytes'
+import { stringToBytes } from '../../../src/utils/stringToBytes.js'
 import { SignedData } from 'pki-lite/pkcs7/SignedData'
 import { RevocationInfoArchival } from 'pki-lite/adobe/RevocationInfoArchival'
 import { OIDs } from 'pki-lite/core/OIDs'
-import { bytesToHex } from '../../../src/utils/bytesToHex'
+import { bytesToHex } from '../../../src/utils/bytesToHex.js'
 
 describe('PdfSignatureDictionary', () => {
     it('should create a signature dictionary with required fields', () => {

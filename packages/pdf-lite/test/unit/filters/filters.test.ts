@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { flate } from '../../src/filters/flate.js'
-import { ascii85 } from '../../src/filters/ascii85.js'
-import { runLength } from '../../src/filters/runlength.js'
-import { asciiHex } from '../../src/filters/asciihex.js'
-import { lzw } from '../../src/filters/lzw.js'
-import { stringToBytes } from '../../src/utils/stringToBytes.js'
+import { flate } from '../../../src/filters/flate.js'
+import { ascii85 } from '../../../src/filters/ascii85.js'
+import { runLength } from '../../../src/filters/runlength.js'
+import { asciiHex } from '../../../src/filters/asciihex.js'
+import { lzw } from '../../../src/filters/lzw.js'
+import { stringToBytes } from '../../../src/utils/stringToBytes.js'
 
 function toText(data: Uint8Array) {
     return new TextDecoder().decode(data)

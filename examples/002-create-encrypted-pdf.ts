@@ -115,7 +115,6 @@ document.securityHandler = new V2SecurityHandler({
 
 await document.encrypt()
 
-
 const file = `${import.meta.dirname}/tmp/encrypted.pdf`
 console.log(`Writing encrypted PDF to: ${file}. Password: "up"`)
 

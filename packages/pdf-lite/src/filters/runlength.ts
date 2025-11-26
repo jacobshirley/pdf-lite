@@ -1,4 +1,5 @@
-import { ByteArray, PdfFilter } from '../types.js'
+import { ByteArray } from '../types.js'
+import { PdfFilter } from './types.js'
 
 /**
  * Creates a Run-Length filter for encoding and decoding PDF stream data.

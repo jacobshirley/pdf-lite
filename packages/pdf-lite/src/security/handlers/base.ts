@@ -8,9 +8,9 @@ import { PdfNumber } from '../../core/objects/pdf-number'
 import { PdfObject } from '../../core/objects/pdf-object'
 import { PdfStream } from '../../core/objects/pdf-stream'
 import { PdfString } from '../../core/objects/pdf-string'
+import { Cipher } from '../../crypto/types'
 import {
     ByteArray,
-    Cipher,
     PdfPermissions,
     PERMISSION_FLAGS,
 } from '../../types'

@@ -1,7 +1,8 @@
 import { PdfDictionary } from '../../core/objects/pdf-dictionary'
 import { PdfName } from '../../core/objects/pdf-name'
 import { PdfNumber } from '../../core/objects/pdf-number'
-import { ByteArray, Cipher } from '../../types'
+import { Cipher } from '../../crypto/types'
+import { ByteArray } from '../../types'
 import { PdfSecurityHandler } from '../handlers/base'
 import { PdfCryptFilterDictionary } from '../types'
 

@@ -1,6 +1,7 @@
-import { ByteArray, PdfFilter } from '../types'
+import { ByteArray } from '../types'
 import { bytesToString } from '../utils/bytesToString'
 import { stringToBytes } from '../utils/stringToBytes'
+import { PdfFilter } from './types'
 
 /**
  * Creates an ASCIIHex filter for encoding and decoding PDF stream data.

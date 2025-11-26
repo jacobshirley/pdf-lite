@@ -1,5 +1,5 @@
 import { rc4 } from '../../crypto/ciphers/rc4.js'
-import { Cipher } from '../../types'
+import { Cipher } from '../../crypto/types.js'
 import { PdfCryptFilter, CryptFilterOptions } from './base'
 
 /**

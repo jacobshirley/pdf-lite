@@ -8,7 +8,8 @@ import {
     computeURc4_40,
     decryptUserPasswordRc4_40,
 } from '../../crypto/key-gen/key-gen-rc4-40'
-import { ByteArray, Cipher } from '../../types'
+import { Cipher } from '../../crypto/types'
+import { ByteArray } from '../../types'
 import { assert } from '../../utils/assert'
 import { bytesToString } from '../../utils/bytesToString'
 import { stringToBytes } from '../../utils/stringToBytes'

@@ -1,5 +1,6 @@
-import { ByteArray, PdfFilter } from '../types.js'
+import { ByteArray } from '../types.js'
 import { inflateData, deflateData } from '../utils/algos.js'
+import { PdfFilter } from './types.js'
 
 /**
  * Creates a Flate filter for compressing and decompressing PDF stream data.

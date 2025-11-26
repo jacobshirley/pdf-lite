@@ -1,5 +1,5 @@
 import { ByteArray } from '../../types.js'
-import { Cipher } from '../types.js';
+import { Cipher } from '../types.js'
 
 /**
  * Creates an RC4 cipher for PDF encryption.

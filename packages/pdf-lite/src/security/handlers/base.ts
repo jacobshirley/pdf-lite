@@ -9,11 +9,7 @@ import { PdfObject } from '../../core/objects/pdf-object'
 import { PdfStream } from '../../core/objects/pdf-stream'
 import { PdfString } from '../../core/objects/pdf-string'
 import { Cipher } from '../../crypto/types'
-import {
-    ByteArray,
-    PdfPermissions,
-    PERMISSION_FLAGS,
-} from '../../types'
+import { ByteArray, PdfPermissions, PERMISSION_FLAGS } from '../../types'
 import { assert, assertIfDefined } from '../../utils/assert'
 import { stringToBytes } from '../../utils/stringToBytes'
 import {

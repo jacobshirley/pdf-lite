@@ -1,4 +1,5 @@
 import { ByteArray } from '../../types'
+import { bytesToString } from '../../utils/bytesToString'
 import { stringToBytes } from '../../utils/stringToBytes'
 import { PdfStringToken } from '../tokens/string-token'
 import { PdfObject } from './pdf-object'
@@ -12,6 +13,10 @@ export class PdfString extends PdfObject {
     constructor(raw: ByteArray | string) {
         super()
         this.raw = typeof raw === 'string' ? stringToBytes(raw) : raw
+    }
+
+    get value(): string {
+        return bytesToString(this.raw)
     }
 
     protected tokenize() {

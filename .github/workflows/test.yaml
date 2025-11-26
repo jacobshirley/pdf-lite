@@ -15,5 +15,5 @@ permissions:
     checks: write
 jobs:
     Tests:
-        name: Tests
+        name: Run
         uses: jacobshirley/.github/.github/workflows/test.yaml@0afbf05ad349d138c0a21eec908a71766e43db42

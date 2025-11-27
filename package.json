@@ -1,6 +1,6 @@
 {
     "name": "pdf-lite-monorepo",
-    "version": "1.0.1-alpha.3",
+    "version": "1.0.1",
     "private": true,
     "type": "module",
     "description": "A lightweight PDF library for Node.js and the browser",
@@ -68,6 +68,6 @@
         "typescript": "5.9.3"
     },
     "dependencies": {
-        "pdf-lite": "^1.0.1-alpha.3"
+        "pdf-lite": "^1.0.1"
     }
 }

@@ -55,7 +55,7 @@
     "bugs": {
         "url": "https://github.com/jacobshirley/pdf-lite/issues"
     },
-    "homepage": "https://jacobshirley.github.io/pdf-lite",
+    "homepage": "https://jacobshirley.github.io/pdf-lite/v1",
     "description": "A low-level, zero-dependency, type-safe PDF library for Node.js and the browser",
     "files": [
         "dist",

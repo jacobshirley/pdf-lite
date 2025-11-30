@@ -58,7 +58,9 @@
     "homepage": "https://jacobshirley.github.io/pdf-lite",
     "description": "A low-level, zero-dependency, type-safe PDF library for Node.js and the browser",
     "files": [
-        "dist"
+        "dist",
+        "!**/*.tsbuildinfo",
+        "EXAMPLES.md"
     ],
     "dependencies": {
         "pako": "2.1.0",

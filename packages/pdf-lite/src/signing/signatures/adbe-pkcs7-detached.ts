@@ -1,4 +1,9 @@
-import { RevocationInfo, TimeStampAuthority } from '../types'
+import {
+    RevocationInfo,
+    TimeStampAuthority,
+    PdfSignatureVerificationOptions,
+    PdfSignatureVerificationResult,
+} from '../types'
 import { SignedData } from 'pki-lite/pkcs7/SignedData'
 import { Certificate } from 'pki-lite/x509/Certificate'
 import { SignerInfo } from 'pki-lite/pkcs7/SignerInfo'
@@ -9,6 +14,9 @@ import { OCSPResponse } from 'pki-lite/ocsp/OCSPResponse'
 import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo'
 import { OtherRevInfo } from 'pki-lite/adobe/OtherRevInfo'
 import { AsymmetricEncryptionAlgorithmParams } from 'pki-lite/core/index'
+import { OIDs } from 'pki-lite/core/OIDs.js'
+import { OctetString } from 'pki-lite/asn1/OctetString'
+import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
 import { fetchRevocationInfo } from '../utils'
 import { PdfSignatureObject, PdfSignatureSignOptions } from './base'
 import { ByteArray } from '../../types'
@@ -149,6 +157,83 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
         return {
             signedBytes: signedData.toCms().toDer(),
             revocationInfo,
+        }
+    }
+
+    /**
+     * Verifies the signature against the provided document bytes.
+     *
+     * @param options - Verification options including the signed bytes.
+     * @returns The verification result.
+     */
+    verify: PdfSignatureObject['verify'] = async (options) => {
+        const { bytes, certificateValidation } = options
+
+        try {
+            const signedData = SignedData.fromCms(this.signedBytes)
+
+            // Verify message digest if signed attributes are present
+            // This is necessary because pki-lite's verify doesn't check the message digest
+            // when signed attributes are present
+            if (signedData.signerInfos.length > 0) {
+                const signerInfo = signedData.signerInfos[0]
+                if (signerInfo.signedAttrs) {
+                    const messageDigestAttr = signerInfo.signedAttrs.find(
+                        (attr) => attr.type.is(OIDs.PKCS9.MESSAGE_DIGEST),
+                    )
+                    if (messageDigestAttr) {
+                        // Get the expected digest from the signed attributes
+                        const expectedDigest =
+                            messageDigestAttr.values[0].parseAs(
+                                OctetString,
+                            ).bytes
+
+                        // Compute the actual digest of the data
+                        const digestAlgorithm =
+                            signerInfo.digestAlgorithm.toHashAlgorithm()
+                        const actualDigest =
+                            await DigestAlgorithmIdentifier.digestAlgorithm(
+                                digestAlgorithm,
+                            ).digest(bytes)
+
+                        // Compare digests
+                        if (!this.compareArrays(expectedDigest, actualDigest)) {
+                            return {
+                                valid: false,
+                                reasons: [
+                                    'Message digest does not match signed content',
+                                ],
+                            }
+                        }
+                    }
+                }
+            }
+
+            const certValidationOptions =
+                certificateValidation === true
+                    ? {}
+                    : certificateValidation || undefined
+
+            const result = await signedData.verify({
+                data: bytes,
+                certificateValidation: certValidationOptions,
+            })
+
+            if (result.valid) {
+                return { valid: true }
+            } else {
+                return {
+                    valid: false,
+                    reasons: result.reasons,
+                }
+            }
+        } catch (error) {
+            return {
+                valid: false,
+                reasons: [
+                    `Failed to verify signature: ${error instanceof Error ? error.message : String(error)}`,
+                ],
+            }
         }
     }
 }

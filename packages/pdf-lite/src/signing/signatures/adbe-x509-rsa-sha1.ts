@@ -3,8 +3,13 @@ import { AsymmetricEncryptionAlgorithmParams } from 'pki-lite/core/index'
 import { PdfSignatureObject, PdfSignatureSignOptions } from './base'
 import { OctetString } from 'pki-lite/asn1/OctetString'
 import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
+import { Certificate } from 'pki-lite/x509/Certificate'
 import { ByteArray } from '../../types'
-import { RevocationInfo } from '../types'
+import {
+    RevocationInfo,
+    PdfSignatureVerificationOptions,
+    PdfSignatureVerificationResult,
+} from '../types'
 import { fetchRevocationInfo } from '../utils'
 
 /**
@@ -101,6 +106,78 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
         return {
             signedBytes: new OctetString({ bytes: signatureBytes }).toDer(),
             revocationInfo,
+        }
+    }
+
+    /**
+     * Verifies the signature against the provided document bytes.
+     *
+     * @param options - Verification options including the signed bytes.
+     * @returns The verification result.
+     */
+    verify: PdfSignatureObject['verify'] = async (options) => {
+        const { bytes } = options
+
+        try {
+            const certificates = [
+                this.certificate,
+                ...(this.additionalCertificates ?? []),
+            ]
+
+            if (certificates.length === 0) {
+                return {
+                    valid: false,
+                    reasons: [
+                        'No certificates available for adbe.x509.rsa_sha1 verification',
+                    ],
+                }
+            }
+
+            // Parse the signature as an OctetString
+            const signatureOctetString = OctetString.fromDer(this.signedBytes)
+            const signatureValue = signatureOctetString.bytes
+
+            // Get the signer certificate (first certificate in the chain)
+            const signerCertificate = Certificate.fromDer(certificates[0])
+            const publicKeyInfo =
+                signerCertificate.tbsCertificate.subjectPublicKeyInfo
+
+            // Import the public key and verify the signature
+            const algorithm = {
+                name: 'RSASSA-PKCS1-v1_5',
+                hash: 'SHA-1',
+            }
+
+            const cryptoKey = await crypto.subtle.importKey(
+                'spki',
+                publicKeyInfo.toDer(),
+                algorithm,
+                false,
+                ['verify'],
+            )
+
+            const isValid = await crypto.subtle.verify(
+                algorithm,
+                cryptoKey,
+                signatureValue,
+                bytes,
+            )
+
+            if (isValid) {
+                return { valid: true }
+            } else {
+                return {
+                    valid: false,
+                    reasons: ['RSA-SHA1 signature verification failed'],
+                }
+            }
+        } catch (error) {
+            return {
+                valid: false,
+                reasons: [
+                    `Failed to verify signature: ${error instanceof Error ? error.message : String(error)}`,
+                ],
+            }
         }
     }
 }

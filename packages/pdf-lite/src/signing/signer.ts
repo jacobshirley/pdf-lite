@@ -6,6 +6,27 @@ import { PdfDocument } from '../pdf/pdf-document'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays'
 import { PdfDocumentSecurityStoreObject } from './document-security-store'
 import { PdfSignatureObject } from './signatures'
+import {
+    PdfSignatureVerificationResult,
+    CertificateValidationOptions,
+} from './types'
+
+/**
+ * Result of verifying all signatures in a document.
+ */
+export type PdfDocumentVerificationResult = {
+    /** Whether all signatures in the document are valid. */
+    valid: boolean
+    /** Individual signature verification results. */
+    signatures: {
+        /** Index of the signature in the document. */
+        index: number
+        /** The signature object. */
+        signature: PdfSignatureObject
+        /** The verification result. */
+        result: PdfSignatureVerificationResult
+    }[]
+}
 
 /**
  * Handles digital signing operations for PDF documents.

@@ -8,8 +8,6 @@ import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifi
 import { TimeStampReq } from 'pki-lite/timestamp/TimeStampReq'
 import { MessageImprint } from 'pki-lite/timestamp/MessageImprint'
 import { SignedData } from 'pki-lite/pkcs7/SignedData'
-import { OIDs } from 'pki-lite/core/OIDs.js'
-import { OctetString } from 'pki-lite/asn1/OctetString'
 import { fetchRevocationInfo } from '../utils'
 
 /**
@@ -107,43 +105,6 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
 
         try {
             const signedData = SignedData.fromCms(this.signedBytes)
-
-            // Verify message digest if signed attributes are present
-            // This is necessary because pki-lite's verify doesn't check the message digest
-            // when signed attributes are present
-            if (signedData.signerInfos.length > 0) {
-                const signerInfo = signedData.signerInfos[0]
-                if (signerInfo.signedAttrs) {
-                    const messageDigestAttr = signerInfo.signedAttrs.find(
-                        (attr) => attr.type.is(OIDs.PKCS9.MESSAGE_DIGEST),
-                    )
-                    if (messageDigestAttr) {
-                        // Get the expected digest from the signed attributes
-                        const expectedDigest =
-                            messageDigestAttr.values[0].parseAs(
-                                OctetString,
-                            ).bytes
-
-                        // Compute the actual digest of the data
-                        const digestAlgorithm =
-                            signerInfo.digestAlgorithm.toHashAlgorithm()
-                        const actualDigest =
-                            await DigestAlgorithmIdentifier.digestAlgorithm(
-                                digestAlgorithm,
-                            ).digest(bytes)
-
-                        // Compare digests
-                        if (!this.compareArrays(expectedDigest, actualDigest)) {
-                            return {
-                                valid: false,
-                                reasons: [
-                                    'Message digest does not match signed content',
-                                ],
-                            }
-                        }
-                    }
-                }
-            }
 
             const certValidationOptions =
                 certificateValidation === true

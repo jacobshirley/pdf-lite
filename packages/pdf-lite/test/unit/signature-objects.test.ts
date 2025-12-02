@@ -102,6 +102,10 @@ describe('PdfSignatureObject', () => {
                 signedBytes: stringToBytes('test-signature'),
             }
         }
+
+        async verify() {
+            return { valid: true }
+        }
     }
 
     it('should set signed bytes correctly', async () => {

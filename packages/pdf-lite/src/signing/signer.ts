@@ -10,6 +10,7 @@ import {
     PdfSignatureVerificationResult,
     CertificateValidationOptions,
 } from './types'
+import { PdfNumber } from '../core/objects/pdf-number'
 
 /**
  * Result of verifying all signatures in a document.
@@ -137,5 +138,111 @@ export class PdfSigner {
         }
 
         return document
+    }
+
+    /**
+     * Verifies all signatures in the document.
+     * Searches for signature objects, computes their byte ranges, and verifies each one.
+     *
+     * @param document - The PDF document to verify.
+     * @param options - Optional verification options.
+     * @returns The verification result for all signatures.
+     *
+     * @example
+     * ```typescript
+     * const signer = new PdfSigner()
+     * const result = await signer.verify(document)
+     * if (result.valid) {
+     *     console.log('All signatures are valid')
+     * } else {
+     *     result.signatures.forEach(sig => {
+     *         if (!sig.result.valid) {
+     *             console.log(`Signature ${sig.index} invalid:`, sig.result.reasons)
+     *         }
+     *     })
+     * }
+     * ```
+     */
+    async verify(
+        document: PdfDocument,
+        options?: {
+            certificateValidation?: CertificateValidationOptions | boolean
+        },
+    ): Promise<PdfDocumentVerificationResult> {
+        const signatures: PdfSignatureObject[] = [
+            ...document.objects.filter((x) => x instanceof PdfSignatureObject),
+        ]
+
+        const results: PdfDocumentVerificationResult['signatures'] = []
+        let allValid = true
+
+        const documentBytes = document.toBytes()
+
+        for (let i = 0; i < signatures.length; i++) {
+            const signature = signatures[i]
+
+            // Get the ByteRange from the signature dictionary
+            const byteRangeEntry = signature.content.get('ByteRange')
+            if (!byteRangeEntry) {
+                results.push({
+                    index: i,
+                    signature,
+                    result: {
+                        valid: false,
+                        reasons: ['Signature is missing ByteRange entry'],
+                    },
+                })
+                allValid = false
+                continue
+            }
+
+            // Extract the byte range values
+            const byteRange = byteRangeEntry.items.map((item) => {
+                if (item instanceof PdfNumber) {
+                    return item.value
+                }
+                return 0
+            })
+
+            if (byteRange.length !== 4) {
+                results.push({
+                    index: i,
+                    signature,
+                    result: {
+                        valid: false,
+                        reasons: ['Invalid ByteRange format'],
+                    },
+                })
+                allValid = false
+                continue
+            }
+
+            // Compute the bytes that were signed (excluding the signature contents)
+            const signedBytes = concatUint8Arrays(
+                documentBytes.slice(byteRange[0], byteRange[0] + byteRange[1]),
+                documentBytes.slice(byteRange[2], byteRange[2] + byteRange[3]),
+            )
+
+            // Verify the signature
+            const result = await signature.verify({
+                bytes: signedBytes,
+                certificateValidation: options?.certificateValidation,
+            })
+
+            results.push({
+                index: i,
+                signature,
+                result,
+            })
+
+            if (!result.valid) {
+                allValid = false
+            }
+        }
+
+        return {
+            valid: allValid,
+            signatures: results,
+        }
     }
 }

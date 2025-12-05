@@ -1,8 +1,4 @@
-import {
-    TimeStampAuthority,
-    PdfSignatureVerificationOptions,
-    PdfSignatureVerificationResult,
-} from '../types'
+import { TimeStampAuthority } from '../types'
 import { PdfSignatureObject, PdfSignatureSignOptions } from './base'
 import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
 import { TimeStampReq } from 'pki-lite/timestamp/TimeStampReq'

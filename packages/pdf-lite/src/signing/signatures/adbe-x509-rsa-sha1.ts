@@ -5,11 +5,7 @@ import { OctetString } from 'pki-lite/asn1/OctetString'
 import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
 import { Certificate } from 'pki-lite/x509/Certificate'
 import { ByteArray } from '../../types'
-import {
-    RevocationInfo,
-    PdfSignatureVerificationOptions,
-    PdfSignatureVerificationResult,
-} from '../types'
+import { RevocationInfo } from '../types'
 import { fetchRevocationInfo } from '../utils'
 
 /**

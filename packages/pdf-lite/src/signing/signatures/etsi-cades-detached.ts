@@ -2,8 +2,6 @@ import {
     SignaturePolicyDocument,
     RevocationInfo,
     TimeStampAuthority,
-    PdfSignatureVerificationOptions,
-    PdfSignatureVerificationResult,
 } from '../types'
 import { SignedData } from 'pki-lite/pkcs7/SignedData'
 import { Certificate } from 'pki-lite/x509/Certificate'

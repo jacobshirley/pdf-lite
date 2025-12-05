@@ -142,7 +142,9 @@ export class PdfSigner {
 
     /**
      * Verifies all signatures in the document.
-     * Searches for signature objects, computes their byte ranges, and verifies each one.
+     * First serializes the document to bytes and reloads it to ensure signatures
+     * are properly deserialized into the correct classes before verification.
+     * Then searches for signature objects, computes their byte ranges, and verifies each one.
      *
      * @param document - The PDF document to verify.
      * @param options - Optional verification options.
@@ -169,14 +171,19 @@ export class PdfSigner {
             certificateValidation?: CertificateValidationOptions | boolean
         },
     ): Promise<PdfDocumentVerificationResult> {
+        // Serialize the document to bytes and reload it to ensure signatures
+        // are properly deserialized into the correct signature classes
+        const documentBytes = document.toBytes()
+        const reloadedDocument = await PdfDocument.fromBytes([documentBytes])
+
         const signatures: PdfSignatureObject[] = [
-            ...document.objects.filter((x) => x instanceof PdfSignatureObject),
+            ...reloadedDocument.objects.filter(
+                (x) => x instanceof PdfSignatureObject,
+            ),
         ]
 
         const results: PdfDocumentVerificationResult['signatures'] = []
         let allValid = true
-
-        const documentBytes = document.toBytes()
 
         for (let i = 0; i < signatures.length; i++) {
             const signature = signatures[i]

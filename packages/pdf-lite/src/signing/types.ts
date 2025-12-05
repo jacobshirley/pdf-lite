@@ -1,4 +1,8 @@
 import { HashAlgorithm } from 'pki-lite/core/crypto/index.js'
+import type {
+    CertificateValidationOptions,
+    CertificateValidationResult,
+} from 'pki-lite/core/CertificateValidator.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary'
 import { PdfName } from '../core/objects/pdf-name'
 import { PdfHexadecimal } from '../core/objects/pdf-hexadecimal'
@@ -6,6 +10,8 @@ import { PdfArray } from '../core/objects/pdf-array'
 import { PdfNumber } from '../core/objects/pdf-number'
 import { PdfString } from '../core/objects/pdf-string'
 import { ByteArray } from '../types'
+
+export type { CertificateValidationOptions, CertificateValidationResult }
 
 /**
  * PDF signature subfilter types defining the signature format.
@@ -83,4 +89,30 @@ export type SignaturePolicyDocument = {
     hash: ByteArray
     /** Hash algorithm used for the policy document. */
     hashAlgorithm: HashAlgorithm
+}
+
+/**
+ * Result of a PDF signature verification operation.
+ */
+export type PdfSignatureVerificationResult = {
+    /** Whether the signature is valid. */
+    valid: boolean
+    /** Reasons for verification failure, if any. */
+    reasons?: string[]
+    /** Certificate validation result, if certificate validation was performed. */
+    certificateValidationResult?: CertificateValidationResult
+}
+
+/**
+ * Options for PDF signature verification.
+ */
+export type PdfSignatureVerificationOptions = {
+    /** The original document bytes that were signed. */
+    bytes: ByteArray
+    /**
+     * Certificate validation options.
+     * Pass `true` to use default certificate validation, or provide custom options.
+     * Pass `undefined` or `false` to skip certificate validation.
+     */
+    certificateValidation?: CertificateValidationOptions | boolean
 }

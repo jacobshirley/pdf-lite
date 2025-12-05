@@ -6,6 +6,28 @@ import { PdfDocument } from '../pdf/pdf-document'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays'
 import { PdfDocumentSecurityStoreObject } from './document-security-store'
 import { PdfSignatureObject } from './signatures'
+import {
+    PdfSignatureVerificationResult,
+    CertificateValidationOptions,
+} from './types'
+import { PdfNumber } from '../core/objects/pdf-number'
+
+/**
+ * Result of verifying all signatures in a document.
+ */
+export type PdfDocumentVerificationResult = {
+    /** Whether all signatures in the document are valid. */
+    valid: boolean
+    /** Individual signature verification results. */
+    signatures: {
+        /** Index of the signature in the document. */
+        index: number
+        /** The signature object. */
+        signature: PdfSignatureObject
+        /** The verification result. */
+        result: PdfSignatureVerificationResult
+    }[]
+}
 
 /**
  * Handles digital signing operations for PDF documents.
@@ -116,5 +138,118 @@ export class PdfSigner {
         }
 
         return document
+    }
+
+    /**
+     * Verifies all signatures in the document.
+     * First serializes the document to bytes and reloads it to ensure signatures
+     * are properly deserialized into the correct classes before verification.
+     * Then searches for signature objects, computes their byte ranges, and verifies each one.
+     *
+     * @param document - The PDF document to verify.
+     * @param options - Optional verification options.
+     * @returns The verification result for all signatures.
+     *
+     * @example
+     * ```typescript
+     * const signer = new PdfSigner()
+     * const result = await signer.verify(document)
+     * if (result.valid) {
+     *     console.log('All signatures are valid')
+     * } else {
+     *     result.signatures.forEach(sig => {
+     *         if (!sig.result.valid) {
+     *             console.log(`Signature ${sig.index} invalid:`, sig.result.reasons)
+     *         }
+     *     })
+     * }
+     * ```
+     */
+    async verify(
+        document: PdfDocument,
+        options?: {
+            certificateValidation?: CertificateValidationOptions | boolean
+        },
+    ): Promise<PdfDocumentVerificationResult> {
+        // Serialize the document to bytes and reload it to ensure signatures
+        // are properly deserialized into the correct signature classes
+        const documentBytes = document.toBytes()
+        const reloadedDocument = await PdfDocument.fromBytes([documentBytes])
+
+        const signatures: PdfSignatureObject[] = [
+            ...reloadedDocument.objects.filter(
+                (x) => x instanceof PdfSignatureObject,
+            ),
+        ]
+
+        const results: PdfDocumentVerificationResult['signatures'] = []
+        let allValid = true
+
+        for (let i = 0; i < signatures.length; i++) {
+            const signature = signatures[i]
+
+            // Get the ByteRange from the signature dictionary
+            const byteRangeEntry = signature.content.get('ByteRange')
+            if (!byteRangeEntry) {
+                results.push({
+                    index: i,
+                    signature,
+                    result: {
+                        valid: false,
+                        reasons: ['Signature is missing ByteRange entry'],
+                    },
+                })
+                allValid = false
+                continue
+            }
+
+            // Extract the byte range values
+            const byteRange = byteRangeEntry.items.map((item) => {
+                if (item instanceof PdfNumber) {
+                    return item.value
+                }
+                return 0
+            })
+
+            if (byteRange.length !== 4) {
+                results.push({
+                    index: i,
+                    signature,
+                    result: {
+                        valid: false,
+                        reasons: ['Invalid ByteRange format'],
+                    },
+                })
+                allValid = false
+                continue
+            }
+
+            // Compute the bytes that were signed (excluding the signature contents)
+            const signedBytes = concatUint8Arrays(
+                documentBytes.slice(byteRange[0], byteRange[0] + byteRange[1]),
+                documentBytes.slice(byteRange[2], byteRange[2] + byteRange[3]),
+            )
+
+            // Verify the signature
+            const result = await signature.verify({
+                bytes: signedBytes,
+                certificateValidation: options?.certificateValidation,
+            })
+
+            results.push({
+                index: i,
+                signature,
+                result,
+            })
+
+            if (!result.valid) {
+                allValid = false
+            }
+        }
+
+        return {
+            valid: allValid,
+            signatures: results,
+        }
     }
 }

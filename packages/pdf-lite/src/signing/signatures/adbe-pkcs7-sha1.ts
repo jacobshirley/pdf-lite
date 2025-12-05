@@ -158,4 +158,70 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
             revocationInfo,
         }
     }
+
+    /**
+     * Verifies the signature against the provided document bytes.
+     *
+     * @param options - Verification options including the signed bytes.
+     * @returns The verification result.
+     */
+    verify: PdfSignatureObject['verify'] = async (options) => {
+        const { bytes, certificateValidation } = options
+
+        try {
+            const signedData = SignedData.fromCms(this.signedBytes)
+
+            // For adbe.pkcs7.sha1, the signed content is the SHA-1 hash of the document
+            // We need to compute the SHA-1 hash of the data and compare with the embedded content
+            const expectedHash =
+                await DigestAlgorithmIdentifier.digestAlgorithm('SHA-1').digest(
+                    bytes,
+                )
+
+            const certValidationOptions =
+                certificateValidation === true
+                    ? {}
+                    : certificateValidation || undefined
+
+            // Verify the signature with the hash as the data (non-detached mode)
+            const result = await signedData.verify({
+                certificateValidation: certValidationOptions,
+            })
+
+            if (!result.valid) {
+                return {
+                    valid: false,
+                    reasons: result.reasons,
+                }
+            }
+
+            // Additionally verify that the embedded hash matches the document hash
+            const embeddedContent = signedData.encapContentInfo.eContent
+            if (!embeddedContent) {
+                return {
+                    valid: false,
+                    reasons: ['No embedded content in SignedData'],
+                }
+            }
+
+            // Compare the hashes
+            if (!this.compareArrays(embeddedContent, expectedHash)) {
+                return {
+                    valid: false,
+                    reasons: [
+                        'Document hash does not match embedded signature hash',
+                    ],
+                }
+            }
+
+            return { valid: true }
+        } catch (error) {
+            return {
+                valid: false,
+                reasons: [
+                    `Failed to verify signature: ${error instanceof Error ? error.message : String(error)}`,
+                ],
+            }
+        }
+    }
 }

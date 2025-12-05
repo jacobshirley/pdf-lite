@@ -4,6 +4,8 @@ import { PdfDictionary } from '../../core/objects/pdf-dictionary'
 import {
     PdfSignatureDictionaryEntries,
     PdfSignatureSubType,
+    PdfSignatureVerificationOptions,
+    PdfSignatureVerificationResult,
     RevocationInfo,
 } from '../types'
 import { bytesToHexBytes } from '../../utils/bytesToHexBytes'
@@ -150,6 +152,16 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
     }>
 
     /**
+     * Verifies the signature against the provided document bytes.
+     *
+     * @param options - Verification options including the signed bytes.
+     * @returns The verification result.
+     */
+    abstract verify(
+        options: PdfSignatureVerificationOptions,
+    ): Promise<PdfSignatureVerificationResult>
+
+    /**
      * Gets the signature hexadecimal content.
      *
      * @returns The Contents entry as hexadecimal.
@@ -225,5 +237,24 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
      */
     order(): number {
         return PdfIndirectObject.MAX_ORDER_INDEX - 10
+    }
+
+    /**
+     * Compares two byte arrays for equality.
+     *
+     * @param a - First byte array.
+     * @param b - Second byte array.
+     * @returns True if arrays are equal, false otherwise.
+     */
+    protected compareArrays(a: ByteArray, b: ByteArray): boolean {
+        if (a.length !== b.length) {
+            return false
+        }
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) {
+                return false
+            }
+        }
+        return true
     }
 }

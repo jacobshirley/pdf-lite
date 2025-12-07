@@ -1058,9 +1058,8 @@ describe('PdfSigner.verify', () => {
         })
         catalog.content.set('Type', new PdfName('Catalog'))
         catalog.content.set('Pages', pages.reference)
-        await document.commit(catalog)
-
         document.trailerDict.set('Root', catalog.reference)
+        await document.commit(catalog)
 
         return document
     }
@@ -1075,11 +1074,12 @@ describe('PdfSigner.verify', () => {
         })
         await document.commit(sig)
 
-        const signer = new PdfSigner()
-        signer.useDocumentSecurityStore = false
-        await signer.sign(document)
+        // Serialize the document to bytes and reload it to ensure signatures
+        // are properly deserialized into the correct signature classes
+        const documentBytes = document.toBytes()
+        const reloadedDocument = await PdfDocument.fromBytes([documentBytes])
 
-        const result = await signer.verify(document)
+        const result = await reloadedDocument.verifySignatures()
 
         expect(result.valid).toBe(true)
         expect(result.signatures).toHaveLength(1)

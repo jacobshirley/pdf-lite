@@ -5,12 +5,24 @@ import { PdfToken } from '../core/tokens/token'
 import { PdfDocument } from '../pdf/pdf-document'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays'
 import { PdfDocumentSecurityStoreObject } from './document-security-store'
-import { PdfSignatureObject } from './signatures'
+import {
+    PdfSignatureObject,
+    PdfAdbePkcs7DetachedSignatureObject,
+    PdfAdbePkcs7Sha1SignatureObject,
+    PdfAdbePkcsX509RsaSha1SignatureObject,
+    PdfEtsiCadesDetachedSignatureObject,
+    PdfEtsiRfc3161SignatureObject,
+    PdfSignatureDictionary,
+} from './signatures'
 import {
     PdfSignatureVerificationResult,
     CertificateValidationOptions,
+    PdfSignatureSubType,
 } from './types'
 import { PdfNumber } from '../core/objects/pdf-number'
+import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
+import { PdfDictionary } from '../core/objects/pdf-dictionary'
+import { PdfArray } from '../core/objects/pdf-array'
 
 /**
  * Result of verifying all signatures in a document.
@@ -141,6 +153,88 @@ export class PdfSigner {
     }
 
     /**
+     * Instantiates the appropriate signature object based on SubFilter type.
+     *
+     * @param signatureDict - The signature dictionary.
+     * @returns A properly typed PdfSignatureObject subclass.
+     */
+    private instantiateSignatureObject(
+        signatureDict: PdfIndirectObject<PdfDictionary>,
+    ): PdfSignatureObject {
+        const content = signatureDict.content
+        const subFilter = content
+            .get('SubFilter')
+            ?.toString()
+            .replace(/^\//, '') as PdfSignatureSubType | undefined
+
+        // Create a PdfSignatureDictionary wrapper
+        const sigDict = new PdfSignatureDictionary({
+            Type: content.get('Type'),
+            Filter: content.get('Filter'),
+            SubFilter: content.get('SubFilter'),
+            Reason: content.get('Reason'),
+            M: content.get('M'),
+            Name: content.get('Name'),
+            Reference: content.get('Reference'),
+            ContactInfo: content.get('ContactInfo'),
+            Location: content.get('Location'),
+            Cert: content.get('Cert'),
+            ByteRange: content.get('ByteRange'),
+            Contents: content.get('Contents'),
+        } as any)
+
+        // Instantiate the appropriate signature type based on SubFilter
+        let signatureObj: PdfSignatureObject
+
+        switch (subFilter) {
+            case 'adbe.pkcs7.detached':
+                signatureObj = new PdfAdbePkcs7DetachedSignatureObject({
+                    privateKey: new Uint8Array(),
+                    certificate: new Uint8Array(),
+                })
+                break
+            case 'adbe.pkcs7.sha1':
+                signatureObj = new PdfAdbePkcs7Sha1SignatureObject({
+                    privateKey: new Uint8Array(),
+                    certificate: new Uint8Array(),
+                })
+                break
+            case 'adbe.x509.rsa_sha1':
+                signatureObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+                    privateKey: new Uint8Array(),
+                    certificate: new Uint8Array(),
+                })
+                break
+            case 'ETSI.CAdES.detached':
+                signatureObj = new PdfEtsiCadesDetachedSignatureObject({
+                    privateKey: new Uint8Array(),
+                    certificate: new Uint8Array(),
+                })
+                break
+            case 'ETSI.RFC3161':
+                signatureObj = new PdfEtsiRfc3161SignatureObject({
+                    timeStampAuthority: {
+                        url: '',
+                    },
+                })
+                break
+            default:
+                // Fallback to a basic signature object
+                signatureObj = new PdfAdbePkcs7DetachedSignatureObject({
+                    privateKey: new Uint8Array(),
+                    certificate: new Uint8Array(),
+                })
+        }
+
+        // Replace the content with the actual signature dictionary
+        signatureObj.content = sigDict
+        signatureObj.objectNumber = signatureDict.objectNumber
+        signatureObj.generationNumber = signatureDict.generationNumber
+
+        return signatureObj
+    }
+
+    /**
      * Verifies all signatures in the document.
      * First serializes the document to bytes and reloads it to ensure signatures
      * are properly deserialized into the correct classes before verification.
@@ -171,25 +265,45 @@ export class PdfSigner {
             certificateValidation?: CertificateValidationOptions | boolean
         },
     ): Promise<PdfDocumentVerificationResult> {
-        // Serialize the document to bytes and reload it to ensure signatures
-        // are properly deserialized into the correct signature classes
         const documentBytes = document.toBytes()
-        const reloadedDocument = await PdfDocument.fromBytes([documentBytes])
-
-        const signatures: PdfSignatureObject[] = [
-            ...reloadedDocument.objects.filter(
-                (x) => x instanceof PdfSignatureObject,
-            ),
-        ]
 
         const results: PdfDocumentVerificationResult['signatures'] = []
         let allValid = true
+        const documentObjects = document.objects
 
-        for (let i = 0; i < signatures.length; i++) {
-            const signature = signatures[i]
+        for (let i = 0; i < documentObjects.length; i++) {
+            const obj = documentObjects[i]
+
+            if (!(obj instanceof PdfIndirectObject)) {
+                continue
+            }
+
+            if (!(obj.content instanceof PdfDictionary)) {
+                continue
+            }
+
+            // Check if this is a signature dictionary by looking for Type = /Sig or SubFilter
+            const typeEntry = obj.content.get('Type')
+            const subFilterEntry = obj.content.get('SubFilter')
+
+            // A signature can be identified by Type=/Sig or by having a SubFilter entry
+            const isSignature =
+                (typeEntry && typeEntry.toString() === '/Sig') ||
+                (subFilterEntry &&
+                    subFilterEntry.toString().startsWith('/adbe.')) ||
+                subFilterEntry?.toString().startsWith('/ETSI.')
+
+            if (!isSignature) {
+                continue
+            }
+
+            const signatureDict = obj as PdfIndirectObject<PdfDictionary>
+
+            // Instantiate the correct signature type
+            const signature = this.instantiateSignatureObject(signatureDict)
 
             // Get the ByteRange from the signature dictionary
-            const byteRangeEntry = signature.content.get('ByteRange')
+            const byteRangeEntry = signatureDict.content.get('ByteRange')
             if (!byteRangeEntry) {
                 results.push({
                     index: i,
@@ -204,7 +318,21 @@ export class PdfSigner {
             }
 
             // Extract the byte range values
-            const byteRange = byteRangeEntry.items.map((item) => {
+            const byteRangeArray = byteRangeEntry.as(PdfArray)
+            if (!byteRangeArray) {
+                results.push({
+                    index: i,
+                    signature,
+                    result: {
+                        valid: false,
+                        reasons: ['ByteRange is not an array'],
+                    },
+                })
+                allValid = false
+                continue
+            }
+
+            const byteRange = byteRangeArray.items.map((item) => {
                 if (item instanceof PdfNumber) {
                     return item.value
                 }

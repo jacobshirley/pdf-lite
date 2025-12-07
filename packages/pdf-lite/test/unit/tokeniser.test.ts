@@ -227,7 +227,7 @@ describe('PDF tokeniser', () => {
         const pdfString = ' 123.456 '
         const expectedTokens = [
             PdfWhitespaceToken.SPACE,
-            new PdfNumberToken(123.456, 0, 3),
+            new PdfNumberToken(123.456, 7, 3),
             PdfWhitespaceToken.SPACE,
         ]
 
@@ -1160,7 +1160,7 @@ endobj`
             PdfNumberToken {
               "decimalPlaces": 0,
               "isByteToken": false,
-              "padTo": 0,
+              "padTo": 1,
               "rawBytes": Uint8Array [],
             },
             PdfWhitespaceToken {
@@ -1206,6 +1206,30 @@ endobj`
             new PdfEndArrayToken(),
             PdfWhitespaceToken.NEWLINE,
             new PdfEndObjectToken(),
+        ]
+        const tokens = stringToPdfTokens(pdfString)
+        expect(tokens).toEqual(expectedTokens)
+    })
+
+    it('should maintain the padding of number tokens', () => {
+        const pdfString =
+            '<</ByteRange [ 000000000000 000000000607 000000033377 000000000172 ]>>'
+        const expectedTokens = [
+            new PdfStartDictionaryToken(),
+            new PdfNameToken('ByteRange'),
+            PdfWhitespaceToken.SPACE,
+            new PdfStartArrayToken(),
+            PdfWhitespaceToken.SPACE,
+            new PdfNumberToken(0, 12),
+            PdfWhitespaceToken.SPACE,
+            new PdfNumberToken(607, 12),
+            PdfWhitespaceToken.SPACE,
+            new PdfNumberToken(33377, 12),
+            PdfWhitespaceToken.SPACE,
+            new PdfNumberToken(172, 12),
+            PdfWhitespaceToken.SPACE,
+            new PdfEndArrayToken(),
+            new PdfEndDictionaryToken(),
         ]
         const tokens = stringToPdfTokens(pdfString)
         expect(tokens).toEqual(expectedTokens)

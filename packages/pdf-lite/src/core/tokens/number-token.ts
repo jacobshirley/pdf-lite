@@ -31,14 +31,15 @@ export class PdfNumberToken extends PdfToken {
             options instanceof PdfNumberToken
         ) {
             this.#value = PdfNumberToken.getValue(options)
-            this.padTo = padTo ?? 0
-            this.decimalPlaces = decimalPlaces ?? 0
+            this.padTo = padTo ?? PdfNumberToken.getPadding(options)
+            this.decimalPlaces =
+                decimalPlaces ?? PdfNumberToken.getDecimalPlaces(options)
             this.isByteToken = false
             return
         }
 
         this.#value = PdfNumberToken.getValue(options.value)
-        this.padTo = options.padTo ?? 0
+        this.padTo = options.padTo ?? PdfNumberToken.getPadding(options.value)
 
         this.decimalPlaces =
             options.decimalPlaces ??
@@ -104,13 +105,17 @@ export class PdfNumberToken extends PdfToken {
             bytes = PdfNumberToken.toBytes(bytes)
         }
 
-        let padding = 0
+        // Count leading zeros
+        let leadingZeros = 0
+        const originalLength = bytes.length
         while (bytes.length && bytes[0] === 0x30) {
             bytes = bytes.slice(1)
-            padding++
+            leadingZeros++
         }
 
-        return padding
+        // If all characters were zeros (value is 0), padding should be total length
+        // Otherwise, padding should be total length (to maintain original formatting)
+        return originalLength
     }
 
     static getDecimalPlaces(

@@ -2,6 +2,7 @@ import { HashAlgorithm } from 'pki-lite/core/crypto/index.js'
 import type {
     CertificateValidationOptions,
     CertificateValidationResult,
+    TrustAnchor,
 } from 'pki-lite/core/CertificateValidator.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary'
 import { PdfName } from '../core/objects/pdf-name'
@@ -11,7 +12,11 @@ import { PdfNumber } from '../core/objects/pdf-number'
 import { PdfString } from '../core/objects/pdf-string'
 import { ByteArray } from '../types'
 
-export type { CertificateValidationOptions, CertificateValidationResult }
+export type {
+    CertificateValidationOptions,
+    CertificateValidationResult,
+    TrustAnchor,
+}
 
 /**
  * PDF signature subfilter types defining the signature format.

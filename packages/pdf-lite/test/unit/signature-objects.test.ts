@@ -33,6 +33,7 @@ import { SignedData } from 'pki-lite/pkcs7/SignedData'
 import { RevocationInfoArchival } from 'pki-lite/adobe/RevocationInfoArchival'
 import { OIDs } from 'pki-lite/core/OIDs'
 import { bytesToHex } from '../../src/utils/bytesToHex'
+import { Certificate } from 'pki-lite/x509/Certificate'
 
 describe('PdfSignatureDictionary', () => {
     it('should create a signature dictionary with required fields', () => {
@@ -550,7 +551,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
             sigObj.setSignedBytes(signedBytes)
 
             // Import Certificate to create trust anchor
-            const { Certificate } = await import('pki-lite/x509/Certificate')
+            // Using Certificate from top-level import
             const caCertificate = Certificate.fromDer(rsaSigningKeys.caCert)
 
             // Verify with trust anchor - the trustAnchors option is passed to pki-lite
@@ -585,7 +586,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
             sigObj.setSignedBytes(signedBytes)
 
             // Import Certificate to create a different trust anchor
-            const { Certificate } = await import('pki-lite/x509/Certificate')
+            // Using Certificate from top-level import
 
             // Create a self-signed certificate to use as untrusted anchor
             // The signer cert is not issued by itself, so chain validation should fail
@@ -620,7 +621,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
             sigObj.setSignedBytes(signedBytes)
 
             // Import Certificate to create trust anchors
-            const { Certificate } = await import('pki-lite/x509/Certificate')
+            // Using Certificate from top-level import
             const caCertificate = Certificate.fromDer(rsaSigningKeys.caCert)
             const signerCertificate = Certificate.fromDer(rsaSigningKeys.cert)
 
@@ -1250,7 +1251,7 @@ describe('ETSI.CAdES.detached verification', () => {
         sigObj.setSignedBytes(signedBytes)
 
         // Import Certificate to create trust anchor
-        const { Certificate } = await import('pki-lite/x509/Certificate')
+        // Using Certificate from top-level import
         const caCertificate = Certificate.fromDer(rsaSigningKeys.caCert)
 
         // Verify with trust anchor - the trustAnchors option is passed to pki-lite

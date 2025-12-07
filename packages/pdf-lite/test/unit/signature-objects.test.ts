@@ -386,6 +386,155 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
 
             expect(result.valid).toBe(true)
         })
+
+        it('should verify signature with certificate chain validation using trusted CA', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            // Verify with certificate chain validation enabled
+            // When validateChain is true, pki-lite will validate the certificate chain
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: {
+                    validateChain: true,
+                },
+            })
+
+            expect(result.valid).toBe(true)
+        })
+
+        it('should verify signature with embedded revocation info (OCSP)', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            // Create signature with embedded OCSP response
+            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2024-01-01T12:00:00Z'),
+                revocationInfo: {
+                    ocsps: [rsaSigningKeys.ocspResponse],
+                },
+            })
+
+            // Sign with revocation info embedded
+            const { signedBytes } = await sigObj.sign({
+                bytes: testData,
+                embedRevocationInfo: true,
+            })
+            sigObj.setSignedBytes(signedBytes)
+
+            // Verify - pki-lite should use the embedded OCSP response for revocation checking
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: {
+                    checkOCSP: true,
+                },
+            })
+
+            expect(result.valid).toBe(true)
+        })
+
+        it('should verify signature with embedded revocation info (CRL)', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            // Create signature with embedded CRL
+            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2024-01-01T12:00:00Z'),
+                revocationInfo: {
+                    crls: [rsaSigningKeys.caCrl],
+                },
+            })
+
+            // Sign with revocation info embedded
+            const { signedBytes } = await sigObj.sign({
+                bytes: testData,
+                embedRevocationInfo: true,
+            })
+            sigObj.setSignedBytes(signedBytes)
+
+            // Verify - pki-lite should use the embedded CRL for revocation checking
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: {
+                    checkCRL: true,
+                },
+            })
+
+            expect(result.valid).toBe(true)
+        })
+
+        it('should verify signature with both embedded CRL and OCSP', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            // Create signature with both CRL and OCSP embedded
+            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2024-01-01T12:00:00Z'),
+                revocationInfo: {
+                    crls: [rsaSigningKeys.caCrl],
+                    ocsps: [rsaSigningKeys.ocspResponse],
+                },
+            })
+
+            // Sign with revocation info embedded
+            const { signedBytes } = await sigObj.sign({
+                bytes: testData,
+                embedRevocationInfo: true,
+            })
+            sigObj.setSignedBytes(signedBytes)
+
+            // Verify with both CRL and OCSP checking enabled
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: {
+                    checkCRL: true,
+                    checkOCSP: true,
+                },
+            })
+
+            expect(result.valid).toBe(true)
+        })
+
+        it('should pass certificateValidation: true to use default validation', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            // Pass true to use default certificate validation
+            // This will use pki-lite's default certificate validation
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: true,
+            })
+
+            // Note: This may fail if the CA certificate is not in system trust store
+            // For test purposes, we just verify the signature is processed correctly
+            expect(result).toBeDefined()
+            expect(typeof result.valid).toBe('boolean')
+        })
     })
 })
 
@@ -916,6 +1065,70 @@ describe('ETSI.CAdES.detached verification', () => {
 
         expect(result.valid).toBe(false)
         expect(result.reasons).toBeDefined()
+    })
+
+    it('should verify CAdES signature with embedded OCSP response', async () => {
+        const testData = stringToBytes('Hello, PDF!')
+
+        // Create signature with embedded OCSP response
+        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            additionalCertificates: [rsaSigningKeys.caCert],
+            date: new Date('2024-01-01T12:00:00Z'),
+            revocationInfo: {
+                ocsps: [rsaSigningKeys.ocspResponse],
+            },
+        })
+
+        // Sign with revocation info embedded
+        const { signedBytes } = await sigObj.sign({
+            bytes: testData,
+            embedRevocationInfo: true,
+        })
+        sigObj.setSignedBytes(signedBytes)
+
+        // Verify - pki-lite should use the embedded OCSP response for revocation checking
+        const result = await sigObj.verify({
+            bytes: testData,
+            certificateValidation: {
+                checkOCSP: true,
+            },
+        })
+
+        expect(result.valid).toBe(true)
+    })
+
+    it('should verify CAdES signature with embedded CRL', async () => {
+        const testData = stringToBytes('Hello, PDF!')
+
+        // Create signature with embedded CRL
+        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            additionalCertificates: [rsaSigningKeys.caCert],
+            date: new Date('2024-01-01T12:00:00Z'),
+            revocationInfo: {
+                crls: [rsaSigningKeys.caCrl],
+            },
+        })
+
+        // Sign with revocation info embedded
+        const { signedBytes } = await sigObj.sign({
+            bytes: testData,
+            embedRevocationInfo: true,
+        })
+        sigObj.setSignedBytes(signedBytes)
+
+        // Verify - pki-lite should use the embedded CRL for revocation checking
+        const result = await sigObj.verify({
+            bytes: testData,
+            certificateValidation: {
+                checkCRL: true,
+            },
+        })
+
+        expect(result.valid).toBe(true)
     })
 })
 

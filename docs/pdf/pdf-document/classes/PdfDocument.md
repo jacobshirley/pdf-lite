@@ -632,9 +632,9 @@ When true, locks all existing revisions to preserve original content.
 
 ##### value
 
-`boolean`
+`boolean` = `true`
 
-True to enable incremental mode, false to disable
+True to enable incremental mode, false to disable. Defaults to true.
 
 #### Returns
 
@@ -829,6 +829,20 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`toTokens`](../../../core/objects/pdf-object/classes/PdfObject.md#totokens)
+
+---
+
+### verifySignatures()
+
+> **verifySignatures**(): `Promise`\<[`PdfDocumentVerificationResult`](../../../signing/signer/type-aliases/PdfDocumentVerificationResult.md)\>
+
+Verifies all digital signatures in the document.
+
+#### Returns
+
+`Promise`\<[`PdfDocumentVerificationResult`](../../../signing/signer/type-aliases/PdfDocumentVerificationResult.md)\>
+
+A promise that resolves to the verification result
 
 ---
 

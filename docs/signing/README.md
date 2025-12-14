@@ -50,6 +50,12 @@ Re-exports [PdfDocumentSecurityStoreObject](document-security-store/classes/PdfD
 
 ---
 
+### PdfDocumentVerificationResult
+
+Re-exports [PdfDocumentVerificationResult](signer/type-aliases/PdfDocumentVerificationResult.md)
+
+---
+
 ### PdfEtsiCadesDetachedSignatureObject
 
 Re-exports [PdfEtsiCadesDetachedSignatureObject](signatures/etsi-cades-detached/classes/PdfEtsiCadesDetachedSignatureObject.md)
@@ -101,6 +107,24 @@ Re-exports [PdfSignatureSubType](types/type-aliases/PdfSignatureSubType.md)
 ### PdfSignatureType
 
 Re-exports [PdfSignatureType](types/type-aliases/PdfSignatureType.md)
+
+---
+
+### PdfSignatureVerificationOptions
+
+Re-exports [PdfSignatureVerificationOptions](types/type-aliases/PdfSignatureVerificationOptions.md)
+
+---
+
+### PdfSignatureVerificationResult
+
+Re-exports [PdfSignatureVerificationResult](types/type-aliases/PdfSignatureVerificationResult.md)
+
+---
+
+### PdfSigner
+
+Re-exports [PdfSigner](signer/classes/PdfSigner.md)
 
 ---
 

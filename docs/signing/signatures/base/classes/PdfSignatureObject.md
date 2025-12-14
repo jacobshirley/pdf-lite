@@ -279,6 +279,34 @@ Creates a deep clone of the object
 
 ---
 
+### compareArrays()
+
+> `protected` **compareArrays**(`a`, `b`): `boolean`
+
+Compares two byte arrays for equality.
+
+#### Parameters
+
+##### a
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+First byte array.
+
+##### b
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+Second byte array.
+
+#### Returns
+
+`boolean`
+
+True if arrays are equal, false otherwise.
+
+---
+
 ### equals()
 
 > **equals**(`other?`): `boolean`
@@ -548,6 +576,28 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`toTokens`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#totokens)
+
+---
+
+### verify()
+
+> `abstract` **verify**(`options`): `Promise`\<[`PdfSignatureVerificationResult`](../../../types/type-aliases/PdfSignatureVerificationResult.md)\>
+
+Verifies the signature against the provided document bytes.
+
+#### Parameters
+
+##### options
+
+[`PdfSignatureVerificationOptions`](../../../types/type-aliases/PdfSignatureVerificationOptions.md)
+
+Verification options including the signed bytes.
+
+#### Returns
+
+`Promise`\<[`PdfSignatureVerificationResult`](../../../types/type-aliases/PdfSignatureVerificationResult.md)\>
+
+The verification result.
 
 ---
 

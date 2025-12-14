@@ -7,6 +7,8 @@ import { Certificate } from 'pki-lite/x509/Certificate'
 import { ByteArray } from '../../types'
 import { RevocationInfo } from '../types'
 import { fetchRevocationInfo } from '../utils'
+import { PdfArray } from '../../core/objects/pdf-array'
+import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
 
 /**
  * X.509 RSA-SHA1 signature object (adbe.x509.rsa_sha1).
@@ -115,10 +117,27 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
         const { bytes } = options
 
         try {
-            const certificates = [
-                this.certificate,
-                ...(this.additionalCertificates ?? []),
-            ]
+            const certificates: Certificate[] = []
+
+            const Cert = this.content.get('Cert')
+            if (Cert instanceof PdfArray) {
+                for (const certObj of Cert.items) {
+                    const certBytes =
+                        certObj instanceof PdfHexadecimal
+                            ? certObj.bytes
+                            : certObj.raw
+                    const certificate = Certificate.fromDer(certBytes)
+                    certificates.push(certificate)
+                }
+            } else if (Cert instanceof PdfHexadecimal) {
+                const certificate = Certificate.fromDer(Cert.bytes)
+                certificates.push(certificate)
+            } else if (Cert) {
+                const certificate = Certificate.fromDer(Cert.raw)
+                certificates.push(certificate)
+            } else {
+                throw new Error('No Cert entry found in signature dictionary')
+            }
 
             if (certificates.length === 0) {
                 return {
@@ -133,39 +152,36 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
             const signatureOctetString = OctetString.fromDer(this.signedBytes)
             const signatureValue = signatureOctetString.bytes
 
-            // Get the signer certificate (first certificate in the chain)
-            const signerCertificate = Certificate.fromDer(certificates[0])
-            const publicKeyInfo =
-                signerCertificate.tbsCertificate.subjectPublicKeyInfo
+            const signatureAlgorithm = AlgorithmIdentifier.signatureAlgorithm(
+                PdfAdbePkcsX509RsaSha1SignatureObject.ALGORITHM,
+            )
 
-            // Import the public key and verify the signature
-            const algorithm = {
-                name: 'RSASSA-PKCS1-v1_5',
-                hash: 'SHA-1',
+            for (const cert of certificates) {
+                const isValid = await signatureAlgorithm.verify(
+                    bytes,
+                    signatureValue,
+                    cert.tbsCertificate.subjectPublicKeyInfo,
+                )
+
+                if (isValid) {
+                    if (options.certificateValidation === true) {
+                        await cert.validate({
+                            //TODO: implement default validation options
+                            checkSignature: true,
+                            validateChain: true,
+                            otherCertificates: certificates,
+                        })
+                    } else if (options.certificateValidation) {
+                        await cert.validate(options.certificateValidation)
+                    }
+
+                    return { valid: true }
+                }
             }
 
-            const cryptoKey = await crypto.subtle.importKey(
-                'spki',
-                publicKeyInfo.toDer(),
-                algorithm,
-                false,
-                ['verify'],
-            )
-
-            const isValid = await crypto.subtle.verify(
-                algorithm,
-                cryptoKey,
-                signatureValue,
-                bytes,
-            )
-
-            if (isValid) {
-                return { valid: true }
-            } else {
-                return {
-                    valid: false,
-                    reasons: ['RSA-SHA1 signature verification failed'],
-                }
+            return {
+                valid: false,
+                reasons: ['Signature verification failed for all certificates'],
             }
         } catch (error) {
             return {

@@ -2,9 +2,12 @@ import { TimeStampAuthority } from '../types'
 import { PdfSignatureObject, PdfSignatureSignOptions } from './base'
 import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
 import { TimeStampReq } from 'pki-lite/timestamp/TimeStampReq'
+import { TSTInfo } from 'pki-lite/timestamp/TSTInfo'
 import { MessageImprint } from 'pki-lite/timestamp/MessageImprint'
 import { SignedData } from 'pki-lite/pkcs7/SignedData'
 import { fetchRevocationInfo } from '../utils'
+import { Certificate } from 'pki-lite/x509/Certificate'
+import { OIDs } from 'pki-lite/core/OIDs'
 
 /**
  * RFC 3161 timestamp signature object (ETSI.RFC3161).
@@ -99,26 +102,106 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
     verify: PdfSignatureObject['verify'] = async (options) => {
         const { bytes, certificateValidation } = options
 
+        const digestAlgorithm =
+            DigestAlgorithmIdentifier.digestAlgorithm('SHA-512')
+
+        const expectedMessageImprint = new MessageImprint({
+            hashAlgorithm: digestAlgorithm,
+            hashedMessage: await digestAlgorithm.digest(bytes),
+        })
+
         try {
             const signedData = SignedData.fromCms(this.signedBytes)
 
+            // Extract TSTInfo from the signed data's encapsulated content
+            // The eContentType should be id-ct-TSTInfo (1.2.840.113549.1.9.16.1.4)
+            const encapContentInfo = signedData.encapContentInfo
+
+            if (
+                encapContentInfo.eContentType.toString() !== OIDs.PKCS7.TST_INFO
+            ) {
+                return {
+                    valid: false,
+                    reasons: [
+                        `Invalid content type: expected id-ct-TSTInfo (${OIDs.PKCS7.TST_INFO}), got ${encapContentInfo.eContentType.toString()}`,
+                    ],
+                }
+            }
+
+            if (!encapContentInfo.eContent) {
+                return {
+                    valid: false,
+                    reasons: ['No TSTInfo content found in timestamp token'],
+                }
+            }
+
+            // Parse the TSTInfo from the encapsulated content
+            const tstInfo = TSTInfo.fromDer(encapContentInfo.eContent)
+
+            // Verify that the messageImprint in TSTInfo matches what we computed
+            const tstMessageImprint = tstInfo.messageImprint
+            if (
+                tstMessageImprint.hashAlgorithm.algorithm.toString() !==
+                expectedMessageImprint.hashAlgorithm.algorithm.toString()
+            ) {
+                return {
+                    valid: false,
+                    reasons: [
+                        `Hash algorithm mismatch: TSTInfo uses ${tstMessageImprint.hashAlgorithm.algorithm.toString()}, expected ${expectedMessageImprint.hashAlgorithm.algorithm.toString()}`,
+                    ],
+                }
+            }
+
+            const tstHash = tstMessageImprint.hashedMessage
+            const expectedHash = expectedMessageImprint.hashedMessage
+
+            if (tstHash.length !== expectedHash.length) {
+                return {
+                    valid: false,
+                    reasons: [
+                        `Hash length mismatch: TSTInfo has ${tstHash.length} bytes, expected ${expectedHash.length} bytes`,
+                    ],
+                }
+            }
+
+            for (let i = 0; i < tstHash.length; i++) {
+                if (tstHash[i] !== expectedHash[i]) {
+                    return {
+                        valid: false,
+                        reasons: [
+                            'Message imprint mismatch: the timestamp does not match the document',
+                        ],
+                    }
+                }
+            }
+
+            // Verify the signature on the SignedData
             const certValidationOptions =
                 certificateValidation === true
                     ? {}
                     : certificateValidation || undefined
 
-            const result = await signedData.verify({
-                data: bytes,
-                certificateValidation: certValidationOptions,
-            })
+            if (options.certificateValidation) {
+                const certificates = signedData.certificates ?? []
+                for (const cert of certificates) {
+                    if (!(cert instanceof Certificate)) {
+                        //TODO: support other cert types
+                        continue
+                    }
 
-            if (result.valid) {
-                return { valid: true }
-            } else {
-                return {
-                    valid: false,
-                    reasons: result.reasons,
+                    if (!(await cert.validate(certValidationOptions))) {
+                        return {
+                            valid: false,
+                            reasons: [
+                                'Certificate validation failed for timestamp signer',
+                            ],
+                        }
+                    }
                 }
+            }
+
+            return {
+                valid: true,
             }
         } catch (error) {
             return {

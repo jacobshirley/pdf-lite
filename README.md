@@ -8,10 +8,6 @@ A low-level, minimal-dependency, type-safe PDF library that works in the browser
 
 PRs and issues are welcome!
 
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
 ## Features
 
 - **Zero dependencies**: No external libraries are required, making it lightweight and easy to integrate.
@@ -99,6 +95,7 @@ Long-Term Validation (LTV) support ensures that digital signatures remain valid 
 **Other features:**
 
 - [x] Timestamping
+- [x] Verification of existing signatures
 
 ## Future Plans
 
@@ -283,3 +280,7 @@ import {
     PdfEtsiRfc3161SignatureObject,
 } from 'pdf-lite'
 ```
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.

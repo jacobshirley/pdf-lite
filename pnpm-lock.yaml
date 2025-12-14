@@ -58,11 +58,11 @@ importers:
         specifier: 2.1.0
         version: 2.1.0
       pki-lite:
-        specifier: ^1.0.11
-        version: 1.0.11
+        specifier: ^1.0.12
+        version: 1.0.12
       pki-lite-crypto-extended:
-        specifier: ^1.0.10
-        version: 1.0.11(pki-lite@1.0.11)
+        specifier: ^1.0.12
+        version: 1.0.12(pki-lite@1.0.12)
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
@@ -351,8 +351,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@noble/ciphers@2.0.1':
-    resolution: {integrity: sha512-xHK3XHPUW8DTAobU+G0XT+/w+JLM7/8k1UFdB5xg/zTFPnFCobhftzw8wl4Lw2aq/Rvir5pxfZV5fEazmeCJ2g==}
+  '@noble/ciphers@2.1.1':
+    resolution: {integrity: sha512-bysYuiVfhxNJuldNXlFEitTVdNnYUc+XNJZd7Qm2a5j1vZHgY+fazadNFWFaMK/2vye0JVlxV3gHmC0WDfAOQw==}
     engines: {node: '>= 20.19.0'}
 
   '@noble/hashes@2.0.1':
@@ -597,8 +597,8 @@ packages:
   array-ify@1.0.0:
     resolution: {integrity: sha512-c5AMf34bKdvPhQ7tBGhqkgKNUzMr4WUs+WDtC2ZUGOUncbxKMTvqxYctiseW3+L4bA8ec+GcZ6/A/FW4m8ukng==}
 
-  asn1js@3.0.6:
-    resolution: {integrity: sha512-UOCGPYbl0tv8+006qks/dTgV9ajs97X2p0FAbyS2iyCRrmLSRolDaHdp+v/CLgnzHc3fVB+CwYiUmei7ndFcgA==}
+  asn1js@3.0.7:
+    resolution: {integrity: sha512-uLvq6KJu04qoQM6gvBfKFjlh6Gl0vOKQuR5cJMDHQkmwfMOQeN3F3SHCv9SNYSL+CRoHvOGFfllDlVz03GQjvQ==}
     engines: {node: '>=12.0.0'}
 
   assertion-error@2.0.1:
@@ -1050,13 +1050,13 @@ packages:
     resolution: {integrity: sha512-1wrVzJ2STrpmONHKBy228LM1b84msXDUoAzVEl0R8Mz4Ce6EPr+IVtxm8+yvrqLYMHswREkjYFaMxnyGnaY3Ng==}
     hasBin: true
 
-  pki-lite-crypto-extended@1.0.11:
-    resolution: {integrity: sha512-hjgWBhz2h2UP33qSaJZdhhaDST3F2st8HrTdmOYhM/8/KAGptBFC87n22QDvwGlEJKZ5/PGtil8gEPPoeB+rNw==}
+  pki-lite-crypto-extended@1.0.12:
+    resolution: {integrity: sha512-3pN6ES4CJFL8yXbsSR77rUfBHw/uCzH7iRsS5at/P5Rm09h2FVuta0V8zeeYh0Uj7Kw/1ePxZ/YLzf/ezeRYaQ==}
     peerDependencies:
       pki-lite: ^1.0.0
 
-  pki-lite@1.0.11:
-    resolution: {integrity: sha512-ht+NLBWfuLrqEEct620sza5DfWLlV3EjkdQKFg4sgBHLSC1SDN5wPhtUpBvPxw1SsQwNwdBJ1BXCpDS6h27xsw==}
+  pki-lite@1.0.12:
+    resolution: {integrity: sha512-8sQS1ZeN1E5OYwJ1yGKHM5y//ghpEFvEqkrYWjG3SoegRVSMyF8QZqrX9u5XX5DH9mYiubkZmX83zWHM+nYqKg==}
 
   playwright-core@1.56.1:
     resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
@@ -1602,7 +1602,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@noble/ciphers@2.0.1': {}
+  '@noble/ciphers@2.1.1': {}
 
   '@noble/hashes@2.0.1': {}
 
@@ -1841,7 +1841,7 @@ snapshots:
 
   array-ify@1.0.0: {}
 
-  asn1js@3.0.6:
+  asn1js@3.0.7:
     dependencies:
       pvtsutils: 1.3.6
       pvutils: 1.1.5
@@ -2257,16 +2257,16 @@ snapshots:
     dependencies:
       pngjs: 7.0.0
 
-  pki-lite-crypto-extended@1.0.11(pki-lite@1.0.11):
+  pki-lite-crypto-extended@1.0.12(pki-lite@1.0.12):
     dependencies:
-      '@noble/ciphers': 2.0.1
+      '@noble/ciphers': 2.1.1
       '@noble/hashes': 2.0.1
       node-forge: 1.3.3
-      pki-lite: 1.0.11
+      pki-lite: 1.0.12
 
-  pki-lite@1.0.11:
+  pki-lite@1.0.12:
     dependencies:
-      asn1js: 3.0.6
+      asn1js: 3.0.7
 
   playwright-core@1.56.1: {}
 

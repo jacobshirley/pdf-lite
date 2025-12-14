@@ -32,6 +32,8 @@ export type PdfDocumentVerificationResult = {
     valid: boolean
     /** Individual signature verification results. */
     signatures: {
+        /** The signature subfilter type. */
+        type: PdfSignatureSubType
         /** Index of the signature in the document. */
         index: number
         /** The signature object. */
@@ -159,13 +161,10 @@ export class PdfSigner {
      * @returns A properly typed PdfSignatureObject subclass.
      */
     private instantiateSignatureObject(
-        signatureDict: PdfIndirectObject<PdfDictionary>,
+        signatureDict: PdfIndirectObject<PdfSignatureDictionary>,
     ): PdfSignatureObject {
         const content = signatureDict.content
-        const subFilter = content
-            .get('SubFilter')
-            ?.toString()
-            .replace(/^\//, '') as PdfSignatureSubType | undefined
+        const subFilter = content.get('SubFilter')!.value
 
         // Create a PdfSignatureDictionary wrapper
         const sigDict = new PdfSignatureDictionary({
@@ -219,11 +218,9 @@ export class PdfSigner {
                 })
                 break
             default:
-                // Fallback to a basic signature object
-                signatureObj = new PdfAdbePkcs7DetachedSignatureObject({
-                    privateKey: new Uint8Array(),
-                    certificate: new Uint8Array(),
-                })
+                throw new Error(
+                    `Unsupported signature SubFilter type: ${subFilter}`,
+                )
         }
 
         // Replace the content with the actual signature dictionary
@@ -297,7 +294,10 @@ export class PdfSigner {
                 continue
             }
 
-            const signatureDict = obj as PdfIndirectObject<PdfDictionary>
+            const signatureDict =
+                obj as PdfIndirectObject<PdfSignatureDictionary>
+
+            const subFilter = signatureDict.content.get('SubFilter')!.value
 
             // Instantiate the correct signature type
             const signature = this.instantiateSignatureObject(signatureDict)
@@ -306,6 +306,7 @@ export class PdfSigner {
             const byteRangeEntry = signatureDict.content.get('ByteRange')
             if (!byteRangeEntry) {
                 results.push({
+                    type: subFilter,
                     index: i,
                     signature,
                     result: {
@@ -321,6 +322,7 @@ export class PdfSigner {
             const byteRangeArray = byteRangeEntry.as(PdfArray)
             if (!byteRangeArray) {
                 results.push({
+                    type: subFilter,
                     index: i,
                     signature,
                     result: {
@@ -341,6 +343,7 @@ export class PdfSigner {
 
             if (byteRange.length !== 4) {
                 results.push({
+                    type: subFilter,
                     index: i,
                     signature,
                     result: {
@@ -365,6 +368,7 @@ export class PdfSigner {
             })
 
             results.push({
+                type: subFilter,
                 index: i,
                 signature,
                 result,

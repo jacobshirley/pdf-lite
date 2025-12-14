@@ -1,12 +1,4 @@
-import {
-    describe,
-    it,
-    expect,
-    vi,
-    beforeEach,
-    afterEach,
-    beforeAll,
-} from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import {
     PdfSignatureDictionary,
     PdfSignatureObject,
@@ -28,6 +20,8 @@ import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
 import { PdfDictionary } from '../../src/core/objects/pdf-dictionary'
 import { PdfStream } from '../../src/core/objects/pdf-stream'
 import { rsaSigningKeys } from './fixtures/rsa-2048'
+import { rsaSigningKeys as otherRsaSigningKeys } from './fixtures/rsa-4096'
+
 import { stringToBytes } from '../../src/utils/stringToBytes'
 import { SignedData } from 'pki-lite/pkcs7/SignedData'
 import { RevocationInfoArchival } from 'pki-lite/adobe/RevocationInfoArchival'
@@ -550,25 +544,38 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
             const { signedBytes } = await sigObj.sign({ bytes: testData })
             sigObj.setSignedBytes(signedBytes)
 
-            // Import Certificate to create trust anchor
-            // Using Certificate from top-level import
             const caCertificate = Certificate.fromDer(rsaSigningKeys.caCert)
 
-            // Verify with trust anchor - the trustAnchors option is passed to pki-lite
-            // Note: pki-lite uses trustAnchors for chain validation, but chain building
-            // may have issues with certain certificate extensions. The signature
-            // verification itself should succeed, and the trustAnchors option is passed through.
             const result = await sigObj.verify({
                 bytes: testData,
                 certificateValidation: {
-                    // Just validate signature, not the full chain (due to pki-lite limitations)
-                    checkSignature: true,
                     trustAnchors: [{ certificate: caCertificate }],
-                    otherCertificates: [caCertificate],
+                    validateChain: true,
+                    enforceCAConstraints: true,
+                    otherCertificates: [
+                        Certificate.fromDer(rsaSigningKeys.cert),
+                        caCertificate,
+                    ],
                 },
             })
 
             expect(result.valid).toBe(true)
+
+            const testAnotherCert = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: {
+                    checkSignature: true,
+                    validateChain: true,
+                    trustAnchors: [
+                        {
+                            certificate: Certificate.fromDer(
+                                otherRsaSigningKeys.caCert,
+                            ),
+                        },
+                    ],
+                },
+            })
+            expect(testAnotherCert.valid).toBe(false)
         })
 
         it('should fail validation when certificate chain does not lead to trust anchor', async () => {
@@ -811,6 +818,140 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
             `"3082089806092A864886F70D010702A082088930820885020101310D300B0609608648016503040201300B06092A864886F70D010701A082058F3082058B30820373A00302010202140AD1000D5C4FCFA5D3F51739F2FACAE3817A281A300D06092A864886F70D01010B0500305C310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310B3009060355040B0C0243413111300F06035504030C084D79526F6F744341301E170D3235313132343137333835345A170D3236313132343137333835345A3061310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F72673110300E060355040B0C075369676E696E673111300F06035504030C084A6F686E20446F6530820122300D06092A864886F70D01010105000382010F003082010A028201010091E6734DB5BC6DA8AE1833DEE522762929E6354EF53FF06B1BD576AC87FA48161F52A14BE2D622505232539B5BB47E6CF09021057230E6D62076DFD26856128378AE7FE79F62E1EBCBC9C47A2BE752794844460A31E5887A19F03A6B2569EEC91E80718F18E7E5EF78DC33E100CE2ED50BC1C358F43AC93EDA3F77E78A97E0B089A917E9A36F3734E51D1C63CFB5C2504E77FC227AAE881624033468B8BE3E1F0A5C6E2D20528CAD7DAEA7E2A6EC7A4DCF846A97174827EF48D0166720A089CA20F765479C44945E91503B3F071DF3D7EE795CB04C43876D3B52872DF135116AC52621DFEAA2691ADC84960F76EAD089B591798F67D6F96DC75483B4BB5CC7930203010001A382013E3082013A30090603551D1304023000300B0603551D0F0404030206C0301D0603551D250416301406082B0601050507030406082B06010505070303302D0603551D1F042630243022A020A01E861C687474703A2F2F6C6F63616C686F73743A383038302F63612E63726C30819106082B06010505070101048184308181302806082B06010505073002861C687474703A2F2F6C6F63616C686F73743A383038302F63612E637274302606082B06010505073001861A687474703A2F2F6C6F63616C686F73743A383038302F6F637370302D06082B060105050730018621687474703A2F2F6C6F63616C686F73743A383038302F6F6373702D6261636B7570301D0603551D0E0416041478EA1C24BC756EA767DE5CF44A03051DAD58B62F301F0603551D23041830168014DC7B208D7FEA5ED9121A13C45A99C460131D070E300D06092A864886F70D01010B050003820201007E1585A5069BA843EAEC6CD15D6791AF98F02E745DAF15CEF93F69E92BE04FC2DDF096FD85C249A3026CF780877398D0A371ECF9A2E02F91FD3C75FA20B47207E3F0DE25AA2B8E444F07B237394D4DF5F98D3745EFCE5AEFF583C6A3C9EFF384EB692F6F3650483C0F7F0309AC2A9A741E75406710DA7154E501641445781E0404AA9D36EC862DA1E36B345D4B31B3E97C2DCC39C330A7FA79149D79E7E44B83646D697B0E3E017ACFAE3B202408CD4D7B9BA60CEB0019F977AD0C75C34BE24479CB4EE81ADF0ECE6FDB17C2A0B0DF04EE198602207B235AF7F782642D0B29373F48D2E593C13290880F66EF79B0877B68464B86016506BB63FEB9D611703FFD0DD239A992C77CF17A0E92DC79045B2287EF0B6CDF60C01A99B11841AA484FFE0FB8904DF223A498B90DF88B523893E997930517E644E269BA4624EB99B087D0CB1B4D30720C3466CB6771F2B6CE573B1D134EE3C7A3BF2B65166EC04214D8C65EDE29B148DFC61214CDB9DCC57D36E3B8AC97FBA1019BBDD61BE18B80E32E06C11D3DDA962B23578106C617847819C1AAC61BDC2273D061586DE08B2FA62721F563EB6C20C0C19AC21D6557514ECEC10E09E44D0C160DA5FF99724405983FE17103D5E7F9EF3C3AD49D3B7880FE26003DBC2E1E98DA255BBFC3BD75B2AEE178BFD7565924014A23372BDD04CE79B824FABDDB55338FF9B8AD9BDB1E43F32295318202CF308202CB0201013074305C310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310B3009060355040B0C0243413111300F06035504030C084D79526F6F74434102140AD1000D5C4FCFA5D3F51739F2FACAE3817A281A300B0609608648016503040201A082012E3081C2060B2A864886F70D010910022F3181B23081AF3081AC3081A9300B060960864801650304020104205CE7808A4A328A9D1568A6EF6B030D44B7D1C7FFA3BC25F881DA700A199C73EC30783060A45E305C310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310B3009060355040B0C0243413111300F06035504030C084D79526F6F74434102140AD1000D5C4FCFA5D3F51739F2FACAE3817A281A301C06092A864886F70D010905310F170D3234303130313132303030305A302F06092A864886F70D01090431220420E21FC8BC54A9E118BA076002544A1D20CA18D9E6DF08AC308D89CE63DE7D445B301806092A864886F70D010903310B06092A864886F70D010701300D06092A864886F70D01010B05000482010087C1548CA434BC1F45B70E3015C1F3679FC24B1EBBB3AAF12F5A84A118B8FDB6C3CED71E1D919DCE9CC3336BD04B2A16CA7645AE533078AB927718B541840CCBAF29F26BAB815820D28ED42DA33E1C39CCB19A8FF57D5ECED1E826505D1818759183CE5DB94ABD81235288476B852EB0AC4DF9CC204E40FB5F001F63A3A070A378D0D8D42A6CA7BFAC96FCE3ED302D46CB97FC7FB76F21C09B2FEBE3623144C292B83118DF862DEB6059A4AD3157F26E9650862FD96C80A4B79C135592F6FC5269488A1A22C90B215BC150FEB75E21E276DB24D7D3037C6F5D88FF2F97F282FD482B57CEAB28D533C885D2B06C9BA05A162260F1041B45E2BEE067C4C8B43A0A"`,
         )
     })
+
+    describe('Verification', () => {
+        it('should verify a valid CAdES detached signature', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: testData })
+
+            expect(result.valid).toBe(true)
+            expect(result.reasons).toBeUndefined()
+        })
+
+        it('should fail verification for tampered data', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+            const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
+
+            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: tamperedData })
+
+            expect(result.valid).toBe(false)
+            expect(result.reasons).toBeDefined()
+        })
+
+        it('should verify CAdES signature with embedded OCSP response', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            // Create signature with embedded OCSP response
+            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2024-01-01T12:00:00Z'),
+                revocationInfo: {
+                    ocsps: [rsaSigningKeys.ocspResponse],
+                },
+            })
+
+            // Sign with revocation info embedded
+            const { signedBytes } = await sigObj.sign({
+                bytes: testData,
+                embedRevocationInfo: true,
+            })
+            sigObj.setSignedBytes(signedBytes)
+
+            // Verify - pki-lite should use the embedded OCSP response for revocation checking
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: {
+                    checkOCSP: true,
+                },
+            })
+
+            expect(result.valid).toBe(true)
+        })
+
+        it('should verify CAdES signature with embedded CRL', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            // Create signature with embedded CRL
+            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2024-01-01T12:00:00Z'),
+                revocationInfo: {
+                    crls: [rsaSigningKeys.caCrl],
+                },
+            })
+
+            // Sign with revocation info embedded
+            const { signedBytes } = await sigObj.sign({
+                bytes: testData,
+                embedRevocationInfo: true,
+            })
+            sigObj.setSignedBytes(signedBytes)
+
+            // Verify - pki-lite should use the embedded CRL for revocation checking
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: {
+                    checkCRL: true,
+                },
+            })
+
+            expect(result.valid).toBe(true)
+        })
+
+        it('should verify CAdES signature with trust anchor certificate', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2025-12-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            // Import Certificate to create trust anchor
+            // Using Certificate from top-level import
+            const caCertificate = Certificate.fromDer(rsaSigningKeys.caCert)
+
+            // Verify with trust anchor - the trustAnchors option is passed to pki-lite
+            // Note: We don't use validateChain due to pki-lite limitations with the test certificates
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: {
+                    checkSignature: true,
+                    trustAnchors: [{ certificate: caCertificate }],
+                    otherCertificates: [caCertificate],
+                },
+            })
+
+            expect(result.valid).toBe(true)
+        })
+    })
 })
 
 describe('PdfAdbePkcs7Sha1SignatureObject', () => {
@@ -950,6 +1091,45 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
         // PKCS7 signature should start with DER sequence tag (0x30)
         expect(result.signedBytes[0]).toBe(0x30)
     })
+
+    describe('Verification', () => {
+        it('should verify a valid PKCS7 SHA1 signature', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: testData })
+
+            expect(result.valid).toBe(true)
+            expect(result.reasons).toBeUndefined()
+        })
+
+        it('should fail verification for tampered data', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+            const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
+
+            const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: tamperedData })
+
+            expect(result.valid).toBe(false)
+            expect(result.reasons).toBeDefined()
+        })
+    })
 })
 
 describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
@@ -1062,6 +1242,45 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
         // OctetString starts with 0x04 tag
         expect(result.signedBytes[0]).toBe(0x04)
     })
+
+    describe('Verification', () => {
+        it('should verify a valid X509 RSA SHA1 signature', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: testData })
+
+            expect(result.valid).toBe(true)
+            expect(result.reasons).toBeUndefined()
+        })
+
+        it('should fail verification for tampered data', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+            const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
+
+            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: tamperedData })
+
+            expect(result.valid).toBe(false)
+            expect(result.reasons).toBeDefined()
+        })
+    })
 })
 
 describe('PdfEtsiRfc3161SignatureObject', () => {
@@ -1132,218 +1351,6 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
         expect(result.signedBytes.length).toBeGreaterThan(0)
         // Timestamp token starts with DER sequence tag (0x30)
         expect(result.signedBytes[0]).toBe(0x30)
-    })
-})
-
-describe('ETSI.CAdES.detached verification', () => {
-    it('should verify a valid CAdES detached signature', async () => {
-        const testData = stringToBytes('Hello, PDF!')
-
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
-            privateKey: rsaSigningKeys.privateKey,
-            certificate: rsaSigningKeys.cert,
-            date: new Date('2024-01-01T12:00:00Z'),
-        })
-
-        const { signedBytes } = await sigObj.sign({ bytes: testData })
-        sigObj.setSignedBytes(signedBytes)
-
-        const result = await sigObj.verify({ bytes: testData })
-
-        expect(result.valid).toBe(true)
-        expect(result.reasons).toBeUndefined()
-    })
-
-    it('should fail verification for tampered data', async () => {
-        const testData = stringToBytes('Hello, PDF!')
-        const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
-
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
-            privateKey: rsaSigningKeys.privateKey,
-            certificate: rsaSigningKeys.cert,
-            date: new Date('2024-01-01T12:00:00Z'),
-        })
-
-        const { signedBytes } = await sigObj.sign({ bytes: testData })
-        sigObj.setSignedBytes(signedBytes)
-
-        const result = await sigObj.verify({ bytes: tamperedData })
-
-        expect(result.valid).toBe(false)
-        expect(result.reasons).toBeDefined()
-    })
-
-    it('should verify CAdES signature with embedded OCSP response', async () => {
-        const testData = stringToBytes('Hello, PDF!')
-
-        // Create signature with embedded OCSP response
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
-            privateKey: rsaSigningKeys.privateKey,
-            certificate: rsaSigningKeys.cert,
-            additionalCertificates: [rsaSigningKeys.caCert],
-            date: new Date('2024-01-01T12:00:00Z'),
-            revocationInfo: {
-                ocsps: [rsaSigningKeys.ocspResponse],
-            },
-        })
-
-        // Sign with revocation info embedded
-        const { signedBytes } = await sigObj.sign({
-            bytes: testData,
-            embedRevocationInfo: true,
-        })
-        sigObj.setSignedBytes(signedBytes)
-
-        // Verify - pki-lite should use the embedded OCSP response for revocation checking
-        const result = await sigObj.verify({
-            bytes: testData,
-            certificateValidation: {
-                checkOCSP: true,
-            },
-        })
-
-        expect(result.valid).toBe(true)
-    })
-
-    it('should verify CAdES signature with embedded CRL', async () => {
-        const testData = stringToBytes('Hello, PDF!')
-
-        // Create signature with embedded CRL
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
-            privateKey: rsaSigningKeys.privateKey,
-            certificate: rsaSigningKeys.cert,
-            additionalCertificates: [rsaSigningKeys.caCert],
-            date: new Date('2024-01-01T12:00:00Z'),
-            revocationInfo: {
-                crls: [rsaSigningKeys.caCrl],
-            },
-        })
-
-        // Sign with revocation info embedded
-        const { signedBytes } = await sigObj.sign({
-            bytes: testData,
-            embedRevocationInfo: true,
-        })
-        sigObj.setSignedBytes(signedBytes)
-
-        // Verify - pki-lite should use the embedded CRL for revocation checking
-        const result = await sigObj.verify({
-            bytes: testData,
-            certificateValidation: {
-                checkCRL: true,
-            },
-        })
-
-        expect(result.valid).toBe(true)
-    })
-
-    it('should verify CAdES signature with trust anchor certificate', async () => {
-        const testData = stringToBytes('Hello, PDF!')
-
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
-            privateKey: rsaSigningKeys.privateKey,
-            certificate: rsaSigningKeys.cert,
-            additionalCertificates: [rsaSigningKeys.caCert],
-            date: new Date('2025-12-01T12:00:00Z'),
-        })
-
-        const { signedBytes } = await sigObj.sign({ bytes: testData })
-        sigObj.setSignedBytes(signedBytes)
-
-        // Import Certificate to create trust anchor
-        // Using Certificate from top-level import
-        const caCertificate = Certificate.fromDer(rsaSigningKeys.caCert)
-
-        // Verify with trust anchor - the trustAnchors option is passed to pki-lite
-        // Note: We don't use validateChain due to pki-lite limitations with the test certificates
-        const result = await sigObj.verify({
-            bytes: testData,
-            certificateValidation: {
-                checkSignature: true,
-                trustAnchors: [{ certificate: caCertificate }],
-                otherCertificates: [caCertificate],
-            },
-        })
-
-        expect(result.valid).toBe(true)
-    })
-})
-
-describe('adbe.pkcs7.sha1 verification', () => {
-    it('should verify a valid PKCS7 SHA1 signature', async () => {
-        const testData = stringToBytes('Hello, PDF!')
-
-        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
-            privateKey: rsaSigningKeys.privateKey,
-            certificate: rsaSigningKeys.cert,
-            date: new Date('2024-01-01T12:00:00Z'),
-        })
-
-        const { signedBytes } = await sigObj.sign({ bytes: testData })
-        sigObj.setSignedBytes(signedBytes)
-
-        const result = await sigObj.verify({ bytes: testData })
-
-        expect(result.valid).toBe(true)
-        expect(result.reasons).toBeUndefined()
-    })
-
-    it('should fail verification for tampered data', async () => {
-        const testData = stringToBytes('Hello, PDF!')
-        const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
-
-        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
-            privateKey: rsaSigningKeys.privateKey,
-            certificate: rsaSigningKeys.cert,
-            date: new Date('2024-01-01T12:00:00Z'),
-        })
-
-        const { signedBytes } = await sigObj.sign({ bytes: testData })
-        sigObj.setSignedBytes(signedBytes)
-
-        const result = await sigObj.verify({ bytes: tamperedData })
-
-        expect(result.valid).toBe(false)
-        expect(result.reasons).toBeDefined()
-    })
-})
-
-describe('adbe.x509.rsa_sha1 verification', () => {
-    it('should verify a valid X509 RSA SHA1 signature', async () => {
-        const testData = stringToBytes('Hello, PDF!')
-
-        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
-            privateKey: rsaSigningKeys.privateKey,
-            certificate: rsaSigningKeys.cert,
-            date: new Date('2024-01-01T12:00:00Z'),
-        })
-
-        const { signedBytes } = await sigObj.sign({ bytes: testData })
-        sigObj.setSignedBytes(signedBytes)
-
-        const result = await sigObj.verify({ bytes: testData })
-
-        expect(result.valid).toBe(true)
-        expect(result.reasons).toBeUndefined()
-    })
-
-    it('should fail verification for tampered data', async () => {
-        const testData = stringToBytes('Hello, PDF!')
-        const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
-
-        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
-            privateKey: rsaSigningKeys.privateKey,
-            certificate: rsaSigningKeys.cert,
-            date: new Date('2024-01-01T12:00:00Z'),
-        })
-
-        const { signedBytes } = await sigObj.sign({ bytes: testData })
-        sigObj.setSignedBytes(signedBytes)
-
-        const result = await sigObj.verify({ bytes: tamperedData })
-
-        expect(result.valid).toBe(false)
-        expect(result.reasons).toBeDefined()
     })
 })
 

@@ -98,6 +98,12 @@ Re-exports [PdfDocumentSecurityStoreObject](../signing/document-security-store/c
 
 ---
 
+### PdfDocumentVerificationResult
+
+Re-exports [PdfDocumentVerificationResult](../signing/signer/type-aliases/PdfDocumentVerificationResult.md)
+
+---
+
 ### PdfEncryptionAlgorithm
 
 Re-exports [PdfEncryptionAlgorithm](../types/type-aliases/PdfEncryptionAlgorithm.md)
@@ -185,6 +191,24 @@ Re-exports [PdfSignatureSubType](../signing/types/type-aliases/PdfSignatureSubTy
 ### PdfSignatureType
 
 Re-exports [PdfSignatureType](../signing/types/type-aliases/PdfSignatureType.md)
+
+---
+
+### PdfSignatureVerificationOptions
+
+Re-exports [PdfSignatureVerificationOptions](../signing/types/type-aliases/PdfSignatureVerificationOptions.md)
+
+---
+
+### PdfSignatureVerificationResult
+
+Re-exports [PdfSignatureVerificationResult](../signing/types/type-aliases/PdfSignatureVerificationResult.md)
+
+---
+
+### PdfSigner
+
+Re-exports [PdfSigner](../signing/signer/classes/PdfSigner.md)
 
 ---
 

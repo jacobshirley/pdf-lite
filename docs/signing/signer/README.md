@@ -9,3 +9,7 @@
 ## Classes
 
 - [PdfSigner](classes/PdfSigner.md)
+
+## Type Aliases
+
+- [PdfDocumentVerificationResult](type-aliases/PdfDocumentVerificationResult.md)

@@ -276,6 +276,42 @@ Timestamp authority configuration.
 
 ---
 
+### verify()
+
+> **verify**: (`options`) => `Promise`\<[`PdfSignatureVerificationResult`](../../../types/type-aliases/PdfSignatureVerificationResult.md)\>
+
+Verifies the signature against the provided document bytes.
+
+Verifies the signature against the provided document bytes.
+
+#### Parameters
+
+##### options
+
+[`PdfSignatureVerificationOptions`](../../../types/type-aliases/PdfSignatureVerificationOptions.md)
+
+Verification options including the signed bytes.
+
+#### Returns
+
+`Promise`\<[`PdfSignatureVerificationResult`](../../../types/type-aliases/PdfSignatureVerificationResult.md)\>
+
+The verification result.
+
+#### Param
+
+Verification options including the signed bytes.
+
+#### Returns
+
+The verification result.
+
+#### Overrides
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`verify`](../../base/classes/PdfSignatureObject.md#verify)
+
+---
+
 ### MAX_ORDER_INDEX
 
 > `readonly` `static` **MAX_ORDER_INDEX**: `2147483647` = `2147483647`
@@ -405,6 +441,38 @@ Creates a deep clone of the object
 #### Inherited from
 
 [`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`clone`](../../base/classes/PdfSignatureObject.md#clone)
+
+---
+
+### compareArrays()
+
+> `protected` **compareArrays**(`a`, `b`): `boolean`
+
+Compares two byte arrays for equality.
+
+#### Parameters
+
+##### a
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+First byte array.
+
+##### b
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+Second byte array.
+
+#### Returns
+
+`boolean`
+
+True if arrays are equal, false otherwise.
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`compareArrays`](../../base/classes/PdfSignatureObject.md#comparearrays)
 
 ---
 

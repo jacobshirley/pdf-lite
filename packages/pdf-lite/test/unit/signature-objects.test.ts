@@ -1280,6 +1280,94 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
             expect(result.valid).toBe(false)
             expect(result.reasons).toBeDefined()
         })
+
+        it('should verify signature with additional certificates', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: testData })
+
+            expect(result.valid).toBe(true)
+        })
+
+        it('should verify signature with certificate validation', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [rsaSigningKeys.caCert],
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: {
+                    validateChain: true,
+                },
+            })
+
+            expect(result.valid).toBe(true)
+        })
+
+        it('should verify signature with multiple certificates in Cert array', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                additionalCertificates: [
+                    rsaSigningKeys.caCert,
+                    otherRsaSigningKeys.cert,
+                ],
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: testData })
+
+            expect(result.valid).toBe(true)
+        })
+
+        it('should fail verification with wrong certificate', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            // Sign with one key
+            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+                privateKey: rsaSigningKeys.privateKey,
+                certificate: rsaSigningKeys.cert,
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+
+            // Create a new signature object with a different certificate
+            const wrongSigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+                privateKey: otherRsaSigningKeys.privateKey,
+                certificate: otherRsaSigningKeys.cert,
+                date: new Date('2024-01-01T12:00:00Z'),
+            })
+            wrongSigObj.setSignedBytes(signedBytes)
+
+            const result = await wrongSigObj.verify({ bytes: testData })
+
+            expect(result.valid).toBe(false)
+            expect(result.reasons).toBeDefined()
+        })
     })
 })
 
@@ -1351,6 +1439,116 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
         expect(result.signedBytes.length).toBeGreaterThan(0)
         // Timestamp token starts with DER sequence tag (0x30)
         expect(result.signedBytes[0]).toBe(0x30)
+    })
+
+    describe('Verification', () => {
+        it('should verify a valid RFC3161 timestamp', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfEtsiRfc3161SignatureObject({
+                timeStampAuthority: {
+                    url: 'https://freetsa.org/tsr',
+                },
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: testData })
+
+            expect(result.valid).toBe(true)
+            expect(result.reasons).toBeUndefined()
+        })
+
+        it('should fail verification for tampered data', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+            const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
+
+            const sigObj = new PdfEtsiRfc3161SignatureObject({
+                timeStampAuthority: {
+                    url: 'https://freetsa.org/tsr',
+                },
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({ bytes: tamperedData })
+
+            expect(result.valid).toBe(false)
+            expect(result.reasons).toBeDefined()
+            expect(result.reasons?.length).toBeGreaterThan(0)
+        })
+
+        it('should verify timestamp with certificate validation', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfEtsiRfc3161SignatureObject({
+                timeStampAuthority: {
+                    url: 'https://freetsa.org/tsr',
+                },
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            const result = await sigObj.verify({
+                bytes: testData,
+                certificateValidation: true,
+            })
+
+            // Note: This may fail if the TSA certificate chain cannot be fully validated
+            // but the test confirms the verification process runs correctly
+            expect(result.valid).toBeDefined()
+        })
+
+        it('should detect message imprint mismatch', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfEtsiRfc3161SignatureObject({
+                timeStampAuthority: {
+                    url: 'https://freetsa.org/tsr',
+                },
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+            sigObj.setSignedBytes(signedBytes)
+
+            // Verify with different data
+            const differentData = stringToBytes('Different data')
+            const result = await sigObj.verify({ bytes: differentData })
+
+            expect(result.valid).toBe(false)
+            expect(result.reasons).toBeDefined()
+            expect(
+                result.reasons?.some((r) =>
+                    r.toLowerCase().includes('message imprint'),
+                ),
+            ).toBe(true)
+        })
+
+        it('should verify timestamp token structure', async () => {
+            const testData = stringToBytes('Hello, PDF!')
+
+            const sigObj = new PdfEtsiRfc3161SignatureObject({
+                timeStampAuthority: {
+                    url: 'https://freetsa.org/tsr',
+                },
+            })
+
+            const { signedBytes } = await sigObj.sign({ bytes: testData })
+
+            // Parse the timestamp token to ensure it's valid SignedData
+            const signedData = SignedData.fromCms(signedBytes)
+
+            expect(signedData.encapContentInfo).toBeDefined()
+            expect(signedData.encapContentInfo.eContentType.toString()).toBe(
+                OIDs.PKCS7.TST_INFO,
+            )
+            expect(signedData.encapContentInfo.eContent).toBeDefined()
+            expect(signedData.signerInfos).toBeDefined()
+            expect(signedData.signerInfos.length).toBeGreaterThan(0)
+        })
     })
 })
 

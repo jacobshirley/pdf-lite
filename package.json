@@ -52,6 +52,13 @@
         "overrides": {
             "playwright": "$playwright",
             "typescript": "$typescript"
+        },
+        "packageExtensions": {
+            "@vitest/browser": {
+                "peerDependencies": {
+                    "@vitest/runner": "*"
+                }
+            }
         }
     },
     "devDependencies": {

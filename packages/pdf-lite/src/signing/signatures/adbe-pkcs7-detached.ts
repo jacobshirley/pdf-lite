@@ -151,4 +151,44 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
             revocationInfo,
         }
     }
+
+    /**
+     * Verifies the signature against the provided document bytes.
+     *
+     * @param options - Verification options including the signed bytes.
+     * @returns The verification result.
+     */
+    verify: PdfSignatureObject['verify'] = async (options) => {
+        const { bytes, certificateValidation } = options
+
+        try {
+            const signedData = SignedData.fromCms(this.signedBytes)
+
+            const certValidationOptions =
+                certificateValidation === true
+                    ? {}
+                    : certificateValidation || undefined
+
+            const result = await signedData.verify({
+                data: bytes,
+                certificateValidation: certValidationOptions,
+            })
+
+            if (result.valid) {
+                return { valid: true }
+            } else {
+                return {
+                    valid: false,
+                    reasons: result.reasons,
+                }
+            }
+        } catch (error) {
+            return {
+                valid: false,
+                reasons: [
+                    `Failed to verify signature: ${error instanceof Error ? error.message : String(error)}`,
+                ],
+            }
+        }
+    }
 }

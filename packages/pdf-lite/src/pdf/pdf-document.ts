@@ -30,7 +30,7 @@ import { FoundCompressedObjectError } from './errors'
 import { PdfDocumentSecurityStoreObject } from '../signing/document-security-store'
 import { ByteArray } from '../types'
 import { PdfReader } from './pdf-reader'
-import { PdfSigner } from '../signing/signer'
+import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -199,7 +199,13 @@ export class PdfDocument extends PdfObject {
                 rev.xref.offset.equals(lastStartXRef.offset.value),
             )
         if (!revision) {
-            throw new Error('Cannot find revision for last StartXRef')
+            throw new Error(
+                'Cannot find revision for last StartXRef with offset ' +
+                    `${lastStartXRef.offset.value}. Options are: ` +
+                    this.revisions
+                        .map((rev) => rev.xref.offset.value)
+                        .join(', '),
+            )
         }
 
         return revision
@@ -677,9 +683,9 @@ export class PdfDocument extends PdfObject {
      * Sets whether the document should use incremental updates.
      * When true, locks all existing revisions to preserve original content.
      *
-     * @param value - True to enable incremental mode, false to disable
+     * @param value - True to enable incremental mode, false to disable. Defaults to true.
      */
-    setIncremental(value: boolean): void {
+    setIncremental(value: boolean = true): void {
         for (const revision of this.revisions) {
             revision.locked = value
         }
@@ -920,5 +926,14 @@ export class PdfDocument extends PdfObject {
         return (
             super.isModified() || this.revisions.some((rev) => rev.isModified())
         )
+    }
+
+    /**
+     * Verifies all digital signatures in the document.
+     *
+     * @returns A promise that resolves to the verification result
+     */
+    async verifySignatures(): Promise<PdfDocumentVerificationResult> {
+        return await this.signer.verify(this)
     }
 }

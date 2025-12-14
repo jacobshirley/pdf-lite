@@ -3,9 +3,12 @@ import { AsymmetricEncryptionAlgorithmParams } from 'pki-lite/core/index'
 import { PdfSignatureObject, PdfSignatureSignOptions } from './base'
 import { OctetString } from 'pki-lite/asn1/OctetString'
 import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
+import { Certificate } from 'pki-lite/x509/Certificate'
 import { ByteArray } from '../../types'
 import { RevocationInfo } from '../types'
 import { fetchRevocationInfo } from '../utils'
+import { PdfArray } from '../../core/objects/pdf-array'
+import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
 
 /**
  * X.509 RSA-SHA1 signature object (adbe.x509.rsa_sha1).
@@ -101,6 +104,92 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
         return {
             signedBytes: new OctetString({ bytes: signatureBytes }).toDer(),
             revocationInfo,
+        }
+    }
+
+    /**
+     * Verifies the signature against the provided document bytes.
+     *
+     * @param options - Verification options including the signed bytes.
+     * @returns The verification result.
+     */
+    verify: PdfSignatureObject['verify'] = async (options) => {
+        const { bytes } = options
+
+        try {
+            const certificates: Certificate[] = []
+
+            const Cert = this.content.get('Cert')
+            if (Cert instanceof PdfArray) {
+                for (const certObj of Cert.items) {
+                    const certBytes =
+                        certObj instanceof PdfHexadecimal
+                            ? certObj.bytes
+                            : certObj.raw
+                    const certificate = Certificate.fromDer(certBytes)
+                    certificates.push(certificate)
+                }
+            } else if (Cert instanceof PdfHexadecimal) {
+                const certificate = Certificate.fromDer(Cert.bytes)
+                certificates.push(certificate)
+            } else if (Cert) {
+                const certificate = Certificate.fromDer(Cert.raw)
+                certificates.push(certificate)
+            } else {
+                throw new Error('No Cert entry found in signature dictionary')
+            }
+
+            if (certificates.length === 0) {
+                return {
+                    valid: false,
+                    reasons: [
+                        'No certificates available for adbe.x509.rsa_sha1 verification',
+                    ],
+                }
+            }
+
+            // Parse the signature as an OctetString
+            const signatureOctetString = OctetString.fromDer(this.signedBytes)
+            const signatureValue = signatureOctetString.bytes
+
+            const signatureAlgorithm = AlgorithmIdentifier.signatureAlgorithm(
+                PdfAdbePkcsX509RsaSha1SignatureObject.ALGORITHM,
+            )
+
+            for (const cert of certificates) {
+                const isValid = await signatureAlgorithm.verify(
+                    bytes,
+                    signatureValue,
+                    cert.tbsCertificate.subjectPublicKeyInfo,
+                )
+
+                if (isValid) {
+                    if (options.certificateValidation === true) {
+                        await cert.validate({
+                            //TODO: implement default validation options
+                            checkSignature: true,
+                            validateChain: true,
+                            otherCertificates: certificates,
+                        })
+                    } else if (options.certificateValidation) {
+                        await cert.validate(options.certificateValidation)
+                    }
+
+                    return { valid: true }
+                }
+            }
+
+            return {
+                valid: false,
+                reasons: ['Signature verification failed for all certificates'],
+            }
+        } catch (error) {
+            return {
+                valid: false,
+                reasons: [
+                    `Failed to verify signature: ${error instanceof Error ? error.message : String(error)}`,
+                ],
+            }
         }
     }
 }

@@ -473,7 +473,10 @@ describe('PDF decoder', () => {
                 objectNumber: 51,
                 generationNumber: 0,
                 offset: 0,
-                content: new PdfNumber(123),
+                content: new PdfNumber({
+                    value: 123,
+                    padTo: 3,
+                }),
             }),
         )
     })

@@ -8,6 +8,9 @@ A low-level, minimal-dependency, type-safe PDF library that works in the browser
 
 PRs and issues are welcome!
 
+[![npm version](https://img.shields.io/npm/v/pdf-lite.svg)](https://www.npmjs.com/package/pdf-lite)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## Features
 
 - **Zero dependencies**: No external libraries are required, making it lightweight and easy to integrate.

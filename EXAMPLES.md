@@ -803,16 +803,18 @@ console.log('4. Stack multiple revisions on top of each other')
 ## Modifying AcroForms example - Creating and filling PDF form fields
 
 ```typescript
-import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
-import { PdfBoolean } from 'pdf-lite/core/objects/pdf-boolean'
-import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
-import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
-import { PdfName } from 'pdf-lite/core/objects/pdf-name'
-import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
-import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
-import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
-import { PdfString } from 'pdf-lite/core/objects/pdf-string'
-import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
+import {
+    PdfArray,
+    PdfBoolean,
+    PdfDictionary,
+    PdfDocument,
+    PdfIndirectObject,
+    PdfName,
+    PdfNumber,
+    PdfObjectReference,
+    PdfStream,
+    PdfString,
+} from 'pdf-lite'
 import fs from 'fs/promises'
 
 const tmpFolder = `${import.meta.dirname}/tmp`

@@ -1,7 +1,7 @@
-import { ByteArray } from '../types'
-import { Parser } from './parser'
-import { PdfByteOffsetToken } from './tokens/byte-offset-token'
-import { PdfToken } from './tokens/token'
+import { ByteArray } from '../types.js'
+import { Parser } from './parser.js'
+import { PdfByteOffsetToken } from './tokens/byte-offset-token.js'
+import { PdfToken } from './tokens/token.js'
 
 /**
  * Serializes PDF tokens into a byte stream.

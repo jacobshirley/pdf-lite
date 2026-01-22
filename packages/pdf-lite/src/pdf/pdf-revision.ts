@@ -1,10 +1,10 @@
-import { PdfDictionary } from '../core/objects/pdf-dictionary'
-import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
-import { PdfObject } from '../core/objects/pdf-object'
-import { PdfTrailerEntries } from '../core/objects/pdf-trailer'
-import { PdfToken } from '../core/tokens/token'
-import { PdfWhitespaceToken } from '../core/tokens/whitespace-token'
-import { PdfXrefLookup } from './pdf-xref-lookup'
+import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
+import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
+import { PdfObject } from '../core/objects/pdf-object.js'
+import { PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
+import { PdfToken } from '../core/tokens/token.js'
+import { PdfWhitespaceToken } from '../core/tokens/whitespace-token.js'
+import { PdfXrefLookup } from './pdf-xref-lookup.js'
 
 /**
  * Represents a single revision of a PDF document.

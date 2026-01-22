@@ -1,4 +1,4 @@
-import { ByteArray } from '../types'
+import { ByteArray } from '../types.js'
 
 export interface PdfFilter {
     encode(data: ByteArray): ByteArray

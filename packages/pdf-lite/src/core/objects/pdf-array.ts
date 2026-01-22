@@ -1,7 +1,7 @@
-import { PdfEndArrayToken } from '../tokens/end-array-token'
-import { PdfStartArrayToken } from '../tokens/start-array-token'
-import { PdfWhitespaceToken } from '../tokens/whitespace-token'
-import { PdfObject } from './pdf-object'
+import { PdfEndArrayToken } from '../tokens/end-array-token.js'
+import { PdfStartArrayToken } from '../tokens/start-array-token.js'
+import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
+import { PdfObject } from './pdf-object.js'
 
 export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
     items: T[]

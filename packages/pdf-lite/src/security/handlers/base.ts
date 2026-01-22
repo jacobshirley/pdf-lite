@@ -1,22 +1,22 @@
-import { PdfArray } from '../../core/objects/pdf-array'
-import { PdfBoolean } from '../../core/objects/pdf-boolean'
-import { PdfDictionary } from '../../core/objects/pdf-dictionary'
-import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
-import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object'
-import { PdfName } from '../../core/objects/pdf-name'
-import { PdfNumber } from '../../core/objects/pdf-number'
-import { PdfObject } from '../../core/objects/pdf-object'
-import { PdfStream } from '../../core/objects/pdf-stream'
-import { PdfString } from '../../core/objects/pdf-string'
-import { Cipher } from '../../crypto/types'
-import { ByteArray, PdfPermissions, PERMISSION_FLAGS } from '../../types'
-import { assert, assertIfDefined } from '../../utils/assert'
-import { stringToBytes } from '../../utils/stringToBytes'
+import { PdfArray } from '../../core/objects/pdf-array.js'
+import { PdfBoolean } from '../../core/objects/pdf-boolean.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
+import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
+import { PdfNumber } from '../../core/objects/pdf-number.js'
+import { PdfObject } from '../../core/objects/pdf-object.js'
+import { PdfStream } from '../../core/objects/pdf-stream.js'
+import { PdfString } from '../../core/objects/pdf-string.js'
+import { Cipher } from '../../crypto/types.js'
+import { ByteArray, PdfPermissions, PERMISSION_FLAGS } from '../../types.js'
+import { assert, assertIfDefined } from '../../utils/assert.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
 import {
     PdfEncryptionAlgorithmType,
     PdfEncryptionDictionary,
     PdfId,
-} from '../types'
+} from '../types.js'
 
 /**
  * Base options for creating a security handler.

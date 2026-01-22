@@ -1,5 +1,5 @@
-import { Ref } from '../ref'
-import { PdfToken } from './token'
+import { Ref } from '../ref.js'
+import { PdfToken } from './token.js'
 
 export class PdfByteOffsetToken extends PdfToken {
     value: Ref<number>

@@ -1,5 +1,5 @@
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfToken } from './token'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfToken } from './token.js'
 
 const END_OBJECT_BYTES = stringToBytes('endobj')
 

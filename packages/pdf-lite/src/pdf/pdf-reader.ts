@@ -1,7 +1,7 @@
-import { PdfObject } from '../core/objects/pdf-object'
-import { PdfObjectStream } from '../core/streams/object-stream'
-import { ByteArray } from '../types'
-import { PdfDocument } from './pdf-document'
+import { PdfObject } from '../core/objects/pdf-object.js'
+import { PdfObjectStream } from '../core/streams/object-stream.js'
+import { ByteArray } from '../types.js'
+import { PdfDocument } from './pdf-document.js'
 
 /**
  * A reader for parsing PDF data into PdfDocument instances.

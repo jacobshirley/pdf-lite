@@ -1,8 +1,8 @@
-import { ByteArray } from '../../types'
-import { bytesToString } from '../../utils/bytesToString'
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfStringToken } from '../tokens/string-token'
-import { PdfObject } from './pdf-object'
+import { ByteArray } from '../../types.js'
+import { bytesToString } from '../../utils/bytesToString.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfStringToken } from '../tokens/string-token.js'
+import { PdfObject } from './pdf-object.js'
 
 export class PdfString extends PdfObject {
     /**

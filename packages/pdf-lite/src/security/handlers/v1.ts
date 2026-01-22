@@ -1,20 +1,20 @@
-import { rc4 } from '../../crypto/ciphers/rc4'
+import { rc4 } from '../../crypto/ciphers/rc4.js'
 import {
     computeMasterKey,
     deriveObjectKey,
-} from '../../crypto/key-derivation/key-derivation'
+} from '../../crypto/key-derivation/key-derivation.js'
 import {
     computeORc4_40,
     computeURc4_40,
     decryptUserPasswordRc4_40,
-} from '../../crypto/key-gen/key-gen-rc4-40'
-import { Cipher } from '../../crypto/types'
-import { ByteArray } from '../../types'
-import { assert } from '../../utils/assert'
-import { bytesToString } from '../../utils/bytesToString'
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfEncryptionAlgorithmType } from '../types'
-import { PdfStandardSecurityHandler } from './base'
+} from '../../crypto/key-gen/key-gen-rc4-40.js'
+import { Cipher } from '../../crypto/types.js'
+import { ByteArray } from '../../types.js'
+import { assert } from '../../utils/assert.js'
+import { bytesToString } from '../../utils/bytesToString.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfEncryptionAlgorithmType } from '../types.js'
+import { PdfStandardSecurityHandler } from './base.js'
 
 /**
  * V1 security handler implementing 40-bit RC4 encryption.

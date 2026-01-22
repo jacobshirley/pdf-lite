@@ -1,12 +1,12 @@
-import { PdfArray } from '../core/objects/pdf-array'
-import { PdfBoolean } from '../core/objects/pdf-boolean'
-import { PdfDictionary } from '../core/objects/pdf-dictionary'
-import { PdfHexadecimal } from '../core/objects/pdf-hexadecimal'
-import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
-import { PdfName } from '../core/objects/pdf-name'
-import { PdfNumber } from '../core/objects/pdf-number'
-import { PdfString } from '../core/objects/pdf-string'
-import { ByteArray } from '../types'
+import { PdfArray } from '../core/objects/pdf-array.js'
+import { PdfBoolean } from '../core/objects/pdf-boolean.js'
+import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
+import { PdfHexadecimal } from '../core/objects/pdf-hexadecimal.js'
+import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
+import { PdfName } from '../core/objects/pdf-name.js'
+import { PdfNumber } from '../core/objects/pdf-number.js'
+import { PdfString } from '../core/objects/pdf-string.js'
+import { ByteArray } from '../types.js'
 
 /**
  * Represents the PDF document ID array containing two hexadecimal identifiers.

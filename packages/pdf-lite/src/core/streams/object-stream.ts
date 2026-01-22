@@ -1,7 +1,7 @@
-import { PdfObject } from '../objects/pdf-object'
-import { ByteArray } from '../../types'
-import { IterableReadableStream } from '../../utils/IterableReadableStream'
-import { pdfDecoderAsync } from '../generators'
+import { PdfObject } from '../objects/pdf-object.js'
+import { ByteArray } from '../../types.js'
+import { IterableReadableStream } from '../../utils/IterableReadableStream.js'
+import { pdfDecoderAsync } from '../generators.js'
 
 export class PdfObjectStream extends IterableReadableStream<PdfObject> {
     constructor(input: AsyncIterable<ByteArray> | Iterable<ByteArray>) {

@@ -1,6 +1,6 @@
-import { Cipher } from '../../crypto/types'
-import { ByteArray } from '../../types'
-import { PdfCryptFilter, CryptFilterOptions } from './base'
+import { Cipher } from '../../crypto/types.js'
+import { ByteArray } from '../../types.js'
+import { PdfCryptFilter, CryptFilterOptions } from './base.js'
 
 /**
  * Identity crypt filter that passes data through without encryption.

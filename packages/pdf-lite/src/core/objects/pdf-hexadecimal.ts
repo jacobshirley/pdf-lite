@@ -1,10 +1,10 @@
-import { ByteArray } from '../../types'
-import { bytesToHexBytes } from '../../utils/bytesToHexBytes'
-import { bytesToString } from '../../utils/bytesToString'
-import { hexBytesToBytes } from '../../utils/hexBytesToBytes'
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfHexadecimalToken } from '../tokens/hexadecimal-token'
-import { PdfObject } from './pdf-object'
+import { ByteArray } from '../../types.js'
+import { bytesToHexBytes } from '../../utils/bytesToHexBytes.js'
+import { bytesToString } from '../../utils/bytesToString.js'
+import { hexBytesToBytes } from '../../utils/hexBytesToBytes.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfHexadecimalToken } from '../tokens/hexadecimal-token.js'
+import { PdfObject } from './pdf-object.js'
 
 export class PdfHexadecimal extends PdfObject {
     /**

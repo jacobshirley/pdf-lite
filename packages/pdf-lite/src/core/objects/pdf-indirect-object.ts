@@ -1,12 +1,12 @@
-import { PdfEndObjectToken } from '../tokens/end-object-token'
-import { PdfStartObjectToken } from '../tokens/start-object-token'
-import { PdfWhitespaceToken } from '../tokens/whitespace-token'
-import { PdfNull } from './pdf-null'
-import { PdfObject } from './pdf-object'
-import { PdfObjectReference } from './pdf-object-reference'
-import { PdfStream } from './pdf-stream'
-import { Ref } from '../ref'
-import { PdfByteOffsetToken } from '../tokens/byte-offset-token'
+import { PdfEndObjectToken } from '../tokens/end-object-token.js'
+import { PdfStartObjectToken } from '../tokens/start-object-token.js'
+import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
+import { PdfNull } from './pdf-null.js'
+import { PdfObject } from './pdf-object.js'
+import { PdfObjectReference } from './pdf-object-reference.js'
+import { PdfStream } from './pdf-stream.js'
+import { Ref } from '../ref.js'
+import { PdfByteOffsetToken } from '../tokens/byte-offset-token.js'
 
 export class PdfIndirectObject<
     T extends PdfObject = PdfObject,

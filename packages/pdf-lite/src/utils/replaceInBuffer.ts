@@ -1,4 +1,4 @@
-import { ByteArray } from '../types'
+import { ByteArray } from '../types.js'
 
 /**
  * Replaces occurrences of a search buffer with a replacement buffer within a target buffer.

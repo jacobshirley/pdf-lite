@@ -1,4 +1,4 @@
-import { ByteArray } from '../types'
+import { ByteArray } from '../types.js'
 
 /**
  * Converts a byte array containing hexadecimal ASCII characters to raw bytes.

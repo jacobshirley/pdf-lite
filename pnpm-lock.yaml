@@ -58,11 +58,11 @@ importers:
         specifier: 2.1.0
         version: 2.1.0
       pki-lite:
-        specifier: ^1.0.12
-        version: 1.0.12
+        specifier: ^1.0.13
+        version: 1.0.13
       pki-lite-crypto-extended:
-        specifier: ^1.0.12
-        version: 1.0.12(pki-lite@1.0.12)
+        specifier: ^1.0.13
+        version: 1.0.13(pki-lite@1.0.13)
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
@@ -1050,13 +1050,13 @@ packages:
     resolution: {integrity: sha512-1wrVzJ2STrpmONHKBy228LM1b84msXDUoAzVEl0R8Mz4Ce6EPr+IVtxm8+yvrqLYMHswREkjYFaMxnyGnaY3Ng==}
     hasBin: true
 
-  pki-lite-crypto-extended@1.0.12:
-    resolution: {integrity: sha512-3pN6ES4CJFL8yXbsSR77rUfBHw/uCzH7iRsS5at/P5Rm09h2FVuta0V8zeeYh0Uj7Kw/1ePxZ/YLzf/ezeRYaQ==}
+  pki-lite-crypto-extended@1.0.13:
+    resolution: {integrity: sha512-pJ3DeDNAOhgxCzYbF+Ybo0vKacgCvzu21NlR/1eHBdryAg3fPxpN5YYxDUT/ZFtemNdxQbaZANg4pmFLxbekgw==}
     peerDependencies:
       pki-lite: ^1.0.0
 
-  pki-lite@1.0.12:
-    resolution: {integrity: sha512-8sQS1ZeN1E5OYwJ1yGKHM5y//ghpEFvEqkrYWjG3SoegRVSMyF8QZqrX9u5XX5DH9mYiubkZmX83zWHM+nYqKg==}
+  pki-lite@1.0.13:
+    resolution: {integrity: sha512-fMEEMcLW81cXnFdsQBGsIGCCUx+Jb0LgOFv4A1VaoidVmMAso4pVVSiSeVEL0t9fzRnVBc5AcKjYnC05sYqoHQ==}
 
   playwright-core@1.56.1:
     resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
@@ -2257,14 +2257,14 @@ snapshots:
     dependencies:
       pngjs: 7.0.0
 
-  pki-lite-crypto-extended@1.0.12(pki-lite@1.0.12):
+  pki-lite-crypto-extended@1.0.13(pki-lite@1.0.13):
     dependencies:
       '@noble/ciphers': 2.1.1
       '@noble/hashes': 2.0.1
       node-forge: 1.3.3
-      pki-lite: 1.0.12
+      pki-lite: 1.0.13
 
-  pki-lite@1.0.12:
+  pki-lite@1.0.13:
     dependencies:
       asn1js: 3.0.7
 

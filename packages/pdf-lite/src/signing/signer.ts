@@ -1,10 +1,10 @@
-import { PdfCommentToken } from '../core/tokens/comment-token'
-import { PdfHexadecimalToken } from '../core/tokens/hexadecimal-token'
-import { PdfNameToken } from '../core/tokens/name-token'
-import { PdfToken } from '../core/tokens/token'
-import { PdfDocument } from '../pdf/pdf-document'
-import { concatUint8Arrays } from '../utils/concatUint8Arrays'
-import { PdfDocumentSecurityStoreObject } from './document-security-store'
+import { PdfCommentToken } from '../core/tokens/comment-token.js'
+import { PdfHexadecimalToken } from '../core/tokens/hexadecimal-token.js'
+import { PdfNameToken } from '../core/tokens/name-token.js'
+import { PdfToken } from '../core/tokens/token.js'
+import { PdfDocument } from '../pdf/pdf-document.js'
+import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
+import { PdfDocumentSecurityStoreObject } from './document-security-store.js'
 import {
     PdfSignatureObject,
     PdfAdbePkcs7DetachedSignatureObject,
@@ -13,16 +13,17 @@ import {
     PdfEtsiCadesDetachedSignatureObject,
     PdfEtsiRfc3161SignatureObject,
     PdfSignatureDictionary,
-} from './signatures'
+} from './signatures/index.js'
 import {
     PdfSignatureVerificationResult,
     CertificateValidationOptions,
     PdfSignatureSubType,
-} from './types'
-import { PdfNumber } from '../core/objects/pdf-number'
-import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
-import { PdfDictionary } from '../core/objects/pdf-dictionary'
-import { PdfArray } from '../core/objects/pdf-array'
+} from './types.js'
+import { PdfNumber } from '../core/objects/pdf-number.js'
+import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
+import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
+import { PdfArray } from '../core/objects/pdf-array.js'
+import { PdfObject } from '../core/objects/pdf-object.js'
 
 /**
  * Result of verifying all signatures in a document.
@@ -334,7 +335,7 @@ export class PdfSigner {
                 continue
             }
 
-            const byteRange = byteRangeArray.items.map((item) => {
+            const byteRange = byteRangeArray.items.map((item: PdfObject) => {
                 if (item instanceof PdfNumber) {
                     return item.value
                 }

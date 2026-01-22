@@ -1,4 +1,4 @@
-import { ByteArray } from '../types'
+import { ByteArray } from '../types.js'
 
 /**
  * Pads a byte array to a specified length with trailing zeros.

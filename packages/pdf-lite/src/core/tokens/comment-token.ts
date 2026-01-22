@@ -1,8 +1,8 @@
-import { stringToBytes } from '../../utils/stringToBytes'
-import { concatUint8Arrays } from '../../utils/concatUint8Arrays'
-import { PdfToken } from './token'
-import { ByteArray } from '../../types'
-import { bytesToString } from '../../utils/bytesToString'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { concatUint8Arrays } from '../../utils/concatUint8Arrays.js'
+import { PdfToken } from './token.js'
+import { ByteArray } from '../../types.js'
+import { bytesToString } from '../../utils/bytesToString.js'
 
 export class PdfCommentToken extends PdfToken {
     static EOF = new PdfCommentToken('%EOF')

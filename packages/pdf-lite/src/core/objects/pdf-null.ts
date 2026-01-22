@@ -1,6 +1,5 @@
-import { PdfObject } from './pdf-object'
-import { PdfNullToken } from '../tokens/null-token'
-import { PdfToken } from '../tokens/token'
+import { PdfObject } from './pdf-object.js'
+import { PdfNullToken } from '../tokens/null-token.js'
 
 export class PdfNull extends PdfObject {
     static readonly NULL: PdfNull = new PdfNull()

@@ -1,12 +1,12 @@
-import { Ref } from '../ref'
-import { PdfByteOffsetToken } from '../tokens/byte-offset-token'
-import { PdfWhitespaceToken } from '../tokens/whitespace-token'
-import { PdfXRefTableEntryToken } from '../tokens/xref-table-entry-token'
-import { PdfXRefTableSectionStartToken } from '../tokens/xref-table-section-start-token'
-import { PdfXRefTableStartToken } from '../tokens/xref-table-start-token'
-import { PdfIndirectObject } from './pdf-indirect-object'
-import { PdfNumber } from './pdf-number'
-import { PdfObject } from './pdf-object'
+import { Ref } from '../ref.js'
+import { PdfByteOffsetToken } from '../tokens/byte-offset-token.js'
+import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
+import { PdfXRefTableEntryToken } from '../tokens/xref-table-entry-token.js'
+import { PdfXRefTableSectionStartToken } from '../tokens/xref-table-section-start-token.js'
+import { PdfXRefTableStartToken } from '../tokens/xref-table-start-token.js'
+import { PdfIndirectObject } from './pdf-indirect-object.js'
+import { PdfNumber } from './pdf-number.js'
+import { PdfObject } from './pdf-object.js'
 
 export class PdfXRefTableEntry extends PdfObject {
     objectNumber: PdfNumber

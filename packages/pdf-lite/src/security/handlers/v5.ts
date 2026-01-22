@@ -1,19 +1,19 @@
-import { aes256 } from '../../crypto/ciphers/aes256'
-import { getFileKey } from '../../crypto/key-derivation/key-derivation-aes256'
+import { aes256 } from '../../crypto/ciphers/aes256.js'
+import { getFileKey } from '../../crypto/key-derivation/key-derivation-aes256.js'
 import {
     generateOandOe,
     generateUandUe,
-} from '../../crypto/key-gen/key-gen-aes256'
-import { ByteArray } from '../../types'
-import { aes256ecbEncrypt, getRandomBytes } from '../../utils/algos'
-import { assert } from '../../utils/assert'
-import { PdfEncryptionDictionary } from '../types'
-import { PdfV4SecurityHandler } from './v4'
-import { PdfStandardSecurityHandlerOptions } from './base'
-import { AesV3CryptFilter } from '../crypt-filters/aesv3'
-import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
-import { PdfString } from '../../core/objects/pdf-string'
-import { Cipher } from '../../crypto/types'
+} from '../../crypto/key-gen/key-gen-aes256.js'
+import { ByteArray } from '../../types.js'
+import { aes256ecbEncrypt, getRandomBytes } from '../../utils/algos.js'
+import { assert } from '../../utils/assert.js'
+import { PdfEncryptionDictionary } from '../types.js'
+import { PdfV4SecurityHandler } from './v4.js'
+import { PdfStandardSecurityHandlerOptions } from './base.js'
+import { AesV3CryptFilter } from '../crypt-filters/aesv3.js'
+import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal.js'
+import { PdfString } from '../../core/objects/pdf-string.js'
+import { Cipher } from '../../crypto/types.js'
 
 /**
  * V5 security handler implementing AES-256-CBC encryption.

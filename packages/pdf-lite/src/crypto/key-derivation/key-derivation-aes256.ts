@@ -1,12 +1,12 @@
-import { ByteArray } from '../../types'
+import { ByteArray } from '../../types.js'
 import {
     aes128CbcNoPaddingEncrypt,
     aes256CbcNoPaddingDecrypt,
     sha256,
     sha384,
     sha512,
-} from '../../utils/algos'
-import { assert } from '../../utils/assert'
+} from '../../utils/algos.js'
+import { assert } from '../../utils/assert.js'
 
 /**
  * Converts the first 16 bytes of input to a big-endian bigint.

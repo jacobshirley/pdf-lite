@@ -1,8 +1,8 @@
-import { ByteArray } from '../types'
-import { stringToBytes } from '../utils/stringToBytes'
-import { PdfDecoder } from './decoder'
-import { PdfObject } from './objects/pdf-object'
-import { PdfByteStreamTokeniser } from './tokeniser'
+import { ByteArray } from '../types.js'
+import { stringToBytes } from '../utils/stringToBytes.js'
+import { PdfDecoder } from './decoder.js'
+import { PdfObject } from './objects/pdf-object.js'
+import { PdfByteStreamTokeniser } from './tokeniser.js'
 
 /**
  * Converts an iterable of byte arrays into PDF objects.

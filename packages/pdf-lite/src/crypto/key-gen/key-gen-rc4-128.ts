@@ -1,13 +1,13 @@
-import { ByteArray } from '../../types'
-import { md5 } from '../../utils/algos'
-import { concatUint8Arrays } from '../../utils/concatUint8Arrays'
-import { rc4 } from '../ciphers/rc4'
-import { DEFAULT_PADDING } from '../constants'
+import { ByteArray } from '../../types.js'
+import { md5 } from '../../utils/algos.js'
+import { concatUint8Arrays } from '../../utils/concatUint8Arrays.js'
+import { rc4 } from '../ciphers/rc4.js'
+import { DEFAULT_PADDING } from '../constants.js'
 import {
     int32ToLittleEndianBytes,
     padPassword,
     removePdfPasswordPadding,
-} from '../utils'
+} from '../utils.js'
 
 /**
  * Encrypts data with RC4 using the provided key.

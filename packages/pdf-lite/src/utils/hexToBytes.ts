@@ -1,6 +1,6 @@
-import { ByteArray } from '../types'
-import { hexBytesToBytes } from './hexBytesToBytes'
-import { stringToBytes } from './stringToBytes'
+import { ByteArray } from '../types.js'
+import { hexBytesToBytes } from './hexBytesToBytes.js'
+import { stringToBytes } from './stringToBytes.js'
 
 /**
  * Converts a hexadecimal string to a byte array.

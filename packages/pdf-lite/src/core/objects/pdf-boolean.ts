@@ -1,5 +1,5 @@
-import { PdfBooleanToken } from '../tokens/boolean-token'
-import { PdfObject } from './pdf-object'
+import { PdfBooleanToken } from '../tokens/boolean-token.js'
+import { PdfObject } from './pdf-object.js'
 
 export class PdfBoolean extends PdfObject {
     value: boolean

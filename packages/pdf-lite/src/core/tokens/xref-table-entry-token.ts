@@ -1,7 +1,7 @@
-import { ByteArray } from '../../types'
-import { stringToBytes } from '../../utils/stringToBytes'
-import { Ref } from '../ref'
-import { PdfNumberToken } from './number-token'
+import { ByteArray } from '../../types.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { Ref } from '../ref.js'
+import { PdfNumberToken } from './number-token.js'
 import { PdfToken } from './token.js'
 
 export class PdfXRefTableEntryToken extends PdfToken {

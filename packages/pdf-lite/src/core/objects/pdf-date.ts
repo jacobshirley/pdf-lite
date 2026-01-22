@@ -1,4 +1,4 @@
-import { PdfString } from './pdf-string'
+import { PdfString } from './pdf-string.js'
 
 export class PdfDate extends PdfString {
     constructor(date: Date) {

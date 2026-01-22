@@ -5,22 +5,22 @@ import {
     PdfEncryptionOptions,
     PdfEncryptionRecipient,
     PdfId,
-} from '../types'
-import { PdfSecurityHandler, PdfStandardSecurityHandler } from './base'
-import { assert, assertIfDefined } from '../../utils/assert'
-import { PdfV1SecurityHandler } from './v1'
-import { PdfV2SecurityHandler } from './v2'
-import { PdfV4SecurityHandler } from './v4'
-import { PdfV5SecurityHandler } from './v5'
-import { ByteArray } from '../../types'
-import { PdfCryptFilter } from '../crypt-filters/base'
-import { V2CryptFilter } from '../crypt-filters/v2'
-import { AesV2CryptFilter } from '../crypt-filters/aesv2'
-import { AesV3CryptFilter } from '../crypt-filters/aesv3'
-import { IdentityCryptFilter } from '../crypt-filters/identity'
-import { PdfName } from '../../core/objects/pdf-name'
-import { PdfNumber } from '../../core/objects/pdf-number'
-import { PdfPublicKeySecurityHandler } from './pubSec'
+} from '../types.js'
+import { PdfSecurityHandler, PdfStandardSecurityHandler } from './base.js'
+import { assert, assertIfDefined } from '../../utils/assert.js'
+import { PdfV1SecurityHandler } from './v1.js'
+import { PdfV2SecurityHandler } from './v2.js'
+import { PdfV4SecurityHandler } from './v4.js'
+import { PdfV5SecurityHandler } from './v5.js'
+import { ByteArray } from '../../types.js'
+import { PdfCryptFilter } from '../crypt-filters/base.js'
+import { V2CryptFilter } from '../crypt-filters/v2.js'
+import { AesV2CryptFilter } from '../crypt-filters/aesv2.js'
+import { AesV3CryptFilter } from '../crypt-filters/aesv3.js'
+import { IdentityCryptFilter } from '../crypt-filters/identity.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
+import { PdfNumber } from '../../core/objects/pdf-number.js'
+import { PdfPublicKeySecurityHandler } from './pubSec.js'
 
 /**
  * Creates a security handler from an encryption dictionary.

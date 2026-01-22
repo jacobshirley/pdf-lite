@@ -1,6 +1,6 @@
-import { Ref } from '../ref'
-import { PdfNumberToken } from '../tokens/number-token'
-import { PdfObject } from './pdf-object'
+import { Ref } from '../ref.js'
+import { PdfNumberToken } from '../tokens/number-token.js'
+import { PdfObject } from './pdf-object.js'
 
 export class PdfNumber extends PdfObject {
     #value: Ref<number>

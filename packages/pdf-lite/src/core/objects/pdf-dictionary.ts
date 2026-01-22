@@ -1,9 +1,9 @@
-import { PdfEndDictionaryToken } from '../tokens/end-dictionary-token'
-import { PdfStartDictionaryToken } from '../tokens/start-dictionary-token'
-import { PdfToken } from '../tokens/token'
-import { PdfWhitespaceToken } from '../tokens/whitespace-token'
-import { PdfName } from './pdf-name'
-import { PdfObject } from './pdf-object'
+import { PdfEndDictionaryToken } from '../tokens/end-dictionary-token.js'
+import { PdfStartDictionaryToken } from '../tokens/start-dictionary-token.js'
+import { PdfToken } from '../tokens/token.js'
+import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
+import { PdfName } from './pdf-name.js'
+import { PdfObject } from './pdf-object.js'
 
 export type PdfDictionaryEntry = PdfObject | undefined
 export type PdfDictionaryEntries = Record<string, PdfDictionaryEntry>

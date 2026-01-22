@@ -1,4 +1,4 @@
-import { ByteArray } from '../types'
+import { ByteArray } from '../types.js'
 
 /**
  * Converts a byte array to a lowercase hexadecimal string.

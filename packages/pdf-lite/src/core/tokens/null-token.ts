@@ -1,5 +1,5 @@
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfToken } from './token'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfToken } from './token.js'
 
 const NULL = stringToBytes('null')
 export class PdfNullToken extends PdfToken {

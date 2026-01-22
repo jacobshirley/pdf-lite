@@ -1,7 +1,7 @@
-import { ByteArray } from '../types'
-import { bytesToString } from '../utils/bytesToString'
-import { stringToBytes } from '../utils/stringToBytes'
-import { PdfFilter } from './types'
+import { ByteArray } from '../types.js'
+import { bytesToString } from '../utils/bytesToString.js'
+import { stringToBytes } from '../utils/stringToBytes.js'
+import { PdfFilter } from './types.js'
 
 /**
  * Creates an ASCIIHex filter for encoding and decoding PDF stream data.

@@ -1,6 +1,6 @@
 import { rc4 } from '../../crypto/ciphers/rc4.js'
 import { Cipher } from '../../crypto/types.js'
-import { PdfCryptFilter, CryptFilterOptions } from './base'
+import { PdfCryptFilter, CryptFilterOptions } from './base.js'
 
 /**
  * V2 crypt filter using RC4 encryption.

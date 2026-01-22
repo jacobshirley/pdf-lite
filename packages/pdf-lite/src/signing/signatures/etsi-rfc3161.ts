@@ -1,13 +1,13 @@
-import { TimeStampAuthority } from '../types'
-import { PdfSignatureObject, PdfSignatureSignOptions } from './base'
-import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
-import { TimeStampReq } from 'pki-lite/timestamp/TimeStampReq'
-import { TSTInfo } from 'pki-lite/timestamp/TSTInfo'
-import { MessageImprint } from 'pki-lite/timestamp/MessageImprint'
-import { SignedData } from 'pki-lite/pkcs7/SignedData'
-import { fetchRevocationInfo } from '../utils'
-import { Certificate } from 'pki-lite/x509/Certificate'
-import { OIDs } from 'pki-lite/core/OIDs'
+import { TimeStampAuthority } from '../types.js'
+import { PdfSignatureObject, PdfSignatureSignOptions } from './base.js'
+import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
+import { TimeStampReq } from 'pki-lite/timestamp/TimeStampReq.js'
+import { TSTInfo } from 'pki-lite/timestamp/TSTInfo.js'
+import { MessageImprint } from 'pki-lite/timestamp/MessageImprint.js'
+import { SignedData } from 'pki-lite/pkcs7/SignedData.js'
+import { fetchRevocationInfo } from '../utils.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+import { OIDs } from 'pki-lite/core/OIDs.js'
 
 /**
  * RFC 3161 timestamp signature object (ETSI.RFC3161).

@@ -1,8 +1,8 @@
-import { ByteArray } from '../../types'
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfCommentToken } from '../tokens/comment-token'
-import { PdfWhitespaceToken } from '../tokens/whitespace-token'
-import { PdfObject } from './pdf-object'
+import { ByteArray } from '../../types.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfCommentToken } from '../tokens/comment-token.js'
+import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
+import { PdfObject } from './pdf-object.js'
 
 export class PdfComment extends PdfObject {
     static EOF = new PdfComment('%EOF')

@@ -1,7 +1,7 @@
-import { ByteArray } from '../../types'
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfToken } from './token'
-import { PdfWhitespaceToken } from './whitespace-token'
+import { ByteArray } from '../../types.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfToken } from './token.js'
+import { PdfWhitespaceToken } from './whitespace-token.js'
 
 const START_STREAM_WITHOUT_WHITESPACE_BYTES = stringToBytes('stream')
 const START_STREAM_BYTES = stringToBytes('stream\n')

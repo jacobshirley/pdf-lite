@@ -8,6 +8,12 @@
 
 ## References
 
+### fetchRevocationInfo
+
+Re-exports [fetchRevocationInfo](utils/functions/fetchRevocationInfo.md)
+
+---
+
 ### PdfAdbePkcs7DetachedSignatureObject
 
 Re-exports [PdfAdbePkcs7DetachedSignatureObject](signatures/adbe-pkcs7-detached/classes/PdfAdbePkcs7DetachedSignatureObject.md)

@@ -3,8 +3,11 @@ import { md5 } from '../../utils/algos'
 import { concatUint8Arrays } from '../../utils/concatUint8Arrays'
 import { rc4 } from '../ciphers/rc4'
 import { DEFAULT_PADDING } from '../constants'
-import { padPassword } from '../key-derivation/key-derivation'
-import { int32ToLittleEndianBytes, removePdfPasswordPadding } from '../utils'
+import {
+    int32ToLittleEndianBytes,
+    padPassword,
+    removePdfPasswordPadding,
+} from '../utils'
 
 /**
  * Encrypts data with RC4 using the provided key.

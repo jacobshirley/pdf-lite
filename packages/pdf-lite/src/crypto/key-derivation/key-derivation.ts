@@ -1,35 +1,8 @@
 import { DEFAULT_PADDING } from '../constants.js'
 import { md5 } from '../../utils/algos.js'
-import { int32ToLittleEndianBytes } from '../utils.js'
+import { int32ToLittleEndianBytes, padPassword } from '../utils.js'
 import { concatUint8Arrays } from '../../utils/concatUint8Arrays.js'
 import { ByteArray } from '../../types.js'
-
-/**
- * Pads a password to exactly 32 bytes using the PDF standard padding.
- * If the password is shorter than 32 bytes, it is padded with bytes from DEFAULT_PADDING.
- * If the password is 32 bytes or longer, only the first 32 bytes are used.
- *
- * @param password - The password to pad.
- * @returns A 32-byte padded password.
- *
- * @example
- * ```typescript
- * const padded = padPassword(new Uint8Array([1, 2, 3])) // Returns 32-byte array
- * ```
- */
-export function padPassword(password: ByteArray): ByteArray {
-    const padded = new Uint8Array(32)
-    if (password.length >= 32) {
-        padded.set(password.subarray(0, 32))
-    } else {
-        padded.set(password)
-        padded.set(
-            DEFAULT_PADDING.subarray(0, 32 - password.length),
-            password.length,
-        )
-    }
-    return padded
-}
 
 /**
  * Compute the master encryption key for a PDF file.

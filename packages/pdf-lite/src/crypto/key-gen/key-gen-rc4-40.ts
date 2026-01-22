@@ -1,7 +1,10 @@
-import { padPassword } from '../key-derivation/key-derivation.js'
 import { rc4 } from '../ciphers/rc4.js'
 import { DEFAULT_PADDING } from '../constants.js'
-import { int32ToLittleEndianBytes, removePdfPasswordPadding } from '../utils.js'
+import {
+    int32ToLittleEndianBytes,
+    padPassword,
+    removePdfPasswordPadding,
+} from '../utils.js'
 import { md5 } from '../../utils/algos.js'
 import { concatUint8Arrays } from '../../utils/concatUint8Arrays.js'
 import { ByteArray } from '../../types.js'

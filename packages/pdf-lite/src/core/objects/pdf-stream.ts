@@ -286,6 +286,13 @@ export class PdfStream<
             original: new Uint8Array(this.original),
         }) as this
     }
+
+    static fromString(data: string): PdfStream {
+        return new PdfStream({
+            original: stringToBytes(data),
+            header: new PdfDictionary(),
+        })
+    }
 }
 
 export class PdfObjStream extends PdfStream {

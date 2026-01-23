@@ -31,6 +31,7 @@ import { PdfDocumentSecurityStoreObject } from '../signing/document-security-sto
 import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
+import { PdfXfaManager } from '../xfa/xfa-manager.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -59,8 +60,17 @@ export class PdfDocument extends PdfObject {
     /** Security handler for encryption/decryption operations */
     securityHandler?: PdfSecurityHandler
 
+    private _xfa?: PdfXfaManager
     private hasEncryptionDictionary?: boolean = false
     private toBeCommitted: PdfObject[] = []
+
+    /** XFA manager for handling XFA forms */
+    get xfa(): PdfXfaManager {
+        if (!this._xfa) {
+            this._xfa = new PdfXfaManager(this)
+        }
+        return this._xfa
+    }
 
     /**
      * Creates a new PDF document instance.
@@ -530,7 +540,7 @@ export class PdfDocument extends PdfObject {
 
         const objectStreamIndirect = this.findUncompressedObject({
             objectNumber: xrefEntry.objectStreamNumber.value,
-        })
+        })?.clone()
 
         if (!objectStreamIndirect) {
             throw new Error(
@@ -575,7 +585,7 @@ export class PdfDocument extends PdfObject {
 
         if (xrefEntry instanceof PdfXRefStreamCompressedEntry) {
             throw new FoundCompressedObjectError(
-                `TODO: Cannot find object ${options.objectNumber} inside object stream via PdfDocument.findObject`,
+                `Cannot find object ${options.objectNumber} inside object stream via PdfDocument.findObject`,
             )
         }
 
@@ -686,9 +696,15 @@ export class PdfDocument extends PdfObject {
      * @param value - True to enable incremental mode, false to disable. Defaults to true.
      */
     setIncremental(value: boolean = true): void {
+        if (value === this.isIncremental()) {
+            return
+        }
+
         for (const revision of this.revisions) {
             revision.locked = value
         }
+
+        this.startNewRevision()
     }
 
     /**
@@ -894,6 +910,21 @@ export class PdfDocument extends PdfObject {
         const serializer = new PdfTokenSerializer()
         serializer.feed(...this.toTokens())
         return serializer.toBytes()
+    }
+
+    /**
+     * Serializes the document to a Base64-encoded string.
+     *
+     * @returns A promise that resolves to the PDF document as a Base64 string
+     */
+    toBase64(): string {
+        const bytes = this.toBytes()
+        let binary = ''
+        const len = bytes.byteLength
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i])
+        }
+        return btoa(binary)
     }
 
     /**

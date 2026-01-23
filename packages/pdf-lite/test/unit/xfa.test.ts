@@ -90,11 +90,6 @@ describe('XFA', () => {
         const updatedXml = await document.xfa.readXml()
         expect(updatedXml).toContain('NEW COMPANY NAME LLC')
 
-        // Ensure no errors during serialization
-        await server.commands.writeFile(
-            './test/unit/output/filledXfaForm.pdf',
-            await document.toBase64(),
-            { encoding: 'base64' },
-        )
+        document.toString() // Ensure no errors on toString
     })
 })

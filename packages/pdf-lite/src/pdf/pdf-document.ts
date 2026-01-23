@@ -912,6 +912,11 @@ export class PdfDocument extends PdfObject {
         return serializer.toBytes()
     }
 
+    /**
+     * Serializes the document to a Base64-encoded string.
+     *
+     * @returns A promise that resolves to the PDF document as a Base64 string
+     */
     toBase64(): string {
         const bytes = this.toBytes()
         let binary = ''

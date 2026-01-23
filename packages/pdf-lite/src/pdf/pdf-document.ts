@@ -700,11 +700,11 @@ export class PdfDocument extends PdfObject {
             return
         }
 
-        this.startNewRevision()
-
         for (const revision of this.revisions) {
             revision.locked = value
         }
+
+        this.startNewRevision()
     }
 
     /**
@@ -912,14 +912,14 @@ export class PdfDocument extends PdfObject {
         return serializer.toBytes()
     }
 
-    toBase64(): Promise<string> {
+    toBase64(): string {
         const bytes = this.toBytes()
         let binary = ''
         const len = bytes.byteLength
         for (let i = 0; i < len; i++) {
             binary += String.fromCharCode(bytes[i])
         }
-        return Promise.resolve(btoa(binary))
+        return btoa(binary)
     }
 
     /**

@@ -12,25 +12,26 @@ import {
     PdfObjStream,
     PdfStream,
     PdfXRefStreamCompressedEntry,
-} from '../core/objects/pdf-stream'
-import { PdfDictionary } from '../core/objects/pdf-dictionary'
-import { PdfObjectReference } from '../core/objects/pdf-object-reference'
-import { PdfXrefLookup } from './pdf-xref-lookup'
-import { PdfTokenSerializer } from '../core/serializer'
-import { PdfRevision } from './pdf-revision'
-import { PdfV5SecurityHandler } from '../security/handlers/v5'
-import { PdfEncryptionDictionaryObject } from '../security/types'
-import { PdfByteOffsetToken } from '../core/tokens/byte-offset-token'
-import { PdfNumberToken } from '../core/tokens/number-token'
-import { PdfXRefTableEntryToken } from '../core/tokens/xref-table-entry-token'
-import { Ref } from '../core/ref'
-import { PdfStartXRef } from '../core/objects/pdf-start-xref'
-import { PdfTrailerEntries } from '../core/objects/pdf-trailer'
-import { FoundCompressedObjectError } from './errors'
-import { PdfDocumentSecurityStoreObject } from '../signing/document-security-store'
-import { ByteArray } from '../types'
-import { PdfReader } from './pdf-reader'
-import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer'
+} from '../core/objects/pdf-stream.js'
+import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
+import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
+import { PdfXrefLookup } from './pdf-xref-lookup.js'
+import { PdfTokenSerializer } from '../core/serializer.js'
+import { PdfRevision } from './pdf-revision.js'
+import { PdfV5SecurityHandler } from '../security/handlers/v5.js'
+import { PdfEncryptionDictionaryObject } from '../security/types.js'
+import { PdfByteOffsetToken } from '../core/tokens/byte-offset-token.js'
+import { PdfNumberToken } from '../core/tokens/number-token.js'
+import { PdfXRefTableEntryToken } from '../core/tokens/xref-table-entry-token.js'
+import { Ref } from '../core/ref.js'
+import { PdfStartXRef } from '../core/objects/pdf-start-xref.js'
+import { PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
+import { FoundCompressedObjectError } from './errors.js'
+import { PdfDocumentSecurityStoreObject } from '../signing/document-security-store.js'
+import { ByteArray } from '../types.js'
+import { PdfReader } from './pdf-reader.js'
+import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
+import { PdfXfaManager } from '../xfa/xfa-manager.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -59,8 +60,17 @@ export class PdfDocument extends PdfObject {
     /** Security handler for encryption/decryption operations */
     securityHandler?: PdfSecurityHandler
 
+    private _xfa?: PdfXfaManager
     private hasEncryptionDictionary?: boolean = false
     private toBeCommitted: PdfObject[] = []
+
+    /** XFA manager for handling XFA forms */
+    get xfa(): PdfXfaManager {
+        if (!this._xfa) {
+            this._xfa = new PdfXfaManager(this)
+        }
+        return this._xfa
+    }
 
     /**
      * Creates a new PDF document instance.
@@ -530,7 +540,7 @@ export class PdfDocument extends PdfObject {
 
         const objectStreamIndirect = this.findUncompressedObject({
             objectNumber: xrefEntry.objectStreamNumber.value,
-        })
+        })?.clone()
 
         if (!objectStreamIndirect) {
             throw new Error(
@@ -575,7 +585,7 @@ export class PdfDocument extends PdfObject {
 
         if (xrefEntry instanceof PdfXRefStreamCompressedEntry) {
             throw new FoundCompressedObjectError(
-                `TODO: Cannot find object ${options.objectNumber} inside object stream via PdfDocument.findObject`,
+                `Cannot find object ${options.objectNumber} inside object stream via PdfDocument.findObject`,
             )
         }
 
@@ -686,6 +696,12 @@ export class PdfDocument extends PdfObject {
      * @param value - True to enable incremental mode, false to disable. Defaults to true.
      */
     setIncremental(value: boolean = true): void {
+        if (value === this.isIncremental()) {
+            return
+        }
+
+        this.startNewRevision()
+
         for (const revision of this.revisions) {
             revision.locked = value
         }
@@ -894,6 +910,16 @@ export class PdfDocument extends PdfObject {
         const serializer = new PdfTokenSerializer()
         serializer.feed(...this.toTokens())
         return serializer.toBytes()
+    }
+
+    toBase64(): Promise<string> {
+        const bytes = this.toBytes()
+        let binary = ''
+        const len = bytes.byteLength
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i])
+        }
+        return Promise.resolve(btoa(binary))
     }
 
     /**

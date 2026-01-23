@@ -1,5 +1,5 @@
-import { ByteArray } from '../types'
-import { stringToBytes } from './stringToBytes'
+import { ByteArray } from '../types.js'
+import { stringToBytes } from './stringToBytes.js'
 
 /**
  * Escapes special characters in a PDF string according to PDF specification.

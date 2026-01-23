@@ -1,10 +1,10 @@
-import { PdfDictionary } from '../../core/objects/pdf-dictionary'
-import { PdfName } from '../../core/objects/pdf-name'
-import { PdfNumber } from '../../core/objects/pdf-number'
-import { Cipher } from '../../crypto/types'
-import { ByteArray } from '../../types'
-import { PdfSecurityHandler } from '../handlers/base'
-import { PdfCryptFilterDictionary } from '../types'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
+import { PdfNumber } from '../../core/objects/pdf-number.js'
+import { Cipher } from '../../crypto/types.js'
+import { ByteArray } from '../../types.js'
+import { PdfSecurityHandler } from '../handlers/base.js'
+import { PdfCryptFilterDictionary } from '../types.js'
 
 /**
  * Configuration options for creating a crypt filter.

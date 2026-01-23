@@ -1,24 +1,24 @@
-import { PdfDictionary } from '../../core/objects/pdf-dictionary'
-import { PdfName } from '../../core/objects/pdf-name'
-import { PdfNumber } from '../../core/objects/pdf-number'
-import { aes128 } from '../../crypto/ciphers/aes128'
-import { deriveObjectKey } from '../../crypto/key-derivation/key-derivation'
-import { Cipher } from '../../crypto/types'
-import { ByteArray } from '../../types'
-import { assert, assertIfDefined } from '../../utils/assert'
-import { AesV2CryptFilter } from '../crypt-filters/aesv2'
-import { AesV3CryptFilter } from '../crypt-filters/aesv3'
-import { PdfCryptFilter } from '../crypt-filters/base'
-import { IdentityCryptFilter } from '../crypt-filters/identity'
-import { V2CryptFilter } from '../crypt-filters/v2'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
+import { PdfNumber } from '../../core/objects/pdf-number.js'
+import { aes128 } from '../../crypto/ciphers/aes128.js'
+import { deriveObjectKey } from '../../crypto/key-derivation/key-derivation.js'
+import { Cipher } from '../../crypto/types.js'
+import { ByteArray } from '../../types.js'
+import { assert, assertIfDefined } from '../../utils/assert.js'
+import { AesV2CryptFilter } from '../crypt-filters/aesv2.js'
+import { AesV3CryptFilter } from '../crypt-filters/aesv3.js'
+import { PdfCryptFilter } from '../crypt-filters/base.js'
+import { IdentityCryptFilter } from '../crypt-filters/identity.js'
+import { V2CryptFilter } from '../crypt-filters/v2.js'
 import {
     CryptFilterType,
     PdfCryptFilterDictionary,
     PdfEncryptionAlgorithmType,
     PdfEncryptionDictionary,
-} from '../types'
-import { PdfStandardSecurityHandlerOptions } from './base'
-import { PdfV2SecurityHandler } from './v2'
+} from '../types.js'
+import { PdfStandardSecurityHandlerOptions } from './base.js'
+import { PdfV2SecurityHandler } from './v2.js'
 
 const IDENTITY_CRYPT_FILTER = new IdentityCryptFilter({ authEvent: 'DocOpen' })
 

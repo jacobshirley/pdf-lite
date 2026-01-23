@@ -1,6 +1,6 @@
-import { Certificate } from 'pki-lite/x509/Certificate'
-import { RevocationInfo } from './types'
-import { ByteArray } from '../types'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+import { RevocationInfo } from './types.js'
+import { ByteArray } from '../types.js'
 
 /**
  * Fetches revocation information (CRLs and OCSPs) for certificates.

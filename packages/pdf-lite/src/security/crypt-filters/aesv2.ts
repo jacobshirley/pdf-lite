@@ -1,6 +1,6 @@
-import { PdfCryptFilter, CryptFilterOptions } from './base'
-import { aes128 } from '../../crypto/ciphers/aes128'
-import { Cipher } from '../../crypto/types'
+import { PdfCryptFilter, CryptFilterOptions } from './base.js'
+import { aes128 } from '../../crypto/ciphers/aes128.js'
+import { Cipher } from '../../crypto/types.js'
 
 /**
  * AESV2 crypt filter using AES-128-CBC encryption.

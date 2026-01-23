@@ -2,33 +2,33 @@ import {
     SignaturePolicyDocument,
     RevocationInfo,
     TimeStampAuthority,
-} from '../types'
-import { SignedData } from 'pki-lite/pkcs7/SignedData'
-import { Certificate } from 'pki-lite/x509/Certificate'
-import { SignerInfo } from 'pki-lite/pkcs7/SignerInfo'
-import { Attribute } from 'pki-lite/x509/Attribute'
-import { RevocationInfoArchival } from 'pki-lite/adobe/RevocationInfoArchival'
-import { CertificateList } from 'pki-lite/x509/CertificateList'
-import { OCSPResponse } from 'pki-lite/ocsp/OCSPResponse'
-import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo'
-import { OtherRevInfo } from 'pki-lite/adobe/OtherRevInfo'
-import { AsymmetricEncryptionAlgorithmParams } from 'pki-lite/core/index'
-import { PdfName } from '../../core/objects/pdf-name'
-import { fetchRevocationInfo } from '../utils'
-import { PdfString } from '../../core/objects/pdf-string'
-import { PdfDate } from '../../core/objects/pdf-date'
+} from '../types.js'
+import { SignedData } from 'pki-lite/pkcs7/SignedData.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+import { SignerInfo } from 'pki-lite/pkcs7/SignerInfo.js'
+import { Attribute } from 'pki-lite/x509/Attribute.js'
+import { RevocationInfoArchival } from 'pki-lite/adobe/RevocationInfoArchival.js'
+import { CertificateList } from 'pki-lite/x509/CertificateList.js'
+import { OCSPResponse } from 'pki-lite/ocsp/OCSPResponse.js'
+import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
+import { OtherRevInfo } from 'pki-lite/adobe/OtherRevInfo.js'
+import { AsymmetricEncryptionAlgorithmParams } from 'pki-lite/core/index.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
+import { fetchRevocationInfo } from '../utils.js'
+import { PdfString } from '../../core/objects/pdf-string.js'
+import { PdfDate } from '../../core/objects/pdf-date.js'
 import {
     PdfSignatureDictionary,
     PdfSignatureObject,
     PdfSignatureSignOptions,
-} from './base'
-import { SigningCertificateV2 } from 'pki-lite/x509/attributes/SigningCertificateV2'
+} from './base.js'
+import { SigningCertificateV2 } from 'pki-lite/x509/attributes/SigningCertificateV2.js'
 import {
     OtherHashAlgAndValue,
     SignaturePolicyId,
-} from 'pki-lite/x509/attributes/SignaturePolicyIdentifier'
-import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
-import { ByteArray } from '../../types'
+} from 'pki-lite/x509/attributes/SignaturePolicyIdentifier.js'
+import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
+import { ByteArray } from '../../types.js'
 
 /**
  * ETSI CAdES detached signature object (ETSI.CAdES.detached).

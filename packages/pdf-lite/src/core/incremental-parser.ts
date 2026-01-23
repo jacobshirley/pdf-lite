@@ -1,4 +1,4 @@
-import { Parser } from './parser'
+import { Parser } from './parser.js'
 
 /**
  * Error thrown when the parser needs more input to continue parsing.

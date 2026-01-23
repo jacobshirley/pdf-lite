@@ -1,13 +1,13 @@
-import { PdfObject } from '../core/objects/pdf-object'
+import { PdfObject } from '../core/objects/pdf-object.js'
 import {
     PdfSecurityHandler,
     PdfStandardSecurityHandler,
-} from '../security/handlers/base'
-import { createFromDictionary } from '../security/handlers/utils'
-import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
-import { PdfComment } from '../core/objects/pdf-comment'
-import { PdfToken } from '../core/tokens/token'
-import { PdfWhitespaceToken } from '../core/tokens/whitespace-token'
+} from '../security/handlers/base.js'
+import { createFromDictionary } from '../security/handlers/utils.js'
+import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
+import { PdfComment } from '../core/objects/pdf-comment.js'
+import { PdfToken } from '../core/tokens/token.js'
+import { PdfWhitespaceToken } from '../core/tokens/whitespace-token.js'
 import {
     PdfObjStream,
     PdfStream,

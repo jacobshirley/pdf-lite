@@ -1,4 +1,4 @@
-import { ByteArray } from '../types'
+import { ByteArray } from '../types.js'
 
 /**
  * Converts a string or byte array to a byte array using UTF-8 encoding.

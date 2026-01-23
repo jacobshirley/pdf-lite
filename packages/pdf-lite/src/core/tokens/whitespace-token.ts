@@ -1,5 +1,5 @@
-import { ByteArray } from '../../types'
-import { PdfToken } from './token'
+import { ByteArray } from '../../types.js'
+import { PdfToken } from './token.js'
 
 export class PdfWhitespaceToken extends PdfToken {
     public static NEWLINE = new PdfWhitespaceToken('\n')

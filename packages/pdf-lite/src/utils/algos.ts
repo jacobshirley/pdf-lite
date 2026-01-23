@@ -1,6 +1,6 @@
 import { deflate, Inflate } from 'pako'
 import { bytesToHex } from './bytesToHex.js'
-import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
+import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
 import 'pki-lite-crypto-extended'
 import { ByteArray } from '../types.js'
 

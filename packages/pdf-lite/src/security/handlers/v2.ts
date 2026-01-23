@@ -1,14 +1,14 @@
-import { rc4 } from '../../crypto/ciphers/rc4'
+import { rc4 } from '../../crypto/ciphers/rc4.js'
 import {
     computeOValueRc4_128,
     computeUValueRc4_128,
     decryptUserPasswordRc4_128,
-} from '../../crypto/key-gen/key-gen-rc4-128'
-import { Cipher } from '../../crypto/types'
-import { ByteArray } from '../../types'
-import { bytesToString } from '../../utils/bytesToString'
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfV1SecurityHandler } from './v1'
+} from '../../crypto/key-gen/key-gen-rc4-128.js'
+import { Cipher } from '../../crypto/types.js'
+import { ByteArray } from '../../types.js'
+import { bytesToString } from '../../utils/bytesToString.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfV1SecurityHandler } from './v1.js'
 
 /**
  * V2 security handler implementing 128-bit RC4 encryption.

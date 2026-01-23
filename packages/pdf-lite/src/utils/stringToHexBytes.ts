@@ -1,4 +1,4 @@
-import { ByteArray } from '../types'
+import { ByteArray } from '../types.js'
 
 /**
  * Converts a hexadecimal string (optionally with angle brackets) to a byte array.

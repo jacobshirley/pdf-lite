@@ -1,7 +1,7 @@
-import { ByteArray } from '../../types'
-import { escapeString } from '../../utils/escapeString'
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfToken } from './token'
+import { ByteArray } from '../../types.js'
+import { escapeString } from '../../utils/escapeString.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfToken } from './token.js'
 
 export class PdfStringToken extends PdfToken {
     value: ByteArray

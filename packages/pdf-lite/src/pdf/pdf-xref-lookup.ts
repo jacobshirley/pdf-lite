@@ -1,20 +1,23 @@
-import { PdfObject } from '../core/objects/pdf-object'
-import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
-import { PdfXRefTable, PdfXRefTableEntry } from '../core/objects/pdf-xref-table'
-import { PdfStartXRef } from '../core/objects/pdf-start-xref'
-import { PdfTrailer, PdfTrailerEntries } from '../core/objects/pdf-trailer'
-import { PdfNumber } from '../core/objects/pdf-number'
-import { PdfComment } from '../core/objects/pdf-comment'
+import { PdfObject } from '../core/objects/pdf-object.js'
+import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
+import {
+    PdfXRefTable,
+    PdfXRefTableEntry,
+} from '../core/objects/pdf-xref-table.js'
+import { PdfStartXRef } from '../core/objects/pdf-start-xref.js'
+import { PdfTrailer, PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
+import { PdfNumber } from '../core/objects/pdf-number.js'
+import { PdfComment } from '../core/objects/pdf-comment.js'
 import {
     PdfObjStream,
     PdfStream,
     PdfXRefStream,
     PdfXRefStreamCompressedEntry,
     PdfXRefStreamEntry,
-} from '../core/objects/pdf-stream'
-import { PdfDictionary } from '../core/objects/pdf-dictionary'
-import { Ref } from '../core/ref'
-import { PdfObjectReference } from '../core/objects/pdf-object-reference'
+} from '../core/objects/pdf-stream.js'
+import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
+import { Ref } from '../core/ref.js'
+import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 
 /**
  * Manages cross-reference (xref) lookup for PDF objects.

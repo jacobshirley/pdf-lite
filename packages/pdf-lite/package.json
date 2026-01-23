@@ -1,6 +1,6 @@
 {
     "name": "pdf-lite",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "main": "dist/index.js",
     "type": "module",
     "exports": {
@@ -64,7 +64,7 @@
     ],
     "dependencies": {
         "pako": "2.1.0",
-        "pki-lite": "^1.0.12",
-        "pki-lite-crypto-extended": "^1.0.12"
+        "pki-lite": "^1.0.13",
+        "pki-lite-crypto-extended": "^1.0.13"
     }
 }

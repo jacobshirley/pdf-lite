@@ -1,6 +1,6 @@
-import { ByteArray } from '../../types'
-import { stringToBytes } from '../../utils/stringToBytes'
-import { PdfToken } from './token'
+import { ByteArray } from '../../types.js'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { PdfToken } from './token.js'
 
 export class PdfHexadecimalToken extends PdfToken {
     raw: ByteArray

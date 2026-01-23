@@ -1,5 +1,5 @@
-import { ByteArray } from '../../types'
-import { bytesToString } from '../../utils/bytesToString'
+import { ByteArray } from '../../types.js'
+import { bytesToString } from '../../utils/bytesToString.js'
 
 export abstract class PdfToken {
     protected rawBytes: ByteArray

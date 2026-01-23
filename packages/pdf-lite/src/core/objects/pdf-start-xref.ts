@@ -1,8 +1,8 @@
-import { Ref } from '../ref'
-import { PdfStartXRefToken } from '../tokens/start-xref-token'
-import { PdfWhitespaceToken } from '../tokens/whitespace-token'
-import { PdfNumber } from './pdf-number'
-import { PdfObject } from './pdf-object'
+import { Ref } from '../ref.js'
+import { PdfStartXRefToken } from '../tokens/start-xref-token.js'
+import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
+import { PdfNumber } from './pdf-number.js'
+import { PdfObject } from './pdf-object.js'
 
 export class PdfStartXRef extends PdfObject {
     offset: PdfNumber

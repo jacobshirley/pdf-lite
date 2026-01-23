@@ -1,22 +1,22 @@
-import { stringToBytes } from '../../utils/stringToBytes'
-import { padBytes } from '../../utils/padBytes'
-import { PdfDictionary } from '../../core/objects/pdf-dictionary'
+import { stringToBytes } from '../../utils/stringToBytes.js'
+import { padBytes } from '../../utils/padBytes.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import {
     PdfSignatureDictionaryEntries,
     PdfSignatureSubType,
     PdfSignatureVerificationOptions,
     PdfSignatureVerificationResult,
     RevocationInfo,
-} from '../types'
-import { bytesToHexBytes } from '../../utils/bytesToHexBytes'
-import { PdfArray } from '../../core/objects/pdf-array'
-import { PdfNumber } from '../../core/objects/pdf-number'
-import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
-import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object'
-import { ByteArray } from '../../types'
-import { PdfName } from '../../core/objects/pdf-name'
-import { PdfString } from '../../core/objects/pdf-string'
-import { PdfDate } from '../../core/objects/pdf-date'
+} from '../types.js'
+import { bytesToHexBytes } from '../../utils/bytesToHexBytes.js'
+import { PdfArray } from '../../core/objects/pdf-array.js'
+import { PdfNumber } from '../../core/objects/pdf-number.js'
+import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+import { ByteArray } from '../../types.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
+import { PdfString } from '../../core/objects/pdf-string.js'
+import { PdfDate } from '../../core/objects/pdf-date.js'
 
 const PLACEHOLDER_BYTES = stringToBytes('placeholder_signature_bytes')
 const PADDING = 8192 * 4

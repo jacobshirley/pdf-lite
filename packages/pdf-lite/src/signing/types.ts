@@ -4,13 +4,13 @@ import type {
     CertificateValidationResult,
     TrustAnchor,
 } from 'pki-lite/core/CertificateValidator.js'
-import { PdfDictionary } from '../core/objects/pdf-dictionary'
-import { PdfName } from '../core/objects/pdf-name'
-import { PdfHexadecimal } from '../core/objects/pdf-hexadecimal'
-import { PdfArray } from '../core/objects/pdf-array'
-import { PdfNumber } from '../core/objects/pdf-number'
-import { PdfString } from '../core/objects/pdf-string'
-import { ByteArray } from '../types'
+import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
+import { PdfName } from '../core/objects/pdf-name.js'
+import { PdfHexadecimal } from '../core/objects/pdf-hexadecimal.js'
+import { PdfArray } from '../core/objects/pdf-array.js'
+import { PdfNumber } from '../core/objects/pdf-number.js'
+import { PdfString } from '../core/objects/pdf-string.js'
+import { ByteArray } from '../types.js'
 
 export type {
     CertificateValidationOptions,

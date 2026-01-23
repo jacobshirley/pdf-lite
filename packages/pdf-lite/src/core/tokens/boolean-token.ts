@@ -1,5 +1,5 @@
-import { ByteArray } from '../../types'
-import { PdfToken } from './token'
+import { ByteArray } from '../../types.js'
+import { PdfToken } from './token.js'
 
 export class PdfBooleanToken extends PdfToken {
     static TRUE = new PdfBooleanToken(true)

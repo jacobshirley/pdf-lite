@@ -1,4 +1,4 @@
-import { ByteArray } from '../types'
+import { ByteArray } from '../types.js'
 
 /**
  * Concatenates multiple Uint8Array instances into a single ByteArray.

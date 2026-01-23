@@ -1,20 +1,20 @@
-import { EnvelopedDataBuilderRecipient } from 'pki-lite/core/builders/EnvelopedDataBuilder'
-import { Certificate } from 'pki-lite/x509/Certificate'
-import { EnvelopedData } from 'pki-lite/pkcs7/EnvelopedData'
-import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo'
-import { ByteArray, PdfPermissions } from '../../types'
-import { getRandomBytes, sha1, sha256 } from '../../utils/algos'
+import { EnvelopedDataBuilderRecipient } from 'pki-lite/core/builders/EnvelopedDataBuilder.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+import { EnvelopedData } from 'pki-lite/pkcs7/EnvelopedData.js'
+import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
+import { ByteArray, PdfPermissions } from '../../types.js'
+import { getRandomBytes, sha1, sha256 } from '../../utils/algos.js'
 import {
     PdfEncryptionDictionary,
     PdfEncryptionRecipient,
     PdfId,
-} from '../types'
-import { PdfV5SecurityHandler } from './v5'
-import { PdfSecurityHandler, PdfStandardSecurityHandler } from './base'
-import { createStandardSecurityHandlerFromDictionary } from './utils'
-import { PdfName } from '../../core/objects/pdf-name'
-import { PdfArray } from '../../core/objects/pdf-array'
-import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal'
+} from '../types.js'
+import { PdfV5SecurityHandler } from './v5.js'
+import { PdfSecurityHandler, PdfStandardSecurityHandler } from './base.js'
+import { createStandardSecurityHandlerFromDictionary } from './utils.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
+import { PdfArray } from '../../core/objects/pdf-array.js'
+import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal.js'
 
 /**
  * Public key security handler implementing certificate-based encryption.

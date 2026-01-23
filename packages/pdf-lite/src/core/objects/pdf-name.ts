@@ -1,5 +1,5 @@
-import { PdfNameToken } from '../tokens/name-token'
-import { PdfObject } from './pdf-object'
+import { PdfNameToken } from '../tokens/name-token.js'
+import { PdfObject } from './pdf-object.js'
 
 export class PdfName<T extends string = string> extends PdfObject {
     value: T

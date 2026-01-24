@@ -20,7 +20,6 @@ import { PdfIndirectObject } from './pdf-indirect-object.js'
 import { PdfXRefTableEntry } from './pdf-xref-table.js'
 import { stringToBytes } from '../../utils/stringToBytes.js'
 import { PdfFilter, PdfStreamFilterType } from '../../filters/types.js'
-import { bytesToString } from '../../utils/bytesToString.js'
 
 export class PdfStream<
     T extends PdfDictionary = PdfDictionary,

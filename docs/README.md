@@ -6,6 +6,8 @@
 
 ## Packages
 
+- [acroform](acroform/README.md)
+- [acroform/acroform-manager](acroform/acroform-manager/README.md)
 - [core](core/README.md)
 - [core/decoder](core/decoder/README.md)
 - [core/generators](core/generators/README.md)
@@ -129,3 +131,5 @@
 - [utils/stringToBytes](utils/stringToBytes/README.md)
 - [utils/stringToHexBytes](utils/stringToHexBytes/README.md)
 - [utils/unescapeString](utils/unescapeString/README.md)
+- [xfa](xfa/README.md)
+- [xfa/xfa-manager](xfa/xfa-manager/README.md)

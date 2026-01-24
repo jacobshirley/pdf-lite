@@ -155,6 +155,20 @@ Signer instance for digital signature operations
 
 ## Accessors
 
+### acroForm
+
+#### Get Signature
+
+> **get** **acroForm**(): [`PdfAcroFormManager`](../../../acroform/acroform-manager/classes/PdfAcroFormManager.md)
+
+AcroForm manager for handling form fields
+
+##### Returns
+
+[`PdfAcroFormManager`](../../../acroform/acroform-manager/classes/PdfAcroFormManager.md)
+
+---
+
 ### encryptionDictionary
 
 #### Get Signature
@@ -278,6 +292,20 @@ Gets the trailer dictionary from the cross-reference lookup.
 [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfTrailerEntries`](../../../core/objects/pdf-trailer/type-aliases/PdfTrailerEntries.md)\>
 
 The trailer dictionary containing document metadata references
+
+---
+
+### xfa
+
+#### Get Signature
+
+> **get** **xfa**(): [`PdfXfaManager`](../../../xfa/xfa-manager/classes/PdfXfaManager.md)
+
+XFA manager for handling XFA forms
+
+##### Returns
+
+[`PdfXfaManager`](../../../xfa/xfa-manager/classes/PdfXfaManager.md)
 
 ---
 
@@ -748,6 +776,20 @@ Creates a new revision linked to the previous one.
 `PdfDocument`
 
 The document instance for method chaining
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
 
 ---
 

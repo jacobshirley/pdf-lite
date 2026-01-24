@@ -650,6 +650,26 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 
 ---
 
+### fromString()
+
+> `static` **fromString**(`data`): [`PdfStream`](PdfStream.md)
+
+#### Parameters
+
+##### data
+
+`string`
+
+#### Returns
+
+[`PdfStream`](PdfStream.md)
+
+#### Inherited from
+
+[`PdfStream`](PdfStream.md).[`fromString`](PdfStream.md#fromstring)
+
+---
+
 ### getAllFilters()
 
 > `static` **getAllFilters**(): `object`

@@ -265,7 +265,8 @@ export class PdfXrefLookup {
         }
 
         const size = Math.max(trailerSize, prevSize)
-        this.trailerDict.set('Size', new PdfNumber(size))
+        if (size !== trailerSize)
+            this.trailerDict.set('Size', new PdfNumber(size))
 
         return size
     }

@@ -112,6 +112,18 @@ function createTextField(
     // Default appearance string (font and size)
     fieldDict.set('DA', new PdfString('/Helv 12 Tf 0 g'))
 
+    // Border style (solid, 1pt width)
+    const borderDict = new PdfDictionary()
+    borderDict.set('W', new PdfNumber(1))
+    borderDict.set('S', new PdfName('S'))
+    fieldDict.set('BS', borderDict)
+
+    // Appearance characteristics
+    const mkDict = new PdfDictionary()
+    mkDict.set('BC', new PdfArray([new PdfNumber(0)])) // Border color (black)
+    mkDict.set('BG', new PdfArray([new PdfNumber(1)])) // Background color (white)
+    fieldDict.set('MK', mkDict)
+
     return new PdfIndirectObject({ content: fieldDict })
 }
 
@@ -148,6 +160,18 @@ function createCheckboxField(
     fieldDict.set('V', new PdfName(checked ? 'Yes' : 'Off'))
     fieldDict.set('AS', new PdfName(checked ? 'Yes' : 'Off'))
 
+    // Border style
+    const borderDict = new PdfDictionary()
+    borderDict.set('W', new PdfNumber(1))
+    borderDict.set('S', new PdfName('S'))
+    fieldDict.set('BS', borderDict)
+
+    // Appearance characteristics
+    const mkDict = new PdfDictionary()
+    mkDict.set('BC', new PdfArray([new PdfNumber(0)])) // Border color (black)
+    mkDict.set('BG', new PdfArray([new PdfNumber(1)])) // Background color (white)
+    fieldDict.set('MK', mkDict)
+
     return new PdfIndirectObject({ content: fieldDict })
 }
 
@@ -175,7 +199,7 @@ const contentStream = new PdfIndirectObject({
 0 -30 Td (Email:) Tj
 0 -30 Td (Phone:) Tj
 0 -30 Td (Subscribe to newsletter:) Tj
-ET`,
+ET `,
     }),
 })
 document.add(contentStream)
@@ -238,7 +262,8 @@ acroForm.set(
         subscribeField.reference,
     ]),
 )
-// NeedAppearances flag tells PDF readers to generate appearance streams
+// With appearance streams provided, we don't need NeedAppearances
+// This prevents Acrobat from modifying the PDF on open
 acroForm.set('NeedAppearances', new PdfBoolean(true))
 
 // Default resources for the form (font)
@@ -248,9 +273,12 @@ const helveticaFont = new PdfDictionary()
 helveticaFont.set('Type', new PdfName('Font'))
 helveticaFont.set('Subtype', new PdfName('Type1'))
 helveticaFont.set('BaseFont', new PdfName('Helvetica'))
-formFontDict.set('Helv', helveticaFont)
+const helveticaFontObj = new PdfIndirectObject({ content: helveticaFont })
+document.add(helveticaFontObj)
+formFontDict.set('Helv', helveticaFontObj.reference)
 formResources.set('Font', formFontDict)
 acroForm.set('DR', formResources)
+acroForm.set('DA', new PdfString('/Helv 12 Tf 0 g'))
 
 const acroFormObj = new PdfIndirectObject({ content: acroForm })
 document.add(acroFormObj)
@@ -278,90 +306,12 @@ console.log('Created form-empty.pdf with empty form fields')
 const emptyFormBytes = await fs.readFile(`${tmpFolder}/form-empty.pdf`)
 const filledDocument = await PdfDocument.fromBytes([emptyFormBytes])
 
-// Get the catalog reference from trailer
-const catalogRef = filledDocument.trailerDict.get('Root')
-if (!catalogRef || !(catalogRef instanceof PdfObjectReference)) {
-    throw new Error('No catalog found in PDF')
-}
-
-// Read the catalog object
-const catalogObj = await filledDocument.readObject({
-    objectNumber: catalogRef.objectNumber,
+await filledDocument.acroForm.setFieldValues({
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    phone: '+1 (555) 123-4567',
+    subscribe: 'Off', // For checkbox, use the "Yes/Off" value
 })
-if (!catalogObj || !(catalogObj.content instanceof PdfDictionary)) {
-    throw new Error('Catalog object not found')
-}
-
-// Get the AcroForm reference
-const acroFormRef = catalogObj.content.get('AcroForm')
-if (!acroFormRef || !(acroFormRef instanceof PdfObjectReference)) {
-    throw new Error('No AcroForm found in PDF')
-}
-
-// Read the AcroForm object
-const filledAcroFormObj = await filledDocument.readObject({
-    objectNumber: acroFormRef.objectNumber,
-})
-if (
-    !filledAcroFormObj ||
-    !(filledAcroFormObj.content instanceof PdfDictionary)
-) {
-    throw new Error('AcroForm object not found')
-}
-
-// Get the fields array
-const fieldsArray = filledAcroFormObj.content.get('Fields')
-if (!fieldsArray || !(fieldsArray instanceof PdfArray)) {
-    throw new Error('No fields found in AcroForm')
-}
-
-// Helper function to find a field by name
-async function findField(
-    fieldName: string,
-): Promise<PdfIndirectObject<PdfDictionary> | null> {
-    for (const fieldRef of fieldsArray.items) {
-        if (!(fieldRef instanceof PdfObjectReference)) continue
-        const fieldObj = await filledDocument.readObject({
-            objectNumber: fieldRef.objectNumber,
-        })
-        if (!fieldObj || !(fieldObj.content instanceof PdfDictionary)) continue
-
-        const name = fieldObj.content.get('T')
-        if (name instanceof PdfString) {
-            // Convert bytes to string for comparison
-            const nameStr = name.value
-            if (nameStr === fieldName) {
-                return fieldObj as PdfIndirectObject<PdfDictionary>
-            }
-        }
-    }
-    return null
-}
-
-// Update the name field value
-const nameFieldObj = await findField('name')
-if (nameFieldObj) {
-    nameFieldObj.content.set('V', new PdfString('John Doe'))
-}
-
-// Update the email field value
-const emailFieldObj = await findField('email')
-if (emailFieldObj) {
-    emailFieldObj.content.set('V', new PdfString('john.doe@example.com'))
-}
-
-// Update the phone field value
-const phoneFieldObj = await findField('phone')
-if (phoneFieldObj) {
-    phoneFieldObj.content.set('V', new PdfString('+1 (555) 123-4567'))
-}
-
-// Check the subscribe checkbox
-const subscribeFieldObj = await findField('subscribe')
-if (subscribeFieldObj) {
-    subscribeFieldObj.content.set('V', new PdfName('Yes'))
-    subscribeFieldObj.content.set('AS', new PdfName('Yes'))
-}
 
 // Save the filled form
 await fs.writeFile(`${tmpFolder}/form-filled.pdf`, filledDocument.toBytes())
@@ -371,4 +321,4 @@ console.log('\nForm field values:')
 console.log('- Name: John Doe')
 console.log('- Email: john.doe@example.com')
 console.log('- Phone: +1 (555) 123-4567')
-console.log('- Subscribe: Yes')
+console.log('- Subscribe: Off')

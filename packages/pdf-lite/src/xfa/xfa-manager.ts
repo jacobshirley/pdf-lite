@@ -50,16 +50,9 @@ export class PdfXfaManager {
     /**
      * Writes XML content to the XFA datasets stream.
      * @param xml The XML content to write
-     * @param options Optional settings for writing
-     * @param options.incremental Whether to write changes incrementally (default: true)
      * @throws Error if the document doesn't have XFA forms
      */
-    async writeXml(
-        xml: string,
-        options?: {
-            incremental?: boolean
-        },
-    ): Promise<void> {
+    async writeXml(xml: string): Promise<void> {
         const stream = await this.getDatasetsStream()
         if (!stream) {
             throw new Error('Document does not contain XFA forms')
@@ -72,7 +65,7 @@ export class PdfXfaManager {
         })
 
         const isIncremental = this.document.isIncremental()
-        this.document.setIncremental(options?.incremental ?? true)
+        this.document.setIncremental(true)
         await this.document.commit(datasetsIndirect)
         this.document.setIncremental(isIncremental)
 

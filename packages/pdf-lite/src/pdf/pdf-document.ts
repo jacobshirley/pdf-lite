@@ -32,6 +32,7 @@ import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { PdfXfaManager } from '../xfa/xfa-manager.js'
+import { PdfAcroFormManager } from '../acroform/acroform-manager.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -61,6 +62,7 @@ export class PdfDocument extends PdfObject {
     securityHandler?: PdfSecurityHandler
 
     private _xfa?: PdfXfaManager
+    private _acroForm?: PdfAcroFormManager
     private hasEncryptionDictionary?: boolean = false
     private toBeCommitted: PdfObject[] = []
 
@@ -70,6 +72,14 @@ export class PdfDocument extends PdfObject {
             this._xfa = new PdfXfaManager(this)
         }
         return this._xfa
+    }
+
+    /** AcroForm manager for handling form fields */
+    get acroForm(): PdfAcroFormManager {
+        if (!this._acroForm) {
+            this._acroForm = new PdfAcroFormManager(this)
+        }
+        return this._acroForm
     }
 
     /**
@@ -163,6 +173,7 @@ export class PdfDocument extends PdfObject {
         const lastStartXRef = this.objects.findLast(
             (x) => x instanceof PdfStartXRef,
         )
+
         if (lastStartXRef) {
             newRevision.xref.offset = lastStartXRef.offset.ref
         }
@@ -291,6 +302,10 @@ export class PdfDocument extends PdfObject {
         }
 
         const rootObject = this.findUncompressedObject(rootRef)
+
+        if (!rootObject) {
+            throw new Error('Root object not found')
+        }
 
         if (!(rootObject?.content instanceof PdfDictionary)) {
             throw new Error(

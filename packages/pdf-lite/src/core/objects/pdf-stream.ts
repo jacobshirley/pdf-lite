@@ -20,6 +20,7 @@ import { PdfIndirectObject } from './pdf-indirect-object.js'
 import { PdfXRefTableEntry } from './pdf-xref-table.js'
 import { stringToBytes } from '../../utils/stringToBytes.js'
 import { PdfFilter, PdfStreamFilterType } from '../../filters/types.js'
+import { bytesToString } from '../../utils/bytesToString.js'
 
 export class PdfStream<
     T extends PdfDictionary = PdfDictionary,
@@ -339,12 +340,20 @@ export class PdfObjStream extends PdfStream {
         const reader = bytesToPdfObjects([decodedData])
         const numbers: PdfNumber[] = []
         let i = 0
+        const n = this.header.get('N') as PdfNumber
+        const totalObjects = n ? n.value : 0
 
         while (true) {
             const { value: obj, done } = reader.next()
             if (done) break
 
-            if (obj instanceof PdfDictionary) {
+            if (obj instanceof PdfNumber) {
+                // Collect object numbers and byte offsets
+                numbers.push(obj)
+            } else {
+                // This is an actual PDF object (can be Dictionary, Array, String, Name, etc.)
+                // The first N*2 numbers are: obj_num1 offset1 obj_num2 offset2 ...
+                // After that come the actual objects
                 const objectNumber = numbers[i * 2].value
                 const generationNumber = 0
 
@@ -355,10 +364,11 @@ export class PdfObjStream extends PdfStream {
                 })
 
                 i++
-            } else if (obj instanceof PdfNumber) {
-                numbers.push(obj)
-            } else {
-                throw new Error('Invalid object in PDF Object Stream')
+
+                // Stop after we've read N objects
+                if (totalObjects > 0 && i >= totalObjects) {
+                    break
+                }
             }
         }
     }

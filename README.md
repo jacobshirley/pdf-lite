@@ -18,6 +18,93 @@ PRs and issues are welcome!
 - **Browser and Node.js support**: Works seamlessly in both environments, allowing for versatile usage.
 - **Low-level API**: Provides a low-level API for advanced users who want to manipulate PDF files directly, as well as a higher-level API for easier usage.
 
+## Installation
+
+```bash
+npm install pdf-lite
+yarn add pdf-lite
+pnpm add pdf-lite
+```
+
+## Usage
+
+The library provides both low-level and high-level APIs for working with PDF documents. See [PDF Support](#pdf-support) for a list of supported features.
+
+### Reading a PDF
+
+```typescript
+import { PdfReader } from 'pdf-lite/pdf/pdf-reader'
+import { readFile } from 'fs/promises'
+
+const pdfBytes = await readFile('document.pdf')
+const doc = await PdfReader.fromBytes([pdfBytes])
+```
+
+### Creating a PDF from Scratch
+
+```typescript
+import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
+import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
+import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
+import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
+import { PdfName } from 'pdf-lite/core/objects/pdf-name'
+import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
+import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
+
+// Create the document
+const document = new PdfDocument()
+
+// Create content stream
+const contentStream = new PdfIndirectObject({
+    content: new PdfStream({
+        header: new PdfDictionary(),
+        original: 'BT /F1 24 Tf 100 700 Td (Hello, PDF-Lite!) Tj ET',
+    }),
+})
+
+// Create and commit objects
+document.commit(contentStream)
+// ... create pages, catalog, etc.
+
+// Output the PDF
+console.log(document.toString())
+```
+
+### Working with Encryption
+
+```typescript
+import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
+import { PdfV2SecurityHandler } from 'pdf-lite/security/handlers/v2'
+
+const document = new PdfDocument()
+// ... build your PDF structure
+
+// Set up encryption
+document.securityHandler = new PdfV2SecurityHandler({
+    password: 'user-password',
+    documentId: 'unique-doc-id',
+    encryptMetadata: true,
+})
+
+// Encrypt the document
+await document.encrypt()
+
+console.log(document.toString())
+```
+
+### Signing PDFs
+
+```typescript
+import {
+    PdfAdbePkcs7DetachedSignatureObject,
+    PdfEtsiCadesDetachedSignatureObject,
+} from 'pdf-lite'
+
+// See examples directory for complete signing implementations
+```
+
+For more detailed examples, see the [EXAMPLES.md](EXAMPLES.md) file and the [examples/](examples/) directory.
+
 ## PDF Support
 
 ### Low-level PDF constructs
@@ -100,6 +187,22 @@ Long-Term Validation (LTV) support ensures that digital signatures remain valid 
 - [x] Timestamping
 - [x] Verification of existing signatures
 
+### AcroForm filling
+
+Supports filling out AcroForm forms within PDF documents, allowing for dynamic content generation and user interaction.
+
+[x] Text fields
+[x] Checkboxes
+[x] Radio buttons
+[x] Dropdowns
+
+### XFA Forms
+
+You can read/write XFA XML data from PDFs, but rendering and filling XFA forms is not supported.
+
+[x] Read XFA XML
+[x] Write XFA XML
+
 ## Future Plans
 
 - **Writing Linearized PDF**: Writing linearized PDFs for faster web viewing, improving user experience when accessing documents online.
@@ -133,156 +236,13 @@ pnpm test:unit
 pnpm test:acceptance
 ```
 
-### Package Structure
-
-The main package (`packages/pdf-lite`) contains:
-
-- **src/core/** - Low-level PDF constructs (objects, parser, tokenizer)
-- **src/pdf/** - High-level PDF document handling
-- **src/signing/** - Digital signature support
-- **src/security/** - Encryption and security handlers
-- **src/filters/** - Compression/decompression filters
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
-## Installation
-
-```bash
-npm install pdf-lite
-```
-
-or
-
-```bash
-yarn add pdf-lite
-```
-
-or
-
-```bash
-pnpm add pdf-lite
-```
-
-## Usage
-
-The library provides both low-level and high-level APIs for working with PDF documents.
-
-### Reading a PDF
-
-```typescript
-import { PdfReader } from 'pdf-lite/pdf/pdf-reader'
-import { readFile } from 'fs/promises'
-
-const pdfBytes = await readFile('document.pdf')
-const doc = await PdfReader.fromBytes([pdfBytes])
-```
-
-### Creating a PDF from Scratch
-
-```typescript
-import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
-import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
-import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
-import { PdfName } from 'pdf-lite/core/objects/pdf-name'
-import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
-import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
-
-// Create the document
-const document = new PdfDocument()
-
-// Create content stream
-const contentStream = new PdfIndirectObject({
-    content: new PdfStream({
-        header: new PdfDictionary(),
-        original: 'BT /F1 24 Tf 100 700 Td (Hello, PDF-Lite!) Tj ET',
-    }),
-})
-
-// Create and commit objects
-document.commit(contentStream)
-// ... create pages, catalog, etc.
-
-// Output the PDF
-console.log(document.toString())
-```
-
-### Working with Encryption
-
-```typescript
-import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { PdfV2SecurityHandler } from 'pdf-lite/security/handlers/v2'
-
-const document = new PdfDocument()
-// ... build your PDF structure
-
-// Set up encryption
-document.securityHandler = new PdfV2SecurityHandler({
-    password: 'user-password',
-    documentId: 'unique-doc-id',
-    encryptMetadata: true,
-})
-
-// Encrypt the document
-await document.encrypt()
-
-console.log(document.toString())
-```
-
-### Signing PDFs
-
-```typescript
-import {
-    PdfAdbePkcs7DetachedSignatureObject,
-    PdfEtsiCadesDetachedSignatureObject,
-} from 'pdf-lite'
-
-// See examples directory for complete signing implementations
-```
-
-For more detailed examples, see the [EXAMPLES.md](EXAMPLES.md) file and the [examples/](examples/) directory.
-
-## Project Structure
-
-This project is organized as a monorepo:
-
-- **packages/pdf-lite** - Main library package
-- **examples/** - Example scripts demonstrating library usage
-- **scripts/** - Build and development scripts
-
 ## API Reference
 
-The library uses TypeScript subpath exports for modular imports:
-
-```typescript
-// PDF Document
-import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { PdfReader } from 'pdf-lite/pdf/pdf-reader'
-
-// Core PDF objects
-import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
-import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
-import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
-import { PdfString } from 'pdf-lite/core/objects/pdf-string'
-import { PdfName } from 'pdf-lite/core/objects/pdf-name'
-import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
-import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
-import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
-
-// Security
-import { PdfV2SecurityHandler } from 'pdf-lite/security/handlers/v2'
-
-// Signing
-import {
-    PdfAdbePkcs7DetachedSignatureObject,
-    PdfAdbePkcs7Sha1SignatureObject,
-    PdfAdbePkcsX509RsaSha1SignatureObject,
-    PdfEtsiCadesDetachedSignatureObject,
-    PdfEtsiRfc3161SignatureObject,
-} from 'pdf-lite'
-```
+See the [documentation folder](./docs/README.md) or the document site for a complete API reference.
 
 ## License
 

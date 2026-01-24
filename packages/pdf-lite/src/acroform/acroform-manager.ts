@@ -5,6 +5,7 @@ import { PdfString } from '../core/objects/pdf-string.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfName } from '../core/objects/pdf-name.js'
+import { PdfBoolean } from '../core/objects/pdf-boolean.js'
 
 /**
  * Manages AcroForm fields in PDF documents.
@@ -56,11 +57,12 @@ export class PdfAcroFormManager<
      * @throws Error if the field is not found
      */
     async setFieldValues(newFields: Partial<T>): Promise<void> {
-        const acroForm = await this.getAcroForm()
-        if (!acroForm) {
+        const acroFormObject = await this.getAcroFormObject()
+        if (!acroFormObject) {
             throw new Error('Document does not contain AcroForm')
         }
 
+        const acroForm = acroFormObject.content.as(PdfDictionary)
         const fields = acroForm.get('Fields')?.as(PdfArray)
         if (!fields) {
             throw new Error('AcroForm has no fields')
@@ -69,35 +71,51 @@ export class PdfAcroFormManager<
         const isIncremental = this.document.isIncremental()
         this.document.setIncremental(true)
 
+        // Update the AcroForm dictionary with NeedAppearances flag
+        const updatedAcroForm = new PdfIndirectObject({
+            ...acroFormObject,
+            content: acroFormObject.content.clone(),
+        })
+        const updatedAcroFormDict = updatedAcroForm.content.as(PdfDictionary)
+
+        // Let the PDF viewer know that appearances need to be regenerated
+        updatedAcroFormDict.set('NeedAppearances', new PdfBoolean(true))
+        await this.document.commit(updatedAcroForm)
+
         for (const [fieldName, value] of Object.entries(newFields)) {
             const fieldObject = await this.findFieldByName(fields, fieldName)
             if (!fieldObject) {
                 throw new Error(`Field '${fieldName}' not found`)
             }
 
-            const newObject = new PdfIndirectObject({
+            const updatedField = new PdfIndirectObject({
                 ...fieldObject,
                 content: fieldObject.content.clone(),
             })
 
-            const fieldDict = newObject.content.as(PdfDictionary)
-            fieldDict.set('V', new PdfString(value))
+            const fieldDict = updatedField.content.as(PdfDictionary)
 
-            await this.document.commit(newObject)
+            // Set appearance state (AS) for button fields (checkboxes, radio buttons)
+            // Button fields use PdfName for both V and AS, text fields use PdfString
+            const fieldType = fieldDict.get('FT')?.as(PdfName)?.value
+            if (fieldType === 'Btn') {
+                fieldDict.set('V', new PdfName(value))
+                fieldDict.set('AS', new PdfName(value))
+            } else {
+                fieldDict.set('V', new PdfString(value))
+            }
+
+            await this.document.commit(updatedField)
         }
 
         this.document.setIncremental(isIncremental)
     }
 
     /**
-     * Gets the AcroForm dictionary from the document catalog.
-     * @returns The AcroForm dictionary or null if not found
+     * Gets the AcroForm indirect object from the document catalog.
+     * @returns The AcroForm indirect object or null if not found
      */
-    private async getAcroForm(): Promise<PdfDictionary | null> {
-        if (this._acroForm) {
-            return this._acroForm
-        }
-
+    private async getAcroFormObject(): Promise<PdfIndirectObject<PdfDictionary> | null> {
         const catalog = this.document.rootDictionary
         if (!catalog) return null
 
@@ -111,10 +129,32 @@ export class PdfAcroFormManager<
             })
 
             if (!acroFormObject) return null
+            return acroFormObject as PdfIndirectObject<PdfDictionary>
+        }
 
+        return null
+    }
+
+    /**
+     * Gets the AcroForm dictionary from the document catalog.
+     * @returns The AcroForm dictionary or null if not found
+     */
+    private async getAcroForm(): Promise<PdfDictionary | null> {
+        if (this._acroForm) {
+            return this._acroForm
+        }
+
+        const acroFormObject = await this.getAcroFormObject()
+        if (acroFormObject) {
             this._acroForm = acroFormObject.content.as(PdfDictionary)
             return this._acroForm
-        } else if (acroFormRef instanceof PdfDictionary) {
+        }
+
+        const catalog = this.document.rootDictionary
+        if (!catalog) return null
+
+        const acroFormRef = catalog.get('AcroForm')
+        if (acroFormRef instanceof PdfDictionary) {
             this._acroForm = acroFormRef
             return this._acroForm
         }

@@ -51,10 +51,18 @@ export class LinearizationDictionary extends PdfDictionary {
     }
 
     /**
+     * Helper method to safely get a number value from the dictionary.
+     */
+    private getNumberValue(key: string, defaultValue = 0): number {
+        const value = this.get(key)
+        return value instanceof PdfNumber ? value.value : defaultValue
+    }
+
+    /**
      * Gets the total file length.
      */
     get fileLength(): number {
-        return (this.get('L') as PdfNumber)?.value ?? 0
+        return this.getNumberValue('L')
     }
 
     /**
@@ -84,27 +92,27 @@ export class LinearizationDictionary extends PdfDictionary {
      * Gets the first page object number.
      */
     get firstPageObjectNumber(): number {
-        return (this.get('O') as PdfNumber)?.value ?? 0
+        return this.getNumberValue('O')
     }
 
     /**
      * Gets the end of first page byte offset.
      */
     get endOfFirstPage(): number {
-        return (this.get('E') as PdfNumber)?.value ?? 0
+        return this.getNumberValue('E')
     }
 
     /**
      * Gets the page count.
      */
     get pageCount(): number {
-        return (this.get('N') as PdfNumber)?.value ?? 0
+        return this.getNumberValue('N')
     }
 
     /**
      * Gets the xref stream offset.
      */
     get xrefStreamOffset(): number {
-        return (this.get('T') as PdfNumber)?.value ?? 0
+        return this.getNumberValue('T')
     }
 }

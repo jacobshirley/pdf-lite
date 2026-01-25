@@ -19,9 +19,14 @@ export class LinearizationParams {
      */
     private getCatalog(): PdfIndirectObject | undefined {
         const revision = this.document.latestRevision
-        const catalog = revision.trailer.get('Root')
-        if (catalog instanceof PdfObjectReference) {
-            return revision.resolveIndirectObject(catalog)
+        const catalogRef = revision.trailerDict.get('Root')
+        if (catalogRef instanceof PdfObjectReference) {
+            // Find the catalog object in the revision's objects
+            return revision.objects.find(
+                (obj) =>
+                    obj instanceof PdfIndirectObject &&
+                    obj.objectNumber === catalogRef.objectNumber,
+            ) as PdfIndirectObject | undefined
         }
         return undefined
     }
@@ -38,7 +43,11 @@ export class LinearizationParams {
         if (!(pagesRef instanceof PdfObjectReference)) return undefined
 
         const revision = this.document.latestRevision
-        const pagesObj = revision.resolveIndirectObject(pagesRef)
+        const pagesObj = revision.objects.find(
+            (obj) =>
+                obj instanceof PdfIndirectObject &&
+                obj.objectNumber === pagesRef.objectNumber,
+        ) as PdfIndirectObject | undefined
         if (!pagesObj) return undefined
 
         const pagesDict = pagesObj.content as PdfDictionary
@@ -63,7 +72,11 @@ export class LinearizationParams {
         if (!(pagesRef instanceof PdfObjectReference)) return 0
 
         const revision = this.document.latestRevision
-        const pagesObj = revision.resolveIndirectObject(pagesRef)
+        const pagesObj = revision.objects.find(
+            (obj) =>
+                obj instanceof PdfIndirectObject &&
+                obj.objectNumber === pagesRef.objectNumber,
+        ) as PdfIndirectObject | undefined
         if (!pagesObj) return 0
 
         const pagesDict = pagesObj.content as PdfDictionary
@@ -87,7 +100,11 @@ export class LinearizationParams {
         if (!firstPageRef) return objects
 
         // Add the first page object
-        const firstPage = revision.resolveIndirectObject(firstPageRef)
+        const firstPage = revision.objects.find(
+            (obj) =>
+                obj instanceof PdfIndirectObject &&
+                obj.objectNumber === firstPageRef.objectNumber,
+        ) as PdfIndirectObject | undefined
         if (!firstPage) return objects
         objects.add(firstPage)
 
@@ -107,9 +124,15 @@ export class LinearizationParams {
     ): void {
         const content = obj.content
         if (content instanceof PdfDictionary) {
-            for (const [_key, value] of content.entries) {
+            // Iterate through dictionary values
+            const dictValues = Object.values(content.values)
+            for (const value of dictValues) {
                 if (value instanceof PdfObjectReference) {
-                    const referencedObj = revision.resolveIndirectObject(value)
+                    const referencedObj = revision.objects.find(
+                        (o: any) =>
+                            o instanceof PdfIndirectObject &&
+                            o.objectNumber === value.objectNumber,
+                    ) as PdfIndirectObject | undefined
                     if (referencedObj && !objects.has(referencedObj)) {
                         objects.add(referencedObj)
                         this.addReferencedObjects(
@@ -123,7 +146,11 @@ export class LinearizationParams {
         } else if (content instanceof PdfArray) {
             for (const item of content.items) {
                 if (item instanceof PdfObjectReference) {
-                    const referencedObj = revision.resolveIndirectObject(item)
+                    const referencedObj = revision.objects.find(
+                        (o: any) =>
+                            o instanceof PdfIndirectObject &&
+                            o.objectNumber === item.objectNumber,
+                    ) as PdfIndirectObject | undefined
                     if (referencedObj && !objects.has(referencedObj)) {
                         objects.add(referencedObj)
                         this.addReferencedObjects(
@@ -151,7 +178,11 @@ export class LinearizationParams {
         const catalogDict = catalog.content as PdfDictionary
         const pagesRef = catalogDict.get('Pages')
         if (pagesRef instanceof PdfObjectReference) {
-            const pagesObj = revision.resolveIndirectObject(pagesRef)
+            const pagesObj = revision.objects.find(
+                (obj) =>
+                    obj instanceof PdfIndirectObject &&
+                    obj.objectNumber === pagesRef.objectNumber,
+            ) as PdfIndirectObject | undefined
             if (pagesObj) {
                 objects.add(pagesObj)
             }

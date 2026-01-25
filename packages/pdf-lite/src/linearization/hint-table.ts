@@ -21,10 +21,7 @@ export class HintTableGenerator {
     ): PdfStream {
         // Create a simple hint table
         // In a full implementation, this would contain detailed offset information
-        const hintData = this.createHintTableData(
-            pageObjects,
-            pageByteOffsets,
-        )
+        const hintData = this.createHintTableData(pageObjects, pageByteOffsets)
 
         return new PdfStream({
             header: new PdfDictionary({

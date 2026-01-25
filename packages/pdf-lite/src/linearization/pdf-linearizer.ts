@@ -80,11 +80,11 @@ export class PdfLinearizer {
 
         // Create new revision with linearized structure
         const linearizedRevision = new PdfRevision()
-        linearizedRevision.add(linDictObj)
+        linearizedRevision.addObject(linDictObj)
 
         // Add ordered objects to revision
         for (const obj of orderedObjects) {
-            linearizedRevision.add(obj)
+            linearizedRevision.addObject(obj)
         }
 
         // Set the linearized revision as the only revision
@@ -155,8 +155,9 @@ export class PdfLinearizer {
      * Creates a copy of the document for linearization.
      */
     private createLinearizedCopy(): PdfDocument {
+        // Create a document with at least one empty revision
         return new PdfDocument({
-            revisions: [],
+            revisions: [new PdfRevision()],
             version: this.document.header,
         })
     }

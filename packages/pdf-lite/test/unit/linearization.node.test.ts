@@ -119,7 +119,7 @@ describe('Linearization', () => {
             catalog.content.set('Pages', pages.reference)
             await document.commit(catalog)
 
-            document.latestRevision.trailer.set('Root', catalog.reference)
+            document.latestRevision.trailerDict.set('Root', catalog.reference)
 
             return document
         }
@@ -242,7 +242,7 @@ describe('Linearization', () => {
             catalog.content.set('Pages', pages.reference)
             await document.commit(catalog)
 
-            document.latestRevision.trailer.set('Root', catalog.reference)
+            document.latestRevision.trailerDict.set('Root', catalog.reference)
 
             return document
         }

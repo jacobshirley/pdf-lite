@@ -270,11 +270,14 @@ describe('Linearization', () => {
 
             const linearizedDoc = linearizer.linearize()
 
-            const firstObject = linearizedDoc.latestRevision.objects[0]
+            const firstObject = linearizedDoc.revisions[0].objects[0]
             expect(firstObject).toBeDefined()
-            expect(firstObject.content).toBeInstanceOf(PdfDictionary)
+            expect(firstObject).toBeInstanceOf(PdfIndirectObject)
 
-            const content = firstObject.content as PdfDictionary
+            const indirectObj = firstObject as PdfIndirectObject
+            expect(indirectObj.content).toBeInstanceOf(PdfDictionary)
+
+            const content = indirectObj.content as PdfDictionary
             const linearized = content.get('Linearized') as PdfNumber
             expect(linearized).toBeDefined()
             expect(linearized.value).toBe(1)
@@ -307,7 +310,8 @@ describe('Linearization', () => {
 
             const linearizedDoc = linearizer.linearize()
 
-            const firstObject = linearizedDoc.latestRevision.objects[0]
+            const firstObject = linearizedDoc.revisions[0]
+                .objects[0] as PdfIndirectObject
             const linDict = firstObject.content as LinearizationDictionary
 
             expect(linDict.pageCount).toBe(1)
@@ -319,7 +323,8 @@ describe('Linearization', () => {
 
             const linearizedDoc = linearizer.linearize()
 
-            const firstObject = linearizedDoc.latestRevision.objects[0]
+            const firstObject = linearizedDoc.revisions[0]
+                .objects[0] as PdfIndirectObject
             const linDict = firstObject.content as LinearizationDictionary
 
             expect(linDict.firstPageObjectNumber).toBeGreaterThan(0)

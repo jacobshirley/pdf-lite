@@ -104,7 +104,11 @@ export class PdfLinearizer {
     private orderObjectsForLinearization(): PdfIndirectObject[] {
         const ordered: PdfIndirectObject[] = []
         const revision = this.document.latestRevision
-        const allObjects = new Set(revision.objects)
+        // Filter only indirect objects from the revision
+        const allIndirectObjects = revision.objects.filter(
+            (obj) => obj instanceof PdfIndirectObject,
+        ) as PdfIndirectObject[]
+        const allObjects = new Set(allIndirectObjects)
 
         // Get first page objects
         const firstPageObjects = this.params.getFirstPageObjects()
@@ -166,10 +170,17 @@ export class PdfLinearizer {
      * Checks if a document is linearized.
      */
     static isLinearized(document: PdfDocument): boolean {
-        const revision = document.latestRevision
+        // Check if document has revisions
+        if (!document.revisions || document.revisions.length === 0) {
+            return false
+        }
+
+        const revision = document.revisions[0]
         const firstObject = revision.objects[0]
 
-        if (!firstObject) return false
+        if (!firstObject || !(firstObject instanceof PdfIndirectObject)) {
+            return false
+        }
 
         const content = firstObject.content
         if (!(content instanceof PdfDictionary)) return false

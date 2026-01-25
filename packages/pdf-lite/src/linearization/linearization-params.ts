@@ -3,6 +3,9 @@ import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
+import { PdfRevision } from '../pdf/pdf-revision.js'
+import { PdfObject } from '../core/objects/pdf-object.js'
+import { PdfNumber } from '../core/objects/pdf-number.js'
 
 /**
  * Calculates linearization parameters for a PDF document.
@@ -81,8 +84,8 @@ export class LinearizationParams {
 
         const pagesDict = pagesObj.content as PdfDictionary
         const count = pagesDict.get('Count')
-        if (count && 'value' in count) {
-            return (count as any).value
+        if (count instanceof PdfNumber) {
+            return count.value
         }
 
         return 0
@@ -120,7 +123,7 @@ export class LinearizationParams {
     private addReferencedObjects(
         obj: PdfIndirectObject,
         objects: Set<PdfIndirectObject>,
-        revision: any,
+        revision: PdfRevision,
     ): void {
         const content = obj.content
         if (content instanceof PdfDictionary) {
@@ -129,7 +132,7 @@ export class LinearizationParams {
             for (const value of dictValues) {
                 if (value instanceof PdfObjectReference) {
                     const referencedObj = revision.objects.find(
-                        (o: any) =>
+                        (o: PdfObject) =>
                             o instanceof PdfIndirectObject &&
                             o.objectNumber === value.objectNumber,
                     ) as PdfIndirectObject | undefined
@@ -147,7 +150,7 @@ export class LinearizationParams {
             for (const item of content.items) {
                 if (item instanceof PdfObjectReference) {
                     const referencedObj = revision.objects.find(
-                        (o: any) =>
+                        (o: PdfObject) =>
                             o instanceof PdfIndirectObject &&
                             o.objectNumber === item.objectNumber,
                     ) as PdfIndirectObject | undefined

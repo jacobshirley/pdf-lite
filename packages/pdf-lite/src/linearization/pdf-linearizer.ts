@@ -27,6 +27,16 @@ export class PdfLinearizer {
     private params: LinearizationParams
     private hintGenerator: HintTableGenerator
 
+    // Placeholder values for linearization parameters
+    // In a full implementation, these would be calculated based on actual serialized content
+    private static readonly ESTIMATED_HINT_STREAM_OFFSET = 548
+    private static readonly ESTIMATED_HINT_STREAM_LENGTH = 187
+    private static readonly ESTIMATED_END_OF_FIRST_PAGE = 2636
+    private static readonly ESTIMATED_XREF_OFFSET_FROM_END = 200
+
+    // Estimated bytes per object for file size calculation
+    private static readonly ESTIMATED_BYTES_PER_OBJECT = 500
+
     constructor(document: PdfDocument) {
         this.document = document
         this.params = new LinearizationParams(document)
@@ -52,13 +62,16 @@ export class PdfLinearizer {
         // Get objects in the correct order for linearization
         const orderedObjects = this.orderObjectsForLinearization()
 
-        // Calculate byte offsets (placeholder values for now)
+        // Calculate byte offsets
+        // Note: These are placeholder/estimated values. A full implementation would
+        // serialize the objects and measure actual byte positions.
         const fileLength = this.calculateFileLength(orderedObjects)
-        const hintStreamOffset = 548 // Placeholder
-        const hintStreamLength = 187 // Placeholder
+        const hintStreamOffset = PdfLinearizer.ESTIMATED_HINT_STREAM_OFFSET
+        const hintStreamLength = PdfLinearizer.ESTIMATED_HINT_STREAM_LENGTH
         const firstPageObjectNumber = firstPageRef.objectNumber
-        const endOfFirstPage = 2636 // Placeholder
-        const xrefStreamOffset = fileLength - 200 // Placeholder
+        const endOfFirstPage = PdfLinearizer.ESTIMATED_END_OF_FIRST_PAGE
+        const xrefStreamOffset =
+            fileLength - PdfLinearizer.ESTIMATED_XREF_OFFSET_FROM_END
 
         // Create linearization dictionary
         const linDict = new LinearizationDictionary({
@@ -140,16 +153,18 @@ export class PdfLinearizer {
 
     /**
      * Calculates the total file length.
-     * This is a simplified calculation.
+     * This is a simplified calculation based on estimated object sizes.
      */
     private calculateFileLength(objects: PdfIndirectObject[]): number {
+        // Header and overhead (PDF version, trailers, etc.)
+        const HEADER_OVERHEAD = 1024
+
         // Estimate based on number of objects
         // In a real implementation, we would serialize and measure
-        let length = 1024 // Header and overhead
+        let length = HEADER_OVERHEAD
 
-        for (const obj of objects) {
-            // Rough estimate: 500 bytes per object
-            length += 500
+        for (const _obj of objects) {
+            length += PdfLinearizer.ESTIMATED_BYTES_PER_OBJECT
         }
 
         return length

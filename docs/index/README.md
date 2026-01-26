@@ -230,6 +230,12 @@ Re-exports [CryptFilterType](../security/types/type-aliases/CryptFilterType.md)
 
 ---
 
+### decodeFromUTF16BE
+
+Re-exports [decodeFromUTF16BE](../utils/decodeFromUTF16BE/functions/decodeFromUTF16BE.md)
+
+---
+
 ### DecodeParms
 
 Re-exports [DecodeParms](../types/type-aliases/DecodeParms.md)
@@ -263,6 +269,12 @@ Re-exports [deflateData](../utils/algos/functions/deflateData.md)
 ### deriveObjectKey
 
 Re-exports [deriveObjectKey](../crypto/key-derivation/key-derivation/functions/deriveObjectKey.md)
+
+---
+
+### encodeAsUTF16BE
+
+Re-exports [encodeAsUTF16BE](../utils/encodeAsUTF16BE/functions/encodeAsUTF16BE.md)
 
 ---
 
@@ -395,6 +407,12 @@ Re-exports [lzw](../filters/lzw/functions/lzw.md)
 ### md5
 
 Re-exports [md5](../utils/algos/functions/md5.md)
+
+---
+
+### needsUnicodeEncoding
+
+Re-exports [needsUnicodeEncoding](../utils/needsUnicodeEncoding/functions/needsUnicodeEncoding.md)
 
 ---
 

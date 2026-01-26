@@ -98,9 +98,21 @@ Re-exports [concatUint8Arrays](concatUint8Arrays/functions/concatUint8Arrays.md)
 
 ---
 
+### decodeFromUTF16BE
+
+Re-exports [decodeFromUTF16BE](decodeFromUTF16BE/functions/decodeFromUTF16BE.md)
+
+---
+
 ### deflateData
 
 Re-exports [deflateData](algos/functions/deflateData.md)
+
+---
+
+### encodeAsUTF16BE
+
+Re-exports [encodeAsUTF16BE](encodeAsUTF16BE/functions/encodeAsUTF16BE.md)
 
 ---
 
@@ -155,6 +167,12 @@ Re-exports [IterableReadableStream](IterableReadableStream/classes/IterableReada
 ### md5
 
 Re-exports [md5](algos/functions/md5.md)
+
+---
+
+### needsUnicodeEncoding
+
+Re-exports [needsUnicodeEncoding](needsUnicodeEncoding/functions/needsUnicodeEncoding.md)
 
 ---
 

@@ -110,10 +110,6 @@ export class PdfDocument extends PdfObject {
         } else {
             this.setVersion(options?.version ?? '2.0')
         }
-
-        this.securityHandler =
-            options?.securityHandler ?? this.getSecurityHandler()
-
         if (options?.password) {
             this.setPassword(options.password)
         }
@@ -126,6 +122,9 @@ export class PdfDocument extends PdfObject {
 
         this.linkRevisions()
         this.calculateOffsets()
+
+        this.securityHandler =
+            options?.securityHandler ?? this.getSecurityHandler()
     }
 
     /**
@@ -348,6 +347,10 @@ export class PdfDocument extends PdfObject {
         const encryptionDictObject = this.findUncompressedObject(
             encryptionDictionaryRef,
         )
+
+        if (!encryptionDictObject) {
+            throw new Error('Encryption dictionary object not found')
+        }
 
         if (!(encryptionDictObject?.content instanceof PdfDictionary)) {
             throw new Error(
@@ -612,7 +615,7 @@ export class PdfDocument extends PdfObject {
             return undefined
         }
 
-        return this.objects.find(
+        const found = this.objects.find(
             (obj) =>
                 obj instanceof PdfIndirectObject &&
                 obj.objectNumber === options.objectNumber &&
@@ -620,6 +623,8 @@ export class PdfDocument extends PdfObject {
                     obj.generationNumber === options.generationNumber) &&
                 obj.offset.equals(xrefEntry.byteOffset.ref),
         ) as PdfIndirectObject | undefined
+
+        return found
     }
 
     /**

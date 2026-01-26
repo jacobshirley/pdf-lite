@@ -86,8 +86,6 @@ describe('XFA', () => {
         // Write the modified XML back to the document
         await document.xfa.writeXml(modifiedXml)
 
-        //expect(document.toString()).toEqual(docString) // Ensure no changes to other parts of the document
-
         const rereadDocument = await PdfDocument.fromBytes([document.toBytes()])
         rereadDocument.setPassword('')
 

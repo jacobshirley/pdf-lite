@@ -86,10 +86,15 @@ describe('XFA', () => {
         // Write the modified XML back to the document
         await document.xfa.writeXml(modifiedXml)
 
+        //expect(document.toString()).toEqual(docString) // Ensure no changes to other parts of the document
+
+        const rereadDocument = await PdfDocument.fromBytes([document.toBytes()])
+        rereadDocument.setPassword('')
+
         // Read it back to verify the changes were applied
-        const updatedXml = await document.xfa.readXml()
+        const updatedXml = await rereadDocument.xfa.readXml()
         expect(updatedXml).toContain('NEW COMPANY NAME LLC')
 
-        document.toString() // Ensure no errors on toString
+        rereadDocument.toString() // Ensure no errors on toString
     })
 })

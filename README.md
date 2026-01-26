@@ -191,17 +191,17 @@ Long-Term Validation (LTV) support ensures that digital signatures remain valid 
 
 Supports filling out AcroForm forms within PDF documents, allowing for dynamic content generation and user interaction.
 
-[x] Text fields
-[x] Checkboxes
-[x] Radio buttons
-[x] Dropdowns
+- [x] Text fields
+- [x] Checkboxes
+- [x] Radio buttons
+- [x] Dropdowns
 
 ### XFA Forms
 
 You can read/write XFA XML data from PDFs, but rendering and filling XFA forms is not supported.
 
-[x] Read XFA XML
-[x] Write XFA XML
+- [x] Read XFA XML
+- [x] Write XFA XML
 
 ## Future Plans
 

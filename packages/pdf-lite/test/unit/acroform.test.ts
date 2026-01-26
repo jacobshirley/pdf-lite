@@ -31,8 +31,18 @@ describe('AcroForm', () => {
 
         // Read all field values
         const fieldValues = await document.acroForm.getFieldValues()
-        expect(fieldValues).toBeDefined()
-        expect(typeof fieldValues).toBe('object')
+        expect(fieldValues).toEqual({
+            'Client Name': '',
+            N: '1234567890',
+            'Onboarding Name': '',
+            'Tel  Email': 'test@test.com',
+            'as my Intermediary in respect of the Import One Stop Shop IOSS':
+                'TEST',
+            'date 1': '',
+            'date 2': '',
+            undefined_2: '123456',
+            'with effect from': '',
+        })
     })
 
     it('should be able to set multiple field values at once', async () => {
@@ -63,6 +73,33 @@ describe('AcroForm', () => {
         // Read them back to verify
         const updatedValues = (await newDocument.acroForm.getFieldValues())!
         for (const [fieldName, expectedValue] of Object.entries(valuesToSet)) {
+            expect(updatedValues[fieldName]).toBe(expectedValue)
+        }
+    })
+
+    it('should be able to handle exotic character field values', async () => {
+        // Load the PDF with AcroForm
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+
+        const exoticValues: Record<string, string> = {
+            'Client Name': 'PROSZĘ',
+        }
+
+        await document.acroForm.setFieldValues(exoticValues)
+
+        const newDocumentBytes = await document.toBytes()
+        const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
+
+        // Read them back to verify
+        const updatedValues = (await newDocument.acroForm.getFieldValues())!
+        for (const [fieldName, expectedValue] of Object.entries(exoticValues)) {
             expect(updatedValues[fieldName]).toBe(expectedValue)
         }
     })

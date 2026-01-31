@@ -159,13 +159,13 @@ Signer instance for digital signature operations
 
 #### Get Signature
 
-> **get** **acroForm**(): [`PdfAcroFormManager`](../../../acroform/acroform-manager/classes/PdfAcroFormManager.md)
+> **get** **acroForm**(): [`PdfAcroFormManager`](../../../acroform/manager/classes/PdfAcroFormManager.md)
 
 AcroForm manager for handling form fields
 
 ##### Returns
 
-[`PdfAcroFormManager`](../../../acroform/acroform-manager/classes/PdfAcroFormManager.md)
+[`PdfAcroFormManager`](../../../acroform/manager/classes/PdfAcroFormManager.md)
 
 ---
 
@@ -186,6 +186,20 @@ Error if the encryption dictionary reference points to a non-dictionary object
 [`PdfEncryptionDictionaryObject`](../../../security/types/type-aliases/PdfEncryptionDictionaryObject.md) \| `undefined`
 
 The encryption dictionary object or undefined if not encrypted
+
+---
+
+### fonts
+
+#### Get Signature
+
+> **get** **fonts**(): [`PdfFontManager`](../../../fonts/font-manager/classes/PdfFontManager.md)
+
+Font manager for embedding and managing fonts
+
+##### Returns
+
+[`PdfFontManager`](../../../fonts/font-manager/classes/PdfFontManager.md)
 
 ---
 
@@ -299,13 +313,13 @@ The trailer dictionary containing document metadata references
 
 #### Get Signature
 
-> **get** **xfa**(): [`PdfXfaManager`](../../../xfa/xfa-manager/classes/PdfXfaManager.md)
+> **get** **xfa**(): [`PdfXfaManager`](../../../xfa/manager/classes/PdfXfaManager.md)
 
 XFA manager for handling XFA forms
 
 ##### Returns
 
-[`PdfXfaManager`](../../../xfa/xfa-manager/classes/PdfXfaManager.md)
+[`PdfXfaManager`](../../../xfa/manager/classes/PdfXfaManager.md)
 
 ---
 

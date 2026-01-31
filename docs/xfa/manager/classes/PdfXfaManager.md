@@ -2,7 +2,7 @@
 
 ---
 
-[pdf-lite](../../../README.md) / [xfa/xfa-manager](../README.md) / PdfXfaManager
+[pdf-lite](../../../README.md) / [xfa/manager](../README.md) / PdfXfaManager
 
 # Class: PdfXfaManager
 

@@ -2,9 +2,9 @@
 
 ---
 
-[pdf-lite](../../README.md) / acroform/acroform-manager
+[pdf-lite](../../README.md) / acroform/manager
 
-# acroform/acroform-manager
+# acroform/manager
 
 ## Classes
 

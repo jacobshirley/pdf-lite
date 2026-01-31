@@ -10,4 +10,4 @@
 
 ### PdfAcroFormManager
 
-Re-exports [PdfAcroFormManager](acroform-manager/classes/PdfAcroFormManager.md)
+Re-exports [PdfAcroFormManager](manager/classes/PdfAcroFormManager.md)

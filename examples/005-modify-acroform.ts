@@ -306,12 +306,17 @@ console.log('Created form-empty.pdf with empty form fields')
 const emptyFormBytes = await fs.readFile(`${tmpFolder}/form-empty.pdf`)
 const filledDocument = await PdfDocument.fromBytes([emptyFormBytes])
 
-await filledDocument.acroForm.setFieldValues({
+const acroform = await filledDocument.acroForm.getAcroForm()
+if (!acroform) {
+    throw new Error('No AcroForm found in the document')
+}
+acroform.importData({
     name: 'John Doe',
     email: 'john.doe@example.com',
     phone: '+1 (555) 123-4567',
     subscribe: 'Off', // For checkbox, use the "Yes/Off" value
 })
+await filledDocument.acroForm.write(acroform)
 
 // Save the filled form
 await fs.writeFile(`${tmpFolder}/form-filled.pdf`, filledDocument.toBytes())

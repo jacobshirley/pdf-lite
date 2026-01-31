@@ -36,6 +36,8 @@ export class PdfAcroFormField extends PdfDictionary<{
     BS?: PdfDictionary
     MK?: PdfDictionary
 }> {
+    parent?: PdfAcroFormField
+
     constructor() {
         super()
     }
@@ -333,17 +335,73 @@ export class PdfAcroForm<
             }
         }
     }
+
+    static async fromDocument(
+        document: PdfDocument,
+    ): Promise<PdfAcroForm | null> {
+        const catalog = document.rootDictionary
+        if (!catalog) return null
+
+        const acroFormRef = catalog.get('AcroForm')
+        if (!(acroFormRef instanceof PdfObjectReference)) return null
+
+        const acroFormObject = await document.readObject({
+            objectNumber: acroFormRef.objectNumber,
+            generationNumber: acroFormRef.generationNumber,
+        })
+
+        if (!acroFormObject) return null
+        if (!(acroFormObject.content instanceof PdfDictionary))
+            throw new Error('AcroForm content must be a dictionary')
+
+        const acroForm = new PdfAcroForm({ dict: acroFormObject.content })
+
+        const getFields = async (
+            fields: PdfArray<PdfObjectReference>,
+            output: PdfAcroFormField[] = [],
+            parent?: PdfAcroFormField,
+        ): Promise<PdfAcroFormField[]> => {
+            for (const fieldRef of fields.items) {
+                // Check if we have a modified version cached
+                const fieldObject = await document.readObject({
+                    objectNumber: fieldRef.objectNumber,
+                    generationNumber: fieldRef.generationNumber,
+                })
+
+                if (!fieldObject) continue
+                if (!(fieldObject.content instanceof PdfDictionary)) continue
+
+                const field = new PdfAcroFormField()
+                field.parent = parent
+                field.copyFrom(fieldObject.content)
+
+                // Process child fields (Kids)
+                const kids = field.get('Kids')?.as(PdfArray<PdfObjectReference>)
+                if (kids) {
+                    await getFields(kids, output, field)
+                }
+
+                acroForm.fields.push(field)
+            }
+
+            return output
+        }
+
+        await getFields(
+            acroForm.get('Fields')?.as(PdfArray<PdfObjectReference>) ||
+                new PdfArray(),
+        )
+
+        return acroForm
+    }
 }
 
 /**
  * Manages AcroForm fields in PDF documents.
  * Provides methods to read and write form field values.
  */
-export class PdfAcroFormManager<
-    T extends Record<string, string> = Record<string, string>,
-> {
+export class PdfAcroFormManager {
     private document: PdfDocument
-    private _acroForm?: PdfAcroForm
 
     constructor(document: PdfDocument) {
         this.document = document
@@ -363,373 +421,10 @@ export class PdfAcroFormManager<
     }
 
     /**
-     * Gets all form field values as a key-value map.
-     * @returns Object with field names as keys and values as strings
-     */
-    async getFieldValues(): Promise<T | null> {
-        const acroForm = await this.getAcroForm()
-        if (!acroForm) return null
-
-        const fields = acroForm.get('Fields')?.as(PdfArray)
-        if (!fields) return null
-
-        const values: T = {} as T
-        await this.collectFieldValues(fields, values)
-        return values
-    }
-
-    /**
-     * Gets all field names from the form
-     * @returns Array of field names
-     */
-    async getFieldNames(): Promise<string[]> {
-        const values = await this.getFieldValues()
-        return values ? Object.keys(values) : []
-    }
-
-    /**
-     * Gets a specific field by name
-     * @param fieldName The name of the field to get
-     * @returns The field object or null if not found
-     */
-    async getField(fieldName: string): Promise<PdfAcroFormField | null> {
-        const acroForm = await this.getAcroForm()
-        if (!acroForm) return null
-
-        const fields = acroForm.get('Fields')?.as(PdfArray)
-        if (!fields) return null
-
-        const fieldObject = await this.findFieldByName(fields, fieldName)
-        if (!fieldObject) return null
-
-        const field = new PdfAcroFormField()
-        field.copyFrom(fieldObject.content.as(PdfDictionary))
-        return field
-    }
-
-    /**
-     * Gets all fields from the form
-     * @returns Array of field objects with their names
-     */
-    async getAllFields(): Promise<
-        Array<{ name: string; field: PdfAcroFormField }>
-    > {
-        const acroForm = await this.getAcroForm()
-        if (!acroForm) return []
-
-        const fields = acroForm.get('Fields')?.as(PdfArray)
-        if (!fields) return []
-
-        const result: Array<{ name: string; field: PdfAcroFormField }> = []
-        await this.collectAllFields(fields, result)
-        return result
-    }
-
-    /**
-     * Gets the value of a specific field
-     * @param fieldName The name of the field
-     * @returns The field value or null if not found
-     */
-    async getFieldValue(fieldName: string): Promise<string | null> {
-        const values = await this.getFieldValues()
-        if (!values) return null
-        return values[fieldName] ?? null
-    }
-
-    /**
-     * Sets a single field value
-     * @param fieldName The name of the field to set
-     * @param value The value to set
-     * @throws Error if the field is not found
-     */
-    async setFieldValue(fieldName: string, value: string): Promise<void> {
-        await this.setFieldValues({ [fieldName]: value } as Partial<T>)
-    }
-
-    /**
-     * Sets multiple form field values by field name.
-     * @param newFields Object with field names as keys and values to set
-     * @throws Error if any field is not found
-     */
-    async setFieldValues(newFields: Partial<T>): Promise<void> {
-        const acroFormObject = await this.getAcroFormObject()
-        if (!acroFormObject) {
-            throw new Error('Document does not contain AcroForm')
-        }
-
-        const acroForm = acroFormObject.content.as(PdfDictionary)
-        const fields = acroForm.get('Fields')?.as(PdfArray)
-        if (!fields) {
-            throw new Error('AcroForm has no fields')
-        }
-
-        const isIncremental = this.document.isIncremental()
-        this.document.setIncremental(true)
-
-        // Update the AcroForm dictionary with NeedAppearances flag
-        const updatedAcroForm = new PdfIndirectObject({
-            ...acroFormObject,
-            content: acroFormObject.content.clone(),
-        })
-        const updatedAcroFormDict = updatedAcroForm.content.as(PdfDictionary)
-
-        // Let the PDF viewer know that appearances need to be regenerated
-        updatedAcroFormDict.set('NeedAppearances', new PdfBoolean(true))
-        await this.document.commit(updatedAcroForm)
-
-        for (const [fieldName, value] of Object.entries(newFields)) {
-            const fieldObject = await this.findFieldByName(fields, fieldName)
-            if (!fieldObject) {
-                throw new Error(`Field '${fieldName}' not found`)
-            }
-
-            const updatedField = new PdfIndirectObject({
-                ...fieldObject,
-                content: fieldObject.content.clone(),
-            })
-
-            const fieldDict = updatedField.content.as(PdfDictionary)
-
-            // Set appearance state (AS) for button fields (checkboxes, radio buttons)
-            // Button fields use PdfName for both V and AS, text fields use PdfString
-            const fieldType = fieldDict.get('FT')?.as(PdfName)?.value
-            if (fieldType === 'Btn') {
-                fieldDict.set('V', new PdfName(value))
-                fieldDict.set('AS', new PdfName(value))
-            } else {
-                fieldDict.set('V', new PdfString(value))
-            }
-
-            await this.document.commit(updatedField)
-        }
-
-        this.document.setIncremental(isIncremental)
-    }
-
-    /**
-     * Gets the AcroForm indirect object from the document catalog.
-     * @returns The AcroForm indirect object or null if not found
-     */
-    private async getAcroFormObject(): Promise<PdfIndirectObject<PdfDictionary> | null> {
-        const catalog = this.document.rootDictionary
-        if (!catalog) return null
-
-        const acroFormRef = catalog.get('AcroForm')
-        if (!acroFormRef) return null
-
-        if (acroFormRef instanceof PdfObjectReference) {
-            const acroFormObject = await this.document.readObject({
-                objectNumber: acroFormRef.objectNumber,
-                generationNumber: acroFormRef.generationNumber,
-            })
-
-            if (!acroFormObject) return null
-            return acroFormObject as PdfIndirectObject<PdfDictionary>
-        }
-
-        return null
-    }
-
-    /**
      * Gets the AcroForm dictionary from the document catalog.
      * @returns The AcroForm dictionary or null if not found
      */
-    private async getAcroForm(): Promise<PdfAcroForm | null> {
-        if (this._acroForm) {
-            return this._acroForm
-        }
-
-        const acroFormObject = await this.getAcroFormObject()
-        if (acroFormObject) {
-            this._acroForm = new PdfAcroForm({
-                dict: acroFormObject.content.as(PdfDictionary),
-            })
-            return this._acroForm
-        }
-
-        const catalog = this.document.rootDictionary
-        if (!catalog) return null
-
-        const acroFormRef = catalog.get('AcroForm')
-        if (acroFormRef instanceof PdfDictionary) {
-            this._acroForm = new PdfAcroForm({ dict: acroFormRef })
-            return this._acroForm
-        }
-
-        return null
-    }
-
-    /**
-     * Recursively collects field values from the field tree.
-     */
-    private async collectFieldValues(
-        fields: PdfArray,
-        values: Record<string, string>,
-        parentName: string = '',
-    ): Promise<void> {
-        for (const fieldRef of fields.items) {
-            if (!(fieldRef instanceof PdfObjectReference)) continue
-
-            // Check if we have a modified version cached
-            const fieldObject = await this.document.readObject({
-                objectNumber: fieldRef.objectNumber,
-                generationNumber: fieldRef.generationNumber,
-            })
-
-            if (!fieldObject) continue
-
-            const fieldDict = fieldObject.content.as(PdfDictionary)
-            const fieldName = this.getFieldName(fieldDict, parentName)
-
-            // Get field value (return empty string if no value set)
-            const value = fieldDict.get('V')
-            if (value instanceof PdfString) {
-                values[fieldName] = value.value
-            } else if (value instanceof PdfName) {
-                values[fieldName] = value.value
-            } else if (fieldName) {
-                // Include empty fields
-                values[fieldName] = ''
-            }
-
-            // Process child fields (Kids)
-            const kids = fieldDict.get('Kids')?.as(PdfArray)
-            if (kids) {
-                await this.collectFieldValues(kids, values, fieldName)
-            }
-        }
-    }
-
-    /**
-     * Finds a field by its fully qualified name.
-     */
-    private async findFieldByName(
-        fields: PdfArray,
-        targetName: string,
-        parentName: string = '',
-    ): Promise<PdfIndirectObject | null> {
-        for (const fieldRef of fields.items) {
-            if (!(fieldRef instanceof PdfObjectReference)) continue
-
-            // Check if we have a modified version cached
-            const fieldObject = await this.document.readObject({
-                objectNumber: fieldRef.objectNumber,
-                generationNumber: fieldRef.generationNumber,
-            })
-
-            if (!fieldObject) continue
-
-            const fieldDict = fieldObject.content.as(PdfDictionary)
-            const fieldName = this.getFieldName(fieldDict, parentName)
-
-            if (fieldName === targetName) {
-                return fieldObject
-            }
-
-            // Search in child fields (Kids)
-            const kids = fieldDict.get('Kids')?.as(PdfArray)
-            if (kids) {
-                const found = await this.findFieldByName(
-                    kids,
-                    targetName,
-                    fieldName,
-                )
-                if (found) return found
-            }
-        }
-
-        return null
-    }
-
-    /**
-     * Gets the fully qualified field name.
-     */
-    private getFieldName(fieldDict: PdfDictionary, parentName: string): string {
-        const partialName = fieldDict.get('T')?.as(PdfString)?.value ?? ''
-        if (!parentName) return partialName
-        return `${parentName}.${partialName}`
-    }
-
-    /**
-     * Recursively collects all fields from the field tree.
-     */
-    private async collectAllFields(
-        fields: PdfArray,
-        result: Array<{ name: string; field: PdfAcroFormField }>,
-        parentName: string = '',
-    ): Promise<void> {
-        for (const fieldRef of fields.items) {
-            if (!(fieldRef instanceof PdfObjectReference)) continue
-
-            const fieldObject = await this.document.readObject({
-                objectNumber: fieldRef.objectNumber,
-                generationNumber: fieldRef.generationNumber,
-            })
-
-            if (!fieldObject) continue
-
-            const fieldDict = fieldObject.content.as(PdfDictionary)
-            const fieldName = this.getFieldName(fieldDict, parentName)
-
-            const field = new PdfAcroFormField()
-            field.copyFrom(fieldDict)
-            result.push({ name: fieldName, field })
-
-            // Process child fields (Kids)
-            const kids = fieldDict.get('Kids')?.as(PdfArray)
-            if (kids) {
-                await this.collectAllFields(kids, result, fieldName)
-            }
-        }
-    }
-
-    /**
-     * Flattens the form by removing all fields and making them part of the page content.
-     * This makes the form non-editable.
-     * @returns Promise that resolves when flattening is complete
-     */
-    async flatten(): Promise<void> {
-        // TODO: Implement form flattening
-        // This would involve:
-        // 1. Rendering field appearances to page content streams
-        // 2. Removing field annotations from pages
-        // 3. Removing AcroForm from catalog
-        throw new Error('Form flattening is not yet implemented')
-    }
-
-    /**
-     * Resets all fields to their default values.
-     * @returns Promise that resolves when reset is complete
-     */
-    async resetFields(): Promise<void> {
-        const allFields = await this.getAllFields()
-        const resetValues: Partial<T> = {} as Partial<T>
-
-        for (const { name, field } of allFields) {
-            const defaultValue = field.defaultValue
-            if (defaultValue) {
-                resetValues[name as keyof T] = defaultValue as T[keyof T]
-            }
-        }
-
-        await this.setFieldValues(resetValues)
-    }
-
-    /**
-     * Exports form data as JSON
-     * @returns JSON string of form data
-     */
-    async exportData(): Promise<string> {
-        const values = await this.getFieldValues()
-        return JSON.stringify(values, null, 2)
-    }
-
-    /**
-     * Imports form data from JSON
-     * @param json JSON string containing field values
-     */
-    async importData(json: string): Promise<void> {
-        const data = JSON.parse(json) as Partial<T>
-        await this.setFieldValues(data)
+    async getAcroForm(): Promise<PdfAcroForm | null> {
+        return await PdfAcroForm.fromDocument(this.document)
     }
 }

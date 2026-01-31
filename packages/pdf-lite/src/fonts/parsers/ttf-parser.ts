@@ -66,8 +66,8 @@ export class TtfParser implements FontParser {
             xHeight: os2?.sxHeight ?? Math.round(head.unitsPerEm * 0.5),
             stemV: this.estimateStemV(os2?.usWeightClass ?? 400),
             bbox: [head.xMin, head.yMin, head.xMax, head.yMax],
-            isItalic: head.macStyle & 0x02 ? true : false,
-            isBold: head.macStyle & 0x01 ? true : false,
+            isItalic: (head.macStyle & 0x02) !== 0,
+            isBold: (head.macStyle & 0x01) !== 0,
             isFixedPitch: post.isFixedPitch,
         }
     }

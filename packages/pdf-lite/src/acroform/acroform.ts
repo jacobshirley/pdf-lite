@@ -470,7 +470,9 @@ export class PdfAcroForm<
             catalog.set('AcroForm', acroFormIndirect.reference)
 
             // In incremental mode, ensure the updated catalog is written
-            const rootRef = document.trailerDict.get('Root')?.as(PdfObjectReference)
+            const rootRef = document.trailerDict
+                .get('Root')
+                ?.as(PdfObjectReference)
             if (rootRef) {
                 const rootIndirect = new PdfIndirectObject({
                     objectNumber: rootRef.objectNumber,

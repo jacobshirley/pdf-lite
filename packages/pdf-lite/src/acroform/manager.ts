@@ -33,6 +33,11 @@ export class PdfAcroFormManager {
         return await PdfAcroForm.fromDocument(this.document)
     }
 
+    /**
+     * Writes the provided AcroForm to the associated PDF document.
+     * @param acroForm The AcroForm instance to serialize into the document.
+     * @throws Error If writing the AcroForm to the document fails.
+     */
     async write(acroForm: PdfAcroForm): Promise<void> {
         await acroForm.write(this.document)
     }

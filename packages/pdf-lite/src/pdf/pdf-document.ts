@@ -31,8 +31,9 @@ import { PdfDocumentSecurityStoreObject } from '../signing/document-security-sto
 import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
-import { PdfXfaManager } from '../xfa/xfa-manager.js'
-import { PdfAcroFormManager } from '../acroform/acroform-manager.js'
+import { PdfXfaManager } from '../xfa/manager.js'
+import { PdfAcroFormManager } from '../acroform/manager.js'
+import { PdfFontManager } from '../fonts/font-manager.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -63,6 +64,7 @@ export class PdfDocument extends PdfObject {
 
     private _xfa?: PdfXfaManager
     private _acroForm?: PdfAcroFormManager
+    private _fonts?: PdfFontManager
     private hasEncryptionDictionary?: boolean = false
     private toBeCommitted: PdfObject[] = []
 
@@ -80,6 +82,14 @@ export class PdfDocument extends PdfObject {
             this._acroForm = new PdfAcroFormManager(this)
         }
         return this._acroForm
+    }
+
+    /** Font manager for embedding and managing fonts */
+    get fonts(): PdfFontManager {
+        if (!this._fonts) {
+            this._fonts = new PdfFontManager(this)
+        }
+        return this._fonts
     }
 
     /**

@@ -382,20 +382,32 @@ export class PdfAcroForm<
         if (!catalog) return null
 
         const acroFormRef = catalog.get('AcroForm')
-        if (!(acroFormRef instanceof PdfObjectReference)) return null
+        if (!acroFormRef) return null
 
-        const acroFormObject = await document.readObject({
-            objectNumber: acroFormRef.objectNumber,
-            generationNumber: acroFormRef.generationNumber,
-        })
+        let acroFormDict: PdfDictionary
+        let acroFormContainer: PdfIndirectObject | undefined
 
-        if (!acroFormObject) return null
-        if (!(acroFormObject.content instanceof PdfDictionary))
-            throw new Error('AcroForm content must be a dictionary')
+        if (acroFormRef instanceof PdfObjectReference) {
+            const acroFormObject = await document.readObject({
+                objectNumber: acroFormRef.objectNumber,
+                generationNumber: acroFormRef.generationNumber,
+            })
+
+            if (!acroFormObject) return null
+            if (!(acroFormObject.content instanceof PdfDictionary))
+                throw new Error('AcroForm content must be a dictionary')
+
+            acroFormDict = acroFormObject.content
+            acroFormContainer = acroFormObject
+        } else if (acroFormRef instanceof PdfDictionary) {
+            acroFormDict = acroFormRef
+        } else {
+            return null
+        }
 
         const acroForm = new PdfAcroForm({
-            dict: acroFormObject.content,
-            container: acroFormObject,
+            dict: acroFormDict,
+            container: acroFormContainer,
         })
 
         const getFields = async (

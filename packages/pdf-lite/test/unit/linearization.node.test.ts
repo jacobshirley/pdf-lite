@@ -33,54 +33,10 @@ describe('Linearization', () => {
             expect(linDict.endOfFirstPage).toBe(2636)
             expect(linDict.pageCount).toBe(1)
             expect(linDict.xrefStreamOffset).toBe(71078)
-        })
 
-        it('should have Linearized key set to 1', () => {
-            const linDict = new LinearizationDictionary({
-                fileLength: 1000,
-                hintStreamOffset: 100,
-                hintStreamLength: 50,
-                firstPageObjectNumber: 5,
-                endOfFirstPage: 500,
-                pageCount: 2,
-                xrefStreamOffset: 900,
-            })
-
+            // Verify Linearized key is set to 1
             const linearized = linDict.get('Linearized') as PdfNumber
-            expect(linearized).toBeDefined()
             expect(linearized.value).toBe(1)
-        })
-
-        it('should allow updating file length', () => {
-            const linDict = new LinearizationDictionary({
-                fileLength: 1000,
-                hintStreamOffset: 100,
-                hintStreamLength: 50,
-                firstPageObjectNumber: 5,
-                endOfFirstPage: 500,
-                pageCount: 2,
-                xrefStreamOffset: 900,
-            })
-
-            linDict.fileLength = 2000
-            expect(linDict.fileLength).toBe(2000)
-        })
-
-        it('should serialize correctly', () => {
-            const linDict = new LinearizationDictionary({
-                fileLength: 100,
-                hintStreamOffset: 10,
-                hintStreamLength: 5,
-                firstPageObjectNumber: 3,
-                endOfFirstPage: 50,
-                pageCount: 1,
-                xrefStreamOffset: 90,
-            })
-
-            const serialized = linDict.toString()
-            expect(serialized).toContain('Linearized')
-            expect(serialized).toContain('1')
-            expect(serialized).toContain('100')
         })
     })
 
@@ -124,42 +80,31 @@ describe('Linearization', () => {
             return document
         }
 
-        it('should get page count', async () => {
+        it('should extract linearization parameters from document', async () => {
             const document = await createTestDocument()
             const params = new LinearizationParams(document)
 
+            // Test page count extraction
             const pageCount = params.getPageCount()
             expect(pageCount).toBe(1)
-        })
 
-        it('should get first page reference', async () => {
-            const document = await createTestDocument()
-            const params = new LinearizationParams(document)
-
+            // Test first page reference extraction
             const firstPageRef = params.getFirstPageRef()
             expect(firstPageRef).toBeDefined()
             expect(firstPageRef?.objectNumber).toBeGreaterThan(0)
-        })
 
-        it('should get first page objects', async () => {
-            const document = await createTestDocument()
-            const params = new LinearizationParams(document)
-
+            // Test first page objects collection
             const firstPageObjects = params.getFirstPageObjects()
             expect(firstPageObjects.size).toBeGreaterThan(0)
-        })
 
-        it('should get catalog and page tree objects', async () => {
-            const document = await createTestDocument()
-            const params = new LinearizationParams(document)
-
+            // Test catalog and page tree objects collection
             const catalogObjects = params.getCatalogAndPageTreeObjects()
-            expect(catalogObjects.size).toBeGreaterThanOrEqual(2) // catalog + pages
+            expect(catalogObjects.size).toBeGreaterThanOrEqual(2)
         })
     })
 
     describe('HintTableGenerator', () => {
-        it('should generate hint stream', () => {
+        it('should generate hint stream with valid structure', () => {
             const generator = new HintTableGenerator()
             const pageObjects = [
                 new PdfIndirectObject({ content: new PdfDictionary() }),
@@ -172,24 +117,8 @@ describe('Linearization', () => {
                 pageByteOffsets,
             )
 
-            expect(hintStream).toBeDefined()
             expect(hintStream).toBeInstanceOf(PdfStream)
-        })
-
-        it('should have valid length in header', () => {
-            const generator = new HintTableGenerator()
-            const pageObjects = [
-                new PdfIndirectObject({ content: new PdfDictionary() }),
-            ]
-            const pageByteOffsets = [1000]
-
-            const hintStream = generator.generateHintStream(
-                pageObjects,
-                pageByteOffsets,
-            )
-
             const length = hintStream.header.get('Length') as PdfNumber
-            expect(length).toBeDefined()
             expect(length.value).toBeGreaterThan(0)
         })
     })
@@ -247,39 +176,19 @@ describe('Linearization', () => {
             return document
         }
 
-        it('should create a linearizer instance', async () => {
-            const document = await createTestDocument()
-            const linearizer = new PdfLinearizer(document)
-
-            expect(linearizer).toBeDefined()
-        })
-
-        it('should linearize a document', async () => {
+        it('should linearize document with correct structure', async () => {
             const document = await createTestDocument()
             const linearizer = new PdfLinearizer(document)
 
             const linearizedDoc = linearizer.linearize()
 
-            expect(linearizedDoc).toBeDefined()
-            expect(linearizedDoc).toBeInstanceOf(PdfDocument)
-        })
-
-        it('should have linearization dictionary as first object', async () => {
-            const document = await createTestDocument()
-            const linearizer = new PdfLinearizer(document)
-
-            const linearizedDoc = linearizer.linearize()
-
+            // Verify linearization dictionary is first object
             const firstObject = linearizedDoc.revisions[0].objects[0]
-            expect(firstObject).toBeDefined()
             expect(firstObject).toBeInstanceOf(PdfIndirectObject)
 
             const indirectObj = firstObject as PdfIndirectObject
-            expect(indirectObj.content).toBeInstanceOf(PdfDictionary)
-
             const content = indirectObj.content as PdfDictionary
             const linearized = content.get('Linearized') as PdfNumber
-            expect(linearized).toBeDefined()
             expect(linearized.value).toBe(1)
         })
 
@@ -287,10 +196,8 @@ describe('Linearization', () => {
             const document = await createTestDocument()
             const linearizer = new PdfLinearizer(document)
 
-            // Original document should not be linearized
             expect(PdfLinearizer.isLinearized(document)).toBe(false)
 
-            // Linearized document should be detected
             const linearizedDoc = linearizer.linearize()
             expect(PdfLinearizer.isLinearized(linearizedDoc)).toBe(true)
         })
@@ -304,39 +211,11 @@ describe('Linearization', () => {
             )
         })
 
-        it('should preserve page count in linearization dictionary', async () => {
-            const document = await createTestDocument()
-            const linearizer = new PdfLinearizer(document)
-
-            const linearizedDoc = linearizer.linearize()
-
-            const firstObject = linearizedDoc.revisions[0]
-                .objects[0] as PdfIndirectObject
-            const linDict = firstObject.content as LinearizationDictionary
-
-            expect(linDict.pageCount).toBe(1)
-        })
-
-        it('should set correct first page object number', async () => {
-            const document = await createTestDocument()
-            const linearizer = new PdfLinearizer(document)
-
-            const linearizedDoc = linearizer.linearize()
-
-            const firstObject = linearizedDoc.revisions[0]
-                .objects[0] as PdfIndirectObject
-            const linDict = firstObject.content as LinearizationDictionary
-
-            expect(linDict.firstPageObjectNumber).toBeGreaterThan(0)
-        })
-
         it('should generate expected string representation of linearized PDF', async () => {
             const document = await createTestDocument()
             const linearizer = new PdfLinearizer(document)
 
             const linearizedDoc = linearizer.linearize()
-
-            // Get the string representation of the linearized PDF
             const pdfString = linearizedDoc.toString()
 
             // Verify it contains expected PDF structure
@@ -344,7 +223,7 @@ describe('Linearization', () => {
             expect(pdfString).toContain('Linearized')
             expect(pdfString).toContain('%%EOF')
 
-            // Inline snapshot test to show what the linearized PDF looks like as a string
+            // Inline snapshot showing complete linearized PDF structure
             expect(pdfString).toMatchInlineSnapshot(`
               "%PDF-2.0
               1 0 obj

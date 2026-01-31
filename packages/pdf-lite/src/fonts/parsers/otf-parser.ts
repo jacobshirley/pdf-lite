@@ -430,14 +430,18 @@ export class OtfParser implements FontParser {
     }
 
     private estimateStemV(weightClass: number): number {
-        if (weightClass <= 100) return 25
-        if (weightClass <= 200) return 35
-        if (weightClass <= 300) return 50
-        if (weightClass <= 400) return 70
-        if (weightClass <= 500) return 88
-        if (weightClass <= 600) return 110
-        if (weightClass <= 700) return 135
-        if (weightClass <= 800) return 165
-        return 200
+        return estimateStemVFromWeight(weightClass)
     }
+}
+
+export function estimateStemVFromWeight(weightClass: number): number {
+    if (weightClass <= 100) return 25
+    if (weightClass <= 200) return 35
+    if (weightClass <= 300) return 50
+    if (weightClass <= 400) return 70
+    if (weightClass <= 500) return 88
+    if (weightClass <= 600) return 110
+    if (weightClass <= 700) return 135
+    if (weightClass <= 800) return 165
+    return 200
 }

@@ -22,6 +22,7 @@ import {
 export class PdfFontManager {
     private document: PdfDocument
     private embeddedFonts: Map<string, EmbeddedFont> = new Map()
+    private fontResourceCounter: number = 0
 
     constructor(document: PdfDocument) {
         this.document = document
@@ -130,7 +131,8 @@ export class PdfFontManager {
         )
 
         // Register in resources
-        const resourceName = `F${this.embeddedFonts.size + 1}`
+        this.fontResourceCounter++
+        const resourceName = `F${this.fontResourceCounter}`
         this.embeddedFonts.set(fontName, {
             fontName,
             fontRef: fontObject,
@@ -186,7 +188,8 @@ export class PdfFontManager {
         await this.document.commit(fontObject)
 
         // Register in resources
-        const resourceName = `F${this.embeddedFonts.size + 1}`
+        this.fontResourceCounter++
+        const resourceName = `F${this.fontResourceCounter}`
         this.embeddedFonts.set(fontName, {
             fontName,
             fontRef: fontObject,
@@ -361,7 +364,8 @@ export class PdfFontManager {
         await this.document.commit(fontObject)
 
         // Register in resources
-        const resourceName = `F${this.embeddedFonts.size + 1}`
+        this.fontResourceCounter++
+        const resourceName = `F${this.fontResourceCounter}`
         this.embeddedFonts.set(fontName, {
             fontName,
             fontRef: fontObject,

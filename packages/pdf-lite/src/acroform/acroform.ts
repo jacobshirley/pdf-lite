@@ -153,7 +153,7 @@ export class PdfAcroFormField extends PdfDictionary<{
 
     get fontName(): string | null {
         const da = this.get('DA')?.as(PdfString)?.value || ''
-        const match = da.match(/\/(F\d+)\s+[\d.]+\s+Tf/)
+        const match = da.match(/\/([A-Za-z0-9_-]+)\s+[\d.]+\s+Tf/)
         if (match) {
             return match[1]
         }
@@ -162,7 +162,14 @@ export class PdfAcroFormField extends PdfDictionary<{
 
     set fontName(fontName: string) {
         const da = this.get('DA')?.as(PdfString)?.value || ''
-        const updatedDa = da.replace(/\/F\d+/g, `/${fontName}`)
+        if (!da) {
+            this.set('DA', new PdfString(`/${fontName} 12 Tf 0 g`))
+            return
+        }
+        const updatedDa = da.replace(
+            /\/[A-Za-z0-9_-]+(\s+[\d.]+\s+Tf)/g,
+            `/${fontName}$1`,
+        )
         this.set('DA', new PdfString(updatedDa))
     }
 

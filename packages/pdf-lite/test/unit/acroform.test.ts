@@ -167,4 +167,61 @@ describe('AcroForm', () => {
         // Verify the font size was persisted correctly
         expect(updatedField?.fontSize).toBe(20)
     })
+
+    it('should be able to change field font name', async () => {
+        // Load the PDF with AcroForm
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+
+        const acroform = await document.acroForm.getAcroForm()
+        if (!acroform) {
+            throw new Error('No AcroForm found in the document')
+        }
+
+        // Find a text field to modify
+        const textField = acroform.fields.find((f) => f.name === 'Client Name')
+        expect(textField).toBeDefined()
+
+        // Set a proper default appearance string first
+        textField!.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+
+        // Verify original font name
+        expect(textField!.fontName).toBe('Helv')
+
+        // Change the font name
+        textField!.fontName = 'Times'
+
+        // Verify DA string is correct after change
+        const daAfterChange = textField!.get('DA')?.as(PdfString)?.value
+        expect(daAfterChange).toBe('/Times 12 Tf 0 g')
+
+        // Verify the fontName was set correctly before writing
+        expect(textField!.fontName).toBe('Times')
+        // Verify font size is preserved
+        expect(textField!.fontSize).toBe(12)
+
+        // Mark as needing appearance updates
+        acroform.needAppearances = true
+        await document.acroForm.write(acroform)
+
+        const newDocumentBytes = await document.toBytes()
+        const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
+
+        // Read them back to verify font name changed
+        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedField = updatedAcroform?.fields.find(
+            (f) => f.name === 'Client Name',
+        )
+
+        // Verify the font name was persisted correctly
+        expect(updatedField?.fontName).toBe('Times')
+        // Verify font size was preserved
+        expect(updatedField?.fontSize).toBe(12)
+    })
 })

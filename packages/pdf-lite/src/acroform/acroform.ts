@@ -99,7 +99,7 @@ export class PdfAcroFormField extends PdfDictionary<{
 
     set value(val: string) {
         const fieldType = this.get('FT')?.as(PdfName)?.value
-        if (fieldType === 'Btn') {
+        if (fieldType === PdfFieldType.Button) {
             this.set('V', new PdfName(val))
             this.set('AS', new PdfName(val))
         } else {
@@ -109,7 +109,7 @@ export class PdfAcroFormField extends PdfDictionary<{
 
     get checked(): boolean {
         const fieldType = this.get('FT')?.as(PdfName)?.value
-        if (fieldType === 'Btn') {
+        if (fieldType === PdfFieldType.Button) {
             const v = this.get('V')
             return v instanceof PdfName && v.value === 'Yes'
         }
@@ -118,7 +118,7 @@ export class PdfAcroFormField extends PdfDictionary<{
 
     set checked(isChecked: boolean) {
         const fieldType = this.get('FT')?.as(PdfName)?.value
-        if (fieldType === 'Btn') {
+        if (fieldType === PdfFieldType.Button) {
             if (isChecked) {
                 this.set('V', new PdfName('Yes'))
                 this.set('AS', new PdfName('Yes'))
@@ -470,7 +470,9 @@ export class PdfAcroForm<
             catalog.set('AcroForm', acroFormIndirect.reference)
 
             // In incremental mode, ensure the updated catalog is written
-            const rootRef = document.trailerDict.get('Root')?.as(PdfObjectReference)
+            const rootRef = document.trailerDict
+                .get('Root')
+                ?.as(PdfObjectReference)
             if (rootRef) {
                 const rootIndirect = new PdfIndirectObject({
                     objectNumber: rootRef.objectNumber,

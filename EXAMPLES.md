@@ -1828,7 +1828,7 @@ import { PdfName } from 'pdf-lite/core/objects/pdf-name'
 import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { TtfParser } from 'pdf-lite/fonts/ttf-parser'
+import { parseFont } from 'pdf-lite'
 
 // Helper to create a page
 function createPage(
@@ -1905,9 +1905,10 @@ async function main() {
     const fontData = readFileSync(fontPath)
 
     // Parse the font file to extract metrics automatically
-    const ttfParser = new TtfParser(fontData)
-    const fontInfo = ttfParser.getFontInfo()
-    const fontDescriptor = ttfParser.getFontDescriptor('Roboto')
+    // parseFont() auto-detects TTF, OTF, and WOFF formats
+    const parser = parseFont(fontData)
+    const fontInfo = parser.getFontInfo()
+    const fontDescriptor = parser.getFontDescriptor('Roboto')
 
     console.log(`Parsed font: ${fontInfo.fullName} (${fontInfo.fontFamily})`)
 

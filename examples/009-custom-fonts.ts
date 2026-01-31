@@ -9,7 +9,7 @@ import { PdfName } from 'pdf-lite/core/objects/pdf-name'
 import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { parseFont } from 'pdf-lite/fonts/font-parser'
+import { parseFont } from 'pdf-lite'
 
 // Helper to create a page
 function createPage(

@@ -27,7 +27,7 @@ export function parseFont(data: ByteArray): FontParser {
             return new WoffParser(data)
         case 'woff2':
             throw new Error(
-                'WOFF2 format is not supported (requires Brotli decompression)',
+                'WOFF2 format is not supported by pdf-lite (requires Brotli decompression). Convert the font to WOFF, TTF, or OTF before embedding (for example using fonttools/woff2 or an online converter).',
             )
         default:
             throw new Error(`Unknown or unsupported font format`)

@@ -329,5 +329,23 @@ describe('Linearization', () => {
 
             expect(linDict.firstPageObjectNumber).toBeGreaterThan(0)
         })
+
+        it('should generate expected string representation of linearized PDF', async () => {
+            const document = await createTestDocument()
+            const linearizer = new PdfLinearizer(document)
+
+            const linearizedDoc = linearizer.linearize()
+
+            // Get the string representation of the linearized PDF
+            const pdfString = linearizedDoc.toString()
+
+            // Verify it contains expected PDF structure
+            expect(pdfString).toContain('%PDF-')
+            expect(pdfString).toContain('Linearized')
+            expect(pdfString).toContain('%%EOF')
+
+            // Snapshot test to show what the linearized PDF looks like as a string
+            expect(pdfString).toMatchSnapshot()
+        })
     })
 })

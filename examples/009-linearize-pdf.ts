@@ -10,7 +10,7 @@ import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { PdfLinearizer } from 'pdf-lite/linearization'
+import { PdfLinearizer } from 'pdf-lite/linearization/pdf-linearizer'
 import fs from 'fs/promises'
 
 const tmpFolder = `${import.meta.dirname}/tmp`

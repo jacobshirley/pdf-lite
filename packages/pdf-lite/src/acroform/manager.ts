@@ -26,8 +26,8 @@ export class PdfAcroFormManager {
     }
 
     /**
-     * Gets the AcroForm dictionary from the document catalog.
-     * @returns The AcroForm dictionary or null if not found
+     * Gets the AcroForm object from the document catalog.
+     * @returns The AcroForm object or null if not found
      */
     async getAcroForm(): Promise<PdfAcroForm | null> {
         return await PdfAcroForm.fromDocument(this.document)

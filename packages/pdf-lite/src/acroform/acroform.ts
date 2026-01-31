@@ -1,8 +1,5 @@
 import { PdfDocument } from '../pdf/pdf-document.js'
-import {
-    PdfDictionary,
-    PdfDictionaryEntries,
-} from '../core/objects/pdf-dictionary.js'
+import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfString } from '../core/objects/pdf-string.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
@@ -37,9 +34,11 @@ export class PdfAcroFormField extends PdfDictionary<{
     MK?: PdfDictionary
 }> {
     parent?: PdfAcroFormField
+    readonly container?: PdfIndirectObject
 
-    constructor() {
+    constructor(options?: { container?: PdfIndirectObject }) {
         super()
+        this.container = options?.container
     }
 
     /**
@@ -132,7 +131,7 @@ export class PdfAcroFormField extends PdfDictionary<{
 
     get fontSize(): number | null {
         const da = this.get('DA')?.as(PdfString)?.value || ''
-        const match = da.match(/\/F\d+\s+([\d.]+)\s+Tf/)
+        const match = da.match(/\/[A-Za-z0-9_-]+\s+([\d.]+)\s+Tf/)
         if (match) {
             return parseFloat(match[1])
         }
@@ -141,7 +140,14 @@ export class PdfAcroFormField extends PdfDictionary<{
 
     set fontSize(size: number) {
         const da = this.get('DA')?.as(PdfString)?.value || ''
-        const updatedDa = da.replace(/\/F\d+\s+[\d.]+?\s+Tf/g, `/F1 ${size} Tf`)
+        if (!da) {
+            this.set('DA', new PdfString(`/F1 ${size} Tf 0 g`))
+            return
+        }
+        const updatedDa = da.replace(
+            /(\/[A-Za-z0-9_-]+)\s+[\d.]+\s+Tf/g,
+            `$1 ${size} Tf`,
+        )
         this.set('DA', new PdfString(updatedDa))
     }
 
@@ -259,11 +265,17 @@ export class PdfAcroForm<
     Q?: PdfNumber
 }> {
     fields: PdfAcroFormField[]
+    readonly container?: PdfIndirectObject
 
-    constructor(options: { dict: PdfDictionary; fields?: PdfAcroFormField[] }) {
+    constructor(options: {
+        dict: PdfDictionary
+        fields?: PdfAcroFormField[]
+        container?: PdfIndirectObject
+    }) {
         super()
         this.copyFrom(options.dict)
         this.fields = options.fields ?? []
+        this.container = options.container
     }
 
     /**
@@ -336,6 +348,26 @@ export class PdfAcroForm<
         }
     }
 
+    importData(fields: T): void {
+        for (const field of this.fields) {
+            const name = field.name
+            if (name && name in fields) {
+                field.value = fields[name]
+            }
+        }
+    }
+
+    exportData(): Partial<T> {
+        const result: any = {}
+        for (const field of this.fields) {
+            const name = field.name
+            if (name) {
+                result[name] = field.value
+            }
+        }
+        return result
+    }
+
     static async fromDocument(
         document: PdfDocument,
     ): Promise<PdfAcroForm | null> {
@@ -354,7 +386,10 @@ export class PdfAcroForm<
         if (!(acroFormObject.content instanceof PdfDictionary))
             throw new Error('AcroForm content must be a dictionary')
 
-        const acroForm = new PdfAcroForm({ dict: acroFormObject.content })
+        const acroForm = new PdfAcroForm({
+            dict: acroFormObject.content,
+            container: acroFormObject,
+        })
 
         const getFields = async (
             fields: PdfArray<PdfObjectReference>,
@@ -371,7 +406,9 @@ export class PdfAcroForm<
                 if (!fieldObject) continue
                 if (!(fieldObject.content instanceof PdfDictionary)) continue
 
-                const field = new PdfAcroFormField()
+                const field = new PdfAcroFormField({
+                    container: fieldObject,
+                })
                 field.parent = parent
                 field.copyFrom(fieldObject.content)
 
@@ -394,37 +431,36 @@ export class PdfAcroForm<
 
         return acroForm
     }
-}
 
-/**
- * Manages AcroForm fields in PDF documents.
- * Provides methods to read and write form field values.
- */
-export class PdfAcroFormManager {
-    private document: PdfDocument
-
-    constructor(document: PdfDocument) {
-        this.document = document
-    }
-
-    /**
-     * Checks if the document contains AcroForm fields.
-     * @returns True if the document has AcroForm fields, false otherwise
-     */
-    async hasAcroForm(): Promise<boolean> {
-        try {
-            const acroForm = await this.getAcroForm()
-            return acroForm !== null
-        } catch {
-            return false
+    async write(document: PdfDocument) {
+        const catalog = document.rootDictionary
+        if (!catalog) {
+            throw new Error('Document has no root catalog')
         }
-    }
 
-    /**
-     * Gets the AcroForm dictionary from the document catalog.
-     * @returns The AcroForm dictionary or null if not found
-     */
-    async getAcroForm(): Promise<PdfAcroForm | null> {
-        return await PdfAcroForm.fromDocument(this.document)
+        const isIncremental = document.isIncremental()
+        document.setIncremental(true)
+
+        if (this.isModified()) {
+            // Create or update the AcroForm entry in the catalog
+            const acroFormIndirect = new PdfIndirectObject({
+                ...this.container,
+                content: this,
+            })
+            document.add(acroFormIndirect)
+            catalog.set('AcroForm', acroFormIndirect.reference)
+        }
+
+        for (const field of this.fields) {
+            if (!field.isModified()) continue
+            const acroFormFieldIndirect = new PdfIndirectObject({
+                ...field.container,
+                content: field,
+            })
+            document.add(acroFormFieldIndirect)
+        }
+
+        await document.commit()
+        document.setIncremental(isIncremental)
     }
 }

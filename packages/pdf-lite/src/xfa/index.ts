@@ -1,1 +1,1 @@
-export { PdfXfaManager } from './xfa-manager.js'
+export { PdfXfaManager } from './manager.js'

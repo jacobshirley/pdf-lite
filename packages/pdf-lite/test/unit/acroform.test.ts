@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { PdfDocument } from '../../src/pdf/pdf-document'
 import { server } from 'vitest/browser'
 import { ByteArray } from '../../src/types'
+import { PdfString } from '../../src/core/objects/pdf-string'
 
 const base64ToBytes = (base64: string): ByteArray => {
     const binaryString = atob(base64)
@@ -30,7 +31,8 @@ describe('AcroForm', () => {
         expect(hasAcroForm).toBe(true)
 
         // Read all field values
-        const fieldValues = await document.acroForm.getFieldValues()
+        const acroform = await document.acroForm.getAcroForm()
+        const fieldValues = acroform?.exportData()
         expect(fieldValues).toEqual({
             'Client Name': '',
             N: '1234567890',
@@ -56,8 +58,12 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
         // Get original field values
-        const originalValues = await document.acroForm.getFieldValues()
-        const fieldNames = Object.keys(originalValues ?? {})
+        const acroform = await document.acroForm.getAcroForm()
+        if (!acroform) {
+            throw new Error('No AcroForm found in the document')
+        }
+        const originalValues = await acroform.exportData()
+        const fieldNames = Object.keys(originalValues)
         expect(fieldNames.length).toBeGreaterThan(0)
 
         const valuesToSet: Record<string, string> = {}
@@ -65,13 +71,16 @@ describe('AcroForm', () => {
             valuesToSet[fieldNames[i]] = `Value ${i + 1}`
         }
 
-        await document.acroForm.setFieldValues(valuesToSet)
+        acroform.importData(valuesToSet)
+        acroform.needAppearances = true
+        await document.acroForm.write(acroform)
 
         const newDocumentBytes = await document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify
-        const updatedValues = (await newDocument.acroForm.getFieldValues())!
+        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedValues = updatedAcroform?.exportData()!
         for (const [fieldName, expectedValue] of Object.entries(valuesToSet)) {
             expect(updatedValues[fieldName]).toBe(expectedValue)
         }
@@ -92,15 +101,70 @@ describe('AcroForm', () => {
             'Client Name': 'PROSZĘ',
         }
 
-        await document.acroForm.setFieldValues(exoticValues)
+        const acroform = await document.acroForm.getAcroForm()
+        if (!acroform) {
+            throw new Error('No AcroForm found in the document')
+        }
+        acroform.importData(exoticValues)
+        acroform.needAppearances = true
+        await document.acroForm.write(acroform)
 
         const newDocumentBytes = await document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify
-        const updatedValues = (await newDocument.acroForm.getFieldValues())!
+        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedValues = updatedAcroform?.exportData()!
         for (const [fieldName, expectedValue] of Object.entries(exoticValues)) {
             expect(updatedValues[fieldName]).toBe(expectedValue)
         }
+    })
+
+    it('should be able to change field font properties', async () => {
+        // Load the PDF with AcroForm
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+
+        const acroform = await document.acroForm.getAcroForm()
+        if (!acroform) {
+            throw new Error('No AcroForm found in the document')
+        }
+
+        // Find a text field to modify
+        const textField = acroform.fields.find((f) => f.name === 'Client Name')
+        expect(textField).toBeDefined()
+
+        // Set a proper default appearance string first to ensure we have a valid DA
+        textField!.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+
+        // Now change the font size
+        textField!.fontSize = 20
+
+        textField!.value = 'Test Font Size Change'
+
+        // Verify the fontSize was set correctly before writing
+        expect(textField!.fontSize).toBe(20)
+
+        // Mark as needing appearance updates
+        acroform.needAppearances = true
+        await document.acroForm.write(acroform)
+
+        const newDocumentBytes = await document.toBytes()
+        const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
+
+        // Read them back to verify font size changed
+        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedField = updatedAcroform?.fields.find(
+            (f) => f.name === 'Client Name',
+        )
+
+        // Verify the font size was persisted correctly
+        expect(updatedField?.fontSize).toBe(20)
     })
 })

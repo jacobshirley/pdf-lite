@@ -1,1 +1,1 @@
-export { PdfAcroFormManager } from './acroform-manager.js'
+export { PdfAcroFormManager } from './manager.js'

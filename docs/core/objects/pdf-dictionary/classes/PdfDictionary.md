@@ -12,6 +12,8 @@
 
 ## Extended by
 
+- [`PdfAcroFormField`](../../../../acroform/acroform/classes/PdfAcroFormField.md)
+- [`PdfAcroForm`](../../../../acroform/acroform/classes/PdfAcroForm.md)
 - [`PdfDocumentSecurityStoreDictionary`](../../../../signing/document-security-store/classes/PdfDocumentSecurityStoreDictionary.md)
 - [`PdfSignatureDictionary`](../../../../signing/signatures/base/classes/PdfSignatureDictionary.md)
 

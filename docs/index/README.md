@@ -146,6 +146,12 @@ Re-exports [ChangeType](../types/type-aliases/ChangeType.md)
 
 ---
 
+### CIDWidth
+
+Re-exports [CIDWidth](../fonts/types/type-aliases/CIDWidth.md)
+
+---
+
 ### Cipher
 
 Re-exports [Cipher](../crypto/types/interfaces/Cipher.md)
@@ -272,6 +278,18 @@ Re-exports [deriveObjectKey](../crypto/key-derivation/key-derivation/functions/d
 
 ---
 
+### detectFontFormat
+
+Re-exports [detectFontFormat](../fonts/parsers/woff-parser/functions/detectFontFormat.md)
+
+---
+
+### EmbeddedFont
+
+Re-exports [EmbeddedFont](../fonts/types/interfaces/EmbeddedFont.md)
+
+---
+
 ### encodeAsUTF16BE
 
 Re-exports [encodeAsUTF16BE](../utils/encodeAsUTF16BE/functions/encodeAsUTF16BE.md)
@@ -290,6 +308,12 @@ Re-exports [escapeString](../utils/escapeString/functions/escapeString.md)
 
 ---
 
+### estimateStemVFromWeight
+
+Re-exports [estimateStemVFromWeight](../fonts/parsers/otf-parser/functions/estimateStemVFromWeight.md)
+
+---
+
 ### fetchRevocationInfo
 
 Re-exports [fetchRevocationInfo](../signing/utils/functions/fetchRevocationInfo.md)
@@ -299,6 +323,24 @@ Re-exports [fetchRevocationInfo](../signing/utils/functions/fetchRevocationInfo.
 ### flate
 
 Re-exports [flate](../filters/flate/functions/flate.md)
+
+---
+
+### FontDescriptor
+
+Re-exports [FontDescriptor](../fonts/types/interfaces/FontDescriptor.md)
+
+---
+
+### FontFormat
+
+Re-exports [FontFormat](../fonts/types/type-aliases/FontFormat.md)
+
+---
+
+### FontParser
+
+Re-exports [FontParser](../fonts/types/interfaces/FontParser.md)
 
 ---
 
@@ -392,6 +434,12 @@ Re-exports [int32ToLittleEndianBytes](../crypto/utils/functions/int32ToLittleEnd
 
 ---
 
+### isSupportedFontFormat
+
+Re-exports [isSupportedFontFormat](../fonts/parsers/font-parser/functions/isSupportedFontFormat.md)
+
+---
+
 ### IterableReadableStream
 
 Re-exports [IterableReadableStream](../utils/IterableReadableStream/classes/IterableReadableStream.md)
@@ -428,6 +476,12 @@ Re-exports [objectToTokens](../core/tokeniser/functions/objectToTokens.md)
 
 ---
 
+### OtfParser
+
+Re-exports [OtfParser](../fonts/parsers/otf-parser/classes/OtfParser.md)
+
+---
+
 ### padBytes
 
 Re-exports [padBytes](../utils/padBytes/functions/padBytes.md)
@@ -437,6 +491,12 @@ Re-exports [padBytes](../utils/padBytes/functions/padBytes.md)
 ### padPassword
 
 Re-exports [padPassword](../crypto/utils/functions/padPassword.md)
+
+---
+
+### parseFont
+
+Re-exports [parseFont](../fonts/parsers/font-parser/functions/parseFont.md)
 
 ---
 
@@ -701,6 +761,12 @@ Re-exports [PdfEtsiRfc3161SignatureObject](../signing/signatures/etsi-rfc3161/cl
 ### PdfFilter
 
 Re-exports [PdfFilter](../filters/types/interfaces/PdfFilter.md)
+
+---
+
+### PdfFontManager
+
+Re-exports [PdfFontManager](../fonts/font-manager/classes/PdfFontManager.md)
 
 ---
 
@@ -1238,9 +1304,27 @@ Re-exports [TimeStampAuthority](../signing/types/type-aliases/TimeStampAuthority
 
 ---
 
+### TtfFontInfo
+
+Re-exports [TtfFontInfo](../fonts/types/interfaces/TtfFontInfo.md)
+
+---
+
+### TtfParser
+
+Re-exports [TtfParser](../fonts/parsers/ttf-parser/classes/TtfParser.md)
+
+---
+
 ### unescapeString
 
 Re-exports [unescapeString](../utils/unescapeString/functions/unescapeString.md)
+
+---
+
+### UnicodeFontDescriptor
+
+Re-exports [UnicodeFontDescriptor](../fonts/types/interfaces/UnicodeFontDescriptor.md)
 
 ---
 
@@ -1253,3 +1337,9 @@ Re-exports [V2CryptFilter](../security/crypt-filters/v2/classes/V2CryptFilter.md
 ### validatePasswordHash
 
 Re-exports [validatePasswordHash](../crypto/key-derivation/key-derivation-aes256/functions/validatePasswordHash.md)
+
+---
+
+### WoffParser
+
+Re-exports [WoffParser](../fonts/parsers/woff-parser/classes/WoffParser.md)

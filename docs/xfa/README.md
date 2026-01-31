@@ -10,4 +10,4 @@
 
 ### PdfXfaManager
 
-Re-exports [PdfXfaManager](xfa-manager/classes/PdfXfaManager.md)
+Re-exports [PdfXfaManager](manager/classes/PdfXfaManager.md)

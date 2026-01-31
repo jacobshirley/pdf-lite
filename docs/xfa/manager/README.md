@@ -2,9 +2,9 @@
 
 ---
 
-[pdf-lite](../../README.md) / xfa/xfa-manager
+[pdf-lite](../../README.md) / xfa/manager
 
-# xfa/xfa-manager
+# xfa/manager
 
 ## Classes
 

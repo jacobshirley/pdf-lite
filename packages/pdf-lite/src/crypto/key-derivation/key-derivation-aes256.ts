@@ -167,11 +167,38 @@ export async function getFileKey(
         ownerPassword = ownerPassword.subarray(0, 128)
     }
 
-    assert(oe.length === 32, 'Invalid OE length')
-    assert(ue.length === 32, 'Invalid UE length')
-    assert(u.length === 48, 'Invalid U length')
-    assert(o.length === 48, 'Invalid O length')
+    if (oe.length > 32) {
+        oe = oe.subarray(0, 32)
+    }
 
+    if (ue.length > 32) {
+        ue = ue.subarray(0, 32)
+    }
+
+    if (o.length > 48) {
+        o = o.subarray(0, 48)
+    }
+
+    if (u.length > 48) {
+        u = u.subarray(0, 48)
+    }
+
+    assert(
+        oe.length === 32,
+        'Invalid OE length. Expected 32 bytes but got ' + oe.length,
+    )
+    assert(
+        ue.length === 32,
+        'Invalid UE length. Expected 32 bytes but got ' + ue.length,
+    )
+    assert(
+        u.length === 48,
+        'Invalid U length. Expected 48 bytes but got ' + u.length,
+    )
+    assert(
+        o.length === 48,
+        'Invalid O length. Expected 48 bytes but got ' + o.length,
+    )
     try {
         // First try owner password
         await validatePasswordHash(ownerPassword, o, u)

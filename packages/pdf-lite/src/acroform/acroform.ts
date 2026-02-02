@@ -506,11 +506,16 @@ export class PdfAcroForm<
 
         const getFields = async (
             fields: PdfArray<PdfObjectReference>,
-            output: PdfAcroFormField[] = [],
+            seen: Set<string> = new Set(),
             parent?: PdfAcroFormField,
-        ): Promise<PdfAcroFormField[]> => {
+        ): Promise<void> => {
             for (const fieldRef of fields.items) {
-                // Check if we have a modified version cached
+                const refKey = fieldRef.toString()
+                if (seen.has(refKey)) {
+                    continue
+                }
+                seen.add(refKey)
+
                 const fieldObject = await document.readObject({
                     objectNumber: fieldRef.objectNumber,
                     generationNumber: fieldRef.generationNumber,
@@ -525,22 +530,38 @@ export class PdfAcroForm<
                 field.parent = parent
                 field.copyFrom(fieldObject.content)
 
-                // Process child fields (Kids)
+                // Process child fields (Kids) before adding the parent
                 const kids = field.get('Kids')?.as(PdfArray<PdfObjectReference>)
                 if (kids) {
-                    await getFields(kids, output, field)
+                    await getFields(kids, seen, field)
                 }
 
                 acroForm.fields.push(field)
             }
-
-            return output
         }
 
-        await getFields(
-            acroForm.get('Fields')?.as(PdfArray<PdfObjectReference>) ||
-                new PdfArray(),
-        )
+        const fieldsArray: PdfArray<PdfObjectReference> = new PdfArray()
+        if (acroForm.get('Fields') instanceof PdfArray) {
+            fieldsArray.items.push(
+                ...acroForm.get('Fields')!.as(PdfArray<PdfObjectReference>)
+                    .items,
+            )
+        } else if (acroForm.get('Fields') instanceof PdfObjectReference) {
+            const fieldsObj = await document.readObject({
+                objectNumber: acroForm.get('Fields')!.as(PdfObjectReference)
+                    .objectNumber,
+                generationNumber: acroForm.get('Fields')!.as(PdfObjectReference)
+                    .generationNumber,
+            })
+
+            if (fieldsObj && fieldsObj.content instanceof PdfArray) {
+                fieldsArray.items.push(
+                    ...fieldsObj.content.as(PdfArray<PdfObjectReference>).items,
+                )
+            }
+        }
+
+        await getFields(fieldsArray)
 
         return acroForm
     }
@@ -686,7 +707,12 @@ export class PdfAcroForm<
                 acroFormFieldIndirect.objectNumber,
                 acroFormFieldIndirect.generationNumber,
             )
-            fieldsArray.push(fieldReference)
+
+            // Only add root-level fields (no parent) to the Fields array
+            // Child fields are referenced through their parent's Kids array
+            if (!field.parent) {
+                fieldsArray.push(fieldReference)
+            }
 
             // Track if this field needs to be added to a page's Annots
             const parentRef = field.parentRef

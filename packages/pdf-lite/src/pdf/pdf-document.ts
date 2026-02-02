@@ -905,7 +905,7 @@ export class PdfDocument extends PdfObject {
 
     private calculateOffsets(): void {
         const serializer = new PdfTokenSerializer()
-        serializer.feed(...this.toTokens())
+        serializer.feedMany(this.toTokens())
         serializer.calculateOffsets()
         this.linkOffsets()
     }
@@ -938,7 +938,7 @@ export class PdfDocument extends PdfObject {
         this.calculateOffsets()
         this.updateRevisions()
         const serializer = new PdfTokenSerializer()
-        serializer.feed(...this.toTokens())
+        serializer.feedMany(this.toTokens())
         return serializer.toBytes()
     }
 

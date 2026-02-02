@@ -10,6 +10,19 @@ export class NoMoreTokensError extends Error {}
  */
 export class EofReachedError extends Error {}
 
+/*
+ * Error thrown when an unexpected token is encountered during parsing.
+ */
+export class UnexpectedTokenError extends Error {
+    constructor(expected: string, actual: string | null) {
+        super(
+            `Unexpected token: expected ${expected}, but got ${
+                actual === null ? 'EOF' : actual
+            }`,
+        )
+    }
+}
+
 /**
  * Abstract base class for incremental parsers that can process input as it becomes available.
  * Supports buffering, lookahead, and backtracking for complex parsing scenarios.

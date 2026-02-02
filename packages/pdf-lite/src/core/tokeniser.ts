@@ -605,7 +605,7 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
             return this.nextXRefTableStartToken()
         } else {
             throw new Error(
-                `Unrecognised token starting with byte: ${byte} (root: ${root}) (char: ${String.fromCharCode(byte ?? 0)})`,
+                `[offset: ${this.inputOffset}] Unrecognised token starting with byte: ${byte} (root: ${root}) (char: ${String.fromCharCode(byte ?? 0)})`,
             )
         }
     }

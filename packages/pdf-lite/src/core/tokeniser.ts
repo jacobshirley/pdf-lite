@@ -298,7 +298,6 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
                         break // \\
                     case ByteMap.LINE_FEED: // Line feed
                     case ByteMap.CARRIAGE_RETURN: // Carriage return
-                        console.log(next === ByteMap.LINE_FEED ? 'LF' : 'CR')
                         stringBytes.push(next)
                         break
                     default:

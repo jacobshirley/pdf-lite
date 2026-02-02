@@ -1826,6 +1826,7 @@ console.log(
 // Demonstrates how to embed TrueType fonts and use standard PDF fonts
 
 import { writeFileSync, readFileSync, existsSync } from 'fs'
+import { PdfFont } from 'pdf-lite'
 import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
 import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
 import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
@@ -1833,7 +1834,6 @@ import { PdfName } from 'pdf-lite/core/objects/pdf-name'
 import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { parseFont } from 'pdf-lite'
 
 // Helper to create a page
 function createPage(
@@ -1909,19 +1909,13 @@ async function main() {
 
     const fontData = readFileSync(fontPath)
 
-    // Parse the font file to extract metrics automatically
-    // parseFont() auto-detects TTF, OTF, and WOFF formats
-    const parser = parseFont(fontData)
-    const fontInfo = parser.getFontInfo()
-    const fontDescriptor = parser.getFontDescriptor('Roboto')
+    // Embed font directly using fromBytes - it auto-detects TTF, OTF, and WOFF formats
+    const robotoFont = PdfFont.fromBytes(fontData)
 
-    console.log(`Parsed font: ${fontInfo.fullName} (${fontInfo.fontFamily})`)
+    console.log(`Embedded custom font: ${robotoFont.fontName}`)
 
-    const robotoFont = await document.fonts.embedTrueTypeFont(
-        fontData,
-        'Roboto',
-        fontDescriptor,
-    )
+    // Write the font to the document
+    await document.fonts.write(robotoFont)
     console.log(`Embedded Roboto TrueType font: ${robotoFont}`)
 
     // Create resources dictionary with fonts
@@ -1929,18 +1923,17 @@ async function main() {
     const fontDict = new PdfDictionary()
 
     // Get font references from the font manager
-    const helveticaFont = document.fonts.getFont('Helvetica-Bold')
-    const timesFont = document.fonts.getFont('Times-Roman')
-    const courierFont = document.fonts.getFont('Courier')
+    const helveticaFont = await document.fonts.getFont('Helvetica-Bold')
+    const timesFont = await document.fonts.getFont('Times-Roman')
+    const courierFont = await document.fonts.getFont('Courier')
 
     if (helveticaFont)
-        fontDict.set(helveticaFont.baseFont, helveticaFont.fontRef.reference)
-    if (timesFont) fontDict.set(timesFont.baseFont, timesFont.fontRef.reference)
-    if (courierFont)
-        fontDict.set(courierFont.baseFont, courierFont.fontRef.reference)
+        fontDict.set(helveticaFont.resourceName, helveticaFont.fontRef)
+    if (timesFont) fontDict.set(timesFont.resourceName, timesFont.fontRef)
+    if (courierFont) fontDict.set(courierFont.resourceName, courierFont.fontRef)
 
-    const roboto = document.fonts.getFont('Roboto')
-    if (roboto) fontDict.set(roboto.baseFont, roboto.fontRef.reference)
+    const roboto = await document.fonts.getFont('Roboto')
+    if (roboto) fontDict.set(roboto.resourceName, roboto.fontRef)
 
     resourcesDict.set('Font', fontDict)
     const resources = new PdfIndirectObject({ content: resourcesDict })

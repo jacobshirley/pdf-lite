@@ -1,4 +1,5 @@
 import { PdfDictionary, PdfIndirectObject } from '../core'
+import type { ByteArray } from '../types.js'
 
 /**
  * Common interface for all font parsers.
@@ -7,6 +8,7 @@ export interface FontParser {
     getFontInfo(): TtfFontInfo
     getFontDescriptor(fontName?: string): FontDescriptor
     getCharWidths(firstChar: number, lastChar: number): number[]
+    getFontData(): ByteArray
 }
 
 /**

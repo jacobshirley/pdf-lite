@@ -11,8 +11,13 @@ import type {
     FontDescriptor,
     UnicodeFontDescriptor,
     CIDWidth,
+    FontParser,
 } from './types.js'
 import type { ByteArray } from '../types.js'
+import { parseFont } from './parsers/font-parser.js'
+import { OtfParser } from './parsers/otf-parser.js'
+import { TtfParser } from './parsers/ttf-parser.js'
+import { WoffParser } from './parsers/woff-parser.js'
 
 /**
  * Represents an embedded font in a PDF document.
@@ -54,6 +59,18 @@ export class PdfFont extends PdfDictionary<{
      */
     private manager?: PdfFontManager
 
+    /**
+     * @internal
+     * Font descriptor with metrics and properties.
+     */
+    private _descriptor?: FontDescriptor | UnicodeFontDescriptor
+
+    /**
+     * @internal
+     * Original font file bytes.
+     */
+    private _fontData?: ByteArray
+
     constructor(options: {
         dict?: PdfDictionary
         fontName?: string
@@ -61,6 +78,8 @@ export class PdfFont extends PdfDictionary<{
         encoding?: string
         manager?: PdfFontManager
         container?: PdfIndirectObject
+        descriptor?: FontDescriptor | UnicodeFontDescriptor
+        fontData?: ByteArray
     }) {
         super()
         if (options.dict) {
@@ -71,6 +90,8 @@ export class PdfFont extends PdfDictionary<{
         this.encoding = options.encoding
         this.manager = options.manager
         this.container = options.container
+        this._descriptor = options.descriptor
+        this._fontData = options.fontData
     }
 
     get fontName(): string | undefined {
@@ -103,6 +124,119 @@ export class PdfFont extends PdfDictionary<{
     }
 
     /**
+     * Gets the font descriptor with metrics and properties.
+     * Available for embedded fonts, undefined for standard fonts or loaded fonts without descriptor.
+     */
+    get descriptor(): FontDescriptor | UnicodeFontDescriptor | undefined {
+        return this._descriptor
+    }
+
+    /**
+     * Gets the original font file bytes.
+     * Available for embedded fonts, undefined for standard fonts or loaded fonts.
+     */
+    get fontData(): ByteArray | undefined {
+        return this._fontData
+    }
+
+    /**
+     * Gets the font type (Subtype in PDF).
+     */
+    get fontType():
+        | 'Type1'
+        | 'TrueType'
+        | 'Type0'
+        | 'MMType1'
+        | 'Type3'
+        | undefined {
+        const subtype = this.get('Subtype')
+        return subtype?.value as
+            | 'Type1'
+            | 'TrueType'
+            | 'Type0'
+            | 'MMType1'
+            | 'Type3'
+            | undefined
+    }
+
+    /**
+     * Sets the font type (Subtype in PDF).
+     */
+    set fontType(
+        type: 'Type1' | 'TrueType' | 'Type0' | 'MMType1' | 'Type3' | undefined,
+    ) {
+        if (type) {
+            this.set(
+                'Subtype',
+                new PdfName(type) as PdfName<'Type1' | 'TrueType' | 'Type0'>,
+            )
+        } else {
+            this.delete('Subtype')
+        }
+    }
+
+    /**
+     * Gets the first character code in the Widths array.
+     */
+    get firstChar(): number | undefined {
+        const firstChar = this.get('FirstChar')
+        return firstChar?.value
+    }
+
+    /**
+     * Sets the first character code in the Widths array.
+     */
+    set firstChar(value: number | undefined) {
+        if (value !== undefined) {
+            this.set('FirstChar', new PdfNumber(value))
+        } else {
+            this.delete('FirstChar')
+        }
+    }
+
+    /**
+     * Gets the last character code in the Widths array.
+     */
+    get lastChar(): number | undefined {
+        const lastChar = this.get('LastChar')
+        return lastChar?.value
+    }
+
+    /**
+     * Sets the last character code in the Widths array.
+     */
+    set lastChar(value: number | undefined) {
+        if (value !== undefined) {
+            this.set('LastChar', new PdfNumber(value))
+        } else {
+            this.delete('LastChar')
+        }
+    }
+
+    /**
+     * Gets the character widths array.
+     */
+    get widths(): number[] | undefined {
+        const widths = this.get('Widths')
+        if (!widths) return undefined
+        return widths.items.map((item) => item.value)
+    }
+
+    /**
+     * Sets the character widths array.
+     */
+    set widths(values: number[] | undefined) {
+        if (values) {
+            this.set(
+                'Widths',
+                new PdfArray(values.map((w) => new PdfNumber(w))),
+            )
+        } else {
+            this.delete('Widths')
+        }
+    }
+
+    /**
      * Returns the resource name for string coercion.
      * This enables using PdfFont objects in template literals like:
      * ```typescript
@@ -130,11 +264,44 @@ export class PdfFont extends PdfDictionary<{
      * Legacy property for backward compatibility with code that accesses fontRef.
      * Returns the container object if available.
      */
-    get fontRef(): PdfIndirectObject<PdfDictionary> {
+    get fontRef(): PdfObjectReference {
         if (!this.container) {
             throw new Error('Font has not been written to PDF yet')
         }
-        return this.container as PdfIndirectObject<PdfDictionary>
+        return this.container.reference
+    }
+
+    /**
+     * Creates a PdfFont from font file bytes.
+     * Automatically detects the font format (TTF, OTF, WOFF) and parses it.
+     *
+     * @param data - The font file bytes
+     * @returns A PdfFont instance ready to be written to the PDF
+     */
+    static fromBytes(data: ByteArray): PdfFont {
+        const parser = parseFont(data)
+        return PdfFont.fromParser(parser)
+    }
+
+    /**
+     * Creates a PdfFont from a FontParser instance.
+     * Extracts all necessary information from the parser including font name,
+     * descriptor, and font data.
+     *
+     * @param parser - A FontParser instance (TtfParser, OtfParser, or WoffParser)
+     * @returns A PdfFont instance ready to be written to the PDF
+     */
+    static fromParser(parser: FontParser): PdfFont {
+        if (parser instanceof OtfParser && parser.isCFFBased()) {
+            throw new Error('CFF-based OTF fonts are not supported yet')
+        }
+
+        const fontInfo = parser.getFontInfo()
+        const fontName = fontInfo.postScriptName
+        const descriptor = parser.getFontDescriptor(fontName)
+        const fontData = parser.getFontData()
+
+        return PdfFont.fromTrueTypeData(fontData, fontName, descriptor)
     }
 
     /**
@@ -185,7 +352,12 @@ export class PdfFont extends PdfDictionary<{
         fontName: string,
         descriptor: FontDescriptor,
     ): PdfFont {
-        const font = new PdfFont({ fontName, encoding: 'WinAnsiEncoding' })
+        const font = new PdfFont({
+            fontName,
+            encoding: 'WinAnsiEncoding',
+            descriptor,
+            fontData,
+        })
 
         // Create font descriptor dictionary
         const fontDescriptorDict = new PdfDictionary()
@@ -281,7 +453,12 @@ export class PdfFont extends PdfDictionary<{
         descriptor: UnicodeFontDescriptor,
         unicodeMappings?: Map<number, number>,
     ): PdfFont {
-        const font = new PdfFont({ fontName, encoding: 'Identity-H' })
+        const font = new PdfFont({
+            fontName,
+            encoding: 'Identity-H',
+            descriptor,
+            fontData,
+        })
 
         // Create font descriptor dictionary
         const fontDescriptorDict = new PdfDictionary()

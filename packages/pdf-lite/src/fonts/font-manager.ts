@@ -5,7 +5,7 @@ import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { ByteArray } from '../types.js'
-import { EmbeddedFont, FontDescriptor, UnicodeFontDescriptor } from './types.js'
+import { FontDescriptor, UnicodeFontDescriptor } from './types.js'
 import { PdfFont } from './pdf-font.js'
 import { parseFont } from './parsers/font-parser.js'
 
@@ -22,11 +22,7 @@ export class PdfFontManager {
     }
 
     async findFontByName(fontName: string): Promise<PdfFont | undefined> {
-        const font = await this.searchFontInPdf(fontName)
-        if (font) {
-            return this.wrapFont(font)
-        }
-        return undefined
+        return await this.searchFontInPdf(fontName)
     }
 
     /**
@@ -147,22 +143,8 @@ export class PdfFontManager {
     /**
      * Gets the font reference by font name or resource name.
      */
-    async getFont(fontName: string): Promise<EmbeddedFont | undefined> {
+    async getFont(fontName: string): Promise<PdfFont | undefined> {
         return await this.searchFontInPdf(fontName)
-    }
-
-    /**
-     * Wraps an embedded font in a PdfFont object.
-     * @internal
-     */
-    private wrapFont(embedded: EmbeddedFont): PdfFont {
-        return new PdfFont({
-            fontName: embedded.fontName,
-            resourceName: embedded.baseFont,
-            encoding: embedded.encoding,
-            manager: this,
-            container: embedded.fontRef as PdfIndirectObject,
-        })
     }
 
     /**
@@ -203,9 +185,8 @@ export class PdfFontManager {
      * Gets all embedded fonts.
      * Searches the PDF structure to find all fonts.
      */
-    async getAllFonts(): Promise<Map<string, EmbeddedFont>> {
-        const fonts = await this.collectAllFontsFromPdf()
-        return fonts ?? new Map()
+    async getAllFonts(): Promise<Map<string, PdfFont>> {
+        return await this.collectAllFontsFromPdf()
     }
 
     /**
@@ -240,22 +221,10 @@ export class PdfFontManager {
      * Loads existing fonts from the PDF document.
      * Traverses the page tree and extracts font information from page resources.
      *
-     * @returns Map of font names to their embedded font info
+     * @returns Map of font names to their PdfFont objects
      */
-    async loadExistingFonts(): Promise<Map<string, EmbeddedFont>> {
-        const fonts = new Map<string, EmbeddedFont>()
-        const catalog = this.document.rootDictionary
-        if (!catalog) return fonts
-
-        const pagesRef = catalog.get('Pages')
-        if (!pagesRef) return fonts
-
-        const pagesObjRef = pagesRef.as(PdfObjectReference)
-        if (!pagesObjRef) return fonts
-
-        await this.traversePageTreeForFonts(pagesObjRef, fonts)
-
-        return fonts
+    async loadExistingFonts(): Promise<Map<string, PdfFont>> {
+        return await this.collectAllFontsFromPdf()
     }
 
     /**
@@ -263,7 +232,7 @@ export class PdfFontManager {
      */
     private async traversePageTreeForFonts(
         nodeRef: PdfObjectReference,
-        fonts: Map<string, EmbeddedFont>,
+        fonts: Map<string, PdfFont>,
     ): Promise<void> {
         const nodeObject = await this.document.readObject({
             objectNumber: nodeRef.objectNumber,
@@ -295,7 +264,7 @@ export class PdfFontManager {
     private async extractFontsFromPage(
         _pageObject: PdfIndirectObject,
         pageDict: PdfDictionary,
-        fonts: Map<string, EmbeddedFont>,
+        fonts: Map<string, PdfFont>,
     ): Promise<void> {
         // Get Resources - could be direct dict or reference
         let resources = pageDict.get('Resources')?.as(PdfDictionary)
@@ -357,17 +326,18 @@ export class PdfFontManager {
             const encoding = fontObjDict.get('Encoding')?.as(PdfName)?.value
 
             if (baseFont) {
-                const embeddedFont = {
+                const pdfFont = new PdfFont({
                     fontName: baseFont,
-                    fontRef: fontIndirectObj,
-                    baseFont: resourceName,
+                    resourceName: resourceName,
                     encoding: encoding,
-                }
-                fonts.set(resourceName, embeddedFont)
+                    manager: this,
+                    container: fontIndirectObj as PdfIndirectObject,
+                })
+                fonts.set(resourceName, pdfFont)
 
                 // Also register by baseFont name for lookup convenience
                 if (!fonts.has(baseFont)) {
-                    fonts.set(baseFont, embeddedFont)
+                    fonts.set(baseFont, pdfFont)
                 }
             }
         }
@@ -379,7 +349,7 @@ export class PdfFontManager {
      */
     private async searchFontInPdf(
         fontName: string,
-    ): Promise<EmbeddedFont | undefined> {
+    ): Promise<PdfFont | undefined> {
         const fonts = await this.collectAllFontsFromPdf()
         return fonts?.get(fontName)
     }
@@ -388,8 +358,8 @@ export class PdfFontManager {
      * Collects all fonts from the PDF structure.
      * @internal
      */
-    private async collectAllFontsFromPdf(): Promise<Map<string, EmbeddedFont>> {
-        const fonts = new Map<string, EmbeddedFont>()
+    private async collectAllFontsFromPdf(): Promise<Map<string, PdfFont>> {
+        const fonts = new Map<string, PdfFont>()
 
         const catalog = this.document.rootDictionary
         if (!catalog) return fonts

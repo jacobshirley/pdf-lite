@@ -17,6 +17,7 @@ import {
     isSupportedFontFormat,
 } from '../../src/fonts/parsers/font-parser'
 import { ByteArray } from '../../src/types'
+import { PdfFont } from '../../src/fonts/pdf-font'
 
 // Helper to load font fixtures
 const base64ToBytes = (base64: string): ByteArray => {
@@ -993,6 +994,136 @@ describe('Font Parsers with Minimal Test Data', () => {
             expect(descriptor).toHaveProperty('firstChar')
             expect(descriptor).toHaveProperty('lastChar')
             expect(descriptor).toHaveProperty('widths')
+        })
+    })
+
+    describe('PdfFont.fromBytes', () => {
+        it('should create PdfFont from TTF bytes', () => {
+            const ttfData = createMinimalTtf()
+            const font = PdfFont.fromBytes(ttfData)
+
+            expect(font).toBeInstanceOf(PdfFont)
+            expect(font.fontName).toBeDefined()
+            expect(typeof font.fontName).toBe('string')
+        })
+
+        it('should create PdfFont from OTF bytes (non-CFF)', () => {
+            const otfData = createMinimalOtf()
+            // Modify to make it non-CFF based (use TTF signature instead)
+            const view = new DataView(otfData.buffer)
+            view.setUint32(0, 0x00010000) // Change from 'OTTO' to TTF signature
+
+            const font = PdfFont.fromBytes(otfData)
+
+            expect(font).toBeInstanceOf(PdfFont)
+            expect(font.fontName).toBeDefined()
+        })
+
+        it('should throw error for CFF-based OTF fonts', () => {
+            const otfData = createMinimalOtf() // Has 'OTTO' signature
+
+            expect(() => PdfFont.fromBytes(otfData)).toThrow(
+                'CFF-based OTF fonts are not supported yet',
+            )
+        })
+
+        it('should throw error for unsupported font formats', () => {
+            const invalidData = new Uint8Array([0x00, 0x00, 0x00, 0x00])
+
+            expect(() => PdfFont.fromBytes(invalidData)).toThrow(
+                'Unknown or unsupported font format',
+            )
+        })
+
+        it('should throw error for WOFF2 format', () => {
+            const woff2Data = new Uint8Array([0x77, 0x4f, 0x46, 0x32]) // 'wOF2'
+
+            expect(() => PdfFont.fromBytes(woff2Data)).toThrow(
+                'WOFF2 format is not supported',
+            )
+        })
+
+        it('should extract font properties correctly', () => {
+            const ttfData = createMinimalTtf()
+            const font = PdfFont.fromBytes(ttfData)
+
+            // Check that the font has the required PDF dictionary entries
+            expect(font.get('Type')?.toString()).toBe('/Font')
+            expect(font.get('Subtype')?.toString()).toBe('/TrueType')
+            expect(font.get('BaseFont')).toBeDefined()
+        })
+
+        it('should have embedded font data', () => {
+            const ttfData = createMinimalTtf()
+            const font = PdfFont.fromBytes(ttfData)
+
+            // Font should store reference to font data
+            expect(font.fontData).toBeDefined()
+            expect(font.fontData).toBeInstanceOf(Uint8Array)
+        })
+
+        it('should preserve original font bytes', () => {
+            const ttfData = createMinimalTtf()
+            const originalLength = ttfData.length
+            const font = PdfFont.fromBytes(ttfData)
+
+            expect(font.fontData?.length).toBe(originalLength)
+        })
+
+        it('should handle multiple fonts independently', () => {
+            const ttfData1 = createMinimalTtf()
+            const ttfData2 = createMinimalTtf()
+
+            const font1 = PdfFont.fromBytes(ttfData1)
+            const font2 = PdfFont.fromBytes(ttfData2)
+
+            expect(font1).toBeInstanceOf(PdfFont)
+            expect(font2).toBeInstanceOf(PdfFont)
+            // Each font should be independent
+            expect(font1).not.toBe(font2)
+        })
+
+        it('should work with real TTF font file', async () => {
+            const ttfData = await loadFont(TTF_FIXTURE)
+            const font = PdfFont.fromBytes(ttfData)
+
+            expect(font).toBeInstanceOf(PdfFont)
+            expect(font.fontName).toBeDefined()
+            expect(font.fontName?.length).toBeGreaterThan(0)
+        })
+
+        it('should work with real OTF font file (non-CFF)', async () => {
+            const otfData = await loadFont(OTF_FIXTURE)
+
+            // Check if this OTF is CFF-based
+            const view = new DataView(
+                otfData.buffer,
+                otfData.byteOffset,
+                otfData.byteLength,
+            )
+            const signature = view.getUint32(0)
+            const isCFF = signature === 0x4f54544f // 'OTTO'
+
+            if (isCFF) {
+                // If CFF-based, should throw
+                expect(() => PdfFont.fromBytes(otfData)).toThrow(
+                    'CFF-based OTF fonts are not supported yet',
+                )
+            } else {
+                // If not CFF-based, should work
+                const font = PdfFont.fromBytes(otfData)
+                expect(font).toBeInstanceOf(PdfFont)
+                expect(font.fontName).toBeDefined()
+            }
+        })
+
+        it('should work with real WOFF font file', async () => {
+            const woffData = await loadFont(WOFF_FIXTURE)
+            const font = PdfFont.fromBytes(woffData)
+
+            expect(font).toBeInstanceOf(PdfFont)
+            expect(font.fontName).toBeDefined()
+            expect(font.fontName!.length).toBeGreaterThan(0)
         })
     })
 })

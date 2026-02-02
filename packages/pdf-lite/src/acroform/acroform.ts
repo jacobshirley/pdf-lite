@@ -546,6 +546,15 @@ export class PdfAcroForm<
         const fieldsArray = new PdfArray<PdfObjectReference>()
         this.set('Fields', fieldsArray)
 
+        // Track fields that need to be added to page annotations
+        const fieldsByPage = new Map<
+            string,
+            {
+                pageRef: PdfObjectReference
+                fieldRefs: PdfObjectReference[]
+            }
+        >()
+
         for (const field of this.fields) {
             if (!field.isModified()) continue
             const acroFormFieldIndirect = new PdfIndirectObject({
@@ -553,7 +562,92 @@ export class PdfAcroForm<
                 content: field,
             })
             document.add(acroFormFieldIndirect)
-            fieldsArray.push(acroFormFieldIndirect.reference)
+
+            // Create a proper PdfObjectReference (not the proxy from .reference)
+            const fieldReference = new PdfObjectReference(
+                acroFormFieldIndirect.objectNumber,
+                acroFormFieldIndirect.generationNumber,
+            )
+            fieldsArray.push(fieldReference)
+
+            // Track if this field needs to be added to a page's Annots
+            const parentRef = field.parentRef
+            if (parentRef && field.isWidget) {
+                const pageKey = `${parentRef.objectNumber}_${parentRef.generationNumber}`
+                if (!fieldsByPage.has(pageKey)) {
+                    fieldsByPage.set(pageKey, {
+                        pageRef: parentRef,
+                        fieldRefs: [],
+                    })
+                }
+                fieldsByPage.get(pageKey)!.fieldRefs.push(fieldReference)
+            }
+        }
+
+        // Add field references to page annotations
+        for (const { pageRef, fieldRefs } of fieldsByPage.values()) {
+            const pageObj = await document.readObject({
+                objectNumber: pageRef.objectNumber,
+                generationNumber: pageRef.generationNumber,
+            })
+
+            if (pageObj) {
+                const pageDict = pageObj.content.as(PdfDictionary)
+                const annotsRef = pageDict.get('Annots')
+                let annotsArray: PdfArray<PdfObjectReference>
+                let annotsIsIndirect = false
+                let annotsObjNumber = 0
+                let annotsGenNumber = 0
+
+                if (annotsRef instanceof PdfObjectReference) {
+                    annotsIsIndirect = true
+                    annotsObjNumber = annotsRef.objectNumber
+                    annotsGenNumber = annotsRef.generationNumber
+                    const annotsObj = await document.readObject({
+                        objectNumber: annotsRef.objectNumber,
+                        generationNumber: annotsRef.generationNumber,
+                    })
+                    annotsArray = annotsObj!.content
+                        .as(PdfArray<PdfObjectReference>)
+                        .clone()
+                } else if (annotsRef instanceof PdfArray) {
+                    annotsArray = annotsRef
+                        .as(PdfArray<PdfObjectReference>)
+                        .clone()
+                } else {
+                    annotsArray = new PdfArray<PdfObjectReference>()
+                    pageDict.set('Annots', annotsArray)
+                }
+
+                // Add new field references that aren't already in the annots array
+                for (const fieldRef of fieldRefs) {
+                    const exists = annotsArray.items.some((ref) =>
+                        ref.equals(fieldRef),
+                    )
+
+                    if (!exists) {
+                        annotsArray.push(fieldRef)
+                    }
+                }
+
+                // If Annots is an indirect object, write it back
+                if (annotsIsIndirect) {
+                    const annotsIndirect = new PdfIndirectObject({
+                        objectNumber: annotsObjNumber,
+                        generationNumber: annotsGenNumber,
+                        content: annotsArray,
+                    })
+                    document.add(annotsIndirect)
+                }
+
+                // Write the modified page back
+                const pageIndirect = new PdfIndirectObject({
+                    objectNumber: pageRef.objectNumber,
+                    generationNumber: pageRef.generationNumber,
+                    content: pageDict,
+                })
+                document.add(pageIndirect)
+            }
         }
 
         if (this.isModified()) {

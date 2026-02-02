@@ -6,7 +6,7 @@ export class PdfName<T extends string = string> extends PdfObject {
 
     constructor(value: T) {
         super()
-        this.value = PdfName.unescapeName(value) as T
+        this.value = value
     }
 
     protected tokenize() {

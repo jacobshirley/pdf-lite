@@ -35,12 +35,12 @@ describe('PdfName', () => {
             expect(PdfName.escapeName('100%complete')).toBe('100#25complete')
         })
 
-        it('should sanitize names with spaces by taking first word', () => {
-            expect(PdfName.escapeName('Hello World')).toBe('Hello')
-            expect(PdfName.escapeName('Value With Spaces')).toBe('Value')
-            expect(PdfName.escapeName('First Second')).toBe('First')
-            // Spaces are escaped if part of the name, but here they trigger sanitization
-            expect(PdfName.escapeName('hello world')).toBe('hello')
+        it('should escape spaces in names', () => {
+            expect(PdfName.escapeName('Hello World')).toBe('Hello#20World')
+            expect(PdfName.escapeName('Value With Spaces')).toBe(
+                'Value#20With#20Spaces',
+            )
+            expect(PdfName.escapeName('hello world')).toBe('hello#20world')
         })
 
         it('should not sanitize names with periods', () => {
@@ -51,16 +51,11 @@ describe('PdfName', () => {
             )
         })
 
-        it('should use "Yes" as default for empty or special-char-only names', () => {
-            expect(PdfName.escapeName(' ')).toBe('Yes')
-            expect(PdfName.escapeName('  ')).toBe('Yes')
-        })
-
         it('should handle mixed scenarios', () => {
-            // Space causes sanitization first, then no escaping needed
-            expect(PdfName.escapeName('button value')).toBe('button')
-            // No space, so escaping applies to special chars
             expect(PdfName.escapeName('test(value)')).toBe('test#28value#29')
+            expect(PdfName.escapeName('name with (parens)')).toBe(
+                'name#20with#20#28parens#29',
+            )
         })
 
         it('should handle non-ASCII characters', () => {
@@ -162,8 +157,8 @@ describe('PdfName', () => {
             const name = new PdfName('test value')
             const tokens = name['tokenize']()
             expect(tokens).toHaveLength(1)
-            // The token should contain the escaped version (sanitized to "test")
-            expect(tokens[0].name).toBe('test')
+            // The token should contain the escaped version with spaces escaped
+            expect(tokens[0].name).toBe('test#20value')
         })
 
         it('should tokenize special characters with escaping', () => {

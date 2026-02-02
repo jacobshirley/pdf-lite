@@ -19,28 +19,16 @@ export class PdfName<T extends string = string> extends PdfObject {
 
     /**
      * Escapes a PDF name according to PDF specification.
-     * For button fields and other special cases, sanitizes values with spaces.
      * PDF names can't contain spaces or certain special chars except # for escaping.
      *
      * @param name - The name to escape
      * @returns The escaped name
      */
     static escapeName(name: string): string {
-        // For button fields, sanitize the value to be a valid PDF name
-        // Common button values are "Yes", "No", "Off", "On", etc.
-        let sanitized = name
-
-        // If value contains spaces, extract first word or use default
-        if (/\s/.test(name)) {
-            // Extract first word before space
-            const match = name.match(/^(\S+)/)
-            sanitized = match ? match[1] : 'Yes'
-        }
-
         // Escape special characters in PDF names
         // Characters that need escaping: space, #, %, (, ), <, >, [, ], {, }, /, and non-ASCII
         // Safe characters: A-Z, a-z, 0-9, -, _, .
-        return sanitized.replace(/[^A-Za-z0-9-_.]/g, (char) => {
+        return name.replace(/[^A-Za-z0-9-_.]/g, (char) => {
             const hex = char
                 .charCodeAt(0)
                 .toString(16)

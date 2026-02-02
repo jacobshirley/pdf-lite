@@ -104,6 +104,18 @@ export class PdfDictionary<
         return obj as T
     }
 
+    /**
+     * Returns an iterator for the dictionary entries.
+     * Each entry is a tuple of [key string, value].
+     */
+    entries(): IterableIterator<[string, PdfObject | undefined]> {
+        const entries = Array.from(this.#entries.entries()).map(
+            ([key, value]) =>
+                [key.value, value] as [string, PdfObject | undefined],
+        )
+        return entries[Symbol.iterator]()
+    }
+
     protected tokenize() {
         let index = 0
 

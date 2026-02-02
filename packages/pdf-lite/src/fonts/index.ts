@@ -1,5 +1,6 @@
 export * from './types.js'
 export * from './font-manager.js'
+export * from './pdf-font.js'
 export * from './parsers/ttf-parser.js'
 export * from './parsers/otf-parser.js'
 export * from './parsers/woff-parser.js'

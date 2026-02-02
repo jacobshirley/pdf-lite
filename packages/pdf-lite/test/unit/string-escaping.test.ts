@@ -23,7 +23,7 @@ describe('String Escaping for PDF', () => {
         const input = stringToBytes('\n\r')
         const output = escapeString(input)
         const result = new TextDecoder().decode(output)
-        expect(result).toBe(`\\n${BACKSLASH}\r`)
+        expect(result).toBe(`\\n\\r`)
     })
 
     it('should not escape other control characters', () => {

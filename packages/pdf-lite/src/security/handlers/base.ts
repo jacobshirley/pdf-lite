@@ -209,6 +209,9 @@ export abstract class PdfSecurityHandler {
         const generationNumber = object.generationNumber
 
         const decryptObject = async (obj: PdfObject): Promise<void> => {
+            if (!obj) {
+                return
+            }
             if (obj instanceof PdfIndirectObject) {
                 return decryptObject(obj.content)
             } else if (obj instanceof PdfString) {
@@ -231,12 +234,15 @@ export abstract class PdfSecurityHandler {
 
                 await decryptObject(obj.header)
             } else if (obj instanceof PdfDictionary) {
-                for (const [key, value] of Object.entries(obj)) {
-                    await decryptObject(value)
+                const values = obj.values
+                for (const key in values) {
+                    await decryptObject(values[key])
                 }
             } else if (obj instanceof PdfArray) {
                 for (const item of obj.items) {
-                    await decryptObject(item)
+                    if (item) {
+                        await decryptObject(item)
+                    }
                 }
             }
         }

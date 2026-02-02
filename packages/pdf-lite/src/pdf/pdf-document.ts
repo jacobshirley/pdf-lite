@@ -680,7 +680,6 @@ export class PdfDocument extends PdfObject {
 
         if (this.securityHandler && this.isObjectEncryptable(foundObject)) {
             foundObject = foundObject.clone()
-
             await this.securityHandler.decryptObject(foundObject)
         } else if (this.isIncremental()) {
             foundObject = foundObject.clone() // Clone to prevent modifications in locked revisions

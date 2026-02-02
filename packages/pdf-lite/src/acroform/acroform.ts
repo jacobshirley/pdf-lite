@@ -674,7 +674,7 @@ export class PdfAcroForm<
     }
 
     async write(document: PdfDocument) {
-        const catalog = document.rootDictionary
+        const catalog = document.rootDictionary?.clone()
         if (!catalog) {
             throw new Error('Document has no root catalog')
         }

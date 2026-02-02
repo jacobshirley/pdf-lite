@@ -1,9 +1,10 @@
 import { ByteArray } from '../../types.js'
-import { bytesToString } from '../../utils/bytesToString.js'
 import { stringToBytes } from '../../utils/stringToBytes.js'
 import { needsUnicodeEncoding } from '../../utils/needsUnicodeEncoding.js'
 import { encodeAsUTF16BE } from '../../utils/encodeAsUTF16BE.js'
+import { encodeToPDFDocEncoding } from '../../utils/encodeToPDFDocEncoding.js'
 import { decodeFromUTF16BE } from '../../utils/decodeFromUTF16BE.js'
+import { decodeFromPDFDocEncoding } from '../../utils/decodeFromPDFDocEncoding.js'
 import { PdfStringToken } from '../tokens/string-token.js'
 import { PdfObject } from './pdf-object.js'
 
@@ -21,8 +22,8 @@ export class PdfString extends PdfObject {
                 // Use UTF-16BE encoding with BOM for Unicode strings
                 this._raw = encodeAsUTF16BE(raw)
             } else {
-                // Use PDFDocEncoding (ASCII-compatible) for simple strings
-                this._raw = stringToBytes(raw)
+                //for simple strings
+                this._raw = encodeToPDFDocEncoding(raw)
             }
         } else {
             this._raw = raw
@@ -48,8 +49,8 @@ export class PdfString extends PdfObject {
             return decodeFromUTF16BE(this.raw)
         }
 
-        // Default: use UTF-8 decoding
-        return bytesToString(this.raw)
+        // Default: use PDFDocEncoding
+        return decodeFromPDFDocEncoding(this.raw)
     }
 
     protected tokenize() {

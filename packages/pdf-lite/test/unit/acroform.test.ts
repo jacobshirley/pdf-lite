@@ -381,26 +381,6 @@ describe('AcroForm', () => {
         // Add the new field to the form
         acroform.fields.push(newField)
 
-        // Add the field to the page's annotations array
-        const annotsRef = firstPageObj!.content.as(PdfDictionary).get('Annots')
-        let annotsArray: PdfArray<PdfObjectReference>
-
-        if (annotsRef instanceof PdfObjectReference) {
-            const annotsObj = await document.readObject({
-                objectNumber: annotsRef.objectNumber,
-                generationNumber: annotsRef.generationNumber,
-            })
-            annotsArray = annotsObj!.content as PdfArray<PdfObjectReference>
-        } else if (annotsRef instanceof PdfArray) {
-            annotsArray = annotsRef as PdfArray<PdfObjectReference>
-        } else {
-            annotsArray = new PdfArray<PdfObjectReference>()
-        }
-
-        // We'll need to add a reference to the new field when it's written
-        // For now, mark the page as modified so it gets rewritten
-        firstPageObj!.content.as(PdfDictionary).set('Annots', annotsArray)
-
         // Verify the field was added
         expect(acroform.fields.length).toBe(initialFieldCount + 1)
 

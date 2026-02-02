@@ -408,11 +408,5 @@ describe('AcroForm', () => {
         expect(rect).toBeDefined()
         expect(rect!.items[0].value).toBe(50)
         expect(rect!.items[1].value).toBe(50)
-
-        await server.commands.writeFile(
-            './test/unit/outputs/acroform-added-field.pdf',
-            await newDocument.toBase64(),
-            { encoding: 'base64' },
-        )
     })
 })

@@ -64,6 +64,7 @@ const ByteMap = {
     i: 0x69, // i
     NEW_LINE: 0x0a, // \n
     LINE_FEED: 0x0a, // \n
+    CARRIAGE_RETURN: 0x0d, // \r
     MINUS: 0x2d, // -
     BACKSLASH: 0x5c, // \
     SPACE: 0x20, // Space
@@ -260,6 +261,12 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
                 inEscape = true
                 const next = this.next()
 
+                let found = false
+                if (this.inputOffset >= 829528) {
+                    console.log('here', this.inputOffset, next)
+                    found = true
+                }
+
                 if (next === null) {
                     throw new Error('Unexpected end of input in string token')
                 }
@@ -289,9 +296,10 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
                     case ByteMap.BACKSLASH:
                         stringBytes.push(ByteMap.BACKSLASH)
                         break // \\
-                    case 0x0a:
-                    case 0x0d:
-                        // Ignore line breaks in the string after a backslash
+                    case ByteMap.LINE_FEED: // Line feed
+                    case ByteMap.CARRIAGE_RETURN: // Carriage return
+                        console.log(next === ByteMap.LINE_FEED ? 'LF' : 'CR')
+                        stringBytes.push(next)
                         break
                     default:
                         if (PdfByteStreamTokeniser.isOctet(next)) {

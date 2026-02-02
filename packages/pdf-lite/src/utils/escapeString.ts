@@ -36,7 +36,7 @@ export function escapeString(bytes: ByteArray | string): ByteArray {
                 result.push(BACKSLASH, 0x6e)
                 break // LF
             case 0x0d:
-                result.push(BACKSLASH, 0x72)
+                result.push(BACKSLASH, 0x0d)
                 break // CR
             default:
                 result.push(b)

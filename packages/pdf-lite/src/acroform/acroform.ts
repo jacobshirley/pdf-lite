@@ -159,6 +159,11 @@ export class PdfAcroFormField extends PdfDictionary<{
     set value(val: string) {
         const fieldType = this.get('FT')?.as(PdfName)?.value
         if (fieldType === PdfFieldType.Button) {
+            if (val.trim() === '') {
+                this.delete('V')
+                this.delete('AS')
+                return
+            }
             this.set('V', new PdfName(val))
             this.set('AS', new PdfName(val))
         } else {

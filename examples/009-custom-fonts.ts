@@ -13,7 +13,7 @@ import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
 
 // Helper to create a page
-// Note: Don't set Resources here - let FontManager add fonts to it automatically
+// Note: Pages inherit Resources from parent /Pages node, so no need to set it here
 function createPage(
     contentStreamRef: PdfIndirectObject<PdfStream>,
     pagesRef: PdfIndirectObject<PdfDictionary>,
@@ -30,7 +30,7 @@ function createPage(
         ]),
     )
     pageDict.set('Contents', contentStreamRef.reference)
-    // Resources will be added automatically by FontManager.write()
+    // Resources are inherited from the parent /Pages node
     pageDict.set('Parent', pagesRef.reference)
     return new PdfIndirectObject({ content: pageDict })
 }
@@ -106,18 +106,7 @@ async function main() {
         }),
     })
 
-    // Create page FIRST (before embedding fonts)
-    // FontManager.write() will find this page and add fonts to its Resources
-    const page = createPage(contentStream, pages)
-
-    // Update pages collection
-    pages.content.set('Kids', new PdfArray([page.reference]))
-    pages.content.set('Count', new PdfNumber(1))
-
-    document.add(contentStream, page)
-    await document.commit()
-
-    // NOW embed fonts - they will be automatically added to the page's Resources
+    // Embed fonts - FontManager will automatically add them to the /Pages Resources
     const helveticaBold =
         await document.fonts.embedStandardFont('Helvetica-Bold')
     const timesRoman = await document.fonts.embedStandardFont('Times-Roman')
@@ -160,9 +149,26 @@ async function main() {
     // FontManager.write() automatically:
     // - Assigns a resource name (F1, F2, F3, etc.)
     // - Creates the container indirect object
-    // - Adds the font to all pages' Resources/Font dictionaries
+    // - Adds the font to the /Pages node Resources dictionary
+    // - All child pages inherit these fonts (even pages added later!)
     await document.fonts.write(robotoFont)
     console.log(`Embedded custom font in PDF: ${robotoFont}`)
+
+    console.log(`\nFont resource mappings:`)
+    console.log(`  ${helveticaBold.resourceName} = Helvetica-Bold`)
+    console.log(`  ${timesRoman.resourceName} = Times-Roman`)
+    console.log(`  ${courier.resourceName} = Courier`)
+    console.log(`  ${robotoFont.resourceName} = Roboto-Regular`)
+
+    // Create page (it will inherit fonts from parent /Pages node)
+    const page = createPage(contentStream, pages)
+
+    // Update pages collection
+    pages.content.set('Kids', new PdfArray([page.reference]))
+    pages.content.set('Count', new PdfNumber(1))
+
+    document.add(contentStream, page)
+    await document.commit()
 
     console.log(`\nFont resource mappings:`)
     console.log(`  ${helveticaBold.resourceName} = Helvetica-Bold`)

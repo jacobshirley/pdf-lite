@@ -431,7 +431,9 @@ export class PdfFontManager {
     }
 
     /**
-     * Adds a font to the page resources of all pages.
+     * Adds a font to the global /Pages node Resources dictionary.
+     * All child pages will inherit these fonts automatically.
+     * This is more efficient than adding to each individual page.
      */
     private async addFontToPageResources(
         resourceName: string,
@@ -446,69 +448,22 @@ export class PdfFontManager {
         const pagesObjRef = pagesRef.as(PdfObjectReference)
         if (!pagesObjRef) return
 
-        await this.traversePageTree(pagesObjRef, resourceName, fontObject)
-
-        // Also add to AcroForm DR if AcroForm exists
-        await this.addFontToAcroFormResources(resourceName, fontObject)
-    }
-
-    /**
-     * Recursively traverses the page tree and adds font to each page's resources.
-     */
-    private async traversePageTree(
-        nodeRef: PdfObjectReference,
-        resourceName: string,
-        fontObject: PdfIndirectObject<PdfDictionary>,
-    ): Promise<void> {
-        const nodeObject = await this.document.readObject({
-            objectNumber: nodeRef.objectNumber,
-            generationNumber: nodeRef.generationNumber,
+        // Read the root /Pages object
+        const pagesObject = await this.document.readObject({
+            objectNumber: pagesObjRef.objectNumber,
+            generationNumber: pagesObjRef.generationNumber,
         })
 
-        if (!nodeObject) return
+        if (!pagesObject) return
 
-        const nodeDict = nodeObject.content.as(PdfDictionary)
-        const type = nodeDict.get('Type')?.as(PdfName)
+        const pagesDict = pagesObject.content.as(PdfDictionary)
+        if (!pagesDict) return
 
-        if (type?.value === 'Page') {
-            // Leaf node - add font to this page's resources
-            await this.addFontToPageDict(
-                nodeObject,
-                nodeDict,
-                resourceName,
-                fontObject,
-            )
-        } else if (type?.value === 'Pages') {
-            // Intermediate node - traverse children
-            const kids = nodeDict.get('Kids')?.as(PdfArray)
-            if (kids) {
-                for (const kidRef of kids.items) {
-                    if (kidRef instanceof PdfObjectReference) {
-                        await this.traversePageTree(
-                            kidRef,
-                            resourceName,
-                            fontObject,
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Adds a font reference to a page's Resources/Font dictionary.
-     */
-    private async addFontToPageDict(
-        pageObject: PdfIndirectObject,
-        pageDict: PdfDictionary,
-        resourceName: string,
-        fontObject: PdfIndirectObject<PdfDictionary>,
-    ): Promise<void> {
-        // Get or create Resources dictionary
-        let resources = pageDict.get('Resources')?.as(PdfDictionary)
+        // Get or create Resources dictionary on the /Pages node
+        let resources = pagesDict.get('Resources')?.as(PdfDictionary)
         if (!resources) {
             resources = new PdfDictionary()
-            pageDict.set('Resources', resources)
+            pagesDict.set('Resources', resources)
         }
 
         // Get or create Font dictionary within Resources
@@ -518,10 +473,13 @@ export class PdfFontManager {
             resources.set('Font', fontDict)
         }
 
-        // Add the font reference
+        // Add the font reference to the global dictionary
         fontDict.set(resourceName, fontObject.reference)
 
-        // Commit the modified page object
-        await this.document.commit(pageObject)
+        // Commit the modified /Pages object
+        await this.document.commit(pagesObject)
+
+        // Also add to AcroForm DR if AcroForm exists
+        await this.addFontToAcroFormResources(resourceName, fontObject)
     }
 }

@@ -7,6 +7,7 @@ import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfBoolean } from '../core/objects/pdf-boolean.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
+import { PdfFont } from '../fonts/pdf-font.js'
 
 /**
  * Field types for AcroForm fields
@@ -169,6 +170,36 @@ export class PdfAcroFormField extends PdfDictionary<{
         const updatedDa = da.replace(
             /\/[A-Za-z0-9_-]+(\s+[\d.]+\s+Tf)/g,
             `/${fontName}$1`,
+        )
+        this.set('DA', new PdfString(updatedDa))
+    }
+
+    /**
+     * Sets the font using a PdfFont object.
+     * Pass null to clear the font.
+     */
+    set font(font: PdfFont | null) {
+        if (font === null) {
+            // Clear font - set to empty or default
+            this.set('DA', new PdfString(''))
+            return
+        }
+
+        const resourceName = font.resourceName
+        const currentSize = this.fontSize ?? 12
+        const da = this.get('DA')?.as(PdfString)?.value || ''
+
+        if (!da) {
+            this.set(
+                'DA',
+                new PdfString(`/${resourceName} ${currentSize} Tf 0 g`),
+            )
+            return
+        }
+
+        const updatedDa = da.replace(
+            /\/[A-Za-z0-9_-]+(\s+[\d.]+\s+Tf)/g,
+            `/${resourceName}$1`,
         )
         this.set('DA', new PdfString(updatedDa))
     }

@@ -2,18 +2,12 @@ import { PdfDocument } from '../pdf/pdf-document.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfName } from '../core/objects/pdf-name.js'
-import { PdfNumber } from '../core/objects/pdf-number.js'
-import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
-import { PdfString } from '../core/objects/pdf-string.js'
 import { ByteArray } from '../types.js'
-import {
-    FontDescriptor,
-    UnicodeFontDescriptor,
-    CIDWidth,
-    EmbeddedFont,
-} from './types.js'
+import { FontDescriptor, UnicodeFontDescriptor } from './types.js'
+import { PdfFont } from './pdf-font.js'
+import { parseFont } from './parsers/font-parser.js'
 
 /**
  * Manages font embedding in PDF documents.
@@ -21,11 +15,14 @@ import {
  */
 export class PdfFontManager {
     private document: PdfDocument
-    private embeddedFonts: Map<string, EmbeddedFont> = new Map()
     private fontResourceCounter: number = 0
 
     constructor(document: PdfDocument) {
         this.document = document
+    }
+
+    async findFontByName(fontName: string): Promise<PdfFont | undefined> {
+        return await this.searchFontInPdf(fontName)
     }
 
     /**
@@ -34,116 +31,18 @@ export class PdfFontManager {
      * @param fontData - The font file bytes
      * @param fontName - The name to use for this font in the PDF
      * @param descriptor - Font metrics and properties
-     * @returns The font resource name (e.g., "F1") to use in content streams
+     * @returns A PdfFont object representing the embedded font
      */
     async embedTrueTypeFont(
         fontData: ByteArray,
         fontName: string,
         descriptor: FontDescriptor,
-    ): Promise<string> {
-        // Check if already embedded
-        if (this.embeddedFonts.has(fontName)) {
-            return this.embeddedFonts.get(fontName)!.baseFont
-        }
+    ): Promise<PdfFont> {
+        // Create font using factory
+        const font = PdfFont.fromTrueTypeData(fontData, fontName, descriptor)
 
-        // Create font descriptor
-        const fontDescriptorDict = new PdfDictionary()
-        fontDescriptorDict.set('Type', new PdfName('FontDescriptor'))
-        fontDescriptorDict.set('FontName', new PdfName(descriptor.fontName))
-        fontDescriptorDict.set('FontFamily', new PdfName(descriptor.fontFamily))
-        fontDescriptorDict.set(
-            'FontWeight',
-            new PdfNumber(descriptor.fontWeight),
-        )
-        fontDescriptorDict.set('Flags', new PdfNumber(descriptor.flags))
-        fontDescriptorDict.set(
-            'FontBBox',
-            new PdfArray([
-                new PdfNumber(descriptor.fontBBox[0]),
-                new PdfNumber(descriptor.fontBBox[1]),
-                new PdfNumber(descriptor.fontBBox[2]),
-                new PdfNumber(descriptor.fontBBox[3]),
-            ]),
-        )
-        fontDescriptorDict.set(
-            'ItalicAngle',
-            new PdfNumber(descriptor.italicAngle),
-        )
-        fontDescriptorDict.set('Ascent', new PdfNumber(descriptor.ascent))
-        fontDescriptorDict.set('Descent', new PdfNumber(descriptor.descent))
-        fontDescriptorDict.set('CapHeight', new PdfNumber(descriptor.capHeight))
-        fontDescriptorDict.set('StemV', new PdfNumber(descriptor.stemV))
-
-        // Create font file stream
-        const fontFileStream = new PdfStream({
-            header: new PdfDictionary(),
-            original: fontData,
-        })
-        fontFileStream.header.set('Length1', new PdfNumber(fontData.length))
-        fontFileStream.addFilter('FlateDecode')
-
-        const fontFileObject = new PdfIndirectObject({
-            content: fontFileStream,
-        })
-
-        fontDescriptorDict.set('FontFile2', fontFileObject.reference)
-
-        const fontDescriptorObject = new PdfIndirectObject({
-            content: fontDescriptorDict,
-        })
-
-        // Create font dictionary
-        const fontDict = new PdfDictionary()
-        fontDict.set('Type', new PdfName('Font'))
-        fontDict.set('Subtype', new PdfName('TrueType'))
-        fontDict.set('BaseFont', new PdfName(descriptor.fontName))
-        fontDict.set('FontDescriptor', fontDescriptorObject.reference)
-        fontDict.set('Encoding', new PdfName('WinAnsiEncoding'))
-
-        // Add width information for proper glyph rendering
-        const firstChar = descriptor.firstChar ?? 32
-        const lastChar = descriptor.lastChar ?? 255
-        fontDict.set('FirstChar', new PdfNumber(firstChar))
-        fontDict.set('LastChar', new PdfNumber(lastChar))
-
-        if (descriptor.widths) {
-            fontDict.set(
-                'Widths',
-                new PdfArray(descriptor.widths.map((w) => new PdfNumber(w))),
-            )
-        } else {
-            // Default: 1000 (standard em-square)
-            const defaultWidths = Array(lastChar - firstChar + 1)
-                .fill(0)
-                .map(() => new PdfNumber(1000))
-            fontDict.set('Widths', new PdfArray(defaultWidths))
-        }
-
-        const fontObject = new PdfIndirectObject({
-            content: fontDict,
-        })
-
-        // Commit all objects
-        await this.document.commit(
-            fontFileObject,
-            fontDescriptorObject,
-            fontObject,
-        )
-
-        // Register in resources
-        this.fontResourceCounter++
-        const resourceName = `F${this.fontResourceCounter}`
-        this.embeddedFonts.set(fontName, {
-            fontName,
-            fontRef: fontObject,
-            baseFont: resourceName,
-            encoding: 'WinAnsiEncoding',
-        })
-
-        // Update page resources
-        await this.addFontToPageResources(resourceName, fontObject)
-
-        return resourceName
+        // Write to PDF
+        return await this.write(font)
     }
 
     /**
@@ -151,7 +50,7 @@ export class PdfFontManager {
      * These fonts don't require font data as they're built into PDF viewers.
      *
      * @param fontName - One of the 14 standard PDF fonts
-     * @returns The font resource name to use in content streams
+     * @returns A PdfFont object representing the embedded font
      */
     async embedStandardFont(
         fontName:
@@ -169,51 +68,125 @@ export class PdfFontManager {
             | 'Courier-BoldOblique'
             | 'Symbol'
             | 'ZapfDingbats',
-    ): Promise<string> {
-        // Check if already embedded
-        if (this.embeddedFonts.has(fontName)) {
-            return this.embeddedFonts.get(fontName)!.baseFont
+    ): Promise<PdfFont> {
+        // Create font using factory
+        const font = PdfFont.fromStandardFont(fontName)
+
+        // Write to PDF
+        return await this.write(font)
+    }
+
+    /**
+     * Embeds a font from file data with automatic parsing and configuration.
+     * This is the recommended high-level API for embedding fonts.
+     *
+     * @param fontData - The font file bytes (TTF, OTF, or WOFF format)
+     * @param options - Optional configuration
+     * @param options.fontName - Custom font name (defaults to PostScript name from font)
+     * @param options.unicode - Use Unicode/Type0 encoding for non-ASCII characters
+     * @param options.unicodeMappings - Custom CID to Unicode mappings for Type0 fonts
+     * @returns A PdfFont object representing the embedded font
+     *
+     * @example
+     * ```typescript
+     * // Simple embedding with auto-generated name
+     * const font = await document.fonts.embedFromFile(fontData)
+     * field.font = font
+     *
+     * // With custom name and Unicode support
+     * const font = await document.fonts.embedFromFile(fontData, {
+     *     fontName: 'MyCustomFont',
+     *     unicode: true
+     * })
+     * ```
+     */
+    async embedFromFile(
+        fontData: ByteArray,
+        options?: {
+            fontName?: string
+            unicode?: boolean
+            unicodeMappings?: Map<number, number>
+        },
+    ): Promise<PdfFont> {
+        // Parse the font to extract metadata
+        const parser = parseFont(fontData)
+        const info = parser.getFontInfo()
+
+        // Auto-generate font name from metadata if not provided
+        const fontName =
+            options?.fontName ?? info.postScriptName ?? info.fullName
+
+        // Get the appropriate descriptor based on unicode option
+        const descriptor = parser.getFontDescriptor(fontName)
+
+        // Embed using the appropriate method and return PdfFont
+        if (options?.unicode) {
+            // For Unicode fonts, we need a UnicodeFontDescriptor
+            // Create one by extending the base descriptor
+            const unicodeDescriptor: UnicodeFontDescriptor = {
+                ...descriptor,
+                defaultWidth: 1000,
+                cidToGidMap: 'Identity',
+            }
+            return await this.embedTrueTypeFontUnicode(
+                fontData,
+                fontName,
+                unicodeDescriptor,
+                options.unicodeMappings,
+            )
+        } else {
+            // Use standard TrueType embedding
+            return await this.embedTrueTypeFont(fontData, fontName, descriptor)
         }
-
-        // Create font dictionary for standard font
-        const fontDict = new PdfDictionary()
-        fontDict.set('Type', new PdfName('Font'))
-        fontDict.set('Subtype', new PdfName('Type1'))
-        fontDict.set('BaseFont', new PdfName(fontName))
-
-        const fontObject = new PdfIndirectObject({
-            content: fontDict,
-        })
-
-        await this.document.commit(fontObject)
-
-        // Register in resources
-        this.fontResourceCounter++
-        const resourceName = `F${this.fontResourceCounter}`
-        this.embeddedFonts.set(fontName, {
-            fontName,
-            fontRef: fontObject,
-            baseFont: resourceName,
-        })
-
-        // Update page resources
-        await this.addFontToPageResources(resourceName, fontObject)
-
-        return resourceName
     }
 
     /**
      * Gets the font reference by font name or resource name.
      */
-    getFont(fontName: string): EmbeddedFont | undefined {
-        return this.embeddedFonts.get(fontName)
+    async getFont(fontName: string): Promise<PdfFont | undefined> {
+        return await this.searchFontInPdf(fontName)
+    }
+
+    /**
+     * Writes a font to the PDF document.
+     * Assigns resource name, creates container object, commits all objects,
+     * and registers it in page resources.
+     *
+     * @param font - The PdfFont instance to write
+     * @param cacheKey - Unused, kept for API compatibility
+     * @returns The font with its resourceName and container set
+     * @internal
+     */
+    async write(font: PdfFont): Promise<PdfFont> {
+        // Assign resource name
+        this.fontResourceCounter++
+        const resourceName = `F${this.fontResourceCounter}`
+        font.resourceName = resourceName
+
+        // Create container that wraps the font dictionary
+        const fontObject = new PdfIndirectObject({
+            content: font,
+        })
+        font.container = fontObject
+
+        // Get all objects to commit (auxiliary objects + container)
+        const objectsToCommit = font.getObjectsToCommit()
+        if (objectsToCommit.length > 0) {
+            await this.document.commit(...objectsToCommit)
+        }
+
+        // Register in page resources
+        await this.addFontToPageResources(resourceName, fontObject)
+
+        return font
     }
 
     /**
      * Gets all embedded fonts.
+     * Searches the PDF structure to find all fonts.
      */
-    getAllFonts(): Map<string, EmbeddedFont> {
-        return new Map(this.embeddedFonts)
+    async getAllFonts(): Promise<Map<string, PdfFont>> {
+        return await this.collectAllFontsFromPdf()
     }
 
     /**
@@ -224,253 +197,34 @@ export class PdfFontManager {
      * @param fontName - The name to use for this font in the PDF
      * @param descriptor - Unicode font descriptor with CID metrics
      * @param unicodeMappings - Map of CID to Unicode code point for ToUnicode CMap
-     * @returns The font resource name (e.g., "F1") to use in content streams
+     * @returns A PdfFont object representing the embedded font
      */
     async embedTrueTypeFontUnicode(
         fontData: ByteArray,
         fontName: string,
         descriptor: UnicodeFontDescriptor,
         unicodeMappings?: Map<number, number>,
-    ): Promise<string> {
-        // Check if already embedded
-        if (this.embeddedFonts.has(fontName)) {
-            return this.embeddedFonts.get(fontName)!.baseFont
-        }
-
-        // Create font descriptor dictionary
-        const fontDescriptorDict = new PdfDictionary()
-        fontDescriptorDict.set('Type', new PdfName('FontDescriptor'))
-        fontDescriptorDict.set('FontName', new PdfName(descriptor.fontName))
-        fontDescriptorDict.set('FontFamily', new PdfName(descriptor.fontFamily))
-        fontDescriptorDict.set(
-            'FontWeight',
-            new PdfNumber(descriptor.fontWeight),
-        )
-        fontDescriptorDict.set('Flags', new PdfNumber(descriptor.flags))
-        fontDescriptorDict.set(
-            'FontBBox',
-            new PdfArray([
-                new PdfNumber(descriptor.fontBBox[0]),
-                new PdfNumber(descriptor.fontBBox[1]),
-                new PdfNumber(descriptor.fontBBox[2]),
-                new PdfNumber(descriptor.fontBBox[3]),
-            ]),
-        )
-        fontDescriptorDict.set(
-            'ItalicAngle',
-            new PdfNumber(descriptor.italicAngle),
-        )
-        fontDescriptorDict.set('Ascent', new PdfNumber(descriptor.ascent))
-        fontDescriptorDict.set('Descent', new PdfNumber(descriptor.descent))
-        fontDescriptorDict.set('CapHeight', new PdfNumber(descriptor.capHeight))
-        fontDescriptorDict.set('StemV', new PdfNumber(descriptor.stemV))
-
-        // Create font file stream
-        const fontFileStream = new PdfStream({
-            header: new PdfDictionary(),
-            original: fontData,
-        })
-        fontFileStream.header.set('Length1', new PdfNumber(fontData.length))
-        fontFileStream.addFilter('FlateDecode')
-
-        const fontFileObject = new PdfIndirectObject({
-            content: fontFileStream,
-        })
-
-        fontDescriptorDict.set('FontFile2', fontFileObject.reference)
-
-        const fontDescriptorObject = new PdfIndirectObject({
-            content: fontDescriptorDict,
-        })
-
-        // Create CIDFont dictionary (descendant font)
-        const cidFontDict = new PdfDictionary()
-        cidFontDict.set('Type', new PdfName('Font'))
-        cidFontDict.set('Subtype', new PdfName('CIDFontType2'))
-        cidFontDict.set('BaseFont', new PdfName(descriptor.fontName))
-
-        // CIDSystemInfo
-        const cidSystemInfo = new PdfDictionary()
-        cidSystemInfo.set('Registry', new PdfString('Adobe'))
-        cidSystemInfo.set('Ordering', new PdfString('Identity'))
-        cidSystemInfo.set('Supplement', new PdfNumber(0))
-        cidFontDict.set('CIDSystemInfo', cidSystemInfo)
-
-        cidFontDict.set('FontDescriptor', fontDescriptorObject.reference)
-        cidFontDict.set('DW', new PdfNumber(descriptor.defaultWidth ?? 1000))
-
-        // Add /W (widths) array if provided
-        if (descriptor.cidWidths && descriptor.cidWidths.length > 0) {
-            cidFontDict.set('W', this.buildCIDWidthArray(descriptor.cidWidths))
-        }
-
-        // CIDToGIDMap
-        cidFontDict.set(
-            'CIDToGIDMap',
-            new PdfName(descriptor.cidToGidMap ?? 'Identity'),
-        )
-
-        const cidFontObject = new PdfIndirectObject({
-            content: cidFontDict,
-        })
-
-        // Create Type0 font dictionary
-        const type0FontDict = new PdfDictionary()
-        type0FontDict.set('Type', new PdfName('Font'))
-        type0FontDict.set('Subtype', new PdfName('Type0'))
-        type0FontDict.set(
-            'BaseFont',
-            new PdfName(`${descriptor.fontName}-Identity-H`),
-        )
-        type0FontDict.set('Encoding', new PdfName('Identity-H'))
-        type0FontDict.set(
-            'DescendantFonts',
-            new PdfArray([cidFontObject.reference]),
-        )
-
-        // Create ToUnicode CMap if mappings provided
-        if (unicodeMappings && unicodeMappings.size > 0) {
-            const cmapContent = this.generateToUnicodeCMap(unicodeMappings)
-            const cmapStream = new PdfStream({
-                header: new PdfDictionary(),
-                original: new TextEncoder().encode(cmapContent),
-            })
-            cmapStream.addFilter('FlateDecode')
-
-            const cmapObject = new PdfIndirectObject({
-                content: cmapStream,
-            })
-
-            type0FontDict.set('ToUnicode', cmapObject.reference)
-
-            await this.document.commit(
-                fontFileObject,
-                fontDescriptorObject,
-                cidFontObject,
-                cmapObject,
-            )
-        } else {
-            await this.document.commit(
-                fontFileObject,
-                fontDescriptorObject,
-                cidFontObject,
-            )
-        }
-
-        const fontObject = new PdfIndirectObject({
-            content: type0FontDict,
-        })
-
-        await this.document.commit(fontObject)
-
-        // Register in resources
-        this.fontResourceCounter++
-        const resourceName = `F${this.fontResourceCounter}`
-        this.embeddedFonts.set(fontName, {
+    ): Promise<PdfFont> {
+        // Create font using factory
+        const font = PdfFont.fromType0Data(
+            fontData,
             fontName,
-            fontRef: fontObject,
-            baseFont: resourceName,
-            encoding: 'Identity-H',
-        })
+            descriptor,
+            unicodeMappings,
+        )
 
-        // Update page resources
-        await this.addFontToPageResources(resourceName, fontObject)
-
-        return resourceName
+        // Write to PDF
+        return await this.write(font)
     }
 
     /**
      * Loads existing fonts from the PDF document.
      * Traverses the page tree and extracts font information from page resources.
      *
-     * @returns Map of font names to their embedded font info
+     * @returns Map of font names to their PdfFont objects
      */
-    async loadExistingFonts(): Promise<Map<string, EmbeddedFont>> {
-        const catalog = this.document.rootDictionary
-        if (!catalog) return this.embeddedFonts
-
-        const pagesRef = catalog.get('Pages')
-        if (!pagesRef) return this.embeddedFonts
-
-        const pagesObjRef = pagesRef.as(PdfObjectReference)
-        if (!pagesObjRef) return this.embeddedFonts
-
-        await this.traversePageTreeForFonts(pagesObjRef)
-
-        return new Map(this.embeddedFonts)
-    }
-
-    /**
-     * Generates a ToUnicode CMap for mapping CIDs to Unicode code points.
-     */
-    private generateToUnicodeCMap(mappings: Map<number, number>): string {
-        const lines: string[] = []
-
-        lines.push('/CIDInit /ProcSet findresource begin')
-        lines.push('12 dict begin')
-        lines.push('begincmap')
-        lines.push('/CIDSystemInfo')
-        lines.push('<< /Registry (Adobe)')
-        lines.push('/Ordering (UCS)')
-        lines.push('/Supplement 0')
-        lines.push('>> def')
-        lines.push('/CMapName /Adobe-Identity-UCS def')
-        lines.push('/CMapType 2 def')
-        lines.push('1 begincodespacerange')
-        lines.push('<0000> <FFFF>')
-        lines.push('endcodespacerange')
-
-        // Convert mappings to array and sort by CID
-        const sortedMappings = Array.from(mappings.entries()).sort(
-            (a, b) => a[0] - b[0],
-        )
-
-        // Output in chunks of 100 (PDF limit per beginbfchar section)
-        for (let i = 0; i < sortedMappings.length; i += 100) {
-            const chunk = sortedMappings.slice(i, i + 100)
-            lines.push(`${chunk.length} beginbfchar`)
-
-            for (const [cid, unicode] of chunk) {
-                const cidHex = cid.toString(16).padStart(4, '0').toUpperCase()
-                const unicodeHex = unicode
-                    .toString(16)
-                    .padStart(4, '0')
-                    .toUpperCase()
-                lines.push(`<${cidHex}> <${unicodeHex}>`)
-            }
-
-            lines.push('endbfchar')
-        }
-
-        lines.push('endcmap')
-        lines.push('CMapName currentdict /CMap defineresource pop')
-        lines.push('end')
-        lines.push('end')
-
-        return lines.join('\n')
-    }
-
-    /**
-     * Builds a CID width array for the /W entry in CIDFont dictionaries.
-     */
-    private buildCIDWidthArray(widths: CIDWidth[]): PdfArray {
-        const items: (PdfNumber | PdfArray)[] = []
-
-        for (const entry of widths) {
-            if ('width' in entry) {
-                // Single CID with width: c [w]
-                items.push(new PdfNumber(entry.cid))
-                items.push(new PdfArray([new PdfNumber(entry.width)]))
-            } else {
-                // Range of CIDs with widths: c [w1 w2 w3 ...]
-                items.push(new PdfNumber(entry.startCid))
-                items.push(
-                    new PdfArray(entry.widths.map((w) => new PdfNumber(w))),
-                )
-            }
-        }
-
-        return new PdfArray(items)
+    async loadExistingFonts(): Promise<Map<string, PdfFont>> {
+        return await this.collectAllFontsFromPdf()
     }
 
     /**
@@ -478,6 +232,7 @@ export class PdfFontManager {
      */
     private async traversePageTreeForFonts(
         nodeRef: PdfObjectReference,
+        fonts: Map<string, PdfFont>,
     ): Promise<void> {
         const nodeObject = await this.document.readObject({
             objectNumber: nodeRef.objectNumber,
@@ -490,13 +245,13 @@ export class PdfFontManager {
         const type = nodeDict.get('Type')?.as(PdfName)
 
         if (type?.value === 'Page') {
-            await this.extractFontsFromPage(nodeObject, nodeDict)
+            await this.extractFontsFromPage(nodeObject, nodeDict, fonts)
         } else if (type?.value === 'Pages') {
             const kids = nodeDict.get('Kids')?.as(PdfArray)
             if (kids) {
                 for (const kidRef of kids.items) {
                     if (kidRef instanceof PdfObjectReference) {
-                        await this.traversePageTreeForFonts(kidRef)
+                        await this.traversePageTreeForFonts(kidRef, fonts)
                     }
                 }
             }
@@ -509,6 +264,7 @@ export class PdfFontManager {
     private async extractFontsFromPage(
         _pageObject: PdfIndirectObject,
         pageDict: PdfDictionary,
+        fonts: Map<string, PdfFont>,
     ): Promise<void> {
         // Get Resources - could be direct dict or reference
         let resources = pageDict.get('Resources')?.as(PdfDictionary)
@@ -546,8 +302,8 @@ export class PdfFontManager {
 
         // Iterate through fonts in the Font dictionary
         for (const [resourceName, fontValue] of fontDict.entries()) {
-            // Skip if already loaded
-            if (this.embeddedFonts.has(resourceName)) continue
+            // Skip if already in this collection
+            if (fonts.has(resourceName)) continue
 
             let fontObjDict: PdfDictionary | undefined
             let fontIndirectObj: PdfIndirectObject<PdfDictionary> | undefined
@@ -570,28 +326,114 @@ export class PdfFontManager {
             const encoding = fontObjDict.get('Encoding')?.as(PdfName)?.value
 
             if (baseFont) {
-                this.embeddedFonts.set(resourceName, {
+                const pdfFont = new PdfFont({
                     fontName: baseFont,
-                    fontRef: fontIndirectObj,
-                    baseFont: resourceName,
+                    resourceName: resourceName,
                     encoding: encoding,
+                    manager: this,
+                    container: fontIndirectObj as PdfIndirectObject,
                 })
+                fonts.set(resourceName, pdfFont)
 
                 // Also register by baseFont name for lookup convenience
-                if (!this.embeddedFonts.has(baseFont)) {
-                    this.embeddedFonts.set(baseFont, {
-                        fontName: baseFont,
-                        fontRef: fontIndirectObj,
-                        baseFont: resourceName,
-                        encoding: encoding,
-                    })
+                if (!fonts.has(baseFont)) {
+                    fonts.set(baseFont, pdfFont)
                 }
             }
         }
     }
 
     /**
-     * Adds a font to the page resources of all pages.
+     * Searches the PDF structure for a font by name.
+     * @internal
+     */
+    private async searchFontInPdf(
+        fontName: string,
+    ): Promise<PdfFont | undefined> {
+        const fonts = await this.collectAllFontsFromPdf()
+        return fonts?.get(fontName)
+    }
+
+    /**
+     * Collects all fonts from the PDF structure.
+     * @internal
+     */
+    private async collectAllFontsFromPdf(): Promise<Map<string, PdfFont>> {
+        const fonts = new Map<string, PdfFont>()
+
+        const catalog = this.document.rootDictionary
+        if (!catalog) return fonts
+
+        const pagesRef = catalog.get('Pages')
+        if (!pagesRef) return fonts
+
+        const pagesObjRef = pagesRef.as(PdfObjectReference)
+        if (!pagesObjRef) return fonts
+
+        await this.traversePageTreeForFonts(pagesObjRef, fonts)
+        return fonts
+    }
+
+    /**
+     * Adds a font to the AcroForm default resources (DR) dictionary.
+     * This ensures fonts are available to form fields.
+     */
+    private async addFontToAcroFormResources(
+        resourceName: string,
+        fontObject: PdfIndirectObject<PdfDictionary>,
+    ): Promise<void> {
+        const catalog = this.document.rootDictionary
+        if (!catalog) return
+
+        // Get AcroForm dictionary
+        const acroFormRef = catalog.get('AcroForm')
+        if (!acroFormRef) return
+
+        let acroFormDict: PdfDictionary | undefined
+        let acroFormContainer: PdfIndirectObject | undefined
+
+        if (acroFormRef instanceof PdfObjectReference) {
+            const acroFormObject = await this.document.readObject({
+                objectNumber: acroFormRef.objectNumber,
+                generationNumber: acroFormRef.generationNumber,
+            })
+            if (acroFormObject) {
+                acroFormDict = acroFormObject.content.as(PdfDictionary)
+                acroFormContainer = acroFormObject
+            }
+        } else {
+            acroFormDict = acroFormRef.as(PdfDictionary)
+        }
+
+        if (!acroFormDict) return
+
+        // Get or create DR (Default Resources) dictionary
+        let dr = acroFormDict.get('DR')?.as(PdfDictionary)
+        if (!dr) {
+            dr = new PdfDictionary()
+            acroFormDict.set('DR', dr)
+        }
+
+        // Get or create Font dictionary within DR
+        let fontDict = dr.get('Font')?.as(PdfDictionary)
+        if (!fontDict) {
+            fontDict = new PdfDictionary()
+            dr.set('Font', fontDict)
+        }
+
+        // Add the font reference
+        fontDict.set(resourceName, fontObject.reference)
+
+        // Commit the modified AcroForm object if it's an indirect object
+        if (acroFormContainer) {
+            await this.document.commit(acroFormContainer)
+        }
+    }
+
+    /**
+     * Adds a font to the global /Pages node Resources dictionary.
+     * All child pages will inherit these fonts automatically.
+     * This is more efficient than adding to each individual page.
      */
     private async addFontToPageResources(
         resourceName: string,
@@ -606,66 +448,22 @@ export class PdfFontManager {
         const pagesObjRef = pagesRef.as(PdfObjectReference)
         if (!pagesObjRef) return
 
-        await this.traversePageTree(pagesObjRef, resourceName, fontObject)
-    }
-
-    /**
-     * Recursively traverses the page tree and adds font to each page's resources.
-     */
-    private async traversePageTree(
-        nodeRef: PdfObjectReference,
-        resourceName: string,
-        fontObject: PdfIndirectObject<PdfDictionary>,
-    ): Promise<void> {
-        const nodeObject = await this.document.readObject({
-            objectNumber: nodeRef.objectNumber,
-            generationNumber: nodeRef.generationNumber,
+        // Read the root /Pages object
+        const pagesObject = await this.document.readObject({
+            objectNumber: pagesObjRef.objectNumber,
+            generationNumber: pagesObjRef.generationNumber,
         })
 
-        if (!nodeObject) return
+        if (!pagesObject) return
 
-        const nodeDict = nodeObject.content.as(PdfDictionary)
-        const type = nodeDict.get('Type')?.as(PdfName)
+        const pagesDict = pagesObject.content.as(PdfDictionary)
+        if (!pagesDict) return
 
-        if (type?.value === 'Page') {
-            // Leaf node - add font to this page's resources
-            await this.addFontToPageDict(
-                nodeObject,
-                nodeDict,
-                resourceName,
-                fontObject,
-            )
-        } else if (type?.value === 'Pages') {
-            // Intermediate node - traverse children
-            const kids = nodeDict.get('Kids')?.as(PdfArray)
-            if (kids) {
-                for (const kidRef of kids.items) {
-                    if (kidRef instanceof PdfObjectReference) {
-                        await this.traversePageTree(
-                            kidRef,
-                            resourceName,
-                            fontObject,
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Adds a font reference to a page's Resources/Font dictionary.
-     */
-    private async addFontToPageDict(
-        pageObject: PdfIndirectObject,
-        pageDict: PdfDictionary,
-        resourceName: string,
-        fontObject: PdfIndirectObject<PdfDictionary>,
-    ): Promise<void> {
-        // Get or create Resources dictionary
-        let resources = pageDict.get('Resources')?.as(PdfDictionary)
+        // Get or create Resources dictionary on the /Pages node
+        let resources = pagesDict.get('Resources')?.as(PdfDictionary)
         if (!resources) {
             resources = new PdfDictionary()
-            pageDict.set('Resources', resources)
+            pagesDict.set('Resources', resources)
         }
 
         // Get or create Font dictionary within Resources
@@ -675,10 +473,13 @@ export class PdfFontManager {
             resources.set('Font', fontDict)
         }
 
-        // Add the font reference
+        // Add the font reference to the global dictionary
         fontDict.set(resourceName, fontObject.reference)
 
-        // Commit the modified page object
-        await this.document.commit(pageObject)
+        // Commit the modified /Pages object
+        await this.document.commit(pagesObject)
+
+        // Also add to AcroForm DR if AcroForm exists
+        await this.addFontToAcroFormResources(resourceName, fontObject)
     }
 }

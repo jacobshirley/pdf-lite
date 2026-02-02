@@ -1,7 +1,9 @@
 // Custom font embedding example
 // Demonstrates how to embed TrueType fonts and use standard PDF fonts
+// Shows PdfFont.fromBytes() which auto-detects TTF, OTF, and WOFF formats
 
 import { writeFileSync, readFileSync, existsSync } from 'fs'
+import { PdfFont } from 'pdf-lite'
 import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
 import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
 import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
@@ -9,12 +11,11 @@ import { PdfName } from 'pdf-lite/core/objects/pdf-name'
 import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-import { parseFont } from 'pdf-lite'
 
 // Helper to create a page
+// Note: Pages inherit Resources from parent /Pages node, so no need to set it here
 function createPage(
     contentStreamRef: PdfIndirectObject<PdfStream>,
-    resourcesRef: PdfIndirectObject<PdfDictionary>,
     pagesRef: PdfIndirectObject<PdfDictionary>,
 ): PdfIndirectObject<PdfDictionary> {
     const pageDict = new PdfDictionary()
@@ -29,7 +30,7 @@ function createPage(
         ]),
     )
     pageDict.set('Contents', contentStreamRef.reference)
-    pageDict.set('Resources', resourcesRef.reference)
+    // Resources are inherited from the parent /Pages node
     pageDict.set('Parent', pagesRef.reference)
     return new PdfIndirectObject({ content: pageDict })
 }
@@ -62,7 +63,50 @@ async function main() {
     document.trailerDict.set('Root', catalog.reference)
     await document.commit()
 
-    // Embed a standard font (built into all PDF readers)
+    // Build content stream with different fonts
+    // F1=Helvetica-Bold, F2=Times-Roman, F3=Courier, F4=Roboto
+    const lines: string[] = [
+        'BT',
+        '/F1 24 Tf',
+        '72 700 Td',
+        '(PDF-Lite Custom Fonts Demo) Tj',
+        '/F4 16 Tf',
+        '0 -40 Td',
+        '(This line uses embedded Roboto font via PdfFont.fromBytes!) Tj',
+        '/F2 14 Tf',
+        '0 -30 Td',
+        '(This line uses Times Roman) Tj',
+        '/F3 12 Tf',
+        '0 -30 Td',
+        '(This line uses Courier - great for code!) Tj',
+        '/F2 12 Tf',
+        '0 -50 Td',
+        '(PdfFont.fromBytes auto-detects font formats:) Tj',
+        '0 -20 Td',
+        '(- TTF \\(TrueType Fonts\\)) Tj',
+        '0 -20 Td',
+        '(- OTF \\(OpenType Fonts - non-CFF based\\)) Tj',
+        '0 -20 Td',
+        '(- WOFF \\(Web Open Font Format\\)) Tj',
+        '/F2 10 Tf',
+        '0 -30 Td',
+        '(Standard PDF fonts built into all readers:) Tj',
+        '0 -16 Td',
+        '(Helvetica, Times-Roman, Courier, Symbol, ZapfDingbats) Tj',
+        '/F4 12 Tf',
+        '0 -30 Td',
+        '(Custom fonts are automatically parsed and embedded!) Tj',
+        'ET',
+    ]
+
+    const contentStream = new PdfIndirectObject({
+        content: new PdfStream({
+            header: new PdfDictionary(),
+            original: lines.join('\n'),
+        }),
+    })
+
+    // Embed fonts - FontManager will automatically add them to the /Pages Resources
     const helveticaBold =
         await document.fonts.embedStandardFont('Helvetica-Bold')
     const timesRoman = await document.fonts.embedStandardFont('Times-Roman')
@@ -72,7 +116,8 @@ async function main() {
         `Embedded standard fonts: ${helveticaBold}, ${timesRoman}, ${courier}`,
     )
 
-    // Embed Roboto TrueType font
+    // Embed custom TrueType font using PdfFont.fromBytes
+    // This method auto-detects the font format (TTF, OTF, WOFF)
     const fontPath = `${import.meta.dirname}/tmp/Roboto-Regular.ttf`
 
     if (!existsSync(fontPath)) {
@@ -85,91 +130,51 @@ async function main() {
 
     const fontData = readFileSync(fontPath)
 
-    // Parse the font file to extract metrics automatically
-    // parseFont() auto-detects TTF, OTF, and WOFF formats
-    const parser = parseFont(fontData)
-    const fontInfo = parser.getFontInfo()
-    const fontDescriptor = parser.getFontDescriptor('Roboto')
+    // PdfFont.fromBytes automatically:
+    // - Detects font format (TTF, OTF, WOFF)
+    // - Parses font tables and extracts metrics
+    // - Creates a ready-to-use PdfFont instance
+    // - Throws descriptive errors for unsupported formats (WOFF2, CFF-based OTF)
+    const robotoFont = PdfFont.fromBytes(fontData)
 
-    console.log(`Parsed font: ${fontInfo.fullName} (${fontInfo.fontFamily})`)
-
-    const robotoFont = await document.fonts.embedTrueTypeFont(
-        fontData,
-        'Roboto',
-        fontDescriptor,
+    console.log(
+        `Created PdfFont from bytes - Font name: ${robotoFont.fontName}`,
     )
-    console.log(`Embedded Roboto TrueType font: ${robotoFont}`)
+    console.log(`  Font data size: ${fontData.length} bytes`)
+    console.log(
+        `  Embedded font data preserved: ${robotoFont.fontData ? 'Yes' : 'No'}`,
+    )
 
-    // Create resources dictionary with fonts
-    const resourcesDict = new PdfDictionary()
-    const fontDict = new PdfDictionary()
+    // Write the font to the document
+    // FontManager.write() automatically:
+    // - Assigns a resource name (F1, F2, F3, etc.)
+    // - Creates the container indirect object
+    // - Adds the font to the /Pages node Resources dictionary
+    // - All child pages inherit these fonts (even pages added later!)
+    await document.fonts.write(robotoFont)
+    console.log(`Embedded custom font in PDF: ${robotoFont}`)
 
-    // Get font references from the font manager
-    const helveticaFont = document.fonts.getFont('Helvetica-Bold')
-    const timesFont = document.fonts.getFont('Times-Roman')
-    const courierFont = document.fonts.getFont('Courier')
+    console.log(`\nFont resource mappings:`)
+    console.log(`  ${helveticaBold.resourceName} = Helvetica-Bold`)
+    console.log(`  ${timesRoman.resourceName} = Times-Roman`)
+    console.log(`  ${courier.resourceName} = Courier`)
+    console.log(`  ${robotoFont.resourceName} = Roboto-Regular`)
 
-    if (helveticaFont)
-        fontDict.set(helveticaFont.baseFont, helveticaFont.fontRef.reference)
-    if (timesFont) fontDict.set(timesFont.baseFont, timesFont.fontRef.reference)
-    if (courierFont)
-        fontDict.set(courierFont.baseFont, courierFont.fontRef.reference)
-
-    const roboto = document.fonts.getFont('Roboto')
-    if (roboto) fontDict.set(roboto.baseFont, roboto.fontRef.reference)
-
-    resourcesDict.set('Font', fontDict)
-    const resources = new PdfIndirectObject({ content: resourcesDict })
-
-    // Build content stream with different fonts
-    // F1=Helvetica-Bold, F2=Times-Roman, F3=Courier, F4=Roboto
-    const lines: string[] = [
-        'BT',
-        '/F1 24 Tf',
-        '72 700 Td',
-        '(PDF-Lite Custom Fonts Demo) Tj',
-        '/F4 16 Tf',
-        '0 -40 Td',
-        '(This line uses embedded Roboto font!) Tj',
-        '/F2 14 Tf',
-        '0 -30 Td',
-        '(This line uses Times Roman) Tj',
-        '/F3 12 Tf',
-        '0 -30 Td',
-        '(This line uses Courier - great for code!) Tj',
-        '/F2 12 Tf',
-        '0 -50 Td',
-        '(Standard PDF fonts are built into all PDF readers:) Tj',
-        '0 -20 Td',
-        '(- Helvetica, Helvetica-Bold, Helvetica-Oblique, Helvetica-BoldOblique) Tj',
-        '0 -20 Td',
-        '(- Times-Roman, Times-Bold, Times-Italic, Times-BoldItalic) Tj',
-        '0 -20 Td',
-        '(- Courier, Courier-Bold, Courier-Oblique, Courier-BoldOblique) Tj',
-        '0 -20 Td',
-        '(- Symbol, ZapfDingbats) Tj',
-        '/F4 12 Tf',
-        '0 -40 Td',
-        '(Custom TrueType fonts like Roboto are embedded in the PDF file.) Tj',
-        'ET',
-    ]
-
-    const contentStream = new PdfIndirectObject({
-        content: new PdfStream({
-            header: new PdfDictionary(),
-            original: lines.join('\n'),
-        }),
-    })
-
-    // Create page
-    const page = createPage(contentStream, resources, pages)
+    // Create page (it will inherit fonts from parent /Pages node)
+    const page = createPage(contentStream, pages)
 
     // Update pages collection
     pages.content.set('Kids', new PdfArray([page.reference]))
     pages.content.set('Count', new PdfNumber(1))
 
-    document.add(resources, contentStream, page)
+    document.add(contentStream, page)
     await document.commit()
+
+    console.log(`\nFont resource mappings:`)
+    console.log(`  ${helveticaBold.resourceName} = Helvetica-Bold`)
+    console.log(`  ${timesRoman.resourceName} = Times-Roman`)
+    console.log(`  ${courier.resourceName} = Courier`)
+    console.log(`  ${robotoFont.resourceName} = Roboto-Regular`)
 
     // Write output
     const outputPath = `${import.meta.dirname}/tmp/fonts-demo.pdf`

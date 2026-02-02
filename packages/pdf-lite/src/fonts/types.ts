@@ -1,4 +1,5 @@
 import { PdfDictionary, PdfIndirectObject } from '../core'
+import type { ByteArray } from '../types.js'
 
 /**
  * Common interface for all font parsers.
@@ -7,6 +8,7 @@ export interface FontParser {
     getFontInfo(): TtfFontInfo
     getFontDescriptor(fontName?: string): FontDescriptor
     getCharWidths(firstChar: number, lastChar: number): number[]
+    getFontData(): ByteArray
 }
 
 /**
@@ -59,14 +61,17 @@ export type CIDWidth =
     | { cid: number; width: number }
     | { startCid: number; widths: number[] }
 
+/**
+ * Detects the font format from the file signature.
+ */
+export type FontFormat = 'ttf' | 'otf' | 'woff' | 'woff2' | 'unknown'
+
+/**
+ * Represents a font that has been found in a PDF document.
+ */
 export interface EmbeddedFont {
     fontName: string
     fontRef: PdfIndirectObject<PdfDictionary>
     baseFont: string
     encoding?: string
 }
-
-/**
- * Detects the font format from the file signature.
- */
-export type FontFormat = 'ttf' | 'otf' | 'woff' | 'woff2' | 'unknown'

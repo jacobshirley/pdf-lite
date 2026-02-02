@@ -46,7 +46,7 @@ export class PdfFontManager {
         const font = PdfFont.fromTrueTypeData(fontData, fontName, descriptor)
 
         // Write to PDF
-        return await this.write(font, fontName)
+        return await this.write(font)
     }
 
     /**
@@ -77,7 +77,7 @@ export class PdfFontManager {
         const font = PdfFont.fromStandardFont(fontName)
 
         // Write to PDF
-        return await this.write(font, fontName)
+        return await this.write(font)
     }
 
     /**
@@ -175,7 +175,7 @@ export class PdfFontManager {
      * @returns The font with its resourceName and container set
      * @internal
      */
-    async write(font: PdfFont, cacheKey: string): Promise<PdfFont> {
+    async write(font: PdfFont): Promise<PdfFont> {
         // Assign resource name
         this.fontResourceCounter++
         const resourceName = `F${this.fontResourceCounter}`
@@ -233,7 +233,7 @@ export class PdfFontManager {
         )
 
         // Write to PDF
-        return await this.write(font, fontName)
+        return await this.write(font)
     }
 
     /**

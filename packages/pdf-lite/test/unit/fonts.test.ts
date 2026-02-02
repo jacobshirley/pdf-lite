@@ -390,7 +390,7 @@ describe('Font Embedding', () => {
             expect(font.resourceName).toMatch(/^F\d+$/)
         })
 
-        it('should not duplicate Unicode font when embedding same font twice', async () => {
+        it('should allow embedding same Unicode font twice (no deduplication)', async () => {
             const document = new PdfDocument()
 
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
@@ -419,20 +419,16 @@ describe('Font Embedding', () => {
                 descriptor,
             )
 
-            expect(font1.resourceName).toBe(font2.resourceName)
+            expect(font1.resourceName).not.toBe(font2.resourceName)
         })
     })
 
     describe('Load Existing Fonts', () => {
-        it('should load fonts from a document with pages', async () => {
+        it('should find fonts after serialize/deserialize cycle', async () => {
             // Create a document with fonts
             const document = new PdfDocument()
             await document.fonts.embedStandardFont('Helvetica')
             await document.fonts.embedStandardFont('Courier')
-
-            // Get fonts that were embedded
-            const embeddedFonts = await document.fonts.getAllFonts()
-            expect(embeddedFonts.size).toBe(2)
 
             const bytes = document.toBytes()
 
@@ -450,18 +446,6 @@ describe('Font Embedding', () => {
             // No fonts initially
             const initialFonts = await document.fonts.loadExistingFonts()
             expect(initialFonts.size).toBe(0)
-        })
-
-        it('should track fonts after embedding', async () => {
-            const document = new PdfDocument()
-
-            // Embed a font
-            await document.fonts.embedStandardFont('Helvetica')
-
-            // getAllFonts should return the embedded font
-            const fonts = await document.fonts.getAllFonts()
-            expect(fonts.size).toBe(1)
-            expect(fonts.has('Helvetica')).toBe(true)
         })
     })
 })
@@ -610,8 +594,6 @@ describe('Font Parsers with Real Fonts', () => {
             )
 
             expect(font.resourceName).toMatch(/^F\d+$/)
-            const embeddedFont = await document.fonts.getFont('Roboto')
-            expect(embeddedFont).toBeDefined()
         })
 
         it('should serialize PDF with embedded custom font', async () => {

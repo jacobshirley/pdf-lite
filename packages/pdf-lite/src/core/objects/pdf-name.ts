@@ -26,9 +26,9 @@ export class PdfName<T extends string = string> extends PdfObject {
      */
     static escapeName(name: string): string {
         // Escape special characters in PDF names
-        // Characters that need escaping: space, #, %, (, ), <, >, [, ], {, }, /, and non-ASCII
-        // Safe characters: A-Z, a-z, 0-9, -, _, .
-        return name.replace(/[^A-Za-z0-9-_.]/g, (char) => {
+        // Characters that need escaping: space, #, %, (, ), <, >, [, ], {, }, /, +, ',' and non-ASCII
+        // Safe characters: A-Z, a-z, 0-9, -, _, . + ,
+        return name.replace(/[^+,A-Za-z0-9-_.]/g, (char) => {
             const hex = char
                 .charCodeAt(0)
                 .toString(16)

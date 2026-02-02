@@ -19,8 +19,10 @@ export const PdfFieldType = {
     Signature: 'Sig',
 } as const
 
+export type PdfFieldType = (typeof PdfFieldType)[keyof typeof PdfFieldType]
+
 export class PdfAcroFormField extends PdfDictionary<{
-    FT: PdfName<'Tx' | 'Btn' | 'Ch' | 'Sig'>
+    FT: PdfName<PdfFieldType>
     T?: PdfString
     V?: PdfString | PdfName
     DV?: PdfString | PdfName
@@ -33,6 +35,8 @@ export class PdfAcroFormField extends PdfDictionary<{
     Ff?: PdfNumber
     BS?: PdfDictionary
     MK?: PdfDictionary
+    Type?: PdfName<'Annot'>
+    Subtype?: PdfName<'Widget'>
 }> {
     parent?: PdfAcroFormField
     readonly container?: PdfIndirectObject
@@ -45,8 +49,56 @@ export class PdfAcroFormField extends PdfDictionary<{
     /**
      * Gets the field type
      */
-    get fieldType(): string | null {
+    get fieldType(): PdfFieldType | null {
         return this.get('FT')?.as(PdfName)?.value ?? null
+    }
+
+    set fieldType(type: PdfFieldType | null) {
+        if (type === null) {
+            this.delete('FT')
+        } else {
+            this.set('FT', new PdfName(type))
+        }
+    }
+
+    get rect(): number[] | null {
+        const rectArray = this.get('Rect')?.as(PdfArray<PdfNumber>)
+        if (!rectArray) return null
+        return rectArray.items.map((num) => num.value)
+    }
+
+    set rect(rect: number[] | null) {
+        if (rect === null) {
+            this.delete('Rect')
+            return
+        }
+        const rectArray = new PdfArray<PdfNumber>(
+            rect.map((num) => new PdfNumber(num)),
+        )
+        this.set('Rect', rectArray)
+    }
+
+    get parentRef(): PdfObjectReference | null {
+        const ref = this.get('P')?.as(PdfObjectReference)
+        return ref ?? null
+    }
+
+    set parentRef(ref: PdfObjectReference | null) {
+        if (ref === null) {
+            this.delete('P')
+        } else {
+            this.set('P', ref)
+        }
+    }
+
+    set isWidget(isWidget: boolean) {
+        if (isWidget) {
+            this.set('Type', new PdfName('Annot'))
+            this.set('Subtype', new PdfName('Widget'))
+        } else {
+            this.delete('Type')
+            this.delete('Subtype')
+        }
     }
 
     /**
@@ -491,6 +543,19 @@ export class PdfAcroForm<
         const isIncremental = document.isIncremental()
         document.setIncremental(true)
 
+        const fieldsArray = new PdfArray<PdfObjectReference>()
+        this.set('Fields', fieldsArray)
+
+        for (const field of this.fields) {
+            if (!field.isModified()) continue
+            const acroFormFieldIndirect = new PdfIndirectObject({
+                ...field.container,
+                content: field,
+            })
+            document.add(acroFormFieldIndirect)
+            fieldsArray.push(acroFormFieldIndirect.reference)
+        }
+
         if (this.isModified()) {
             // Create or update the AcroForm entry in the catalog
             const acroFormIndirect = new PdfIndirectObject({
@@ -512,15 +577,6 @@ export class PdfAcroForm<
                 })
                 document.add(rootIndirect)
             }
-        }
-
-        for (const field of this.fields) {
-            if (!field.isModified()) continue
-            const acroFormFieldIndirect = new PdfIndirectObject({
-                ...field.container,
-                content: field,
-            })
-            document.add(acroFormFieldIndirect)
         }
 
         await document.commit()

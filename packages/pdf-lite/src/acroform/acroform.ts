@@ -700,32 +700,52 @@ export class PdfAcroForm<
                 ...field.container,
                 content: field,
             })
-            document.add(acroFormFieldIndirect)
+            let fieldReference: PdfObjectReference | undefined
 
-            // Create a proper PdfObjectReference (not the proxy from .reference)
-            const fieldReference = new PdfObjectReference(
-                acroFormFieldIndirect.objectNumber,
-                acroFormFieldIndirect.generationNumber,
-            )
+            if (field.isModified()) {
+                // Write modified field as an indirect object
+                const acroFormFieldIndirect = new PdfIndirectObject({
+                    ...field.container,
+                    content: field,
+                })
+                document.add(acroFormFieldIndirect)
 
-            // Only add root-level fields (no parent) to the Fields array
-            // Child fields are referenced through their parent's Kids array
-            if (!field.parent) {
-                fieldsArray.push(fieldReference)
+                // Create a proper PdfObjectReference (not the proxy from .reference)
+                fieldReference = new PdfObjectReference(
+                    acroFormFieldIndirect.objectNumber,
+                    acroFormFieldIndirect.generationNumber,
+                )
+
+                // Track if this field needs to be added to a page's Annots
+                const parentRef = field.parentRef
+                const isWidget = field.isWidget
+                if (parentRef && isWidget) {
+                    const pageKey = `${parentRef.objectNumber}_${parentRef.generationNumber}`
+                    if (!fieldsByPage.has(pageKey)) {
+                        fieldsByPage.set(pageKey, {
+                            pageRef: parentRef,
+                            fieldRefs: [],
+                        })
+                    }
+                    fieldsByPage.get(pageKey)!.fieldRefs.push(fieldReference)
+                }
+            } else {
+                // Unmodified field: reuse existing indirect reference information
+                const container: any = field.container as any
+                if (
+                    container &&
+                    typeof container.objectNumber === 'number' &&
+                    typeof container.generationNumber === 'number'
+                ) {
+                    fieldReference = new PdfObjectReference(
+                        container.objectNumber,
+                        container.generationNumber,
+                    )
+                }
             }
 
-            // Track if this field needs to be added to a page's Annots
-            const parentRef = field.parentRef
-            const isWidget = field.isWidget
-            if (parentRef && isWidget) {
-                const pageKey = `${parentRef.objectNumber}_${parentRef.generationNumber}`
-                if (!fieldsByPage.has(pageKey)) {
-                    fieldsByPage.set(pageKey, {
-                        pageRef: parentRef,
-                        fieldRefs: [],
-                    })
-                }
-                fieldsByPage.get(pageKey)!.fieldRefs.push(fieldReference)
+            if (fieldReference) {
+                fieldsArray.push(fieldReference)
             }
         }
 

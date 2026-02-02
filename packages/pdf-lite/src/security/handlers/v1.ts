@@ -129,12 +129,17 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
         } else {
             const expectedUValue = await this.computeUserKey()
 
+            // For R=3 and R=4, only compare first 16 bytes of U value
+            // The last 16 bytes are arbitrary padding
+            const compareLength = this.getRevision() >= 3 ? 16 : 32
+
             assert(
                 this.userKey &&
-                    expectedUValue.length === this.userKey.length &&
-                    expectedUValue.every(
-                        (byte, index) => byte === this.userKey![index],
-                    ),
+                    expectedUValue.length >= compareLength &&
+                    this.userKey.length >= compareLength &&
+                    expectedUValue
+                        .subarray(0, compareLength)
+                        .every((byte, index) => byte === this.userKey![index]),
                 'Incorrect user password',
             )
         }

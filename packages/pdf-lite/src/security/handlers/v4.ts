@@ -225,23 +225,19 @@ export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
                 )
 
                 assert(cfm, 'CFM is required in crypt filter dictionary')
-                assert(
-                    authEvent,
-                    'AuthEvent is required in crypt filter dictionary',
-                )
 
                 if (cfm.value === 'None') {
                     this.setCryptFilter(
                         key,
                         new IdentityCryptFilter({
-                            authEvent: authEvent.value,
+                            authEvent: authEvent?.value,
                         }),
                     )
                 } else if (cfm.value === 'V2') {
                     this.setCryptFilter(
                         key,
                         new V2CryptFilter({
-                            authEvent: authEvent.value,
+                            authEvent: authEvent?.value,
                             length: length.value,
                         }),
                     )
@@ -249,14 +245,14 @@ export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
                     this.setCryptFilter(
                         key,
                         new AesV2CryptFilter({
-                            authEvent: authEvent.value,
+                            authEvent: authEvent?.value,
                         }),
                     )
                 } else if (cfm.value === 'AESV3') {
                     this.setCryptFilter(
                         key,
                         new AesV3CryptFilter({
-                            authEvent: authEvent.value,
+                            authEvent: authEvent?.value,
                         }),
                     )
                 } else {

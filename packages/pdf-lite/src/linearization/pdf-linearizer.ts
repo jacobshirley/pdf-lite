@@ -4,7 +4,6 @@ import { LinearizationParams } from './linearization-params.js'
 import { HintTableGenerator } from './hint-table.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfRevision } from '../pdf/pdf-revision.js'
-import { PdfTokenSerializer } from '../core/serializer.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 

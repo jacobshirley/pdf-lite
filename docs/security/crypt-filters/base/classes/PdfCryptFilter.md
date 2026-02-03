@@ -46,9 +46,9 @@ Configuration options for the crypt filter.
 
 ## Properties
 
-### authEvent
+### authEvent?
 
-> **authEvent**: `"DocOpen"` \| `"EFOpen"`
+> `optional` **authEvent**: `"DocOpen"` \| `"EFOpen"`
 
 Authentication event trigger.
 

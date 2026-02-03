@@ -11,6 +11,10 @@
 - [PdfAcroForm](classes/PdfAcroForm.md)
 - [PdfAcroFormField](classes/PdfAcroFormField.md)
 
+## Type Aliases
+
+- [PdfFieldType](type-aliases/PdfFieldType.md)
+
 ## Variables
 
 - [PdfFieldType](variables/PdfFieldType.md)

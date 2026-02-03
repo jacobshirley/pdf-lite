@@ -8,7 +8,7 @@
 
 ## Extends
 
-- [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<\{ `AS?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `BS?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md); `DA?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `DV?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `F?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `Ff?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `FT`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`"Tx"` \| `"Btn"` \| `"Ch"` \| `"Sig"`\>; `Kids?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>; `MK?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md); `P?`: [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md); `Rect?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md)\>; `T?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `V?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); \}\>
+- [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<\{ `AS?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `BS?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md); `DA?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `DV?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `F?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `Ff?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `FT`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<[`PdfFieldType`](../type-aliases/PdfFieldType.md)\>; `Kids?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>; `MK?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md); `P?`: [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md); `Rect?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md)\>; `Subtype?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`"Widget"`\>; `T?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `Type?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`"Annot"`\>; `V?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); \}\>
 
 ## Constructors
 
@@ -152,13 +152,27 @@ Sets the default value
 
 #### Get Signature
 
-> **get** **fieldType**(): `string` \| `null`
+> **get** **fieldType**(): [`PdfFieldType`](../type-aliases/PdfFieldType.md) \| `null`
 
 Gets the field type
 
 ##### Returns
 
-`string` \| `null`
+[`PdfFieldType`](../type-aliases/PdfFieldType.md) \| `null`
+
+#### Set Signature
+
+> **set** **fieldType**(`type`): `void`
+
+##### Parameters
+
+###### type
+
+[`PdfFieldType`](../type-aliases/PdfFieldType.md) | `null`
+
+##### Returns
+
+`void`
 
 ---
 
@@ -185,6 +199,27 @@ Sets field flags
 ###### flags
 
 `number`
+
+##### Returns
+
+`void`
+
+---
+
+### font
+
+#### Set Signature
+
+> **set** **font**(`font`): `void`
+
+Sets the font using a PdfFont object.
+Pass null to clear the font.
+
+##### Parameters
+
+###### font
+
+[`PdfFont`](../../../fonts/pdf-font/classes/PdfFont.md) | `null`
 
 ##### Returns
 
@@ -237,6 +272,32 @@ Sets field flags
 ###### size
 
 `number`
+
+##### Returns
+
+`void`
+
+---
+
+### isWidget
+
+#### Get Signature
+
+> **get** **isWidget**(): `boolean`
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **isWidget**(`isWidget`): `void`
+
+##### Parameters
+
+###### isWidget
+
+`boolean`
 
 ##### Returns
 
@@ -322,6 +383,32 @@ The type of this PDF object
 
 ---
 
+### parentRef
+
+#### Get Signature
+
+> **get** **parentRef**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) \| `null`
+
+##### Returns
+
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) \| `null`
+
+#### Set Signature
+
+> **set** **parentRef**(`ref`): `void`
+
+##### Parameters
+
+###### ref
+
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) | `null`
+
+##### Returns
+
+`void`
+
+---
+
 ### password
 
 #### Get Signature
@@ -375,6 +462,32 @@ Sets the field as read-only or editable
 ###### isReadOnly
 
 `boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### rect
+
+#### Get Signature
+
+> **get** **rect**(): `number`[] \| `null`
+
+##### Returns
+
+`number`[] \| `null`
+
+#### Set Signature
+
+> **set** **rect**(`rect`): `void`
+
+##### Parameters
+
+###### rect
+
+`number`[] | `null`
 
 ##### Returns
 
@@ -526,7 +639,7 @@ Creates a deep clone of the object
 
 ##### K
 
-`K` _extends_ `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
+`K` _extends_ `"Type"` \| `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"Subtype"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
 
 #### Parameters
 
@@ -541,6 +654,23 @@ Creates a deep clone of the object
 #### Inherited from
 
 [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`delete`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#delete)
+
+---
+
+### entries()
+
+> **entries**(): `IterableIterator`\<\[`string`, [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md) \| `undefined`\]\>
+
+Returns an iterator for the dictionary entries.
+Each entry is a tuple of [key string, value].
+
+#### Returns
+
+`IterableIterator`\<\[`string`, [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md) \| `undefined`\]\>
+
+#### Inherited from
+
+[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`entries`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#entries)
 
 ---
 
@@ -574,7 +704,7 @@ Compares this object to another for equality based on their token representation
 
 ##### K
 
-`K` _extends_ `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
+`K` _extends_ `"Type"` \| `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"Subtype"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
 
 #### Parameters
 
@@ -600,7 +730,7 @@ Compares this object to another for equality based on their token representation
 
 ##### K
 
-`K` _extends_ `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
+`K` _extends_ `"Type"` \| `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"Subtype"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
 
 #### Parameters
 
@@ -642,7 +772,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### K
 
-`K` _extends_ `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
+`K` _extends_ `"Type"` \| `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"Subtype"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
 
 #### Parameters
 

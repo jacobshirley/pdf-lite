@@ -55,9 +55,9 @@ Configuration options with authentication event and security handler.
 
 ## Properties
 
-### authEvent
+### authEvent?
 
-> **authEvent**: `"DocOpen"` \| `"EFOpen"`
+> `optional` **authEvent**: `"DocOpen"` \| `"EFOpen"`
 
 Authentication event trigger.
 

@@ -74,6 +74,27 @@ PDF tokens to serialize
 
 ---
 
+### feedMany()
+
+> **feedMany**(`tokens`): `void`
+
+Efficiently feeds many tokens into the serializer buffer at once.
+Use this instead of spreading large arrays to avoid stack overflow.
+
+#### Parameters
+
+##### tokens
+
+[`PdfToken`](../../tokens/token/classes/PdfToken.md)[]
+
+Array of PDF tokens to serialize
+
+#### Returns
+
+`void`
+
+---
+
 ### nextItems()
 
 > **nextItems**(): `Generator`\<`number`\>

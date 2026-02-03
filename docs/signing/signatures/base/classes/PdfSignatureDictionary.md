@@ -209,6 +209,23 @@ Creates a deep clone of the object
 
 ---
 
+### entries()
+
+> **entries**(): `IterableIterator`\<\[`string`, [`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md) \| `undefined`\]\>
+
+Returns an iterator for the dictionary entries.
+Each entry is a tuple of [key string, value].
+
+#### Returns
+
+`IterableIterator`\<\[`string`, [`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md) \| `undefined`\]\>
+
+#### Inherited from
+
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`entries`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#entries)
+
+---
+
 ### equals()
 
 > **equals**(`other?`): `boolean`

@@ -11,3 +11,4 @@
 - [EofReachedError](classes/EofReachedError.md)
 - [IncrementalParser](classes/IncrementalParser.md)
 - [NoMoreTokensError](classes/NoMoreTokensError.md)
+- [UnexpectedTokenError](classes/UnexpectedTokenError.md)

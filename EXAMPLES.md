@@ -1930,7 +1930,7 @@ async function main() {
         }),
     })
 
-    // Embed fonts first - we'll add them to the Pages node Resources
+    // Embed fonts - FontManager will automatically add them to the /Pages Resources
     const helveticaBold =
         await document.fonts.embedStandardFont('Helvetica-Bold')
     const timesRoman = await document.fonts.embedStandardFont('Times-Roman')
@@ -1970,27 +1970,21 @@ async function main() {
     )
 
     // Write the font to the document
+    // FontManager.write() automatically:
+    // - Assigns a resource name (F1, F2, F3, etc.)
+    // - Creates the container indirect object
+    // - Adds the font to the /Pages node Resources dictionary
+    // - All child pages inherit these fonts (even pages added later!)
     await document.fonts.write(robotoFont)
     console.log(`Embedded custom font in PDF: ${robotoFont}`)
 
-    // Create a GLOBAL font dictionary on the /Pages node
-    // All child pages will inherit these fonts - even pages added later!
-    const globalFontDict = new PdfDictionary()
-    globalFontDict.set(
-        new PdfName(helveticaBold.resourceName),
-        helveticaBold.fontRef,
-    )
-    globalFontDict.set(new PdfName(timesRoman.resourceName), timesRoman.fontRef)
-    globalFontDict.set(new PdfName(courier.resourceName), courier.fontRef)
-    globalFontDict.set(new PdfName(robotoFont.resourceName), robotoFont.fontRef)
+    console.log(`\nFont resource mappings:`)
+    console.log(`  ${helveticaBold.resourceName} = Helvetica-Bold`)
+    console.log(`  ${timesRoman.resourceName} = Times-Roman`)
+    console.log(`  ${courier.resourceName} = Courier`)
+    console.log(`  ${robotoFont.resourceName} = Roboto-Regular`)
 
-    const globalResources = new PdfDictionary()
-    globalResources.set('Font', globalFontDict)
-
-    // Add Resources to the /Pages node - all child pages will inherit them
-    pages.content.set('Resources', globalResources)
-
-    // Create page (it will inherit fonts from parent Pages node)
+    // Create page (it will inherit fonts from parent /Pages node)
     const page = createPage(contentStream, pages)
 
     // Update pages collection

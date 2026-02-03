@@ -680,7 +680,6 @@ export class PdfDocument extends PdfObject {
 
         if (this.securityHandler && this.isObjectEncryptable(foundObject)) {
             foundObject = foundObject.clone()
-
             await this.securityHandler.decryptObject(foundObject)
         } else if (this.isIncremental()) {
             foundObject = foundObject.clone() // Clone to prevent modifications in locked revisions
@@ -905,7 +904,7 @@ export class PdfDocument extends PdfObject {
 
     private calculateOffsets(): void {
         const serializer = new PdfTokenSerializer()
-        serializer.feed(...this.toTokens())
+        serializer.feedMany(this.toTokens())
         serializer.calculateOffsets()
         this.linkOffsets()
     }
@@ -938,7 +937,7 @@ export class PdfDocument extends PdfObject {
         this.calculateOffsets()
         this.updateRevisions()
         const serializer = new PdfTokenSerializer()
-        serializer.feed(...this.toTokens())
+        serializer.feedMany(this.toTokens())
         return serializer.toBytes()
     }
 

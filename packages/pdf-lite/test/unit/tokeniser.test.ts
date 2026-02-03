@@ -953,7 +953,9 @@ endobj`
     it('should treat a backslash followed by a line feed as a line continuation', () => {
         const pdfString = '(Hello\\\nWorld)'
 
-        const expectedTokens = [new PdfStringToken(stringToBytes('HelloWorld'))]
+        const expectedTokens = [
+            new PdfStringToken(stringToBytes('Hello\nWorld')),
+        ]
 
         const tokens = stringToPdfTokens(pdfString)
         expect(tokens).toEqual(expectedTokens)

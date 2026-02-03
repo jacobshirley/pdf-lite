@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { escapeString } from '../../src/utils/escapeString'
 import { stringToBytes } from '../../src/utils/stringToBytes'
 
+const BACKSLASH = '\\'
+
 describe('String Escaping for PDF', () => {
     it('should escape parentheses', () => {
         const input = stringToBytes('()')
@@ -21,7 +23,7 @@ describe('String Escaping for PDF', () => {
         const input = stringToBytes('\n\r')
         const output = escapeString(input)
         const result = new TextDecoder().decode(output)
-        expect(result).toBe('\\n\\r')
+        expect(result).toBe(`\\n\\r`)
     })
 
     it('should not escape other control characters', () => {
@@ -47,7 +49,7 @@ describe('String Escaping for PDF', () => {
         const input = stringToBytes('Hello (PDF)\nTest\\Path')
         const output = escapeString(input)
         const result = new TextDecoder().decode(output)
-        expect(result).toBe('Hello \\(PDF\\)\\nTest\\\\Path')
+        expect(result).toBe(`Hello \\(PDF\\)\\nTest\\\\Path`)
     })
 
     it('should handle complex path strings', () => {

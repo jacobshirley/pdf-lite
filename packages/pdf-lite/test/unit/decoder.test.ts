@@ -522,7 +522,7 @@ describe('PDF decoder', () => {
             '414',
             '%%EOF',
             '5 0 obj',
-            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Override true /Length 11 >>stream ',
+            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Override true /Length 11 >>stream',
             'streamdata',
             'endstream',
             'endobj',

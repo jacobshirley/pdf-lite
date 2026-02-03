@@ -35,7 +35,7 @@ export abstract class PdfCryptFilter {
     /** Crypt filter method identifier. */
     cfm: 'None' | 'V2' | 'AESV2' | 'AESV3'
     /** Authentication event trigger. */
-    authEvent: 'DocOpen' | 'EFOpen'
+    authEvent?: 'DocOpen' | 'EFOpen'
     /** Key length in bits. */
     length: number
     /** Security handler for cryptographic operations. */
@@ -126,7 +126,9 @@ export abstract class PdfCryptFilter {
      */
     toDictionary(): PdfCryptFilterDictionary {
         const dict: PdfCryptFilterDictionary = new PdfDictionary({
-            AuthEvent: new PdfName(this.authEvent),
+            ...(this.authEvent
+                ? { AuthEvent: new PdfName(this.authEvent) }
+                : {}),
             CFM: new PdfName(this.cfm),
             ...(this.length
                 ? {

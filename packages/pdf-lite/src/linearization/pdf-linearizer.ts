@@ -1,10 +1,8 @@
 import { PdfDocument } from '../pdf/pdf-document.js'
 import { LinearizationDictionary } from './linearization-dictionary.js'
 import { LinearizationParams } from './linearization-params.js'
-import { HintTableGenerator } from './hint-table.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfRevision } from '../pdf/pdf-revision.js'
-import { PdfTokenSerializer } from '../core/serializer.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 
@@ -25,10 +23,12 @@ import { PdfNumber } from '../core/objects/pdf-number.js'
 export class PdfLinearizer {
     private document: PdfDocument
     private params: LinearizationParams
-    private hintGenerator: HintTableGenerator
 
     // Placeholder values for linearization parameters
     // In a full implementation, these would be calculated based on actual serialized content
+    // Note: A complete linearization implementation would also include hint tables (see HintTableGenerator)
+    // for more efficient random access to pages. Currently, the basic linearization structure is provided
+    // which reorders objects but doesn't include the full hint table mechanism.
     private static readonly ESTIMATED_HINT_STREAM_OFFSET = 548
     private static readonly ESTIMATED_HINT_STREAM_LENGTH = 187
     private static readonly ESTIMATED_END_OF_FIRST_PAGE = 2636
@@ -40,7 +40,6 @@ export class PdfLinearizer {
     constructor(document: PdfDocument) {
         this.document = document
         this.params = new LinearizationParams(document)
-        this.hintGenerator = new HintTableGenerator()
     }
 
     /**

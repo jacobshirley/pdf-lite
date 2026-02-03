@@ -256,5 +256,217 @@ describe('Linearization', () => {
               "
             `)
         })
+
+        it('should linearize multi-page documents correctly', async () => {
+            const document = new PdfDocument()
+
+            // Create content streams for two pages
+            const contentStream1 = new PdfIndirectObject({
+                content: new PdfStream({
+                    header: new PdfDictionary(),
+                    original: 'BT /F1 24 Tf 100 700 Td (Page 1) Tj ET',
+                }),
+            })
+            await document.commit(contentStream1)
+
+            const contentStream2 = new PdfIndirectObject({
+                content: new PdfStream({
+                    header: new PdfDictionary(),
+                    original: 'BT /F1 24 Tf 100 700 Td (Page 2) Tj ET',
+                }),
+            })
+            await document.commit(contentStream2)
+
+            // Create pages
+            const page1 = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            page1.content.set('Type', new PdfName('Page'))
+            page1.content.set(
+                'MediaBox',
+                new PdfArray([
+                    new PdfNumber(0),
+                    new PdfNumber(0),
+                    new PdfNumber(612),
+                    new PdfNumber(792),
+                ]),
+            )
+            page1.content.set('Contents', contentStream1.reference)
+            await document.commit(page1)
+
+            const page2 = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            page2.content.set('Type', new PdfName('Page'))
+            page2.content.set(
+                'MediaBox',
+                new PdfArray([
+                    new PdfNumber(0),
+                    new PdfNumber(0),
+                    new PdfNumber(612),
+                    new PdfNumber(792),
+                ]),
+            )
+            page2.content.set('Contents', contentStream2.reference)
+            await document.commit(page2)
+
+            const pages = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            pages.content.set('Type', new PdfName('Pages'))
+            pages.content.set(
+                'Kids',
+                new PdfArray([page1.reference, page2.reference]),
+            )
+            pages.content.set('Count', new PdfNumber(2))
+            await document.commit(pages)
+
+            const catalog = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            catalog.content.set('Type', new PdfName('Catalog'))
+            catalog.content.set('Pages', pages.reference)
+            await document.commit(catalog)
+
+            document.latestRevision.trailerDict.set('Root', catalog.reference)
+
+            // Linearize the document
+            const linearizer = new PdfLinearizer(document)
+            const linearizedDoc = linearizer.linearize()
+
+            // Verify linearization
+            expect(PdfLinearizer.isLinearized(linearizedDoc)).toBe(true)
+
+            // Verify linearization dictionary has correct page count
+            const firstObject = linearizedDoc.revisions[0]
+                .objects[0] as PdfIndirectObject
+            const linDict = firstObject.content as PdfDictionary
+            const pageCount = linDict.get('N') as PdfNumber
+            expect(pageCount.value).toBe(2)
+        })
+
+        it('should linearize documents with resources', async () => {
+            const document = new PdfDocument()
+
+            // Create a font object
+            const font = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            font.content.set('Type', new PdfName('Font'))
+            font.content.set('Subtype', new PdfName('Type1'))
+            font.content.set('BaseFont', new PdfName('Helvetica'))
+            await document.commit(font)
+
+            // Create resources dictionary
+            const resources = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            const fontDict = new PdfDictionary()
+            fontDict.set('F1', font.reference)
+            resources.content.set('Font', fontDict)
+            await document.commit(resources)
+
+            // Create content stream
+            const contentStream = new PdfIndirectObject({
+                content: new PdfStream({
+                    header: new PdfDictionary(),
+                    original: 'BT /F1 24 Tf 100 700 Td (Hello) Tj ET',
+                }),
+            })
+            await document.commit(contentStream)
+
+            // Create page with resources
+            const page = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            page.content.set('Type', new PdfName('Page'))
+            page.content.set(
+                'MediaBox',
+                new PdfArray([
+                    new PdfNumber(0),
+                    new PdfNumber(0),
+                    new PdfNumber(612),
+                    new PdfNumber(792),
+                ]),
+            )
+            page.content.set('Contents', contentStream.reference)
+            page.content.set('Resources', resources.reference)
+            await document.commit(page)
+
+            const pages = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            pages.content.set('Type', new PdfName('Pages'))
+            pages.content.set('Kids', new PdfArray([page.reference]))
+            pages.content.set('Count', new PdfNumber(1))
+            await document.commit(pages)
+
+            const catalog = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            catalog.content.set('Type', new PdfName('Catalog'))
+            catalog.content.set('Pages', pages.reference)
+            await document.commit(catalog)
+
+            document.latestRevision.trailerDict.set('Root', catalog.reference)
+
+            // Linearize the document
+            const linearizer = new PdfLinearizer(document)
+            const linearizedDoc = linearizer.linearize()
+
+            // Verify linearization
+            expect(PdfLinearizer.isLinearized(linearizedDoc)).toBe(true)
+
+            // Verify the linearized document contains the font and resources
+            const pdfString = linearizedDoc.toString()
+            expect(pdfString).toContain('/Type /Font')
+            expect(pdfString).toContain('/BaseFont /Helvetica')
+        })
+
+        it('should place first page objects before other objects in linearized output', async () => {
+            const document = await createTestDocument()
+            const linearizer = new PdfLinearizer(document)
+
+            const linearizedDoc = linearizer.linearize()
+            const objects = linearizedDoc.revisions[0].objects
+
+            // Find the linearization dictionary (should be first)
+            const firstObj = objects[0] as PdfIndirectObject
+            const linDict = firstObj.content as PdfDictionary
+            expect(linDict.get('Linearized')).toBeDefined()
+
+            // Find the page object (should be after linearization dict)
+            const pageObj = objects.find((obj) => {
+                if (obj instanceof PdfIndirectObject) {
+                    const content = obj.content
+                    if (content instanceof PdfDictionary) {
+                        const type = content.get('Type')
+                        return type instanceof PdfName && type.value === 'Page'
+                    }
+                }
+                return false
+            })
+            expect(pageObj).toBeDefined()
+
+            // Page should come before catalog in the object ordering
+            const pageIndex = objects.indexOf(pageObj!)
+            const catalogObj = objects.find((obj) => {
+                if (obj instanceof PdfIndirectObject) {
+                    const content = obj.content
+                    if (content instanceof PdfDictionary) {
+                        const type = content.get('Type')
+                        return (
+                            type instanceof PdfName && type.value === 'Catalog'
+                        )
+                    }
+                }
+                return false
+            })
+
+            const catalogIndex = objects.indexOf(catalogObj!)
+
+            // First page objects should come before catalog
+            expect(pageIndex).toBeLessThan(catalogIndex)
+        })
     })
 })

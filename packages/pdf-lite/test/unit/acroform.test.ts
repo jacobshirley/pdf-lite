@@ -6,7 +6,7 @@ import { PdfString } from '../../src/core/objects/pdf-string'
 import { PdfArray } from '../../src/core/objects/pdf-array'
 import { PdfAcroFormField } from '../../src/acroform/acroform'
 import { PdfObjectReference } from '../../src/core/objects/pdf-object-reference'
-import { PdfDictionary } from '../../src'
+import { PdfDictionary, PdfNumber } from '../../src'
 
 const base64ToBytes = (base64: string): ByteArray => {
     const binaryString = atob(base64)

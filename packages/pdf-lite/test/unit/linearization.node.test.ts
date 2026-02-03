@@ -227,10 +227,14 @@ describe('Linearization', () => {
             expect(pdfString).toMatchInlineSnapshot(`
               "%PDF-2.0
               1 0 obj
-              << /Linearized 1 /L 3524 /H [ 548 187 ] /O 3 /E 2636 /N 1 /T 3324 >>
+              << /Linearized 1 /L 1142 /H [ 200 200 ] /O 3 /E 75 /N 1 /T 542 >>
               endobj
               3 0 obj
               << /Type /Page /MediaBox [ 0 0 612 792 ] /Contents [ 2 0 R ] >>
+              endobj
+              2 0 obj
+              << /Length 36 >>stream
+              BT /F1 24 Tf 100 700 Td (Test) Tj ETendstream
               endobj
               5 0 obj
               << /Type /Catalog /Pages 4 0 R >>
@@ -238,20 +242,16 @@ describe('Linearization', () => {
               4 0 obj
               << /Type /Pages /Kids [ 3 0 R ] /Count 1 >>
               endobj
-              2 0 obj
-              << /Length 36 >>stream
-              BT /F1 24 Tf 100 700 Td (Test) Tj ETendstream
-              endobj
               1 0 obj
               << /Type /XRef /W [ 1 2 1 ] /Index [ 1 5 ] /Size 6 /Length 20 /Root 5 0 R >>stream
                 	  ]  ¬  ç endstream
               endobj
               1 0 obj
               << /Type /XRef /W [ 1 2 1 ] /Index [ 1 5 ] /Size 6 /Length 20 >>stream
-              l   ]  Ý  ¬ endstream
+              i  ©  Z .  ý endstream
               endobj
               startxref
-              492
+              489
               %%EOF
               "
             `)

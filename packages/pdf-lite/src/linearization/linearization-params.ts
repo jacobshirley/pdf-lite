@@ -119,6 +119,7 @@ export class LinearizationParams {
 
     /**
      * Recursively adds objects referenced by a given object.
+     * Handles both direct references and references within arrays.
      */
     private addReferencedObjects(
         obj: PdfIndirectObject,
@@ -144,6 +145,33 @@ export class LinearizationParams {
                             revision,
                         )
                     }
+                } else if (value instanceof PdfArray) {
+                    // Recursively handle arrays within dictionaries (e.g., Contents array)
+                    for (const item of value.items) {
+                        if (item instanceof PdfObjectReference) {
+                            const referencedObj = revision.objects.find(
+                                (o: PdfObject) =>
+                                    o instanceof PdfIndirectObject &&
+                                    o.objectNumber === item.objectNumber,
+                            ) as PdfIndirectObject | undefined
+                            if (referencedObj && !objects.has(referencedObj)) {
+                                objects.add(referencedObj)
+                                this.addReferencedObjects(
+                                    referencedObj,
+                                    objects,
+                                    revision,
+                                )
+                            }
+                        }
+                    }
+                } else if (value instanceof PdfDictionary) {
+                    // Recursively handle nested dictionaries (e.g., Resources)
+                    const tempObj = new PdfIndirectObject({
+                        content: value,
+                        objectNumber: -1,
+                        generationNumber: 0,
+                    })
+                    this.addReferencedObjects(tempObj, objects, revision)
                 }
             }
         } else if (content instanceof PdfArray) {

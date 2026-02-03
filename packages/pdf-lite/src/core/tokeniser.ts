@@ -261,12 +261,6 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
                 inEscape = true
                 const next = this.next()
 
-                let found = false
-                if (this.inputOffset >= 829528) {
-                    console.log('here', this.inputOffset, next)
-                    found = true
-                }
-
                 if (next === null) {
                     throw new Error('Unexpected end of input in string token')
                 }

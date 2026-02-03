@@ -64,6 +64,7 @@ const ByteMap = {
     i: 0x69, // i
     NEW_LINE: 0x0a, // \n
     LINE_FEED: 0x0a, // \n
+    CARRIAGE_RETURN: 0x0d, // \r
     MINUS: 0x2d, // -
     BACKSLASH: 0x5c, // \
     SPACE: 0x20, // Space
@@ -289,9 +290,9 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
                     case ByteMap.BACKSLASH:
                         stringBytes.push(ByteMap.BACKSLASH)
                         break // \\
-                    case 0x0a:
-                    case 0x0d:
-                        // Ignore line breaks in the string after a backslash
+                    case ByteMap.LINE_FEED: // Line feed
+                    case ByteMap.CARRIAGE_RETURN: // Carriage return
+                        stringBytes.push(next)
                         break
                     default:
                         if (PdfByteStreamTokeniser.isOctet(next)) {
@@ -384,10 +385,24 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
         this.expect(ByteMap.a)
         this.expect(ByteMap.m)
 
+        // PDF spec 7.3.8.1: Stream keyword must be followed by an EOL marker (LF, CR, or CRLF)
+        // We should consume exactly ONE EOL marker, not all whitespace
         const whitespaceBytes: number[] = []
-        while (PdfByteStreamTokeniser.isWhitespace(this.peek())) {
+        const nextByte = this.peek()
+
+        if (nextByte === 0x0d) {
+            // CR
+            whitespaceBytes.push(this.next())
+            // Check for CRLF
+            if (this.peek() === 0x0a) {
+                // LF
+                whitespaceBytes.push(this.next())
+            }
+        } else if (nextByte === 0x0a) {
+            // LF
             whitespaceBytes.push(this.next())
         }
+        // Note: If there's no EOL marker, we continue anyway (malformed PDF)
 
         this.inStream = true
 
@@ -584,7 +599,7 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
             return this.nextXRefTableStartToken()
         } else {
             throw new Error(
-                `Unrecognised token starting with byte: ${byte} (root: ${root}) (char: ${String.fromCharCode(byte ?? 0)})`,
+                `[offset: ${this.inputOffset}] Unrecognised token starting with byte: ${byte} (root: ${root}) (char: ${String.fromCharCode(byte ?? 0)})`,
             )
         }
     }

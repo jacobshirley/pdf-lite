@@ -18,7 +18,25 @@ export class PdfTokenSerializer extends Parser<PdfToken, number> {
      * @param input - PDF tokens to serialize
      */
     feed(...input: PdfToken[]): void {
-        this.buffer.push(...input)
+        for (const token of input) {
+            this.buffer.push(token)
+        }
+    }
+
+    /**
+     * Efficiently feeds many tokens into the serializer buffer at once.
+     * Use this instead of spreading large arrays to avoid stack overflow.
+     *
+     * @param tokens - Array of PDF tokens to serialize
+     */
+    feedMany(tokens: PdfToken[]): void {
+        // Push tokens in batches to avoid stack overflow with very large arrays
+        // while maintaining good performance
+        const batchSize = 10000
+        for (let i = 0; i < tokens.length; i += batchSize) {
+            const end = Math.min(i + batchSize, tokens.length)
+            this.buffer.push(...tokens.slice(i, end))
+        }
     }
 
     /**

@@ -1678,7 +1678,10 @@ PdfDocument {
               "preTokens": [],
             },
             "modified": false,
-            "original": Uint8Array [],
+            "original": Uint8Array [
+              13,
+              10,
+            ],
             "postStreamDataTokens": [],
             "postTokens": [
               PdfWhitespaceToken {
@@ -1688,16 +1691,6 @@ PdfDocument {
               },
             ],
             "preStreamDataTokens": [
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  13,
-                ],
-              },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  10,
-                ],
-              },
               PdfWhitespaceToken {
                 "rawBytes": Uint8Array [
                   13,
@@ -13594,7 +13587,10 @@ PdfDocument {
               "preTokens": [],
             },
             "modified": false,
-            "original": Uint8Array [],
+            "original": Uint8Array [
+              13,
+              10,
+            ],
             "postStreamDataTokens": [],
             "postTokens": [
               PdfWhitespaceToken {
@@ -13604,16 +13600,6 @@ PdfDocument {
               },
             ],
             "preStreamDataTokens": [
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  13,
-                ],
-              },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  10,
-                ],
-              },
               PdfWhitespaceToken {
                 "rawBytes": Uint8Array [
                   13,
@@ -31527,7 +31513,10 @@ PdfDocument {
               "preTokens": [],
             },
             "modified": false,
-            "original": Uint8Array [],
+            "original": Uint8Array [
+              13,
+              10,
+            ],
             "postStreamDataTokens": [],
             "postTokens": [
               PdfWhitespaceToken {
@@ -31537,16 +31526,6 @@ PdfDocument {
               },
             ],
             "preStreamDataTokens": [
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  13,
-                ],
-              },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  10,
-                ],
-              },
               PdfWhitespaceToken {
                 "rawBytes": Uint8Array [
                   13,
@@ -38549,7 +38528,10 @@ PdfDocument {
               "preTokens": [],
             },
             "modified": false,
-            "original": Uint8Array [],
+            "original": Uint8Array [
+              13,
+              10,
+            ],
             "postStreamDataTokens": [],
             "postTokens": [
               PdfWhitespaceToken {
@@ -38559,16 +38541,6 @@ PdfDocument {
               },
             ],
             "preStreamDataTokens": [
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  13,
-                ],
-              },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  10,
-                ],
-              },
               PdfWhitespaceToken {
                 "rawBytes": Uint8Array [
                   13,
@@ -45571,7 +45543,10 @@ PdfDocument {
               "preTokens": [],
             },
             "modified": false,
-            "original": Uint8Array [],
+            "original": Uint8Array [
+              13,
+              10,
+            ],
             "postStreamDataTokens": [],
             "postTokens": [
               PdfWhitespaceToken {
@@ -45581,16 +45556,6 @@ PdfDocument {
               },
             ],
             "preStreamDataTokens": [
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  13,
-                ],
-              },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  10,
-                ],
-              },
               PdfWhitespaceToken {
                 "rawBytes": Uint8Array [
                   13,

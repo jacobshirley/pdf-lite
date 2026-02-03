@@ -22,6 +22,17 @@ export class OtfParser implements FontParser {
         this.parseTables()
     }
 
+    /**
+     * Returns the original font bytes.
+     */
+    getFontData(): ByteArray {
+        return new Uint8Array(
+            this.data.buffer,
+            this.data.byteOffset,
+            this.data.byteLength,
+        ) as ByteArray
+    }
+
     private parseTables(): void {
         const sfntVersion = this.data.getUint32(0)
 

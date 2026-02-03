@@ -60,9 +60,9 @@ Configuration options including key length.
 
 ## Properties
 
-### authEvent
+### authEvent?
 
-> **authEvent**: `"DocOpen"` \| `"EFOpen"`
+> `optional` **authEvent**: `"DocOpen"` \| `"EFOpen"`
 
 Authentication event trigger.
 

@@ -1,10 +1,14 @@
 import { ByteArray } from '../../types.js'
-import { aes128cbcDecrypt, aes128cbcEncrypt } from '../../utils/algos.js'
+import {
+    aes128cbcDecrypt,
+    aes128cbcEncrypt,
+    getRandomBytes,
+} from '../../utils/algos.js'
 import { Cipher } from '../types.js'
 
 /**
  * Creates an AES-128-CBC cipher for PDF encryption.
- * The cipher prepends a zero IV to encrypted data during encryption
+ * The cipher prepends a random IV to encrypted data during encryption
  * and extracts the IV from the first 16 bytes during decryption.
  *
  * @param key - The 16-byte encryption key.
@@ -24,21 +28,17 @@ export function aes128(key: ByteArray): Cipher {
             `AES-128 key must be exactly 16 bytes, got ${key.length}`,
         )
 
-    const iv = new Uint8Array(16) // Zero IV, as per PDF spec
-
     return {
         /**
          * Encrypts data using AES-128-CBC.
-         * Prepends the IV to the ciphertext.
+         * Generates a random IV and prepends it to the ciphertext.
          *
          * @param data - The data to encrypt.
          * @returns A promise that resolves to IV followed by ciphertext.
-         * @throws Error if the IV is not exactly 16 bytes.
          */
         encrypt: async (data: ByteArray): Promise<ByteArray> => {
-            if (iv.length !== 16) throw new Error('IV must be exactly 16 bytes')
-
-            const encrypted = await aes128cbcEncrypt(key, data)
+            const iv = getRandomBytes(16) // Generate random IV for each encryption
+            const encrypted = await aes128cbcEncrypt(key, data, iv)
             const result = new Uint8Array(iv.length + encrypted.length)
 
             result.set(iv, 0)
@@ -54,10 +54,19 @@ export function aes128(key: ByteArray): Cipher {
          * @returns A promise that resolves to the decrypted plaintext.
          */
         decrypt: async (data: ByteArray): Promise<ByteArray> => {
-            const iv = data.slice(0, 16)
-            const ciphertext = data.slice(16)
+            // If data is too short to contain IV + ciphertext, return as-is (not encrypted)
+            if (data.length < 16) {
+                return data
+            }
+            try {
+                const iv = data.slice(0, 16)
+                const ciphertext = data.slice(16)
 
-            return await aes128cbcDecrypt(key, ciphertext, iv)
+                return await aes128cbcDecrypt(key, ciphertext, iv)
+            } catch (error) {
+                // If decryption fails, the data might not be encrypted - return as-is
+                return data
+            }
         },
     }
 }

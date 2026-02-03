@@ -12,6 +12,9 @@
 
 ## Extended by
 
+- [`PdfAcroFormField`](../../../../acroform/acroform/classes/PdfAcroFormField.md)
+- [`PdfAcroForm`](../../../../acroform/acroform/classes/PdfAcroForm.md)
+- [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)
 - [`PdfDocumentSecurityStoreDictionary`](../../../../signing/document-security-store/classes/PdfDocumentSecurityStoreDictionary.md)
 - [`PdfSignatureDictionary`](../../../../signing/signatures/base/classes/PdfSignatureDictionary.md)
 
@@ -194,6 +197,19 @@ Creates a deep clone of the object
 #### Returns
 
 `void`
+
+---
+
+### entries()
+
+> **entries**(): `IterableIterator`\<\[`string`, [`PdfObject`](../../pdf-object/classes/PdfObject.md) \| `undefined`\]\>
+
+Returns an iterator for the dictionary entries.
+Each entry is a tuple of [key string, value].
+
+#### Returns
+
+`IterableIterator`\<\[`string`, [`PdfObject`](../../pdf-object/classes/PdfObject.md) \| `undefined`\]\>
 
 ---
 

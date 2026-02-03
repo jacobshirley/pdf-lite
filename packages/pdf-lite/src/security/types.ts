@@ -20,7 +20,7 @@ export type PdfId = PdfArray<PdfHexadecimal>
  * Specifies the encryption method and authentication event trigger.
  */
 export type PdfCryptFilterDictionary = PdfDictionary<{
-    AuthEvent: PdfName<'DocOpen' | 'EFOpen'>
+    AuthEvent?: PdfName<'DocOpen' | 'EFOpen'>
     CFM: PdfName<'None' | 'V2' | 'AESV2' | 'AESV3'>
     Length?: PdfNumber
 }>

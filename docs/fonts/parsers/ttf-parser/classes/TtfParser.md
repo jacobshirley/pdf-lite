@@ -57,6 +57,22 @@ Widths are scaled to PDF's 1000-unit em square.
 
 ---
 
+### getFontData()
+
+> **getFontData**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+Returns the original font bytes.
+
+#### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+#### Implementation of
+
+[`FontParser`](../../../types/interfaces/FontParser.md).[`getFontData`](../../../types/interfaces/FontParser.md#getfontdata)
+
+---
+
 ### getFontDescriptor()
 
 > **getFontDescriptor**(`fontName?`): [`FontDescriptor`](../../../types/interfaces/FontDescriptor.md)

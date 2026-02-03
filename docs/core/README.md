@@ -443,3 +443,9 @@ Re-exports [RefUpdateCallback](ref/type-aliases/RefUpdateCallback.md)
 ### stringToPdfObjects
 
 Re-exports [stringToPdfObjects](generators/functions/stringToPdfObjects.md)
+
+---
+
+### UnexpectedTokenError
+
+Re-exports [UnexpectedTokenError](incremental-parser/classes/UnexpectedTokenError.md)

@@ -269,3 +269,48 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toTokens`](../../pdf-object/classes/PdfObject.md#totokens)
+
+---
+
+### escapeName()
+
+> `static` **escapeName**(`name`): `string`
+
+Escapes a PDF name according to PDF specification.
+PDF names can't contain spaces or certain special chars except # for escaping.
+
+#### Parameters
+
+##### name
+
+`string`
+
+The name to escape
+
+#### Returns
+
+`string`
+
+The escaped name
+
+---
+
+### unescapeName()
+
+> `static` **unescapeName**(`escapedName`): `string`
+
+Unescapes a PDF name by converting #XX hex sequences back to characters.
+
+#### Parameters
+
+##### escapedName
+
+`string`
+
+The escaped name with #XX sequences
+
+#### Returns
+
+`string`
+
+The unescaped name

@@ -30,6 +30,16 @@ Common interface for all font parsers.
 
 ---
 
+### getFontData()
+
+> **getFontData**(): [`ByteArray`](../../../types/type-aliases/ByteArray.md)
+
+#### Returns
+
+[`ByteArray`](../../../types/type-aliases/ByteArray.md)
+
+---
+
 ### getFontDescriptor()
 
 > **getFontDescriptor**(`fontName?`): [`FontDescriptor`](FontDescriptor.md)

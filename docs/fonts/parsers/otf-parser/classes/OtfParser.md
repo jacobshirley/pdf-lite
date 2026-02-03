@@ -60,6 +60,22 @@ Gets character widths for a range of characters.
 
 ---
 
+### getFontData()
+
+> **getFontData**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+Returns the original font bytes.
+
+#### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+#### Implementation of
+
+[`FontParser`](../../../types/interfaces/FontParser.md).[`getFontData`](../../../types/interfaces/FontParser.md#getfontdata)
+
+---
+
 ### getFontDescriptor()
 
 > **getFontDescriptor**(`fontName?`): [`FontDescriptor`](../../../types/interfaces/FontDescriptor.md)

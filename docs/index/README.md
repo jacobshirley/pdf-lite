@@ -764,6 +764,12 @@ Re-exports [PdfFilter](../filters/types/interfaces/PdfFilter.md)
 
 ---
 
+### PdfFont
+
+Re-exports [PdfFont](../fonts/pdf-font/classes/PdfFont.md)
+
+---
+
 ### PdfFontManager
 
 Re-exports [PdfFontManager](../fonts/font-manager/classes/PdfFontManager.md)
@@ -1319,6 +1325,12 @@ Re-exports [TtfParser](../fonts/parsers/ttf-parser/classes/TtfParser.md)
 ### unescapeString
 
 Re-exports [unescapeString](../utils/unescapeString/functions/unescapeString.md)
+
+---
+
+### UnexpectedTokenError
+
+Re-exports [UnexpectedTokenError](../core/incremental-parser/classes/UnexpectedTokenError.md)
 
 ---
 

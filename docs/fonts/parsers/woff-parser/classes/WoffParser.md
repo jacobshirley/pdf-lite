@@ -67,6 +67,10 @@ Gets the decompressed TTF/OTF font data.
 
 [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
 
+#### Implementation of
+
+[`FontParser`](../../../types/interfaces/FontParser.md).[`getFontData`](../../../types/interfaces/FontParser.md#getfontdata)
+
 ---
 
 ### getFontDescriptor()

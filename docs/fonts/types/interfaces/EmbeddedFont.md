@@ -6,6 +6,8 @@
 
 # Interface: EmbeddedFont
 
+Represents a font that has been found in a PDF document.
+
 ## Properties
 
 ### baseFont

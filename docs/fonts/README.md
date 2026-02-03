@@ -68,6 +68,12 @@ Re-exports [parseFont](parsers/font-parser/functions/parseFont.md)
 
 ---
 
+### PdfFont
+
+Re-exports [PdfFont](pdf-font/classes/PdfFont.md)
+
+---
+
 ### PdfFontManager
 
 Re-exports [PdfFontManager](font-manager/classes/PdfFontManager.md)

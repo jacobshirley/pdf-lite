@@ -208,6 +208,10 @@ export class PdfAcroFormField extends PdfDictionary<{
     }
 
     set value(val: string) {
+        if (this.value === val) {
+            return
+        }
+
         const fieldType = this.get('FT')?.as(PdfName)?.value
         if (fieldType === PdfFieldType.Button) {
             if (val.trim() === '') {

@@ -24,6 +24,10 @@
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
 
+###### form?
+
+[`PdfAcroForm`](PdfAcroForm.md)\<`Record`\<`string`, `string`\>\>
+
 #### Returns
 
 `PdfAcroFormField`
@@ -37,6 +41,12 @@
 ### container?
 
 > `readonly` `optional` **container**: [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+---
+
+### form?
+
+> `optional` **form**: [`PdfAcroForm`](PdfAcroForm.md)\<`Record`\<`string`, `string`\>\>
 
 ---
 

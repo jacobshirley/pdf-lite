@@ -18,13 +18,17 @@
 
 ### Constructor
 
-> **new PdfString**(`raw`): `PdfString`
+> **new PdfString**(`raw`, `originalBytes?`): `PdfString`
 
 #### Parameters
 
 ##### raw
 
 `string` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+##### originalBytes?
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
 
 #### Returns
 
@@ -71,6 +75,21 @@ Optional tokens to prepend or append during serialization
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`preTokens`](../../pdf-object/classes/PdfObject.md#pretokens)
 
 ## Accessors
+
+### isUTF16BE
+
+#### Get Signature
+
+> **get** **isUTF16BE**(): `boolean`
+
+Checks if this string is UTF-16BE encoded (has UTF-16BE BOM).
+UTF-16BE strings start with the byte order mark 0xFE 0xFF.
+
+##### Returns
+
+`boolean`
+
+---
 
 ### objectType
 

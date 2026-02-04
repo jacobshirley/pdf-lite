@@ -80,6 +80,25 @@ Optional tokens to prepend or append during serialization
 
 ---
 
+### isUTF16BE
+
+#### Get Signature
+
+> **get** **isUTF16BE**(): `boolean`
+
+Checks if this string is UTF-16BE encoded (has UTF-16BE BOM).
+UTF-16BE strings start with the byte order mark 0xFE 0xFF.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfString`](../../pdf-string/classes/PdfString.md).[`isUTF16BE`](../../pdf-string/classes/PdfString.md#isutf16be)
+
+---
+
 ### objectType
 
 #### Get Signature

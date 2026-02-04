@@ -34,6 +34,10 @@
 
 [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)
 
+###### document?
+
+[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)
+
 ###### fields?
 
 [`PdfAcroFormField`](PdfAcroFormField.md)[]
@@ -57,6 +61,12 @@
 ### fields
 
 > **fields**: [`PdfAcroFormField`](PdfAcroFormField.md)[]
+
+---
+
+### fontEncodingMaps
+
+> `readonly` **fontEncodingMaps**: `Map`\<`string`, `Map`\<`number`, `string`\> \| `null`\>
 
 ---
 
@@ -333,7 +343,7 @@ Creates a deep clone of the object
 
 ##### K
 
-`K` _extends_ `"DA"` \| `"Fields"` \| `"NeedAppearances"` \| `"SigFlags"` \| `"CO"` \| `"DR"` \| `"Q"`
+`K` _extends_ `"Q"` \| `"DA"` \| `"Fields"` \| `"NeedAppearances"` \| `"SigFlags"` \| `"CO"` \| `"DR"`
 
 #### Parameters
 
@@ -408,7 +418,7 @@ Compares this object to another for equality based on their token representation
 
 ##### K
 
-`K` _extends_ `"DA"` \| `"Fields"` \| `"NeedAppearances"` \| `"SigFlags"` \| `"CO"` \| `"DR"` \| `"Q"`
+`K` _extends_ `"Q"` \| `"DA"` \| `"Fields"` \| `"NeedAppearances"` \| `"SigFlags"` \| `"CO"` \| `"DR"`
 
 #### Parameters
 
@@ -426,6 +436,26 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### getFontEncodingMap()
+
+> **getFontEncodingMap**(`fontName`): `Promise`\<`Map`\<`number`, `string`\> \| `null`\>
+
+Gets the encoding map for a specific font in the form's resources.
+Returns null if no custom encoding is found.
+Results are cached for performance.
+
+#### Parameters
+
+##### fontName
+
+`string`
+
+#### Returns
+
+`Promise`\<`Map`\<`number`, `string`\> \| `null`\>
+
+---
+
 ### has()
 
 > **has**\<`K`\>(`key`): `boolean`
@@ -434,7 +464,7 @@ Compares this object to another for equality based on their token representation
 
 ##### K
 
-`K` _extends_ `"DA"` \| `"Fields"` \| `"NeedAppearances"` \| `"SigFlags"` \| `"CO"` \| `"DR"` \| `"Q"`
+`K` _extends_ `"Q"` \| `"DA"` \| `"Fields"` \| `"NeedAppearances"` \| `"SigFlags"` \| `"CO"` \| `"DR"`
 
 #### Parameters
 
@@ -492,7 +522,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### K
 
-`K` _extends_ `"DA"` \| `"Fields"` \| `"NeedAppearances"` \| `"SigFlags"` \| `"CO"` \| `"DR"` \| `"Q"`
+`K` _extends_ `"Q"` \| `"DA"` \| `"Fields"` \| `"NeedAppearances"` \| `"SigFlags"` \| `"CO"` \| `"DR"`
 
 #### Parameters
 

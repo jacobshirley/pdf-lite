@@ -468,11 +468,27 @@ export class PdfAcroFormField extends PdfDictionary<{
         textYOffset?: number
     }): boolean {
         const fieldType = this.fieldType
-        if (fieldType !== PdfFieldType.Text) {
-            // Only text fields are currently supported
-            return false
+
+        // Route to appropriate generation method based on field type
+        if (fieldType === PdfFieldType.Text) {
+            return this.generateTextAppearance(options)
+        } else if (fieldType === PdfFieldType.Button) {
+            return this.generateButtonAppearance(options)
+        } else if (fieldType === PdfFieldType.Choice) {
+            return this.generateChoiceAppearance(options)
         }
 
+        return false
+    }
+
+    /**
+     * Generates appearance for text fields
+     * @internal
+     */
+    private generateTextAppearance(options?: {
+        makeReadOnly?: boolean
+        textYOffset?: number
+    }): boolean {
         const rect = this.rect
         if (!rect || rect.length !== 4) return false
 
@@ -531,7 +547,31 @@ export class PdfAcroFormField extends PdfDictionary<{
         // Generate text positioning based on field type
         let textContent: string
 
-        if (this.comb && this.maxLen) {
+        if (this.multiline) {
+            // Multiline text field: handle line breaks
+            const lines = value.split('\n')
+            const lineHeight = fontSize * 1.2
+            const startY = height - padding - fontSize
+
+            textContent = 'BT\n'
+            textContent += `${reconstructedDA}\n`
+            textContent += `${padding} ${startY} Td\n`
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i]
+                    .replace(/\\/g, '\\\\')
+                    .replace(/\(/g, '\\(')
+                    .replace(/\)/g, '\\)')
+                    .replace(/\r/g, '')
+
+                if (i > 0) {
+                    textContent += `0 ${-lineHeight} Td\n`
+                }
+                textContent += `(${line}) Tj\n`
+            }
+
+            textContent += 'ET\n'
+        } else if (this.comb && this.maxLen) {
             // Comb field: position each character in its own cell
             const cellWidth = width / this.maxLen
             const chars = value.split('')
@@ -625,6 +665,201 @@ EMC
             // For editable fields, just ensure print flag is set
             const currentF = this.get('F')?.as(PdfNumber)?.value ?? 0
             this.set('F', new PdfNumber(currentF | 4)) // Print (4)
+        }
+
+        return true
+    }
+
+    /**
+     * Generates appearance for button fields (checkboxes, radio buttons)
+     * @internal
+     */
+    private generateButtonAppearance(options?: {
+        makeReadOnly?: boolean
+    }): boolean {
+        const rect = this.rect
+        if (!rect || rect.length !== 4) return false
+
+        const [x1, y1, x2, y2] = rect
+        const width = x2 - x1
+        const height = y2 - y1
+        const size = Math.min(width, height)
+
+        // Get the current value/state
+        const isChecked = this.checked
+
+        // Check if this is a radio button by looking at parent/siblings
+        // Radio buttons typically have Ff bit 15 (Radio) set
+        const isRadio = (this.flags & 32768) !== 0
+
+        // Generate appropriate appearance based on state
+        let contentStream: string
+
+        if (isChecked) {
+            if (isRadio) {
+                // Radio button: filled circle
+                const center = size / 2
+                const radius = size * 0.3
+                contentStream = `q
+${center} ${center} m
+${center + radius} ${center} l
+${center + radius} ${center + radius} ${center} ${center + radius} ${center - radius} ${center} c
+${center - radius} ${center - radius} ${center} ${center - radius} ${center} ${center} c
+f
+Q
+`
+            } else {
+                // Checkbox: checkmark (using ZapfDingbats character)
+                const checkSize = size * 0.8
+                const offset = (size - checkSize) / 2
+                contentStream = `q
+BT
+/ZaDb ${checkSize} Tf
+${offset} ${offset} Td
+(4) Tj
+ET
+Q
+`
+            }
+        } else {
+            // Unchecked: empty
+            contentStream = ''
+        }
+
+        // Create the appearance stream
+        const appearanceDict = new PdfDictionary()
+        appearanceDict.set('Type', new PdfName('XObject'))
+        appearanceDict.set('Subtype', new PdfName('Form'))
+        appearanceDict.set('FormType', new PdfNumber(1))
+        appearanceDict.set(
+            'BBox',
+            new PdfArray([
+                new PdfNumber(0),
+                new PdfNumber(0),
+                new PdfNumber(width),
+                new PdfNumber(height),
+            ]),
+        )
+
+        // Add ZapfDingbats font for checkmarks
+        const resources = new PdfDictionary()
+        const fonts = new PdfDictionary()
+        const zapfFont = new PdfDictionary()
+        zapfFont.set('Type', new PdfName('Font'))
+        zapfFont.set('Subtype', new PdfName('Type1'))
+        zapfFont.set('BaseFont', new PdfName('ZapfDingbats'))
+        fonts.set('ZaDb', zapfFont)
+        resources.set('Font', fonts)
+        appearanceDict.set('Resources', resources)
+
+        const stream = new PdfStream({
+            header: appearanceDict,
+            original: contentStream,
+        })
+
+        this._appearanceStream = stream
+
+        if (options?.makeReadOnly) {
+            this.readOnly = true
+            const currentF = this.get('F')?.as(PdfNumber)?.value ?? 0
+            this.set('F', new PdfNumber(currentF | 4 | 8))
+        }
+
+        return true
+    }
+
+    /**
+     * Generates appearance for choice fields (dropdowns, list boxes)
+     * @internal
+     */
+    private generateChoiceAppearance(options?: {
+        makeReadOnly?: boolean
+    }): boolean {
+        const rect = this.rect
+        if (!rect || rect.length !== 4) return false
+
+        const [x1, y1, x2, y2] = rect
+        const width = x2 - x1
+        const height = y2 - y1
+
+        // Get the default appearance string
+        const da = this.get('DA')?.as(PdfString)?.value
+        if (!da) return false
+
+        const value = this.value
+        if (!value) return false
+
+        // Parse font and size from DA
+        const fontMatch = da.match(/\/(\w+)\s+([\d.]+)\s+Tf/)
+        if (!fontMatch) return false
+
+        const fontName = fontMatch[1]
+        let fontSize = parseFloat(fontMatch[2])
+        if (!fontSize || fontSize <= 0) {
+            fontSize = 12
+        }
+
+        const colorOp = '0 g'
+        const reconstructedDA = `/${fontName} ${fontSize} Tf ${colorOp}`
+
+        const padding = 2
+        const textY = (height - fontSize) / 2 + fontSize * 0.2
+        const textX = padding
+
+        const escapedValue = value
+            .replace(/\\/g, '\\\\')
+            .replace(/\(/g, '\\(')
+            .replace(/\)/g, '\\)')
+
+        // Generate appearance similar to text field
+        const contentStream = `/Tx BMC
+q
+BT
+${reconstructedDA}
+${textX} ${textY} Td
+(${escapedValue}) Tj
+ET
+Q
+EMC
+`
+
+        const appearanceDict = new PdfDictionary()
+        appearanceDict.set('Type', new PdfName('XObject'))
+        appearanceDict.set('Subtype', new PdfName('Form'))
+        appearanceDict.set('FormType', new PdfNumber(1))
+        appearanceDict.set(
+            'BBox',
+            new PdfArray([
+                new PdfNumber(0),
+                new PdfNumber(0),
+                new PdfNumber(width),
+                new PdfNumber(height),
+            ]),
+        )
+
+        if (this.form) {
+            const formResources = this.form.get('DR')?.as(PdfDictionary)
+            if (formResources) {
+                const fonts = formResources.get('Font')?.as(PdfDictionary)
+                if (fonts) {
+                    const resources = new PdfDictionary()
+                    resources.set('Font', fonts.clone())
+                    appearanceDict.set('Resources', resources)
+                }
+            }
+        }
+
+        const stream = new PdfStream({
+            header: appearanceDict,
+            original: contentStream,
+        })
+
+        this._appearanceStream = stream
+
+        if (options?.makeReadOnly) {
+            this.readOnly = true
+            const currentF = this.get('F')?.as(PdfNumber)?.value ?? 0
+            this.set('F', new PdfNumber(currentF | 4 | 8))
         }
 
         return true

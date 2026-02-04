@@ -1109,7 +1109,7 @@ console.log('Created form-empty.pdf with empty form fields')
 const emptyFormBytes = await fs.readFile(`${tmpFolder}/form-empty.pdf`)
 const filledDocument = await PdfDocument.fromBytes([emptyFormBytes])
 
-const acroform = await filledDocument.acroForm.getAcroForm()
+const acroform = await filledDocument.acroForm.read()
 if (!acroform) {
     throw new Error('No AcroForm found in the document')
 }

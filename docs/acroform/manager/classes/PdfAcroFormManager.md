@@ -27,23 +27,9 @@ Provides methods to read and write form field values.
 
 ## Methods
 
-### getAcroForm()
+### exists()
 
-> **getAcroForm**(): `Promise`\<[`PdfAcroForm`](../../acroform/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`\>
-
-Gets the AcroForm object from the document catalog.
-
-#### Returns
-
-`Promise`\<[`PdfAcroForm`](../../acroform/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`\>
-
-The AcroForm object or null if not found
-
----
-
-### hasAcroForm()
-
-> **hasAcroForm**(): `Promise`\<`boolean`\>
+> **exists**(): `Promise`\<`boolean`\>
 
 Checks if the document contains AcroForm fields.
 
@@ -52,6 +38,20 @@ Checks if the document contains AcroForm fields.
 `Promise`\<`boolean`\>
 
 True if the document has AcroForm fields, false otherwise
+
+---
+
+### read()
+
+> **read**(): `Promise`\<[`PdfAcroForm`](../../acroform/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`\>
+
+Gets the AcroForm object from the document catalog.
+
+#### Returns
+
+`Promise`\<[`PdfAcroForm`](../../acroform/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`\>
+
+The AcroForm object or null if not found
 
 ---
 

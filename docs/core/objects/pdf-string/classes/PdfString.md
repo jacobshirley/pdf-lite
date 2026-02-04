@@ -18,13 +18,17 @@
 
 ### Constructor
 
-> **new PdfString**(`raw`): `PdfString`
+> **new PdfString**(`raw`, `originalBytes?`): `PdfString`
 
 #### Parameters
 
 ##### raw
 
 `string` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+##### originalBytes?
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
 
 #### Returns
 

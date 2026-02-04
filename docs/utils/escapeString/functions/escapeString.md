@@ -9,7 +9,7 @@
 > **escapeString**(`bytes`): [`ByteArray`](../../../types/type-aliases/ByteArray.md)
 
 Escapes special characters in a PDF string according to PDF specification.
-Escapes parentheses, backslashes, line feeds, and carriage returns.
+Escapes parentheses, backslashes, and control characters (\n, \r, \t, \b, \f).
 
 ## Parameters
 

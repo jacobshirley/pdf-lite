@@ -44,6 +44,7 @@ export class PdfAcroFormField extends PdfDictionary<{
     Subtype?: PdfName<'Widget'>
     AP?: PdfDictionary
     Q?: PdfNumber
+    MaxLen?: PdfNumber
 }> {
     parent?: PdfAcroFormField
     readonly container?: PdfIndirectObject
@@ -408,6 +409,20 @@ export class PdfAcroFormField extends PdfDictionary<{
     }
 
     /**
+     * Checks if the field is a comb field (characters distributed evenly across cells)
+     */
+    get comb(): boolean {
+        return (this.flags & 16777216) !== 0
+    }
+
+    /**
+     * Gets the maximum length for the field (used with comb fields)
+     */
+    get maxLen(): number | null {
+        return this.get('MaxLen')?.as(PdfNumber)?.value ?? null
+    }
+
+    /**
      * Gets the quadding (text alignment) for this field.
      * 0 = left-justified, 1 = centered, 2 = right-justified
      */
@@ -509,32 +524,47 @@ export class PdfAcroFormField extends PdfDictionary<{
             .replace(/\r/g, '\\r')
             .replace(/\n/g, '\\n')
 
-        const textX = padding
+        // Generate text positioning based on field type
+        let textContent: string
 
-        // Get background color from MK dictionary if present
-        const mk = this.get('MK')?.as(PdfDictionary)
-        const bg = mk?.get('BG')?.as(PdfArray<PdfNumber>)
-        let bgColor = '1 g' // default white background
-        if (bg && bg.items.length >= 1) {
-            if (bg.items.length === 1) {
-                // Grayscale
-                bgColor = `${bg.items[0].value} g`
-            } else if (bg.items.length === 3) {
-                // RGB
-                bgColor = `${bg.items[0].value} ${bg.items[1].value} ${bg.items[2].value} rg`
+        if (this.comb && this.maxLen) {
+            // Comb field: position each character in its own cell
+            const cellWidth = width / this.maxLen
+            const chars = value.split('')
+
+            textContent = 'BT\n'
+            textContent += `${reconstructedDA}\n`
+
+            for (let i = 0; i < chars.length && i < this.maxLen; i++) {
+                // Center each character in its cell
+                const cellX = cellWidth * i + cellWidth / 2 - fontSize * 0.3
+                const escapedChar = chars[i]
+                    .replace(/\\/g, '\\\\')
+                    .replace(/\(/g, '\\(')
+                    .replace(/\)/g, '\\)')
+
+                textContent += `${cellX} ${textY} Td\n`
+                textContent += `(${escapedChar}) Tj\n`
+                textContent += `${-cellX} ${-textY} Td\n` // Reset position
             }
+
+            textContent += 'ET\n'
+        } else {
+            // Regular text field
+            const textX = padding
+            textContent = `BT
+${reconstructedDA}
+${textX} ${textY} Td
+(${escapedValue}) Tj
+ET
+`
         }
 
         // Generate appearance with text (iText approach)
         // Use marked content to properly tag the text field content
         const contentStream = `/Tx BMC
 q
-BT
-${reconstructedDA}
-${textX} ${textY} Td
-(${escapedValue}) Tj
-ET
-Q
+${textContent}Q
 EMC
 `
 

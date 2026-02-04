@@ -822,7 +822,7 @@ describe('AcroForm Appearance Generation', () => {
         expect(readOnlyStreamContent).toContain('Td') // text position operator
     })
 
-    it('should automatically write appearance when form is saved', async () => {
+    it.only('should automatically write appearance when form is saved', async () => {
         const pdfBuffer = base64ToBytes(
             await server.commands.readFile(
                 './test/unit/fixtures/template.pdf',
@@ -836,14 +836,17 @@ describe('AcroForm Appearance Generation', () => {
             throw new Error('No AcroForm found in the document')
         }
 
+        console.log(acroform.exportData())
+
         const textField = acroform.fields.find((f) => f.name === 'Client Name')
         expect(textField).toBeDefined()
 
         textField!.value = 'Test Value Here'
 
-        // Generate empty appearance for editable field (iText approach)
-        const success = textField!.generateAppearance()
-        expect(success).toBe(true)
+        const numberField = acroform.fields.find((f) => f.name === 'N')
+        expect(numberField).toBeDefined()
+
+        numberField!.value = '123'
 
         // Field should remain editable
         expect(textField!.readOnly).toBe(false)

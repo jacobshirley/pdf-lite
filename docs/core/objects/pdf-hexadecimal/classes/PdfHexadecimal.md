@@ -14,7 +14,7 @@
 
 ### Constructor
 
-> **new PdfHexadecimal**(`value`, `format`): `PdfHexadecimal`
+> **new PdfHexadecimal**(`value`, `format`, `originalBytes?`): `PdfHexadecimal`
 
 #### Parameters
 
@@ -25,6 +25,10 @@
 ##### format
 
 `"hex"` | `"bytes"`
+
+##### originalBytes?
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
 
 #### Returns
 

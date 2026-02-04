@@ -165,6 +165,11 @@ export class PdfAcroFormField extends PdfDictionary<{
     get value(): string {
         const v = this.get('V')
         if (v instanceof PdfString) {
+            // UTF-16BE strings should always use UTF-16BE decoding regardless of font encoding
+            if (v.isUTF16BE) {
+                return v.value // Use PdfString's built-in UTF-16BE decoder
+            }
+
             // Try to use custom font encoding if available
             const encodingMap = this.getCachedEncodingMap()
             if (encodingMap !== undefined) {

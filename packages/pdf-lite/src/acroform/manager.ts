@@ -16,9 +16,9 @@ export class PdfAcroFormManager {
      * Checks if the document contains AcroForm fields.
      * @returns True if the document has AcroForm fields, false otherwise
      */
-    async hasAcroForm(): Promise<boolean> {
+    async exists(): Promise<boolean> {
         try {
-            const acroForm = await this.getAcroForm()
+            const acroForm = await this.read()
             return acroForm !== null
         } catch {
             return false
@@ -29,7 +29,7 @@ export class PdfAcroFormManager {
      * Gets the AcroForm object from the document catalog.
      * @returns The AcroForm object or null if not found
      */
-    async getAcroForm(): Promise<PdfAcroForm | null> {
+    async read(): Promise<PdfAcroForm | null> {
         return await PdfAcroForm.fromDocument(this.document)
     }
 

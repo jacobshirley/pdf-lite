@@ -111,7 +111,14 @@ export class PdfAcroFormField extends PdfDictionary<{
      * Gets the field name
      */
     get name(): string {
-        return this.get('T')?.as(PdfString)?.value ?? ''
+        const parentName = this.parent?.name ?? ''
+        const ownName = this.get('T')?.as(PdfString)?.value ?? ''
+
+        if (parentName && ownName) {
+            return `${parentName}.${ownName}`
+        }
+
+        return parentName || ownName
     }
 
     /**
@@ -504,17 +511,18 @@ export class PdfAcroForm<
             container: acroFormContainer,
         })
 
+        const fields: Map<string, PdfAcroFormField> = new Map()
+
         const getFields = async (
-            fields: PdfArray<PdfObjectReference>,
-            seen: Set<string> = new Set(),
+            fieldRefs: PdfArray<PdfObjectReference>,
             parent?: PdfAcroFormField,
         ): Promise<void> => {
-            for (const fieldRef of fields.items) {
-                const refKey = fieldRef.toString()
-                if (seen.has(refKey)) {
+            for (const fieldRef of fieldRefs.items) {
+                const refKey = fieldRef.toString().trim()
+                if (fields.has(refKey)) {
+                    fields.get(refKey)!.parent = parent
                     continue
                 }
-                seen.add(refKey)
 
                 const fieldObject = await document.readObject({
                     objectNumber: fieldRef.objectNumber,
@@ -530,13 +538,50 @@ export class PdfAcroForm<
                 field.parent = parent
                 field.copyFrom(fieldObject.content)
 
+                if (field.name === 'Reg') {
+                    console.log({
+                        name: field.name,
+                        parentName: field.parent?.name,
+                        parentRef: field.parentRef,
+                        kids: field.get('Kids')?.items.map((k) => k.toString()),
+                    })
+
+                    if (field.parentRef) {
+                        const parentObject = await document.readObject({
+                            objectNumber: field.parentRef.objectNumber,
+                            generationNumber: field.parentRef.generationNumber,
+                        })
+                        console.log('Parent object:', parentObject?.toString())
+                    }
+                }
+
+                if (field.name.includes('start month')) {
+                    console.log({
+                        ref: field.container?.reference.toString(),
+                        name: field.name,
+                        parentName: field.parent?.name,
+                        parentRef: field.parentRef,
+                        kids: field.get('Kids'),
+                    })
+
+                    if (field.parentRef) {
+                        const parentObject = await document.readObject({
+                            objectNumber: field.parentRef.objectNumber,
+                            generationNumber: field.parentRef.generationNumber,
+                        })
+                        console.log('Parent object:', parentObject?.toString())
+                    }
+                }
+
                 // Process child fields (Kids) before adding the parent
                 const kids = field.get('Kids')?.as(PdfArray<PdfObjectReference>)
                 if (kids) {
-                    await getFields(kids, seen, field)
+                    await getFields(kids, field)
                 }
 
                 acroForm.fields.push(field)
+
+                fields.set(refKey, field)
             }
         }
 

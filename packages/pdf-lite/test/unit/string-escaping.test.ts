@@ -26,12 +26,13 @@ describe('String Escaping for PDF', () => {
         expect(result).toBe(`\\n\\r`)
     })
 
-    it('should not escape other control characters', () => {
-        // The current implementation only escapes (, ), \, \n, and \r
-        // Other characters like \f, \b, \t are passed through as-is
+    it('should escape common control characters', () => {
+        // The current implementation escapes (, ), \, \n, \r, \t, \b, and \f
         const input = stringToBytes('\f\b\t')
         const output = escapeString(input)
-        expect(output).toEqual(input)
+        // \f becomes \f (92, 102), \b becomes \b (92, 98), \t becomes \t (92, 116)
+        const expected = new Uint8Array([92, 102, 92, 98, 92, 116])
+        expect(output).toEqual(expected)
     })
 
     it('should not escape regular printable characters', () => {

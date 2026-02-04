@@ -8,6 +8,10 @@ import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfBoolean } from '../core/objects/pdf-boolean.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfFont } from '../fonts/pdf-font.js'
+import {
+    buildEncodingMap,
+    decodeWithFontEncoding,
+} from '../utils/decodeWithFontEncoding.js'
 
 /**
  * Field types for AcroForm fields
@@ -40,10 +44,15 @@ export class PdfAcroFormField extends PdfDictionary<{
 }> {
     parent?: PdfAcroFormField
     readonly container?: PdfIndirectObject
+    form?: PdfAcroForm
 
-    constructor(options?: { container?: PdfIndirectObject }) {
+    constructor(options?: {
+        container?: PdfIndirectObject
+        form?: PdfAcroForm
+    }) {
         super()
         this.container = options?.container
+        this.form = options?.form
     }
 
     /**
@@ -149,11 +158,35 @@ export class PdfAcroFormField extends PdfDictionary<{
     get value(): string {
         const v = this.get('V')
         if (v instanceof PdfString) {
+            // Try to use custom font encoding if available
+            const encodingMap = this.getCachedEncodingMap()
+            if (encodingMap !== undefined) {
+                return decodeWithFontEncoding(v.raw, encodingMap)
+            }
             return v.value
         } else if (v instanceof PdfName) {
             return v.value
         }
         return ''
+    }
+
+    /**
+     * Gets the cached encoding map for this field's font, if available.
+     * Returns undefined if no encoding has been cached yet.
+     */
+    private getCachedEncodingMap(): Map<number, string> | null | undefined {
+        if (!this.form) return undefined
+
+        // Parse font name from DA (default appearance) string
+        const da = this.get('DA')?.as(PdfString)?.value
+        if (!da) return undefined
+
+        // Extract font name from DA string (format: /FontName size Tf ...)
+        const fontMatch = da.match(/\/(\w+)\s+[\d.]+\s+Tf/)
+        if (!fontMatch) return undefined
+
+        const fontName = fontMatch[1]
+        return this.form.fontEncodingMaps.get(fontName)
     }
 
     set value(val: string) {
@@ -367,16 +400,21 @@ export class PdfAcroForm<
 }> {
     fields: PdfAcroFormField[]
     readonly container?: PdfIndirectObject
+    readonly fontEncodingMaps: Map<string, Map<number, string> | null> =
+        new Map()
+    private document?: PdfDocument
 
     constructor(options: {
         dict: PdfDictionary
         fields?: PdfAcroFormField[]
         container?: PdfIndirectObject
+        document?: PdfDocument
     }) {
         super()
         this.copyFrom(options.dict)
         this.fields = options.fields ?? []
         this.container = options.container
+        this.document = options.document
     }
 
     /**
@@ -469,6 +507,81 @@ export class PdfAcroForm<
         return result
     }
 
+    /**
+     * Gets the encoding map for a specific font in the form's resources.
+     * Returns null if no custom encoding is found.
+     * Results are cached for performance.
+     */
+    async getFontEncodingMap(
+        fontName: string,
+    ): Promise<Map<number, string> | null> {
+        // Check cache first
+        if (this.fontEncodingMaps.has(fontName)) {
+            return this.fontEncodingMaps.get(fontName)!
+        }
+
+        // Get the font from DR (default resources)
+        const dr = this.get('DR')?.as(PdfDictionary)
+        if (!dr) {
+            this.fontEncodingMaps.set(fontName, null)
+            return null
+        }
+
+        const fonts = dr.get('Font')?.as(PdfDictionary)
+        if (!fonts) {
+            this.fontEncodingMaps.set(fontName, null)
+            return null
+        }
+
+        const fontRef = fonts.get(fontName)?.as(PdfObjectReference)
+        if (!fontRef || !this.document) {
+            this.fontEncodingMaps.set(fontName, null)
+            return null
+        }
+
+        // Read the font object
+        const fontObj = await this.document.readObject({
+            objectNumber: fontRef.objectNumber,
+            generationNumber: fontRef.generationNumber,
+        })
+
+        if (!fontObj) {
+            this.fontEncodingMaps.set(fontName, null)
+            return null
+        }
+
+        const fontDict = fontObj.content.as(PdfDictionary)
+        const encoding = fontDict.get('Encoding')
+
+        // Handle encoding reference
+        let encodingDict: PdfDictionary | null = null
+        if (encoding instanceof PdfObjectReference) {
+            const encodingObj = await this.document.readObject({
+                objectNumber: encoding.objectNumber,
+                generationNumber: encoding.generationNumber,
+            })
+            encodingDict = encodingObj?.content.as(PdfDictionary) ?? null
+        } else if (encoding instanceof PdfDictionary) {
+            encodingDict = encoding
+        }
+
+        if (!encodingDict) {
+            this.fontEncodingMaps.set(fontName, null)
+            return null
+        }
+
+        // Parse the Differences array
+        const differences = encodingDict.get('Differences')?.as(PdfArray)
+        if (!differences) {
+            this.fontEncodingMaps.set(fontName, null)
+            return null
+        }
+
+        const encodingMap = buildEncodingMap(differences)
+        this.fontEncodingMaps.set(fontName, encodingMap)
+        return encodingMap
+    }
+
     static async fromDocument(
         document: PdfDocument,
     ): Promise<PdfAcroForm | null> {
@@ -502,6 +615,7 @@ export class PdfAcroForm<
         const acroForm = new PdfAcroForm({
             dict: acroFormDict,
             container: acroFormContainer,
+            document,
         })
 
         const getFields = async (
@@ -526,6 +640,7 @@ export class PdfAcroForm<
 
                 const field = new PdfAcroFormField({
                     container: fieldObject,
+                    form: acroForm,
                 })
                 field.parent = parent
                 field.copyFrom(fieldObject.content)
@@ -563,7 +678,34 @@ export class PdfAcroForm<
 
         await getFields(fieldsArray)
 
+        // Pre-cache font encoding maps for all fonts used in fields
+        await acroForm.cacheAllFontEncodings()
+
         return acroForm
+    }
+
+    /**
+     * Pre-caches encoding maps for all fonts used in the form fields.
+     * This makes subsequent field value access faster and synchronous.
+     */
+    private async cacheAllFontEncodings(): Promise<void> {
+        const fontNames = new Set<string>()
+
+        // Collect all font names from field DA strings
+        for (const field of this.fields) {
+            const da = field.get('DA')?.as(PdfString)?.value
+            if (da) {
+                const fontMatch = da.match(/\/(\w+)\s+[\d.]+\s+Tf/)
+                if (fontMatch) {
+                    fontNames.add(fontMatch[1])
+                }
+            }
+        }
+
+        // Pre-cache encoding for each font
+        for (const fontName of fontNames) {
+            await this.getFontEncodingMap(fontName)
+        }
     }
 
     /**

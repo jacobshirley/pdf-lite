@@ -41,11 +41,11 @@ describe('AcroForm', () => {
         const document = await PdfDocument.fromBytes([pdfBuffer])
 
         // Check that document has AcroForm
-        const hasAcroForm = await document.acroForm.hasAcroForm()
+        const hasAcroForm = await document.acroForm.exists()
         expect(hasAcroForm).toBe(true)
 
         // Read all field values
-        const acroform = await document.acroForm.getAcroForm()
+        const acroform = await document.acroForm.read()
         const fieldValues = acroform?.exportData()
         expect(fieldValues).toEqual({
             'Client Name': '',
@@ -72,7 +72,7 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
         // Get original field values
-        const acroform = await document.acroForm.getAcroForm()
+        const acroform = await document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -93,7 +93,7 @@ describe('AcroForm', () => {
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify
-        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedAcroform = await newDocument.acroForm.read()
         const updatedValues = updatedAcroform?.exportData()!
         for (const [fieldName, expectedValue] of Object.entries(valuesToSet)) {
             expect(updatedValues[fieldName]).toBe(expectedValue)
@@ -115,7 +115,7 @@ describe('AcroForm', () => {
             'Client Name': 'PROSZĘ',
         }
 
-        const acroform = await document.acroForm.getAcroForm()
+        const acroform = await document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -127,7 +127,7 @@ describe('AcroForm', () => {
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify
-        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedAcroform = await newDocument.acroForm.read()
         const updatedValues = updatedAcroform?.exportData()!
         for (const [fieldName, expectedValue] of Object.entries(exoticValues)) {
             expect(updatedValues[fieldName]).toBe(expectedValue)
@@ -145,7 +145,7 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
 
-        const acroform = await document.acroForm.getAcroForm()
+        const acroform = await document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -173,7 +173,7 @@ describe('AcroForm', () => {
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify font size changed
-        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedAcroform = await newDocument.acroForm.read()
         const updatedField = updatedAcroform?.fields.find(
             (f) => f.name === 'Client Name',
         )
@@ -193,7 +193,7 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
 
-        const acroform = await document.acroForm.getAcroForm()
+        const acroform = await document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -228,7 +228,7 @@ describe('AcroForm', () => {
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify font name changed
-        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedAcroform = await newDocument.acroForm.read()
         const updatedField = updatedAcroform?.fields.find(
             (f) => f.name === 'Client Name',
         )
@@ -267,7 +267,7 @@ describe('AcroForm', () => {
         expect(font.toString()).toBe(font.resourceName)
 
         // Get the AcroForm and modify a field to use the custom font
-        const acroform = await document.acroForm.getAcroForm()
+        const acroform = await document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -295,7 +295,7 @@ describe('AcroForm', () => {
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Verify the custom font is still embedded and the field uses it
-        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedAcroform = await newDocument.acroForm.read()
         const updatedField = updatedAcroform?.fields.find(
             (f) => f.name === 'Client Name',
         )
@@ -317,7 +317,7 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
 
-        const acroform = await document.acroForm.getAcroForm()
+        const acroform = await document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -395,7 +395,7 @@ describe('AcroForm', () => {
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read back and verify the new field exists
-        const updatedAcroform = await newDocument.acroForm.getAcroForm()
+        const updatedAcroform = await newDocument.acroForm.read()
         expect(updatedAcroform).toBeDefined()
         expect(updatedAcroform!.fields.length).toBe(initialFieldCount + 1)
 

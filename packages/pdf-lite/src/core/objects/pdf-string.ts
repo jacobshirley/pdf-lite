@@ -14,7 +14,13 @@ export class PdfString extends PdfObject {
      */
     private _raw: ByteArray
 
-    constructor(raw: ByteArray | string) {
+    /**
+     * Original bytes from the PDF file, including parentheses and escape sequences.
+     * Used to preserve exact formatting for incremental updates.
+     */
+    private _originalBytes?: ByteArray
+
+    constructor(raw: ByteArray | string, originalBytes?: ByteArray) {
         super()
         if (typeof raw === 'string') {
             // Check if the string contains non-ASCII characters
@@ -28,6 +34,7 @@ export class PdfString extends PdfObject {
         } else {
             this._raw = raw
         }
+        this._originalBytes = originalBytes
     }
 
     get raw(): ByteArray {
@@ -37,6 +44,8 @@ export class PdfString extends PdfObject {
     set raw(raw: ByteArray) {
         this.setModified()
         this._raw = raw
+        // Clear original bytes when modified
+        this._originalBytes = undefined
     }
 
     get value(): string {
@@ -54,10 +63,15 @@ export class PdfString extends PdfObject {
     }
 
     protected tokenize() {
-        return [new PdfStringToken(this.raw)]
+        return [new PdfStringToken(this.raw, this._originalBytes)]
     }
 
     clone(): this {
-        return new PdfString(new Uint8Array(this.raw)) as this
+        return new PdfString(
+            new Uint8Array(this.raw),
+            this._originalBytes
+                ? new Uint8Array(this._originalBytes)
+                : undefined,
+        ) as this
     }
 }

@@ -3,7 +3,7 @@ import { stringToBytes } from './stringToBytes.js'
 
 /**
  * Escapes special characters in a PDF string according to PDF specification.
- * Escapes parentheses, backslashes, line feeds, and carriage returns.
+ * Escapes parentheses, backslashes, and control characters (\n, \r, \t, \b, \f).
  *
  * @param bytes - The byte array or string to escape.
  * @returns A new byte array with escaped characters.
@@ -34,13 +34,21 @@ export function escapeString(bytes: ByteArray | string): ByteArray {
                 break // \
             case 0x0a:
                 result.push(BACKSLASH, 0x6e)
-                break // LF
+                break // \n (LF)
             case 0x0d:
                 result.push(BACKSLASH, 0x72)
-                break // CR
+                break // \r (CR)
+            case 0x09:
+                result.push(BACKSLASH, 0x74)
+                break // \t (Tab)
+            case 0x08:
+                result.push(BACKSLASH, 0x62)
+                break // \b (Backspace)
+            case 0x0c:
+                result.push(BACKSLASH, 0x66)
+                break // \f (Form feed)
             default:
                 result.push(b)
-
                 break
         }
     }

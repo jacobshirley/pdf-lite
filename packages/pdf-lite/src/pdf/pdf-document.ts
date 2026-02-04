@@ -68,30 +68,6 @@ export class PdfDocument extends PdfObject {
     private hasEncryptionDictionary?: boolean = false
     private toBeCommitted: PdfObject[] = []
 
-    /** XFA manager for handling XFA forms */
-    get xfa(): PdfXfaManager {
-        if (!this._xfa) {
-            this._xfa = new PdfXfaManager(this)
-        }
-        return this._xfa
-    }
-
-    /** AcroForm manager for handling form fields */
-    get acroForm(): PdfAcroFormManager {
-        if (!this._acroForm) {
-            this._acroForm = new PdfAcroFormManager(this)
-        }
-        return this._acroForm
-    }
-
-    /** Font manager for embedding and managing fonts */
-    get fonts(): PdfFontManager {
-        if (!this._fonts) {
-            this._fonts = new PdfFontManager(this)
-        }
-        return this._fonts
-    }
-
     /**
      * Creates a new PDF document instance.
      *
@@ -135,6 +111,30 @@ export class PdfDocument extends PdfObject {
 
         this.securityHandler =
             options?.securityHandler ?? this.getSecurityHandler()
+    }
+
+    /** XFA manager for handling XFA forms */
+    get xfa(): PdfXfaManager {
+        if (!this._xfa) {
+            this._xfa = new PdfXfaManager(this)
+        }
+        return this._xfa
+    }
+
+    /** AcroForm manager for handling form fields */
+    get acroForm(): PdfAcroFormManager {
+        if (!this._acroForm) {
+            this._acroForm = new PdfAcroFormManager(this)
+        }
+        return this._acroForm
+    }
+
+    /** Font manager for embedding and managing fonts */
+    get fonts(): PdfFontManager {
+        if (!this._fonts) {
+            this._fonts = new PdfFontManager(this)
+        }
+        return this._fonts
     }
 
     /**

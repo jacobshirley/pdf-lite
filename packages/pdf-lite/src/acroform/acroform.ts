@@ -120,7 +120,14 @@ export class PdfAcroFormField extends PdfDictionary<{
      * Gets the field name
      */
     get name(): string {
-        return this.get('T')?.as(PdfString)?.value ?? ''
+        const parentName = this.parent?.name ?? ''
+        const ownName = this.get('T')?.as(PdfString)?.value ?? ''
+
+        if (parentName && ownName) {
+            return `${parentName}.${ownName}`
+        }
+
+        return parentName || ownName
     }
 
     /**
@@ -618,17 +625,18 @@ export class PdfAcroForm<
             document,
         })
 
+        const fields: Map<string, PdfAcroFormField> = new Map()
+
         const getFields = async (
-            fields: PdfArray<PdfObjectReference>,
-            seen: Set<string> = new Set(),
+            fieldRefs: PdfArray<PdfObjectReference>,
             parent?: PdfAcroFormField,
         ): Promise<void> => {
-            for (const fieldRef of fields.items) {
-                const refKey = fieldRef.toString()
-                if (seen.has(refKey)) {
+            for (const fieldRef of fieldRefs.items) {
+                const refKey = fieldRef.toString().trim()
+                if (fields.has(refKey)) {
+                    fields.get(refKey)!.parent = parent
                     continue
                 }
-                seen.add(refKey)
 
                 const fieldObject = await document.readObject({
                     objectNumber: fieldRef.objectNumber,
@@ -648,10 +656,12 @@ export class PdfAcroForm<
                 // Process child fields (Kids) before adding the parent
                 const kids = field.get('Kids')?.as(PdfArray<PdfObjectReference>)
                 if (kids) {
-                    await getFields(kids, seen, field)
+                    await getFields(kids, field)
                 }
 
                 acroForm.fields.push(field)
+
+                fields.set(refKey, field)
             }
         }
 

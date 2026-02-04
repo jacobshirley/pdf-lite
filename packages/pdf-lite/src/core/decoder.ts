@@ -230,7 +230,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
         } else if (token instanceof PdfBooleanToken) {
             out = new PdfBoolean(token.value)
         } else if (token instanceof PdfHexadecimalToken) {
-            out = new PdfHexadecimal(token.raw, 'hex')
+            out = new PdfHexadecimal(token.raw, 'hex', token.originalBytes)
         } else if (token instanceof PdfNullToken) {
             out = new PdfNull()
         } else if (token instanceof PdfObjectReferenceToken) {
@@ -239,7 +239,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
                 token.generationNumber,
             )
         } else if (token instanceof PdfStringToken) {
-            out = new PdfString(token.value)
+            out = new PdfString(token.value, token.originalBytes)
         } else {
             throw new Error(`Unknown primitive token type: ${token.type}`)
         }

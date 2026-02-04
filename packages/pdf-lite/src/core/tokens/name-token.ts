@@ -6,9 +6,6 @@ export class PdfNameToken extends PdfToken {
     name: string
 
     constructor(name: string) {
-        if (typeof name !== 'string' || name.length === 0) {
-            throw new Error('PdfNameToken name must be a non-empty string')
-        }
         super(PdfNameToken.toBytes(name))
         this.name = name
     }

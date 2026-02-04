@@ -538,41 +538,6 @@ export class PdfAcroForm<
                 field.parent = parent
                 field.copyFrom(fieldObject.content)
 
-                if (field.name === 'Reg') {
-                    console.log({
-                        name: field.name,
-                        parentName: field.parent?.name,
-                        parentRef: field.parentRef,
-                        kids: field.get('Kids')?.items.map((k) => k.toString()),
-                    })
-
-                    if (field.parentRef) {
-                        const parentObject = await document.readObject({
-                            objectNumber: field.parentRef.objectNumber,
-                            generationNumber: field.parentRef.generationNumber,
-                        })
-                        console.log('Parent object:', parentObject?.toString())
-                    }
-                }
-
-                if (field.name.includes('start month')) {
-                    console.log({
-                        ref: field.container?.reference.toString(),
-                        name: field.name,
-                        parentName: field.parent?.name,
-                        parentRef: field.parentRef,
-                        kids: field.get('Kids'),
-                    })
-
-                    if (field.parentRef) {
-                        const parentObject = await document.readObject({
-                            objectNumber: field.parentRef.objectNumber,
-                            generationNumber: field.parentRef.generationNumber,
-                        })
-                        console.log('Parent object:', parentObject?.toString())
-                    }
-                }
-
                 // Process child fields (Kids) before adding the parent
                 const kids = field.get('Kids')?.as(PdfArray<PdfObjectReference>)
                 if (kids) {

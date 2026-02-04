@@ -555,3 +555,184 @@ describe('AcroForm', () => {
         })
     })
 })
+
+describe('AcroForm Field Value Decoding with Custom Encoding', () => {
+    it('should decode field values with custom Euro encoding', async () => {
+        // Create a mock document with font encoding
+        const mockDocument = {
+            async readObject({ objectNumber }: { objectNumber: number }) {
+                if (objectNumber === 1) {
+                    const fontDict = new PdfDictionary()
+                    fontDict.set('Type', new PdfName('Font'))
+                    fontDict.set('BaseFont', new PdfName('Helvetica'))
+                    fontDict.set('Encoding', new PdfObjectReference(2, 0))
+                    return { content: fontDict } as any
+                } else if (objectNumber === 2) {
+                    const encodingDict = new PdfDictionary()
+                    encodingDict.set('Type', new PdfName('Encoding'))
+                    const differences = new PdfArray([
+                        new PdfNumber(160),
+                        new PdfName('Euro'),
+                    ])
+                    encodingDict.set('Differences', differences)
+                    return { content: encodingDict } as any
+                }
+                return null
+            },
+        } as any
+
+        const { PdfAcroForm } = await import('../../src/acroform/acroform')
+
+        const drDict = new PdfDictionary()
+        const fontDict = new PdfDictionary()
+        fontDict.set('Helv', new PdfObjectReference(1, 0))
+        drDict.set('Font', fontDict)
+
+        const acroFormDict = new PdfDictionary()
+        acroFormDict.set('DR', drDict)
+
+        const acroForm = new PdfAcroForm({
+            dict: acroFormDict,
+            document: mockDocument,
+        })
+
+        const field = new PdfAcroFormField({ form: acroForm })
+        field.set('T', new PdfString('PriceField'))
+        field.set('DA', new PdfString('/Helv 12 Tf'))
+        field.set('V', new PdfString(new Uint8Array([160, 53, 48]))) // Euro + "50"
+
+        acroForm.fields.push(field)
+        await acroForm.getFontEncodingMap('Helv')
+
+        expect(field.value).toBe('€50')
+    })
+
+    it('should decode UTF-16BE encoded field values correctly', async () => {
+        const { PdfAcroForm } = await import('../../src/acroform/acroform')
+
+        const acroForm = new PdfAcroForm({
+            dict: new PdfDictionary(),
+        })
+
+        const field = new PdfAcroFormField({ form: acroForm })
+        field.set('T', new PdfString('TextField'))
+
+        const utf16Bytes = new Uint8Array([
+            0xfe,
+            0xff, // BOM
+            0x00,
+            0x48, // H
+            0x00,
+            0x65, // e
+            0x00,
+            0x6c, // l
+            0x00,
+            0x6c, // l
+            0x00,
+            0x6f, // o
+        ])
+        field.set('V', new PdfString(utf16Bytes))
+
+        expect(field.value).toBe('Hello')
+    })
+
+    it('should prioritize UTF-16BE over custom font encoding', async () => {
+        const mockDocument = {
+            async readObject({ objectNumber }: { objectNumber: number }) {
+                if (objectNumber === 1) {
+                    const fontDict = new PdfDictionary()
+                    fontDict.set('Encoding', new PdfObjectReference(2, 0))
+                    return { content: fontDict } as any
+                } else if (objectNumber === 2) {
+                    const encodingDict = new PdfDictionary()
+                    const differences = new PdfArray([
+                        new PdfNumber(160),
+                        new PdfName('Euro'),
+                    ])
+                    encodingDict.set('Differences', differences)
+                    return { content: encodingDict } as any
+                }
+                return null
+            },
+        } as any
+
+        const { PdfAcroForm } = await import('../../src/acroform/acroform')
+
+        const drDict = new PdfDictionary()
+        const fontDict = new PdfDictionary()
+        fontDict.set('Helv', new PdfObjectReference(1, 0))
+        drDict.set('Font', fontDict)
+
+        const acroFormDict = new PdfDictionary()
+        acroFormDict.set('DR', drDict)
+
+        const acroForm = new PdfAcroForm({
+            dict: acroFormDict,
+            document: mockDocument,
+        })
+
+        await acroForm.getFontEncodingMap('Helv')
+
+        const field = new PdfAcroFormField({ form: acroForm })
+        field.set('DA', new PdfString('/Helv 12 Tf'))
+        field.set(
+            'V',
+            new PdfString(
+                new Uint8Array([
+                    0xfe, 0xff, 0x00, 0x54, 0x00, 0x65, 0x00, 0x78, 0x00, 0x74,
+                ]),
+            ),
+        )
+
+        expect(field.value).toBe('Text')
+    })
+
+    it('should cache font encoding maps for performance', async () => {
+        const readObjectCalls: number[] = []
+        const mockDocument = {
+            async readObject({ objectNumber }: { objectNumber: number }) {
+                readObjectCalls.push(objectNumber)
+
+                if (objectNumber === 1) {
+                    const fontDict = new PdfDictionary()
+                    fontDict.set('Encoding', new PdfObjectReference(2, 0))
+                    return { content: fontDict } as any
+                } else if (objectNumber === 2) {
+                    const encodingDict = new PdfDictionary()
+                    const differences = new PdfArray([
+                        new PdfNumber(160),
+                        new PdfName('Euro'),
+                    ])
+                    encodingDict.set('Differences', differences)
+                    return { content: encodingDict } as any
+                }
+                return null
+            },
+        } as any
+
+        const { PdfAcroForm } = await import('../../src/acroform/acroform')
+
+        const drDict = new PdfDictionary()
+        const fontDict = new PdfDictionary()
+        fontDict.set('Helv', new PdfObjectReference(1, 0))
+        drDict.set('Font', fontDict)
+
+        const acroFormDict = new PdfDictionary()
+        acroFormDict.set('DR', drDict)
+
+        const acroForm = new PdfAcroForm({
+            dict: acroFormDict,
+            document: mockDocument,
+        })
+
+        await acroForm.getFontEncodingMap('Helv')
+        const firstCallCount = readObjectCalls.length
+
+        await acroForm.getFontEncodingMap('Helv')
+        const secondCallCount = readObjectCalls.length
+
+        expect(secondCallCount).toBe(firstCallCount)
+        expect(acroForm.fontEncodingMaps.has('Helv')).toBe(true)
+        expect(acroForm.fontEncodingMaps.get('Helv')?.get(160)).toBe('\u20AC')
+    })
+})

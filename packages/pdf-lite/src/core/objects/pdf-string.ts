@@ -1,5 +1,4 @@
 import { ByteArray } from '../../types.js'
-import { stringToBytes } from '../../utils/stringToBytes.js'
 import { needsUnicodeEncoding } from '../../utils/needsUnicodeEncoding.js'
 import { encodeAsUTF16BE } from '../../utils/encodeAsUTF16BE.js'
 import { encodeToPDFDocEncoding } from '../../utils/encodeToPDFDocEncoding.js'
@@ -48,13 +47,19 @@ export class PdfString extends PdfObject {
         this._originalBytes = undefined
     }
 
+    /**
+     * Checks if this string is UTF-16BE encoded (has UTF-16BE BOM).
+     * UTF-16BE strings start with the byte order mark 0xFE 0xFF.
+     */
+    get isUTF16BE(): boolean {
+        return (
+            this.raw.length >= 2 && this.raw[0] === 0xfe && this.raw[1] === 0xff
+        )
+    }
+
     get value(): string {
         // Check for UTF-16BE BOM (0xFE 0xFF)
-        if (
-            this.raw.length >= 2 &&
-            this.raw[0] === 0xfe &&
-            this.raw[1] === 0xff
-        ) {
+        if (this.isUTF16BE) {
             return decodeFromUTF16BE(this.raw)
         }
 

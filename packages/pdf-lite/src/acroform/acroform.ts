@@ -8,6 +8,7 @@ import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfBoolean } from '../core/objects/pdf-boolean.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfFont } from '../fonts/pdf-font.js'
+import { PdfStream } from '../core/objects/pdf-stream.js'
 import {
     buildEncodingMap,
     decodeWithFontEncoding,
@@ -41,10 +42,13 @@ export class PdfAcroFormField extends PdfDictionary<{
     MK?: PdfDictionary
     Type?: PdfName<'Annot'>
     Subtype?: PdfName<'Widget'>
+    AP?: PdfDictionary
+    Q?: PdfNumber
 }> {
     parent?: PdfAcroFormField
     readonly container?: PdfIndirectObject
     form?: PdfAcroForm
+    private _appearanceStream?: PdfStream
 
     constructor(options?: {
         container?: PdfIndirectObject
@@ -396,6 +400,218 @@ export class PdfAcroFormField extends PdfDictionary<{
         } else {
             this.flags = this.flags & ~8192
         }
+    }
+
+    /**
+     * Gets the quadding (text alignment) for this field.
+     * 0 = left-justified, 1 = centered, 2 = right-justified
+     */
+    get quadding(): number {
+        return this.get('Q')?.as(PdfNumber)?.value ?? 0
+    }
+
+    /**
+     * Sets the quadding (text alignment) for this field.
+     * 0 = left-justified, 1 = centered, 2 = right-justified
+     */
+    set quadding(q: number) {
+        this.set('Q', new PdfNumber(q))
+    }
+
+    /**
+     * Generates an appearance stream for a text field using iText's approach.
+     *
+     * This generates an appearance with text using the same positioning formula as iText:
+     * - textY = (height - fontSize) / 2 + fontSize * 0.2
+     * - Wrapped in marked content blocks (/Tx BMC ... EMC)
+     * - Field remains editable unless makeReadOnly is set
+     *
+     * For editable fields (default, no options):
+     * - Text visible immediately
+     * - Field remains fully editable
+     * - No save dialog (needAppearances = false)
+     * - Text positioning matches iText
+     *
+     * For read-only fields (makeReadOnly: true):
+     * - Same appearance generation
+     * - Field is set as read-only
+     *
+     * @param options.makeReadOnly - If true, sets field as read-only
+     * @returns true if appearance was generated successfully
+     */
+    generateAppearance(options?: {
+        makeReadOnly?: boolean
+        textYOffset?: number
+    }): boolean {
+        const fieldType = this.fieldType
+        if (fieldType !== PdfFieldType.Text) {
+            // Only text fields are currently supported
+            return false
+        }
+
+        const rect = this.rect
+        if (!rect || rect.length !== 4) return false
+
+        const [x1, y1, x2, y2] = rect
+        const width = x2 - x1
+        const height = y2 - y1
+
+        // Get the default appearance string
+        const da = this.get('DA')?.as(PdfString)?.value
+        if (!da) return false
+
+        // Get the field value
+        const value = this.value
+
+        // Parse font name and size from DA
+        const fontMatch = da.match(/\/(\w+)\s+([\d.]+)\s+Tf/)
+        if (!fontMatch) return false
+
+        const fontName = fontMatch[1]
+        let fontSize = parseFloat(fontMatch[2])
+
+        // If font size is 0 or invalid, use a default size
+        if (!fontSize || fontSize <= 0) {
+            fontSize = 12 // Default to 12pt
+        }
+
+        // Parse color from DA (format: "r g b rg" or "g g")
+        let colorOp = '0 g' // default to black
+        const rgMatch = da.match(/([\d.]+\s+[\d.]+\s+[\d.]+)\s+rg/)
+        const gMatch = da.match(/([\d.]+)\s+g/)
+        if (rgMatch) {
+            colorOp = `${rgMatch[1]} rg`
+        } else if (gMatch) {
+            colorOp = `${gMatch[1]} g`
+        }
+
+        // Reconstruct the DA string with the correct font size
+        const reconstructedDA = `/${fontName} ${fontSize} Tf ${colorOp}`
+
+        // Calculate text position using Adobe Acrobat's positioning formula
+        // After testing, this formula matches Acrobat's rendering most closely
+        const padding = 2
+
+        // Vertical positioning: Position baseline to match viewer behavior
+        // This accounts for the font's typical metrics (cap height, descenders, etc.)
+        const textY = (height - fontSize) / 2 + fontSize * 0.2
+
+        // Escape special characters in the text value
+        const escapedValue = value
+            .replace(/\\/g, '\\\\')
+            .replace(/\(/g, '\\(')
+            .replace(/\)/g, '\\)')
+            .replace(/\r/g, '\\r')
+            .replace(/\n/g, '\\n')
+
+        const textX = padding
+
+        // Get background color from MK dictionary if present
+        const mk = this.get('MK')?.as(PdfDictionary)
+        const bg = mk?.get('BG')?.as(PdfArray<PdfNumber>)
+        let bgColor = '1 g' // default white background
+        if (bg && bg.items.length >= 1) {
+            if (bg.items.length === 1) {
+                // Grayscale
+                bgColor = `${bg.items[0].value} g`
+            } else if (bg.items.length === 3) {
+                // RGB
+                bgColor = `${bg.items[0].value} ${bg.items[1].value} ${bg.items[2].value} rg`
+            }
+        }
+
+        // Generate appearance with text (iText approach)
+        // Use marked content to properly tag the text field content
+        const contentStream = `/Tx BMC
+q
+BT
+${reconstructedDA}
+${textX} ${textY} Td
+(${escapedValue}) Tj
+ET
+Q
+EMC
+`
+
+        // Create the appearance stream
+        const appearanceDict = new PdfDictionary()
+        appearanceDict.set('Type', new PdfName('XObject'))
+        appearanceDict.set('Subtype', new PdfName('Form'))
+        appearanceDict.set('FormType', new PdfNumber(1))
+        appearanceDict.set(
+            'BBox',
+            new PdfArray([
+                new PdfNumber(0),
+                new PdfNumber(0),
+                new PdfNumber(width),
+                new PdfNumber(height),
+            ]),
+        )
+
+        // Set up resources with the font from the form's default resources
+        // We need to copy the fonts, not just reference them, to ensure Acrobat can find them
+        if (this.form) {
+            const formResources = this.form.get('DR')?.as(PdfDictionary)
+            if (formResources) {
+                const fonts = formResources.get('Font')?.as(PdfDictionary)
+                if (fonts) {
+                    // Clone the fonts dictionary to ensure it's independent
+                    const resources = new PdfDictionary()
+                    resources.set('Font', fonts.clone())
+                    appearanceDict.set('Resources', resources)
+                } else {
+                    // If no fonts in DR, try to use the entire DR as Resources
+                    appearanceDict.set('Resources', formResources.clone())
+                }
+            }
+        }
+
+        const stream = new PdfStream({
+            header: appearanceDict,
+            original: contentStream,
+        })
+
+        // Store the appearance stream for later writing
+        this._appearanceStream = stream
+
+        // Configure field flags based on options
+        if (options?.makeReadOnly) {
+            // Set the read-only flag (Ff bit 0)
+            this.readOnly = true
+
+            // Ensure the annotation is visible and printable (F flag bits 2 and 3)
+            const currentF = this.get('F')?.as(PdfNumber)?.value ?? 0
+            this.set('F', new PdfNumber(currentF | 4 | 8)) // Print (4) + NoZoom (8)
+        } else {
+            // For editable fields, just ensure print flag is set
+            const currentF = this.get('F')?.as(PdfNumber)?.value ?? 0
+            this.set('F', new PdfNumber(currentF | 4)) // Print (4)
+        }
+
+        return true
+    }
+
+    /**
+     * Gets the stored appearance stream if one has been generated.
+     * @internal
+     */
+    getAppearanceStream(): PdfStream | undefined {
+        return this._appearanceStream
+    }
+
+    /**
+     * Sets the appearance dictionary reference for this field.
+     * @internal - This is called automatically by PdfAcroForm.write()
+     */
+    private setAppearanceReference(
+        appearanceStreamRef: PdfObjectReference,
+    ): void {
+        let apDict = this.get('AP')?.as(PdfDictionary)
+        if (!apDict) {
+            apDict = new PdfDictionary()
+            this.set('AP', apDict)
+        }
+        apDict.set('N', appearanceStreamRef)
     }
 }
 
@@ -852,14 +1068,28 @@ export class PdfAcroForm<
         >()
 
         for (const field of this.fields) {
-            if (!field.isModified()) continue
-            const acroFormFieldIndirect = new PdfIndirectObject({
-                ...field.container,
-                content: field,
-            })
             let fieldReference: PdfObjectReference | undefined
 
             if (field.isModified()) {
+                // If the field has a generated appearance stream, create it as an indirect object first
+                const appearanceStream = field.getAppearanceStream()
+                if (appearanceStream) {
+                    const appearanceObj = new PdfIndirectObject({
+                        content: appearanceStream,
+                    })
+                    document.add(appearanceObj)
+
+                    // Set the appearance reference on the field
+                    field['setAppearanceReference'](appearanceObj.reference)
+
+                    // Ensure field has the Print flag set (bit 2)
+                    // This ensures the appearance is used for display and printing
+                    const currentF = field.get('F')?.as(PdfNumber)?.value ?? 0
+                    if ((currentF & 4) === 0) {
+                        field.set('F', new PdfNumber(currentF | 4))
+                    }
+                }
+
                 // Write modified field as an indirect object
                 const acroFormFieldIndirect = new PdfIndirectObject({
                     ...field.container,

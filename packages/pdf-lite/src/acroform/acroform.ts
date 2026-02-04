@@ -48,6 +48,7 @@ export class PdfAcroFormField extends PdfDictionary<{
     parent?: PdfAcroFormField
     readonly container?: PdfIndirectObject
     form?: PdfAcroForm
+    defaultGenerateAppearance: boolean = true
     private _appearanceStream?: PdfStream
 
     constructor(options?: {
@@ -217,6 +218,10 @@ export class PdfAcroFormField extends PdfDictionary<{
             this.set('AS', new PdfName(val))
         } else {
             this.set('V', new PdfString(val))
+        }
+
+        if (this.defaultGenerateAppearance) {
+            this.generateAppearance()
         }
     }
 

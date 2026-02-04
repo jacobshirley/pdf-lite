@@ -950,8 +950,6 @@ endobj`
         const tokens = stringToPdfTokens(pdfString)
         const token = tokens[0] as PdfStringToken
 
-        console.log(token.toString())
-
         // Per PDF spec: backslash followed by line feed is a line continuation
         // Both the backslash and line feed are removed (ignored)
         expect(token.value).toEqual(stringToBytes('Hello\nWorld'))

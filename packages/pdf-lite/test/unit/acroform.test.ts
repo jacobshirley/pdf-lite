@@ -6,7 +6,12 @@ import { PdfString } from '../../src/core/objects/pdf-string'
 import { PdfArray } from '../../src/core/objects/pdf-array'
 import { PdfAcroFormField } from '../../src/acroform/acroform'
 import { PdfObjectReference } from '../../src/core/objects/pdf-object-reference'
-import { PdfDictionary, PdfNumber } from '../../src'
+import {
+    PdfDictionary,
+    PdfNumber,
+    PdfIndirectObject,
+    PdfStream,
+} from '../../src'
 import { PdfName } from '../../src/core/objects/pdf-name'
 import {
     buildEncodingMap,
@@ -822,7 +827,7 @@ describe('AcroForm Appearance Generation', () => {
         expect(readOnlyStreamContent).toContain('Td') // text position operator
     })
 
-    it.only('should automatically write appearance when form is saved', async () => {
+    it('should automatically write appearance when form is saved', async () => {
         const pdfBuffer = base64ToBytes(
             await server.commands.readFile(
                 './test/unit/fixtures/template.pdf',
@@ -836,23 +841,16 @@ describe('AcroForm Appearance Generation', () => {
             throw new Error('No AcroForm found in the document')
         }
 
-        console.log(acroform.exportData())
-
-        const textField = acroform.fields.find((f) => f.name === 'Client Name')
-        expect(textField).toBeDefined()
-
-        textField!.value = 'Test Value Here'
-
-        const numberField = acroform.fields.find((f) => f.name === 'N')
-        expect(numberField).toBeDefined()
-
-        numberField!.value = '123'
-
-        // Field should remain editable
-        expect(textField!.readOnly).toBe(false)
+        acroform.importData({
+            'Client Name': 'Initial Value',
+            N: '456',
+        })
 
         // Write the form - this should automatically create the appearance indirect object
         await document.acroForm.write(acroform)
+
+        const textField = acroform.fields.find((f) => f.name === 'Client Name')
+        expect(textField).toBeDefined()
 
         // Check that the appearance was set
         const apDict = textField!.get('AP')?.as(PdfDictionary)
@@ -959,7 +957,7 @@ describe('AcroForm Appearance Generation', () => {
         expect(streamContent).toContain('\\\\')
     })
 
-    it('should return false for non-text field types', async () => {
+    it('should generate appearance for button fields', async () => {
         const pdfBuffer = base64ToBytes(
             await server.commands.readFile(
                 './test/unit/fixtures/template.pdf',
@@ -973,12 +971,14 @@ describe('AcroForm Appearance Generation', () => {
             throw new Error('No AcroForm found in the document')
         }
 
-        const buttonField = new PdfAcroFormField()
+        const buttonField = new PdfAcroFormField({ form: acroform })
         buttonField.fieldType = 'Btn'
         buttonField.rect = [100, 100, 150, 120]
+        buttonField.checked = true
 
         const success = buttonField.generateAppearance()
-        expect(success).toBe(false)
+        expect(success).toBe(true)
+        expect(buttonField.getAppearanceStream()).toBeDefined()
     })
 
     it('should return false when field has no rectangle', async () => {
@@ -999,5 +999,252 @@ describe('AcroForm Appearance Generation', () => {
 
         const success = textField.generateAppearance()
         expect(success).toBe(false)
+    })
+
+    it('should create and fill all field types with appearances', async () => {
+        // Helper to create page
+        const createPage = (
+            contentStreamRef: PdfObjectReference,
+        ): PdfIndirectObject<PdfDictionary> => {
+            const pageDict = new PdfDictionary()
+            pageDict.set('Type', new PdfName('Page'))
+            pageDict.set(
+                'MediaBox',
+                new PdfArray([
+                    new PdfNumber(0),
+                    new PdfNumber(0),
+                    new PdfNumber(612),
+                    new PdfNumber(792),
+                ]),
+            )
+            pageDict.set('Contents', contentStreamRef)
+            return new PdfIndirectObject({ content: pageDict })
+        }
+
+        // Helper to create pages collection
+        const createPages = (
+            pages: PdfIndirectObject<PdfDictionary>[],
+        ): PdfIndirectObject<PdfDictionary> => {
+            const pagesDict = new PdfDictionary()
+            pagesDict.set('Type', new PdfName('Pages'))
+            pagesDict.set('Kids', new PdfArray(pages.map((x) => x.reference)))
+            pagesDict.set('Count', new PdfNumber(pages.length))
+            return new PdfIndirectObject({ content: pagesDict })
+        }
+
+        // Helper to create catalog
+        const createCatalog = (
+            pagesRef: PdfObjectReference,
+        ): PdfIndirectObject<PdfDictionary> => {
+            const catalogDict = new PdfDictionary()
+            catalogDict.set('Type', new PdfName('Catalog'))
+            catalogDict.set('Pages', pagesRef)
+            return new PdfIndirectObject({ content: catalogDict })
+        }
+
+        // ============================================
+        // PART 1: Create PDF with empty AcroForm
+        // ============================================
+        const document = new PdfDocument()
+
+        // Create font
+        const font = new PdfIndirectObject({
+            content: (() => {
+                const fontDict = new PdfDictionary()
+                fontDict.set('Type', new PdfName('Font'))
+                fontDict.set('Subtype', new PdfName('Type1'))
+                fontDict.set('BaseFont', new PdfName('Helvetica'))
+                return fontDict
+            })(),
+        })
+        document.add(font)
+
+        // Create empty content stream
+        const contentStream = new PdfIndirectObject({
+            content: new PdfStream({
+                header: new PdfDictionary(),
+                original: '',
+            }),
+        })
+        document.add(contentStream)
+
+        // Create page
+        const page = createPage(contentStream.reference)
+        document.add(page)
+
+        // Create pages collection
+        const pages = createPages([page])
+        page.content.set('Parent', pages.reference)
+        document.add(pages)
+
+        // Create catalog
+        const catalog = createCatalog(pages.reference)
+
+        // Create AcroForm
+        const acroForm = new PdfDictionary()
+        acroForm.set('Fields', new PdfArray([]))
+
+        // Default resources for the form (font)
+        const formResources = new PdfDictionary()
+        const formFontDict = new PdfDictionary()
+        const helveticaFont = new PdfDictionary()
+        helveticaFont.set('Type', new PdfName('Font'))
+        helveticaFont.set('Subtype', new PdfName('Type1'))
+        helveticaFont.set('BaseFont', new PdfName('Helvetica'))
+        const helveticaFontObj = new PdfIndirectObject({
+            content: helveticaFont,
+        })
+        document.add(helveticaFontObj)
+        formFontDict.set('Helv', helveticaFontObj.reference)
+        formResources.set('Font', formFontDict)
+        acroForm.set('DR', formResources)
+        acroForm.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+
+        const acroFormObj = new PdfIndirectObject({ content: acroForm })
+        document.add(acroFormObj)
+        catalog.content.set('AcroForm', acroFormObj.reference)
+
+        document.add(catalog)
+        document.trailerDict.set('Root', catalog.reference)
+
+        await document.commit()
+
+        const acroform = await document.acroForm.read()
+        if (!acroform) {
+            throw new Error('No AcroForm found')
+        }
+
+        // Get page reference from the loaded document
+        const catalogRef = document.trailerDict.get(
+            'Root',
+        ) as PdfObjectReference
+        const catalogObj = await document.readObject({
+            objectNumber: catalogRef.objectNumber,
+            generationNumber: catalogRef.generationNumber,
+        })
+        const catalogDict = catalogObj!.content.as(PdfDictionary)
+        const pagesRef = catalogDict.get('Pages') as PdfObjectReference
+        const pagesObj = await document.readObject({
+            objectNumber: pagesRef.objectNumber,
+            generationNumber: pagesRef.generationNumber,
+        })
+        const pagesDict = pagesObj!.content.as(PdfDictionary)
+        const kidsArray = pagesDict
+            .get('Kids')!
+            .as(PdfArray<PdfObjectReference>)
+        const firstPageRef = kidsArray.items[0]
+
+        // 1. Regular text field
+        const textField = new PdfAcroFormField({ form: acroform })
+        textField.set('FT', new PdfName('Tx'))
+        textField.name = 'RegularText'
+        textField.rect = [50, 750, 300, 770]
+        textField.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        textField.isWidget = true
+        textField.parentRef = firstPageRef
+        textField.value = 'Regular Text Value'
+        acroform.fields.push(textField)
+
+        // 2. Comb field
+        const combField = new PdfAcroFormField({ form: acroform })
+        combField.set('FT', new PdfName('Tx'))
+        combField.name = 'CombField'
+        combField.rect = [50, 700, 250, 720]
+        combField.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        combField.set('Ff', new PdfNumber(16777216)) // Comb flag
+        combField.set('MaxLen', new PdfNumber(8))
+        combField.isWidget = true
+        combField.parentRef = firstPageRef
+        combField.value = '12345678'
+        acroform.fields.push(combField)
+
+        // 3. Multiline text field
+        const multilineField = new PdfAcroFormField({ form: acroform })
+        multilineField.set('FT', new PdfName('Tx'))
+        multilineField.name = 'MultilineText'
+        multilineField.rect = [50, 600, 300, 680]
+        multilineField.set('DA', new PdfString('/Helv 10 Tf 0 g'))
+        multilineField.set('Ff', new PdfNumber(4096)) // Multiline flag
+        multilineField.isWidget = true
+        multilineField.parentRef = firstPageRef
+        multilineField.value = 'Line 1\nLine 2\nLine 3'
+        acroform.fields.push(multilineField)
+
+        // 4. Checkbox (unchecked)
+        const checkboxUnchecked = new PdfAcroFormField({ form: acroform })
+        checkboxUnchecked.set('FT', new PdfName('Btn'))
+        checkboxUnchecked.name = 'CheckboxUnchecked'
+        checkboxUnchecked.rect = [50, 550, 70, 570]
+        checkboxUnchecked.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        checkboxUnchecked.isWidget = true
+        checkboxUnchecked.parentRef = firstPageRef
+        checkboxUnchecked.checked = false
+        acroform.fields.push(checkboxUnchecked)
+
+        // 5. Checkbox (checked)
+        const checkboxChecked = new PdfAcroFormField({ form: acroform })
+        checkboxChecked.set('FT', new PdfName('Btn'))
+        checkboxChecked.name = 'CheckboxChecked'
+        checkboxChecked.rect = [100, 550, 120, 570]
+        checkboxChecked.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        checkboxChecked.isWidget = true
+        checkboxChecked.parentRef = firstPageRef
+        checkboxChecked.checked = true
+        acroform.fields.push(checkboxChecked)
+
+        // 6. Choice/Dropdown field
+        const choiceField = new PdfAcroFormField({ form: acroform })
+        choiceField.set('FT', new PdfName('Ch'))
+        choiceField.name = 'DropdownField'
+        choiceField.rect = [50, 450, 250, 470]
+        choiceField.set('DA', new PdfString('/Helv 11 Tf 0 g'))
+        choiceField.isWidget = true
+        choiceField.parentRef = firstPageRef
+        choiceField.value = 'Selected Option'
+        acroform.fields.push(choiceField)
+
+        // Generate appearances for all fields
+        const textSuccess = textField.generateAppearance()
+        const combSuccess = combField.generateAppearance()
+        const multilineSuccess = multilineField.generateAppearance()
+        const checkboxUncheckedSuccess = checkboxUnchecked.generateAppearance()
+        const checkboxCheckedSuccess = checkboxChecked.generateAppearance()
+        const choiceSuccess = choiceField.generateAppearance()
+
+        // Verify all generated successfully
+        expect(textSuccess).toBe(true)
+        expect(combSuccess).toBe(true)
+        expect(multilineSuccess).toBe(true)
+        expect(checkboxUncheckedSuccess).toBe(true)
+        expect(checkboxCheckedSuccess).toBe(true)
+        expect(choiceSuccess).toBe(true)
+
+        // Verify appearance streams exist
+        expect(textField.getAppearanceStream()).toBeDefined()
+        expect(combField.getAppearanceStream()).toBeDefined()
+        expect(multilineField.getAppearanceStream()).toBeDefined()
+        expect(checkboxUnchecked.getAppearanceStream()).toBeDefined()
+        expect(checkboxChecked.getAppearanceStream()).toBeDefined()
+        expect(choiceField.getAppearanceStream()).toBeDefined()
+
+        // Verify appearance content
+        const checkboxStream =
+            checkboxChecked.getAppearanceStream()!.rawAsString
+        expect(checkboxStream).toContain('ZaDb') // ZapfDingbats font for checkmark
+
+        const multilineStream =
+            multilineField.getAppearanceStream()!.rawAsString
+        expect(multilineStream).toContain('Line 1')
+        expect(multilineStream).toContain('Line 2')
+
+        acroform.needAppearances = false
+        await document.acroForm.write(acroform)
+
+        // Save to file
+        await server.commands.writeFile(
+            './test/unit/tmp/all-field-types.pdf',
+            bytesToBase64(document.toBytes()),
+            { encoding: 'base64' },
+        )
     })
 })

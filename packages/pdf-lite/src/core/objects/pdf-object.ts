@@ -10,6 +10,8 @@ export abstract class PdfObject {
     postTokens?: PdfToken[]
     /** Indicates whether the object has been modified. By default, assume it has been modified because it's a new object */
     protected modified: boolean = true
+    /** Indicates whether the object is immutable (cannot be modified) */
+    protected immutable: boolean = false
     /** Tokenizes the object into an array of PdfTokens */
     protected abstract tokenize(): PdfToken[]
 
@@ -26,6 +28,16 @@ export abstract class PdfObject {
     /** Sets the modified state of the object. Override this method if the modified state is determined differently */
     setModified(modified: boolean = true): void {
         this.modified = modified
+    }
+
+    /** Indicates whether the object is immutable (cannot be modified) */
+    isImmutable(): boolean {
+        return this.immutable
+    }
+
+    /** Sets the immutable state of the object */
+    setImmutable(immutable: boolean = true): void {
+        this.immutable = immutable
     }
 
     /** Converts the object to an array of PdfTokens, including any pre or post tokens */

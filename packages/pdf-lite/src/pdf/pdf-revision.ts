@@ -4,6 +4,8 @@ import { PdfObject } from '../core/objects/pdf-object.js'
 import { PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
 import { PdfToken } from '../core/tokens/token.js'
 import { PdfWhitespaceToken } from '../core/tokens/whitespace-token.js'
+import { PdfComment } from '../index.js'
+import { ByteArray } from '../types.js'
 import { PdfXrefLookup } from './pdf-xref-lookup.js'
 
 /**
@@ -12,12 +14,14 @@ import { PdfXrefLookup } from './pdf-xref-lookup.js'
  * where each revision contains its own set of objects and cross-reference table.
  */
 export class PdfRevision extends PdfObject {
-    /** Objects contained in this revision */
-    objects: PdfObject[] = []
+    /** Objects contained in this revision (private backing field) */
+    private _objects: PdfObject[] = []
+    /** Whether this revision is locked (private backing field) */
+    private _locked: boolean = false
     /** Cross-reference lookup table for this revision */
     xref: PdfXrefLookup
-    /** Whether this revision is locked (cannot be modified) */
-    locked: boolean = false
+
+    private cachedBytes?: ByteArray
 
     /**
      * Creates a new PDF revision.
@@ -34,14 +38,73 @@ export class PdfRevision extends PdfObject {
     }) {
         super()
         this.modified = false
-        this.objects = options?.objects ?? []
+        this._objects = options?.objects ?? []
 
-        this.xref = PdfXrefLookup.fromObjects(this.objects)
+        this.xref = PdfXrefLookup.fromObjects(this._objects)
 
         if (options?.prev) this.setPrev(options.prev)
         if (!this.contains(this.xref.object))
             this.addObject(...this.xref.toTrailerSection())
-        this.locked = options?.locked ?? false
+        this._locked = options?.locked ?? false
+    }
+
+    get header(): PdfComment | undefined {
+        const firstObj = this._objects[0]
+        if (firstObj instanceof PdfComment && firstObj.isVersionComment()) {
+            return firstObj
+        }
+        return undefined
+    }
+
+    set header(comment: PdfComment) {
+        if (this._locked) {
+            throw new Error('Cannot modify header in locked PDF revision')
+        }
+
+        const currentHeader = this.header
+        if (currentHeader) {
+            this._objects[0] = comment
+        } else this._objects.unshift(comment)
+    }
+
+    /**
+     * Gets whether this revision is locked (cannot be modified).
+     */
+    get locked(): boolean {
+        return this._locked
+    }
+
+    /**
+     * Sets whether this revision is locked.
+     * When locking, creates a cached clone of all objects to freeze their state.
+     * When unlocking, clears the cache.
+     */
+    set locked(value: boolean) {
+        this._locked = value
+        this.cachedBytes = value ? this.toBytes() : undefined
+        for (const obj of this._objects) {
+            obj.setImmutable(value)
+        }
+    }
+
+    /**
+     * Gets the objects in this revision.
+     * Returns fresh clones of cached objects if the revision is locked, otherwise returns live objects.
+     * Each access to a locked revision's objects returns new clones to prevent mutations.
+     */
+    get objects(): ReadonlyArray<PdfObject> {
+        return this._objects
+    }
+
+    /**
+     * Sets the objects array.
+     * @throws Error if the revision is locked
+     */
+    set objects(value: PdfObject[]) {
+        if (this._locked) {
+            throw new Error('Cannot modify objects array in locked revision')
+        }
+        this._objects = value
     }
 
     /**
@@ -61,7 +124,7 @@ export class PdfRevision extends PdfObject {
      * @returns True if the exact object instance exists in this revision
      */
     contains(object: PdfObject): boolean {
-        return this.objects.includes(object)
+        return this._objects.includes(object)
     }
 
     /**
@@ -71,7 +134,7 @@ export class PdfRevision extends PdfObject {
      * @returns True if an equal object exists in this revision
      */
     exists(object: PdfObject): boolean {
-        for (const obj of this.objects) {
+        for (const obj of this._objects) {
             if (obj.equals(object)) {
                 return true
             }
@@ -83,10 +146,14 @@ export class PdfRevision extends PdfObject {
      * Adds objects to the beginning of the revision's object list.
      *
      * @param objects - Objects to add at the beginning
+     * @throws Error if the revision is locked
      */
     unshift(...objects: PdfObject[]): void {
+        if (this._locked) {
+            throw new Error('Cannot add object to locked PDF revision')
+        }
         for (const obj of objects.reverse()) {
-            this.objects.unshift(obj)
+            this._objects.unshift(obj)
             if (obj instanceof PdfIndirectObject) this.xref.addObject(obj)
         }
     }
@@ -95,8 +162,12 @@ export class PdfRevision extends PdfObject {
      * Adds objects to the revision.
      *
      * @param objects - Objects to add to the revision
+     * @throws Error if the revision is locked
      */
     addObject(...objects: PdfObject[]): void {
+        if (this._locked) {
+            throw new Error('Cannot add object to locked PDF revision')
+        }
         for (const obj of objects) {
             this.addObjectAt(obj)
         }
@@ -110,7 +181,7 @@ export class PdfRevision extends PdfObject {
      * @throws Error if the revision is locked or index is out of bounds
      */
     addObjectAt(object: PdfObject, index?: number | PdfObject): void {
-        if (this.locked) {
+        if (this._locked) {
             throw new Error('Cannot add object to locked PDF revision')
         }
 
@@ -118,22 +189,22 @@ export class PdfRevision extends PdfObject {
             index =
                 object instanceof PdfIndirectObject
                     ? this.xref.object
-                    : this.objects.length
+                    : this._objects.length
         }
 
         if (typeof index !== 'number') {
-            index = this.objects.indexOf(index)
+            index = this._objects.indexOf(index)
 
             if (index === -1) {
-                index = this.objects.length
+                index = this._objects.length
             }
         }
 
-        if (index < 0 || index > this.objects.length) {
+        if (index < 0 || index > this._objects.length) {
             throw new Error('Index out of bounds')
         }
 
-        this.objects.splice(index, 0, object)
+        this._objects.splice(index, 0, object)
         this.sortObjects()
 
         if (object instanceof PdfIndirectObject) {
@@ -150,18 +221,18 @@ export class PdfRevision extends PdfObject {
      * @throws Error if the revision is locked
      */
     deleteObject(...objects: PdfObject[]): void {
-        if (this.locked) {
+        if (this._locked) {
             throw new Error('Cannot delete object from locked PDF revision')
         }
 
         for (const object of objects) {
-            const index = this.objects.indexOf(object)
+            const index = this._objects.indexOf(object)
             if (index === -1) {
                 return
             }
 
             this.modified = true
-            this.objects.splice(index, 1)
+            this._objects.splice(index, 1)
 
             if (object instanceof PdfIndirectObject) {
                 this.xref.removeObject(object)
@@ -173,7 +244,7 @@ export class PdfRevision extends PdfObject {
         return (
             super.isModified() ||
             this.xref.trailerDict.isModified() ||
-            this.objects.some((obj) => obj.isModified())
+            this._objects.some((obj) => obj.isModified())
         )
     }
 
@@ -181,7 +252,7 @@ export class PdfRevision extends PdfObject {
      * Updates the revision by sorting objects and updating the xref table.
      */
     update(): void {
-        if (this.locked) {
+        if (this._locked) {
             return
         }
         this.sortObjects()
@@ -194,7 +265,7 @@ export class PdfRevision extends PdfObject {
      * Indirect objects are placed before other objects.
      */
     sortObjects(): void {
-        this.objects.sort((a, b) => {
+        this._objects.sort((a, b) => {
             if (
                 a instanceof PdfIndirectObject &&
                 b instanceof PdfIndirectObject
@@ -226,9 +297,24 @@ export class PdfRevision extends PdfObject {
     }
 
     protected tokenize(): PdfToken[] {
-        return this.objects.flatMap((obj) => [
-            ...obj.toTokens(),
-            PdfWhitespaceToken.NEWLINE,
-        ])
+        const output = this.objects.flatMap((obj) => {
+            const objTokens = obj.toTokens()
+            if (
+                !(objTokens[objTokens.length - 1] instanceof PdfWhitespaceToken)
+            ) {
+                objTokens.push(new PdfWhitespaceToken('\n'))
+            }
+            return objTokens
+        })
+
+        return output
+    }
+
+    toBytes(): ByteArray {
+        if (this.cachedBytes) {
+            return this.cachedBytes
+        }
+
+        return super.toBytes()
     }
 }

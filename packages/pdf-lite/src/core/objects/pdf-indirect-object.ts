@@ -134,4 +134,10 @@ export class PdfIndirectObject<
             this.offset.isModified
         )
     }
+
+    setImmutable(immutable?: boolean): void {
+        super.setImmutable(immutable)
+        this.content.setImmutable(immutable)
+        this.offset.setImmutable(immutable)
+    }
 }

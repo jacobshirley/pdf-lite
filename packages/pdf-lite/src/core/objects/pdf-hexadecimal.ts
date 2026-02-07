@@ -11,7 +11,7 @@ export class PdfHexadecimal extends PdfObject {
      * The raw byte value represented by this hexadecimal object.
      * NB: This is  the hexadecimal representation, not the actual byte values.
      */
-    raw: ByteArray
+    private _raw: ByteArray
 
     /**
      * Original bytes from the PDF file, including angle brackets.
@@ -35,8 +35,23 @@ export class PdfHexadecimal extends PdfObject {
             bytes = value instanceof Uint8Array ? value : stringToBytes(value)
         }
 
-        this.raw = bytes
+        this._raw = bytes
         this._originalBytes = originalBytes
+    }
+
+    get raw(): ByteArray {
+        return this._raw
+    }
+
+    set raw(raw: ByteArray) {
+        if (this.isImmutable()) {
+            throw new Error('Cannot modify an immutable PdfHexadecimal')
+        }
+
+        this.setModified()
+        this._raw = raw
+        // Clear original bytes when modified
+        this._originalBytes = undefined
     }
 
     static toHexadecimal(data: string | ByteArray): PdfHexadecimal {

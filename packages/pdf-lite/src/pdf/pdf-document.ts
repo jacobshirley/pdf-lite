@@ -34,6 +34,7 @@ import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { PdfXfaManager } from '../xfa/manager.js'
 import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/font-manager.js'
+import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -53,8 +54,6 @@ import { PdfFontManager } from '../fonts/font-manager.js'
  * ```
  */
 export class PdfDocument extends PdfObject {
-    /** PDF version comment header */
-    header: PdfComment = PdfComment.versionComment('1.7')
     /** List of document revisions for incremental updates */
     revisions: PdfRevision[]
     /** Signer instance for digital signature operations */
@@ -111,6 +110,14 @@ export class PdfDocument extends PdfObject {
 
         this.securityHandler =
             options?.securityHandler ?? this.getSecurityHandler()
+    }
+
+    get header(): PdfComment | undefined {
+        return this.revisions[0].header
+    }
+
+    set header(comment: PdfComment | undefined) {
+        if (comment) this.revisions[0].header = comment
     }
 
     /** XFA manager for handling XFA forms */
@@ -202,6 +209,9 @@ export class PdfDocument extends PdfObject {
         }
 
         for (const obj of objects) {
+            if (obj.isImmutable()) {
+                throw new Error('Risky adding a immutable obj')
+            }
             this.toBeCommitted.push(obj)
             this.latestRevision.addObject(obj)
         }
@@ -681,8 +691,6 @@ export class PdfDocument extends PdfObject {
         if (this.securityHandler && this.isObjectEncryptable(foundObject)) {
             foundObject = foundObject.clone()
             await this.securityHandler.decryptObject(foundObject)
-        } else if (this.isIncremental()) {
-            foundObject = foundObject.clone() // Clone to prevent modifications in locked revisions
         }
 
         return foundObject
@@ -831,12 +839,6 @@ export class PdfDocument extends PdfObject {
             return tokens.map((token) => ({ token, object: obj }))
         })
 
-        const headerTokens = this.header
-            .toTokens()
-            .map((token) => ({ token, object: this.header }))
-
-        documentTokens.unshift(...headerTokens)
-
         return documentTokens
     }
 
@@ -936,9 +938,7 @@ export class PdfDocument extends PdfObject {
     toBytes(): ByteArray {
         this.calculateOffsets()
         this.updateRevisions()
-        const serializer = new PdfTokenSerializer()
-        serializer.feedMany(this.toTokens())
-        return serializer.toBytes()
+        return concatUint8Arrays(...this.revisions.map((x) => x.toBytes()))
     }
 
     /**
@@ -965,7 +965,7 @@ export class PdfDocument extends PdfObject {
         const clonedRevisions = this.revisions.map((rev) => rev.clone())
         return new PdfDocument({
             revisions: clonedRevisions,
-            version: this.header.clone(),
+            version: this.header?.clone(),
             securityHandler: this.securityHandler,
         }) as this
     }

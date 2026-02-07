@@ -28,11 +28,11 @@ export type PdfFieldType = keyof typeof PdfFieldType
 
 export type PdfAppearanceStreamDictionary = PdfDictionary<{
     /** Appearance streams for different states */
-    N: PdfStream
+    N: PdfObjectReference | PdfDictionary
     /* Optional appearance streams for button fields (e.g. checkboxes) */
-    R?: PdfStream
+    R?: PdfObjectReference | PdfDictionary
     /* Optional appearance stream for "on" state of button fields (e.g. checked state) */
-    D?: PdfStream
+    D?: PdfObjectReference | PdfDictionary
 }>
 
 export type PdfDefaultResourcesDictionary = PdfDictionary<{
@@ -852,13 +852,13 @@ export class PdfAcroFormField extends PdfIndirectObject<
         this.content.set('Kids', kidsArray)
     }
 
-    get apperanceStreamDict(): PdfDictionary | null {
+    get appearanceStreamDict(): PdfAppearanceStreamDictionary | null {
         const apDict = this.content.get('AP')?.as(PdfDictionary)
         if (!apDict) return null
         return apDict
     }
 
-    set apperanceStreamDict(dict: PdfAppearanceStreamDictionary | null) {
+    set appearanceStreamDict(dict: PdfAppearanceStreamDictionary | null) {
         if (dict === null) {
             this.content.delete('AP')
             return
@@ -1365,10 +1365,10 @@ EMC
         appearanceStreamRef: PdfObjectReference,
         appearanceStreamYesRef?: PdfObjectReference,
     ): void {
-        let apDict = this.content.get('AP')?.as(PdfDictionary)
+        let apDict = this.appearanceStreamDict
         if (!apDict) {
             apDict = new PdfDictionary()
-            this.content.set('AP', apDict)
+            this.appearanceStreamDict = apDict
         }
 
         // For button fields with multiple states, create a state dictionary
@@ -1639,10 +1639,10 @@ export class PdfAcroForm<
     static async fromDocument(
         document: PdfDocument,
     ): Promise<PdfAcroForm | null> {
-        const catalog = document.rootDictionary
+        const catalog = document.root
         if (!catalog) return null
 
-        const acroFormRef = catalog.get('AcroForm')
+        const acroFormRef = catalog.content.get('AcroForm')
         if (!acroFormRef) return null
 
         let acroFormDict: PdfDictionary
@@ -1871,10 +1871,7 @@ export class PdfAcroForm<
     }
 
     async write(document: PdfDocument) {
-        const catalog = document.rootDictionary?.clone()
-        if (!catalog) {
-            throw new Error('Document has no root catalog')
-        }
+        const catalog = document.root
 
         const isIncremental = document.isIncremental()
         document.setIncremental(true)
@@ -1963,19 +1960,14 @@ export class PdfAcroForm<
 
         if (this.isModified()) {
             document.add(this)
-            catalog.set('AcroForm', this.reference)
 
-            // In incremental mode, ensure the updated catalog is written
-            const rootRef = document.trailerDict
-                .get('Root')
-                ?.as(PdfObjectReference)
-            if (rootRef) {
-                const rootIndirect = new PdfIndirectObject({
-                    objectNumber: rootRef.objectNumber,
-                    generationNumber: rootRef.generationNumber,
-                    content: catalog,
-                })
-                document.add(rootIndirect)
+            if (!catalog.content.has('AcroForm')) {
+                let updatableCatalog = catalog
+                if (catalog.isImmutable()) {
+                    updatableCatalog = catalog.clone()
+                    document.add(updatableCatalog)
+                }
+                updatableCatalog.content.set('AcroForm', this.reference)
             }
         }
 

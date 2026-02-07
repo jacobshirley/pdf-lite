@@ -307,17 +307,26 @@ export class PdfDocument extends PdfObject {
         return encryptionDictObject as PdfEncryptionDictionaryObject
     }
 
+    get rootReference(): PdfObjectReference {
+        return this.root.reference
+    }
+
     /**
-     * Gets the document catalog (root) dictionary.
+     * Gets the document catalog (root) dictionary, or creates one if it doesn't exist.
      *
-     * @returns The root dictionary or undefined if not found
+     * @returns The root dictionary
      * @throws Error if the Root reference points to a non-dictionary object
      */
-    get rootDictionary(): PdfDictionary | undefined {
+    get root(): PdfIndirectObject<PdfDictionary> {
         const rootRef = this.trailerDict.get('Root')?.as(PdfObjectReference)
 
         if (!rootRef) {
-            return undefined
+            const rootObject = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            this.add(rootObject)
+            this.trailerDict.set('Root', rootObject.reference)
+            return rootObject
         }
 
         const rootObject = this.findUncompressedObject(rootRef)
@@ -332,7 +341,7 @@ export class PdfDocument extends PdfObject {
             )
         }
 
-        return rootObject.content
+        return rootObject as PdfIndirectObject<PdfDictionary>
     }
 
     /**
@@ -341,12 +350,12 @@ export class PdfDocument extends PdfObject {
      * @returns The metadata stream reference or undefined if not present
      */
     get metadataStreamReference(): PdfObjectReference | undefined {
-        const root = this.rootDictionary
+        const root = this.root
         if (!root) {
             return
         }
 
-        const metadataRef = root.get('Metadata')?.as(PdfObjectReference)
+        const metadataRef = root.content.get('Metadata')?.as(PdfObjectReference)
 
         if (!metadataRef) {
             return
@@ -804,7 +813,7 @@ export class PdfDocument extends PdfObject {
     async setDocumentSecurityStore(
         dss: PdfDocumentSecurityStoreObject,
     ): Promise<void> {
-        let rootDictionary = this.rootDictionary
+        let rootDictionary = this.root?.content
         if (!rootDictionary) {
             throw new Error('Cannot set DSS - document has no root dictionary')
         }

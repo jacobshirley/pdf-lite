@@ -341,7 +341,7 @@ describe('AcroForm', () => {
         expect(initialFieldCount).toBeGreaterThan(0)
 
         // Get the first page to place the new field on
-        const pages = document.rootDictionary?.get('Pages')
+        const pages = document.root.content.get('Pages')
         expect(pages).toBeDefined()
 
         const pagesRef = pages instanceof PdfObjectReference ? pages : null
@@ -851,7 +851,7 @@ describe('AcroForm Appearance Generation', () => {
         expect(textField).toBeDefined()
 
         // Check that the appearance was set
-        const apDict = textField!.apperanceStreamDict
+        const apDict = textField!.appearanceStreamDict
         expect(apDict).toBeDefined()
 
         const normalAppearance = apDict!.get('N')?.as(PdfObjectReference)
@@ -916,7 +916,7 @@ describe('AcroForm Appearance Generation', () => {
             )
             expect(field?.value).toBe(expectedValue)
 
-            const apDict = field?.apperanceStreamDict
+            const apDict = field?.appearanceStreamDict
             expect(apDict).toBeDefined()
             expect(apDict?.get('N')).toBeDefined()
         }

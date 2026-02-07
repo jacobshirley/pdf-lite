@@ -114,6 +114,14 @@ export class PdfIndirectObject<
         ]
     }
 
+    copyFrom(other: PdfIndirectObject) {
+        this.objectNumber = other.objectNumber
+        this.generationNumber = other.generationNumber
+        this.content = other.content.clone() as T
+        this.offset = other.offset.clone()
+        this.modified = true
+    }
+
     clone(): this {
         return new PdfIndirectObject({
             objectNumber: this.objectNumber,

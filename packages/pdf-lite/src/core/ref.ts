@@ -113,4 +113,9 @@ export class Ref<T> {
     onUpdate(callback: RefUpdateCallback<T>): void {
         this.callbacks.push(callback)
     }
+
+    /** Creates a new Ref with the same resolved value. */
+    clone(): Ref<T> {
+        return new Ref(this.resolve())
+    }
 }

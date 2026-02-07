@@ -353,14 +353,28 @@ export class PdfAcroFormField extends PdfDictionary<{
     }
 
     /**
-     * Checks if the field is read-only
+     * Gets annotation flags (for visual appearance and behavior)
+     */
+    get annotationFlags(): number {
+        return this.get('F')?.as(PdfNumber)?.value ?? 0
+    }
+
+    /**
+     * Sets annotation flags
+     */
+    set annotationFlags(flags: number) {
+        this.set('F', new PdfNumber(flags))
+    }
+
+    /**
+     * Checks if the field is read-only (Ff bit 1)
      */
     get readOnly(): boolean {
         return (this.flags & 1) !== 0
     }
 
     /**
-     * Sets the field as read-only or editable
+     * Sets the field as read-only or editable (Ff bit 1)
      */
     set readOnly(isReadOnly: boolean) {
         if (isReadOnly) {
@@ -537,6 +551,239 @@ export class PdfAcroFormField extends PdfDictionary<{
             this.delete('MaxLen')
         } else {
             this.set('MaxLen', new PdfNumber(maxLen))
+        }
+    }
+
+    // ============================================
+    // Annotation Flags (F field)
+    // ============================================
+
+    /**
+     * If true, the annotation is invisible (F bit 1)
+     */
+    get invisible(): boolean {
+        return (this.annotationFlags & 1) !== 0
+    }
+
+    set invisible(value: boolean) {
+        if (value) {
+            this.annotationFlags = this.annotationFlags | 1
+        } else {
+            this.annotationFlags = this.annotationFlags & ~1
+        }
+    }
+
+    /**
+     * If true, the annotation is hidden (F bit 2)
+     */
+    get hidden(): boolean {
+        return (this.annotationFlags & 2) !== 0
+    }
+
+    set hidden(value: boolean) {
+        if (value) {
+            this.annotationFlags = this.annotationFlags | 2
+        } else {
+            this.annotationFlags = this.annotationFlags & ~2
+        }
+    }
+
+    /**
+     * If true, print the annotation when printing (F bit 3)
+     */
+    get print(): boolean {
+        return (this.annotationFlags & 4) !== 0
+    }
+
+    set print(value: boolean) {
+        if (value) {
+            this.annotationFlags = this.annotationFlags | 4
+        } else {
+            this.annotationFlags = this.annotationFlags & ~4
+        }
+    }
+
+    /**
+     * If true, do not zoom annotation when zooming (F bit 4)
+     */
+    get noZoom(): boolean {
+        return (this.annotationFlags & 8) !== 0
+    }
+
+    set noZoom(value: boolean) {
+        if (value) {
+            this.annotationFlags = this.annotationFlags | 8
+        } else {
+            this.annotationFlags = this.annotationFlags & ~8
+        }
+    }
+
+    /**
+     * If true, do not rotate annotation when rotating (F bit 5)
+     */
+    get noRotate(): boolean {
+        return (this.annotationFlags & 16) !== 0
+    }
+
+    set noRotate(value: boolean) {
+        if (value) {
+            this.annotationFlags = this.annotationFlags | 16
+        } else {
+            this.annotationFlags = this.annotationFlags & ~16
+        }
+    }
+
+    /**
+     * If true, do not display annotation on screen (F bit 6)
+     */
+    get noView(): boolean {
+        return (this.annotationFlags & 32) !== 0
+    }
+
+    set noView(value: boolean) {
+        if (value) {
+            this.annotationFlags = this.annotationFlags | 32
+        } else {
+            this.annotationFlags = this.annotationFlags & ~32
+        }
+    }
+
+    /**
+     * If true, annotation is locked (F bit 8)
+     */
+    get locked(): boolean {
+        return (this.annotationFlags & 128) !== 0
+    }
+
+    set locked(value: boolean) {
+        if (value) {
+            this.annotationFlags = this.annotationFlags | 128
+        } else {
+            this.annotationFlags = this.annotationFlags & ~128
+        }
+    }
+
+    // ============================================
+    // Field Flags (Ff field) - Additional
+    // ============================================
+
+    /**
+     * If true, field value should not be exported (Ff bit 3)
+     */
+    get noExport(): boolean {
+        return (this.flags & 4) !== 0
+    }
+
+    set noExport(value: boolean) {
+        if (value) {
+            this.flags = this.flags | 4
+        } else {
+            this.flags = this.flags & ~4
+        }
+    }
+
+    /**
+     * If true, field is a pushbutton (Ff bit 17)
+     */
+    get pushButton(): boolean {
+        return (this.flags & 65536) !== 0
+    }
+
+    set pushButton(value: boolean) {
+        if (value) {
+            this.flags = this.flags | 65536
+        } else {
+            this.flags = this.flags & ~65536
+        }
+    }
+
+    /**
+     * If true, text field allows editing (Ff bit 19)
+     */
+    get edit(): boolean {
+        return (this.flags & 262144) !== 0
+    }
+
+    set edit(value: boolean) {
+        if (value) {
+            this.flags = this.flags | 262144
+        } else {
+            this.flags = this.flags & ~262144
+        }
+    }
+
+    /**
+     * If true, choice options should be sorted alphabetically (Ff bit 20)
+     */
+    get sort(): boolean {
+        return (this.flags & 524288) !== 0
+    }
+
+    set sort(value: boolean) {
+        if (value) {
+            this.flags = this.flags | 524288
+        } else {
+            this.flags = this.flags & ~524288
+        }
+    }
+
+    /**
+     * If true, allows multiple selections in choice field (Ff bit 22)
+     */
+    get multiSelect(): boolean {
+        return (this.flags & 2097152) !== 0
+    }
+
+    set multiSelect(value: boolean) {
+        if (value) {
+            this.flags = this.flags | 2097152
+        } else {
+            this.flags = this.flags & ~2097152
+        }
+    }
+
+    /**
+     * If true, do not spell check this field (Ff bit 23)
+     */
+    get doNotSpellCheck(): boolean {
+        return (this.flags & 4194304) !== 0
+    }
+
+    set doNotSpellCheck(value: boolean) {
+        if (value) {
+            this.flags = this.flags | 4194304
+        } else {
+            this.flags = this.flags & ~4194304
+        }
+    }
+
+    /**
+     * If true, do not scroll text field (Ff bit 24)
+     */
+    get doNotScroll(): boolean {
+        return (this.flags & 8388608) !== 0
+    }
+
+    set doNotScroll(value: boolean) {
+        if (value) {
+            this.flags = this.flags | 8388608
+        } else {
+            this.flags = this.flags & ~8388608
+        }
+    }
+
+    /**
+     * If true, commit field value immediately on selection change (Ff bit 27)
+     */
+    get commitOnSelChange(): boolean {
+        return (this.flags & 67108864) !== 0
+    }
+
+    set commitOnSelChange(value: boolean) {
+        if (value) {
+            this.flags = this.flags | 67108864
+        } else {
+            this.flags = this.flags & ~67108864
         }
     }
 
@@ -756,13 +1003,12 @@ EMC
             // Set the read-only flag (Ff bit 0)
             this.readOnly = true
 
-            // Ensure the annotation is visible and printable (F flag bits 2 and 3)
-            const currentF = this.get('F')?.as(PdfNumber)?.value ?? 0
-            this.set('F', new PdfNumber(currentF | 4 | 8)) // Print (4) + NoZoom (8)
+            // Ensure the annotation is visible and printable
+            this.print = true
+            this.noZoom = true
         } else {
             // For editable fields, just ensure print flag is set
-            const currentF = this.get('F')?.as(PdfNumber)?.value ?? 0
-            this.set('F', new PdfNumber(currentF | 4)) // Print (4)
+            this.print = true
         }
 
         return true
@@ -865,8 +1111,8 @@ Q
 
         if (options?.makeReadOnly) {
             this.readOnly = true
-            const currentF = this.get('F')?.as(PdfNumber)?.value ?? 0
-            this.set('F', new PdfNumber(currentF | 4 | 8))
+            this.print = true
+            this.noZoom = true
         }
 
         return true
@@ -986,8 +1232,8 @@ EMC
 
         if (options?.makeReadOnly) {
             this.readOnly = true
-            const currentF = this.get('F')?.as(PdfNumber)?.value ?? 0
-            this.set('F', new PdfNumber(currentF | 4 | 8))
+            this.print = true
+            this.noZoom = true
         }
 
         return true
@@ -1541,11 +1787,10 @@ export class PdfAcroForm<
                         secondaryAppearanceRef,
                     )
 
-                    // Ensure field has the Print flag set (bit 2)
+                    // Ensure field has the Print flag set
                     // This ensures the appearance is used for display and printing
-                    const currentF = field.get('F')?.as(PdfNumber)?.value ?? 0
-                    if ((currentF & 4) === 0) {
-                        field.set('F', new PdfNumber(currentF | 4))
+                    if (!field.print) {
+                        field.print = true
                     }
                 }
 

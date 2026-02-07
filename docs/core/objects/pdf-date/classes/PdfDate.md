@@ -32,6 +32,18 @@
 
 ## Properties
 
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfString`](../../pdf-string/classes/PdfString.md).[`immutable`](../../pdf-string/classes/PdfString.md#immutable)
+
+---
+
 ### modified
 
 > `protected` **modified**: `boolean` = `true`
@@ -77,6 +89,25 @@ Optional tokens to prepend or append during serialization
 ##### Returns
 
 `Date`
+
+---
+
+### isUTF16BE
+
+#### Get Signature
+
+> **get** **isUTF16BE**(): `boolean`
+
+Checks if this string is UTF-16BE encoded (has UTF-16BE BOM).
+UTF-16BE strings start with the byte order mark 0xFE 0xFF.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfString`](../../pdf-string/classes/PdfString.md).[`isUTF16BE`](../../pdf-string/classes/PdfString.md#isutf16be)
 
 ---
 
@@ -210,6 +241,22 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfString`](../../pdf-string/classes/PdfString.md).[`isImmutable`](../../pdf-string/classes/PdfString.md#isimmutable)
+
+---
+
 ### isModified()
 
 > **isModified**(): `boolean`
@@ -223,6 +270,28 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Inherited from
 
 [`PdfString`](../../pdf-string/classes/PdfString.md).[`isModified`](../../pdf-string/classes/PdfString.md#ismodified)
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable
+
+`boolean` = `true`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfString`](../../pdf-string/classes/PdfString.md).[`setImmutable`](../../pdf-string/classes/PdfString.md#setimmutable)
 
 ---
 

@@ -39,6 +39,14 @@
 
 ## Properties
 
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+---
+
 ### modified
 
 > `protected` **modified**: `boolean` = `true`
@@ -131,6 +139,18 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+---
+
 ### isModified()
 
 > **isModified**(): `boolean`
@@ -140,6 +160,24 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Returns
 
 `boolean`
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable
+
+`boolean` = `true`
+
+#### Returns
+
+`void`
 
 ---
 

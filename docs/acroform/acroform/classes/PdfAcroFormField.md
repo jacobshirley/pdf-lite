@@ -8,7 +8,7 @@
 
 ## Extends
 
-- [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<\{ `AS?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `BS?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md); `DA?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `DV?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `F?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `Ff?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `FT`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<[`PdfFieldType`](../type-aliases/PdfFieldType.md)\>; `Kids?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>; `MK?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md); `P?`: [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md); `Rect?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md)\>; `Subtype?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`"Widget"`\>; `T?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `Type?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`"Annot"`\>; `V?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); \}\>
+- [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<\{ `AP?`: [`PdfAppearanceStreamDictionary`](../type-aliases/PdfAppearanceStreamDictionary.md); `AS?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `BS?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md); `DA?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `DV?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); `F?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `Ff?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `FT`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<_typeof_ [`PdfFieldType`](../variables/PdfFieldType.md)\[keyof _typeof_ [`PdfFieldType`](../variables/PdfFieldType.md)\]\>; `Kids?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>; `MaxLen?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `MK?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md); `Opt?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md)\>; `P?`: [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md); `Q?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `Rect?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md)\>; `Subtype?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`"Widget"`\>; `T?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `Type?`: [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`"Annot"`\>; `V?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md); \}\>\>
 
 ## Constructors
 
@@ -20,7 +20,11 @@
 
 ##### options?
 
-###### container?
+###### form?
+
+[`PdfAcroForm`](PdfAcroForm.md)\<`Record`\<`string`, `string`\>\>
+
+###### other?
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
 
@@ -30,23 +34,55 @@
 
 #### Overrides
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`constructor`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#constructor)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`constructor`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#constructor)
 
 ## Properties
 
-### container?
+### content
 
-> `readonly` `optional` **container**: [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
-
----
-
-### innerTokens
-
-> **innerTokens**: [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[] = `[]`
+> **content**: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`innerTokens`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#innertokens)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`content`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#content)
+
+---
+
+### defaultGenerateAppearance
+
+> **defaultGenerateAppearance**: `boolean` = `true`
+
+---
+
+### encryptable?
+
+> `optional` **encryptable**: `boolean`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`encryptable`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#encryptable)
+
+---
+
+### generationNumber
+
+> **generationNumber**: `number`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`generationNumber`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#generationnumber)
+
+---
+
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`immutable`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#immutable)
 
 ---
 
@@ -58,7 +94,37 @@ Indicates whether the object has been modified. By default, assume it has been m
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`modified`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#modified)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`modified`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#modified)
+
+---
+
+### objectNumber
+
+> **objectNumber**: `number`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`objectNumber`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#objectnumber)
+
+---
+
+### offset
+
+> **offset**: [`Ref`](../../../core/ref/classes/Ref.md)\<`number`\>
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`offset`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#offset)
+
+---
+
+### orderIndex?
+
+> `optional` **orderIndex**: `number`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`orderIndex`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#orderindex)
 
 ---
 
@@ -76,7 +142,7 @@ Optional tokens to prepend or append during serialization
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`postTokens`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#posttokens)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`postTokens`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#posttokens)
 
 ---
 
@@ -88,9 +154,75 @@ Optional tokens to prepend or append during serialization
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`preTokens`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#pretokens)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`preTokens`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#pretokens)
+
+---
+
+### MAX_ORDER_INDEX
+
+> `readonly` `static` **MAX_ORDER_INDEX**: `2147483647` = `2147483647`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`MAX_ORDER_INDEX`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#max_order_index)
 
 ## Accessors
+
+### annotationFlags
+
+#### Get Signature
+
+> **get** **annotationFlags**(): `number`
+
+Gets annotation flags (for visual appearance and behavior)
+
+##### Returns
+
+`number`
+
+#### Set Signature
+
+> **set** **annotationFlags**(`flags`): `void`
+
+Sets annotation flags
+
+##### Parameters
+
+###### flags
+
+`number`
+
+##### Returns
+
+`void`
+
+---
+
+### appearanceStreamDict
+
+#### Get Signature
+
+> **get** **appearanceStreamDict**(): [`PdfAppearanceStreamDictionary`](../type-aliases/PdfAppearanceStreamDictionary.md) \| `null`
+
+##### Returns
+
+[`PdfAppearanceStreamDictionary`](../type-aliases/PdfAppearanceStreamDictionary.md) \| `null`
+
+#### Set Signature
+
+> **set** **appearanceStreamDict**(`dict`): `void`
+
+##### Parameters
+
+###### dict
+
+[`PdfAppearanceStreamDictionary`](../type-aliases/PdfAppearanceStreamDictionary.md) | `null`
+
+##### Returns
+
+`void`
+
+---
 
 ### checked
 
@@ -111,6 +243,126 @@ Optional tokens to prepend or append during serialization
 ###### isChecked
 
 `boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### comb
+
+#### Get Signature
+
+> **get** **comb**(): `boolean`
+
+Checks if the field is a comb field (characters distributed evenly across cells)
+
+##### Returns
+
+`boolean`
+
+---
+
+### combField
+
+#### Get Signature
+
+> **get** **combField**(): `boolean`
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **combField**(`isComb`): `void`
+
+##### Parameters
+
+###### isComb
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### combo
+
+#### Get Signature
+
+> **get** **combo**(): `boolean`
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **combo**(`isCombo`): `void`
+
+##### Parameters
+
+###### isCombo
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### commitOnSelChange
+
+#### Get Signature
+
+> **get** **commitOnSelChange**(): `boolean`
+
+If true, commit field value immediately on selection change (Ff bit 27)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **commitOnSelChange**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### defaultAppearance
+
+#### Get Signature
+
+> **get** **defaultAppearance**(): `string` \| `null`
+
+##### Returns
+
+`string` \| `null`
+
+#### Set Signature
+
+> **set** **defaultAppearance**(`da`): `void`
+
+##### Parameters
+
+###### da
+
+`string`
 
 ##### Returns
 
@@ -148,17 +400,113 @@ Sets the default value
 
 ---
 
+### doNotScroll
+
+#### Get Signature
+
+> **get** **doNotScroll**(): `boolean`
+
+If true, do not scroll text field (Ff bit 24)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **doNotScroll**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### doNotSpellCheck
+
+#### Get Signature
+
+> **get** **doNotSpellCheck**(): `boolean`
+
+If true, do not spell check this field (Ff bit 23)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **doNotSpellCheck**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### edit
+
+#### Get Signature
+
+> **get** **edit**(): `boolean`
+
+If true, text field allows editing (Ff bit 19)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **edit**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### encodingMap
+
+#### Get Signature
+
+> **get** **encodingMap**(): `Map`\<`number`, `string`\> \| `undefined`
+
+##### Returns
+
+`Map`\<`number`, `string`\> \| `undefined`
+
+---
+
 ### fieldType
 
 #### Get Signature
 
-> **get** **fieldType**(): [`PdfFieldType`](../type-aliases/PdfFieldType.md) \| `null`
+> **get** **fieldType**(): `"Text"` \| `"Button"` \| `"Choice"` \| `"Signature"` \| `null`
 
 Gets the field type
 
 ##### Returns
 
-[`PdfFieldType`](../type-aliases/PdfFieldType.md) \| `null`
+`"Text"` \| `"Button"` \| `"Choice"` \| `"Signature"` \| `null`
 
 #### Set Signature
 
@@ -168,7 +516,7 @@ Gets the field type
 
 ###### type
 
-[`PdfFieldType`](../type-aliases/PdfFieldType.md) | `null`
+`"Text"` | `"Button"` | `"Choice"` | `"Signature"` | `null`
 
 ##### Returns
 
@@ -279,6 +627,62 @@ Pass null to clear the font.
 
 ---
 
+### hidden
+
+#### Get Signature
+
+> **get** **hidden**(): `boolean`
+
+If true, the annotation is hidden (F bit 2)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **hidden**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### invisible
+
+#### Get Signature
+
+> **get** **invisible**(): `boolean`
+
+If true, the annotation is invisible (F bit 1)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **invisible**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
 ### isWidget
 
 #### Get Signature
@@ -298,6 +702,86 @@ Pass null to clear the font.
 ###### isWidget
 
 `boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### kids
+
+#### Get Signature
+
+> **get** **kids**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)[]
+
+##### Returns
+
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)[]
+
+#### Set Signature
+
+> **set** **kids**(`kids`): `void`
+
+##### Parameters
+
+###### kids
+
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)[]
+
+##### Returns
+
+`void`
+
+---
+
+### locked
+
+#### Get Signature
+
+> **get** **locked**(): `boolean`
+
+If true, annotation is locked (F bit 8)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **locked**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### maxLen
+
+#### Get Signature
+
+> **get** **maxLen**(): `number` \| `null`
+
+##### Returns
+
+`number` \| `null`
+
+#### Set Signature
+
+> **set** **maxLen**(`maxLen`): `void`
+
+##### Parameters
+
+###### maxLen
+
+`number` | `null`
 
 ##### Returns
 
@@ -326,6 +810,34 @@ Sets the field as multiline (for text fields)
 ##### Parameters
 
 ###### isMultiline
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### multiSelect
+
+#### Get Signature
+
+> **get** **multiSelect**(): `boolean`
+
+If true, allows multiple selections in choice field (Ff bit 22)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **multiSelect**(`value`): `void`
+
+##### Parameters
+
+###### value
 
 `boolean`
 
@@ -365,6 +877,144 @@ Sets the field name
 
 ---
 
+### noExport
+
+#### Get Signature
+
+> **get** **noExport**(): `boolean`
+
+If true, field value should not be exported (Ff bit 3)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **noExport**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### noRotate
+
+#### Get Signature
+
+> **get** **noRotate**(): `boolean`
+
+If true, do not rotate annotation when rotating (F bit 5)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **noRotate**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### noToggleToOff
+
+#### Get Signature
+
+> **get** **noToggleToOff**(): `boolean`
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **noToggleToOff**(`noToggle`): `void`
+
+##### Parameters
+
+###### noToggle
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### noView
+
+#### Get Signature
+
+> **get** **noView**(): `boolean`
+
+If true, do not display annotation on screen (F bit 6)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **noView**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### noZoom
+
+#### Get Signature
+
+> **get** **noZoom**(): `boolean`
+
+If true, do not zoom annotation when zooming (F bit 4)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **noZoom**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
 ### objectType
 
 #### Get Signature
@@ -379,7 +1029,39 @@ The type of this PDF object
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`objectType`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#objecttype)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`objectType`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#objecttype)
+
+---
+
+### options
+
+#### Get Signature
+
+> **get** **options**(): `string`[]
+
+Gets the options for choice fields (dropdowns, list boxes).
+Returns an array of option strings.
+
+##### Returns
+
+`string`[]
+
+#### Set Signature
+
+> **set** **options**(`options`): `void`
+
+Sets the options for choice fields (dropdowns, list boxes).
+Pass an array of strings.
+
+##### Parameters
+
+###### options
+
+`string`[]
+
+##### Returns
+
+`void`
 
 ---
 
@@ -439,13 +1121,127 @@ Sets the field as a password field (for text fields)
 
 ---
 
+### print
+
+#### Get Signature
+
+> **get** **print**(): `boolean`
+
+If true, print the annotation when printing (F bit 3)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **print**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### pushButton
+
+#### Get Signature
+
+> **get** **pushButton**(): `boolean`
+
+If true, field is a pushbutton (Ff bit 17)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **pushButton**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### quadding
+
+#### Get Signature
+
+> **get** **quadding**(): `number`
+
+Gets the quadding (text alignment) for this field.
+0 = left-justified, 1 = centered, 2 = right-justified
+
+##### Returns
+
+`number`
+
+#### Set Signature
+
+> **set** **quadding**(`q`): `void`
+
+Sets the quadding (text alignment) for this field.
+0 = left-justified, 1 = centered, 2 = right-justified
+
+##### Parameters
+
+###### q
+
+`number`
+
+##### Returns
+
+`void`
+
+---
+
+### radio
+
+#### Get Signature
+
+> **get** **radio**(): `boolean`
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **radio**(`isRadio`): `void`
+
+##### Parameters
+
+###### isRadio
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
 ### readOnly
 
 #### Get Signature
 
 > **get** **readOnly**(): `boolean`
 
-Checks if the field is read-only
+Checks if the field is read-only (Ff bit 1)
 
 ##### Returns
 
@@ -455,7 +1251,7 @@ Checks if the field is read-only
 
 > **set** **readOnly**(`isReadOnly`): `void`
 
-Sets the field as read-only or editable
+Sets the field as read-only or editable (Ff bit 1)
 
 ##### Parameters
 
@@ -495,6 +1291,22 @@ Sets the field as read-only or editable
 
 ---
 
+### reference
+
+#### Get Signature
+
+> **get** **reference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+
+##### Returns
+
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`reference`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#reference)
+
+---
+
 ### required
 
 #### Get Signature
@@ -525,6 +1337,34 @@ Sets the field as required or optional
 
 ---
 
+### sort
+
+#### Get Signature
+
+> **get** **sort**(): `boolean`
+
+If true, choice options should be sorted alphabetically (Ff bit 20)
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **sort**(`value`): `void`
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
 ### value
 
 #### Get Signature
@@ -543,27 +1383,11 @@ Sets the field as required or optional
 
 ###### val
 
-`string`
+`string` | [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md)
 
 ##### Returns
 
 `void`
-
----
-
-### values
-
-#### Get Signature
-
-> **get** **values**(): `{ readonly [K in string]: T[K] }`
-
-##### Returns
-
-`{ readonly [K in string]: T[K] }`
-
-#### Inherited from
-
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`values`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#values)
 
 ## Methods
 
@@ -591,7 +1415,7 @@ Attempts to cast the object to a specific PdfObject subclass
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`as`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#as)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`as`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#as)
 
 ---
 
@@ -607,7 +1431,7 @@ Creates a deep clone of the object
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`clone`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#clone)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`clone`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#clone)
 
 ---
 
@@ -619,7 +1443,7 @@ Creates a deep clone of the object
 
 ##### other
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<`any`\>
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)
 
 #### Returns
 
@@ -627,50 +1451,7 @@ Creates a deep clone of the object
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`copyFrom`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#copyfrom)
-
----
-
-### delete()
-
-> **delete**\<`K`\>(`key`): `void`
-
-#### Type Parameters
-
-##### K
-
-`K` _extends_ `"Type"` \| `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"Subtype"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
-
-#### Parameters
-
-##### key
-
-`K` | [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`K`\>
-
-#### Returns
-
-`void`
-
-#### Inherited from
-
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`delete`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#delete)
-
----
-
-### entries()
-
-> **entries**(): `IterableIterator`\<\[`string`, [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md) \| `undefined`\]\>
-
-Returns an iterator for the dictionary entries.
-Each entry is a tuple of [key string, value].
-
-#### Returns
-
-`IterableIterator`\<\[`string`, [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md) \| `undefined`\]\>
-
-#### Inherited from
-
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`entries`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#entries)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`copyFrom`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#copyfrom)
 
 ---
 
@@ -692,51 +1473,90 @@ Compares this object to another for equality based on their token representation
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`equals`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#equals)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`equals`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#equals)
 
 ---
 
-### get()
+### generateAppearance()
 
-> **get**\<`K`\>(`key`): `object`\[`K`\] \| `undefined`
+> **generateAppearance**(`options?`): `boolean`
 
-#### Type Parameters
+Generates an appearance stream for a text field using iText's approach.
 
-##### K
+This generates an appearance with text using the same positioning formula as iText:
 
-`K` _extends_ `"Type"` \| `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"Subtype"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
+- textY = (height - fontSize) / 2 + fontSize \* 0.2
+- Wrapped in marked content blocks (/Tx BMC ... EMC)
+- Field remains editable unless makeReadOnly is set
+
+For editable fields (default, no options):
+
+- Text visible immediately
+- Field remains fully editable
+- No save dialog (needAppearances = false)
+- Text positioning matches iText
+
+For read-only fields (makeReadOnly: true):
+
+- Same appearance generation
+- Field is set as read-only
 
 #### Parameters
 
-##### key
+##### options?
 
-`K` | [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`K`\>
+###### makeReadOnly?
+
+`boolean`
+
+If true, sets field as read-only
+
+###### textYOffset?
+
+`number`
 
 #### Returns
 
-`object`\[`K`\] \| `undefined`
+`boolean`
 
-#### Inherited from
-
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`get`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#get)
+true if appearance was generated successfully
 
 ---
 
-### has()
+### getAppearanceStream()
 
-> **has**\<`K`\>(`key`): `boolean`
+> **getAppearanceStream**(): [`PdfStream`](../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\> \| `undefined`
 
-#### Type Parameters
+**`Internal`**
 
-##### K
+Gets the stored appearance stream if one has been generated.
+For button fields, returns the appropriate stream based on the current state.
 
-`K` _extends_ `"Type"` \| `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"Subtype"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
+#### Returns
 
-#### Parameters
+[`PdfStream`](../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\> \| `undefined`
 
-##### key
+---
 
-`K` | [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`K`\>
+### getAppearanceStreamsForWriting()
+
+> **getAppearanceStreamsForWriting**(): \{ `primary`: [`PdfStream`](../../../core/objects/pdf-stream/classes/PdfStream.md); `secondary?`: [`PdfStream`](../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\>; \} \| `undefined`
+
+**`Internal`**
+
+Gets all appearance streams for writing to PDF.
+For button fields, returns both Off and Yes states.
+For other fields, returns just the primary appearance.
+
+#### Returns
+
+\{ `primary`: [`PdfStream`](../../../core/objects/pdf-stream/classes/PdfStream.md); `secondary?`: [`PdfStream`](../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\>; \} \| `undefined`
+
+---
+
+### inPdf()
+
+> **inPdf**(): `boolean`
 
 #### Returns
 
@@ -744,7 +1564,37 @@ Compares this object to another for equality based on their token representation
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`has`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#has)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`inPdf`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#inpdf)
+
+---
+
+### isEncryptable()
+
+> **isEncryptable**(): `boolean`
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`isEncryptable`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#isencryptable)
+
+---
+
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`isImmutable`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#isimmutable)
 
 ---
 
@@ -752,7 +1602,27 @@ Compares this object to another for equality based on their token representation
 
 > **isModified**(): `boolean`
 
-Indicates whether the object has been modified. Override this method if the modified state is determined differently
+Convenience method to check if field dictionary is modified
+
+#### Returns
+
+`boolean`
+
+#### Overrides
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`isModified`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#ismodified)
+
+---
+
+### matchesReference()
+
+> **matchesReference**(`ref?`): `boolean`
+
+#### Parameters
+
+##### ref?
+
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
 
 #### Returns
 
@@ -760,29 +1630,61 @@ Indicates whether the object has been modified. Override this method if the modi
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`isModified`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#ismodified)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`matchesReference`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#matchesreference)
 
 ---
 
-### set()
+### order()
 
-> **set**\<`K`\>(`key`, `value`): `void`
+> **order**(): `number`
 
-#### Type Parameters
+#### Returns
 
-##### K
+`number`
 
-`K` _extends_ `"Type"` \| `"V"` \| `"P"` \| `"T"` \| `"F"` \| `"Subtype"` \| `"FT"` \| `"DV"` \| `"DA"` \| `"AS"` \| `"Kids"` \| `"Rect"` \| `"Ff"` \| `"BS"` \| `"MK"`
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`order`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#order)
+
+---
+
+### setAppearanceReference()
+
+> **setAppearanceReference**(`appearanceStreamRef`, `appearanceStreamYesRef?`): `void`
+
+**`Internal`**
+
+Sets the appearance dictionary reference for this field.
+
+- This is called automatically by PdfAcroForm.write()
 
 #### Parameters
 
-##### key
+##### appearanceStreamRef
 
-`K` | [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`K`\>
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
 
-##### value
+##### appearanceStreamYesRef?
 
-`object`\[`K`\]
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+
+#### Returns
+
+`void`
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable?`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable?
+
+`boolean`
 
 #### Returns
 
@@ -790,7 +1692,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`set`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#set)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`setImmutable`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#setimmutable)
 
 ---
 
@@ -812,7 +1714,7 @@ Sets the modified state of the object. Override this method if the modified stat
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`setModified`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#setmodified)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`setModified`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#setmodified)
 
 ---
 
@@ -834,7 +1736,7 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`toBytes`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#tobytes)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`toBytes`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#tobytes)
 
 ---
 
@@ -850,7 +1752,7 @@ Tokenizes the object into an array of PdfTokens
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`tokenize`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#tokenize)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`tokenize`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#tokenize)
 
 ---
 
@@ -866,7 +1768,7 @@ Converts the object to a string representation
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`toString`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#tostring)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`toString`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#tostring)
 
 ---
 
@@ -882,4 +1784,38 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 
 #### Inherited from
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`toTokens`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#totokens)
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`toTokens`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#totokens)
+
+---
+
+### createPlaceholder()
+
+> `static` **createPlaceholder**\<`T`\>(`objectNumber?`, `generationNumber?`, `content?`): [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<`T` _extends_ `unknown` ? [`PdfNull`](../../../core/objects/pdf-null/classes/PdfNull.md) : `T`\>
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)
+
+#### Parameters
+
+##### objectNumber?
+
+`number`
+
+##### generationNumber?
+
+`number`
+
+##### content?
+
+`T`
+
+#### Returns
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<`T` _extends_ `unknown` ? [`PdfNull`](../../../core/objects/pdf-null/classes/PdfNull.md) : `T`\>
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`createPlaceholder`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#createplaceholder)

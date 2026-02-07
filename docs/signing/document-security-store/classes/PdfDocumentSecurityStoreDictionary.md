@@ -35,6 +35,18 @@ Contains arrays of certificates, CRLs, OCSPs, and VRI entries.
 
 ## Properties
 
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`immutable`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#immutable)
+
+---
+
 ### innerTokens
 
 > **innerTokens**: [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[] = `[]`
@@ -296,6 +308,22 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`isImmutable`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#isimmutable)
+
+---
+
 ### isModified()
 
 > **isModified**(): `boolean`
@@ -339,6 +367,28 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Inherited from
 
 [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`set`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#set)
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable?`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable?
+
+`boolean`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`setImmutable`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#setimmutable)
 
 ---
 

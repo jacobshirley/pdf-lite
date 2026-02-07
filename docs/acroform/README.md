@@ -26,6 +26,18 @@ Re-exports [PdfAcroFormManager](manager/classes/PdfAcroFormManager.md)
 
 ---
 
+### PdfAppearanceStreamDictionary
+
+Re-exports [PdfAppearanceStreamDictionary](acroform/type-aliases/PdfAppearanceStreamDictionary.md)
+
+---
+
+### PdfDefaultResourcesDictionary
+
+Re-exports [PdfDefaultResourcesDictionary](acroform/type-aliases/PdfDefaultResourcesDictionary.md)
+
+---
+
 ### PdfFieldType
 
 Re-exports [PdfFieldType](acroform/variables/PdfFieldType.md)

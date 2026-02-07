@@ -298,7 +298,7 @@ Re-exports [encodeAsUTF16BE](../utils/encodeAsUTF16BE/functions/encodeAsUTF16BE.
 
 ### EofReachedError
 
-Re-exports [EofReachedError](../core/incremental-parser/classes/EofReachedError.md)
+Re-exports [EofReachedError](../core/parser/incremental-parser/classes/EofReachedError.md)
 
 ---
 
@@ -418,7 +418,7 @@ Re-exports [IdentityCryptFilter](../security/crypt-filters/identity/classes/Iden
 
 ### IncrementalParser
 
-Re-exports [IncrementalParser](../core/incremental-parser/classes/IncrementalParser.md)
+Re-exports [IncrementalParser](../core/parser/incremental-parser/classes/IncrementalParser.md)
 
 ---
 
@@ -466,7 +466,7 @@ Re-exports [needsUnicodeEncoding](../utils/needsUnicodeEncoding/functions/needsU
 
 ### NoMoreTokensError
 
-Re-exports [NoMoreTokensError](../core/incremental-parser/classes/NoMoreTokensError.md)
+Re-exports [NoMoreTokensError](../core/parser/incremental-parser/classes/NoMoreTokensError.md)
 
 ---
 
@@ -502,7 +502,7 @@ Re-exports [parseFont](../fonts/parsers/font-parser/functions/parseFont.md)
 
 ### Parser
 
-Re-exports [Parser](../core/parser/classes/Parser.md)
+Re-exports [Parser](../core/parser/parser/classes/Parser.md)
 
 ---
 
@@ -1330,7 +1330,7 @@ Re-exports [unescapeString](../utils/unescapeString/functions/unescapeString.md)
 
 ### UnexpectedTokenError
 
-Re-exports [UnexpectedTokenError](../core/incremental-parser/classes/UnexpectedTokenError.md)
+Re-exports [UnexpectedTokenError](../core/parser/incremental-parser/classes/UnexpectedTokenError.md)
 
 ---
 

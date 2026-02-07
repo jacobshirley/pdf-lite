@@ -11,7 +11,7 @@ Handles byte offset calculation and token serialization.
 
 ## Extends
 
-- [`Parser`](../../parser/classes/Parser.md)\<[`PdfToken`](../../tokens/token/classes/PdfToken.md), `number`\>
+- [`Parser`](../../parser/parser/classes/Parser.md)\<[`PdfToken`](../../tokens/token/classes/PdfToken.md), `number`\>
 
 ## Constructors
 
@@ -25,7 +25,7 @@ Handles byte offset calculation and token serialization.
 
 #### Inherited from
 
-[`Parser`](../../parser/classes/Parser.md).[`constructor`](../../parser/classes/Parser.md#constructor)
+[`Parser`](../../parser/parser/classes/Parser.md).[`constructor`](../../parser/parser/classes/Parser.md#constructor)
 
 ## Properties
 
@@ -70,7 +70,7 @@ PDF tokens to serialize
 
 #### Overrides
 
-[`Parser`](../../parser/classes/Parser.md).[`feed`](../../parser/classes/Parser.md#feed)
+[`Parser`](../../parser/parser/classes/Parser.md).[`feed`](../../parser/parser/classes/Parser.md#feed)
 
 ---
 
@@ -110,7 +110,7 @@ A generator yielding individual bytes
 
 #### Overrides
 
-[`Parser`](../../parser/classes/Parser.md).[`nextItems`](../../parser/classes/Parser.md#nextitems)
+[`Parser`](../../parser/parser/classes/Parser.md).[`nextItems`](../../parser/parser/classes/Parser.md#nextitems)
 
 ---
 

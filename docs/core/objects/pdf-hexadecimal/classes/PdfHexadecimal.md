@@ -40,6 +40,18 @@
 
 ## Properties
 
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`immutable`](../../pdf-object/classes/PdfObject.md#immutable)
+
+---
+
 ### modified
 
 > `protected` **modified**: `boolean` = `true`
@@ -74,15 +86,6 @@ Optional tokens to prepend or append during serialization
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`preTokens`](../../pdf-object/classes/PdfObject.md#pretokens)
 
----
-
-### raw
-
-> **raw**: [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
-
-The raw byte value represented by this hexadecimal object.
-NB: This is the hexadecimal representation, not the actual byte values.
-
 ## Accessors
 
 ### bytes
@@ -112,6 +115,32 @@ The type of this PDF object
 #### Inherited from
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`objectType`](../../pdf-object/classes/PdfObject.md#objecttype)
+
+---
+
+### raw
+
+#### Get Signature
+
+> **get** **raw**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+##### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+#### Set Signature
+
+> **set** **raw**(`raw`): `void`
+
+##### Parameters
+
+###### raw
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+##### Returns
+
+`void`
 
 ## Methods
 
@@ -181,6 +210,22 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`isImmutable`](../../pdf-object/classes/PdfObject.md#isimmutable)
+
+---
+
 ### isModified()
 
 > **isModified**(): `boolean`
@@ -194,6 +239,28 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Inherited from
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`isModified`](../../pdf-object/classes/PdfObject.md#ismodified)
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable
+
+`boolean` = `true`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`setImmutable`](../../pdf-object/classes/PdfObject.md#setimmutable)
 
 ---
 

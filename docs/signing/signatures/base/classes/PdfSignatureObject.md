@@ -89,6 +89,18 @@ Either a signature dictionary or options to create one.
 
 ---
 
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`immutable`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#immutable)
+
+---
+
 ### modified
 
 > `protected` **modified**: `boolean` = `true`
@@ -307,6 +319,26 @@ True if arrays are equal, false otherwise.
 
 ---
 
+### copyFrom()
+
+> **copyFrom**(`other`): `void`
+
+#### Parameters
+
+##### other
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`copyFrom`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#copyfrom)
+
+---
+
 ### equals()
 
 > **equals**(`other?`): `boolean`
@@ -354,6 +386,22 @@ Compares this object to another for equality based on their token representation
 #### Inherited from
 
 [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`isEncryptable`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#isencryptable)
+
+---
+
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`isImmutable`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#isimmutable)
 
 ---
 
@@ -432,6 +480,28 @@ Array of [offset1, length1, offset2, length2].
 #### Throws
 
 Error if ByteRange entry is missing.
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable?`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable?
+
+`boolean`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`setImmutable`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#setimmutable)
 
 ---
 

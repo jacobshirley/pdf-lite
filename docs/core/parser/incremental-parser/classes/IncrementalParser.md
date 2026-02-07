@@ -1,8 +1,8 @@
-[**pdf-lite**](../../../README.md)
+[**pdf-lite**](../../../../README.md)
 
 ---
 
-[pdf-lite](../../../README.md) / [core/incremental-parser](../README.md) / IncrementalParser
+[pdf-lite](../../../../README.md) / [core/parser/incremental-parser](../README.md) / IncrementalParser
 
 # Abstract Class: IncrementalParser\<I, O\>
 
@@ -15,8 +15,8 @@ Supports buffering, lookahead, and backtracking for complex parsing scenarios.
 
 ## Extended by
 
-- [`PdfDecoder`](../../decoder/classes/PdfDecoder.md)
-- [`PdfByteStreamTokeniser`](../../tokeniser/classes/PdfByteStreamTokeniser.md)
+- [`PdfDecoder`](../../../decoder/classes/PdfDecoder.md)
+- [`PdfByteStreamTokeniser`](../../../tokeniser/classes/PdfByteStreamTokeniser.md)
 
 ## Type Parameters
 

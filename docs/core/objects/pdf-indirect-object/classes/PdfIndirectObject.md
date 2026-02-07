@@ -12,6 +12,8 @@
 
 ## Extended by
 
+- [`PdfAcroFormField`](../../../../acroform/acroform/classes/PdfAcroFormField.md)
+- [`PdfAcroForm`](../../../../acroform/acroform/classes/PdfAcroForm.md)
 - [`PdfCertObject`](../../../../signing/document-security-store/classes/PdfCertObject.md)
 - [`PdfCrlObject`](../../../../signing/document-security-store/classes/PdfCrlObject.md)
 - [`PdfOcspObject`](../../../../signing/document-security-store/classes/PdfOcspObject.md)
@@ -28,13 +30,13 @@
 
 ### Constructor
 
-> **new PdfIndirectObject**\<`T`\>(`options`): `PdfIndirectObject`\<`T`\>
+> **new PdfIndirectObject**\<`T`\>(`options?`): `PdfIndirectObject`\<`T`\>
 
 #### Parameters
 
-##### options
+##### options?
 
-`T` | \{ `content`: `T`; `encryptable?`: `boolean`; `generationNumber?`: `number`; `objectNumber?`: `number`; `offset?`: `number` \| [`Ref`](../../../ref/classes/Ref.md)\<`number`\>; \}
+`T` | `PdfIndirectObject`\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\> | \{ `content?`: `T`; `encryptable?`: `boolean`; `generationNumber?`: `number`; `objectNumber?`: `number`; `offset?`: `number` \| [`Ref`](../../../ref/classes/Ref.md)\<`number`\>; \}
 
 #### Returns
 
@@ -65,6 +67,18 @@
 #### Inherited from
 
 [`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`generationNumber`](../../pdf-object-reference/classes/PdfObjectReference.md#generationnumber)
+
+---
+
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`immutable`](../../pdf-object-reference/classes/PdfObjectReference.md#immutable)
 
 ---
 
@@ -206,6 +220,22 @@ Creates a deep clone of the object
 
 ---
 
+### copyFrom()
+
+> **copyFrom**(`other`): `void`
+
+#### Parameters
+
+##### other
+
+`PdfIndirectObject`
+
+#### Returns
+
+`void`
+
+---
+
 ### equals()
 
 > **equals**(`other?`): `boolean`
@@ -248,6 +278,22 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`isImmutable`](../../pdf-object-reference/classes/PdfObjectReference.md#isimmutable)
+
+---
+
 ### isModified()
 
 > **isModified**(): `boolean`
@@ -287,6 +333,28 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Returns
 
 `number`
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable?`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable?
+
+`boolean`
+
+#### Returns
+
+`void`
+
+#### Overrides
+
+[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`setImmutable`](../../pdf-object-reference/classes/PdfObjectReference.md#setimmutable)
 
 ---
 

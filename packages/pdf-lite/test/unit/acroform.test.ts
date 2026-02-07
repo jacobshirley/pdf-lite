@@ -1146,10 +1146,10 @@ describe('AcroForm Appearance Generation', () => {
 
         // 1. Regular text field
         const textField = new PdfAcroFormField({ form: acroform })
-        textField.set('FT', new PdfName('Tx'))
+        textField.fieldType = 'Tx'
         textField.name = 'RegularText'
         textField.rect = [50, 750, 300, 770]
-        textField.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        textField.defaultAppearance = '/Helv 12 Tf 0 g'
         textField.isWidget = true
         textField.parentRef = firstPageRef
         textField.value = 'Regular Text Value'
@@ -1157,12 +1157,12 @@ describe('AcroForm Appearance Generation', () => {
 
         // 2. Comb field
         const combField = new PdfAcroFormField({ form: acroform })
-        combField.set('FT', new PdfName('Tx'))
+        combField.fieldType = 'Tx'
         combField.name = 'CombField'
         combField.rect = [50, 700, 250, 720]
-        combField.set('DA', new PdfString('/Helv 12 Tf 0 g'))
-        combField.set('Ff', new PdfNumber(16777216)) // Comb flag
-        combField.set('MaxLen', new PdfNumber(8))
+        combField.defaultAppearance = '/Helv 12 Tf 0 g'
+        combField.combField = true
+        combField.maxLen = 8
         combField.isWidget = true
         combField.parentRef = firstPageRef
         combField.value = '12345678'
@@ -1170,11 +1170,11 @@ describe('AcroForm Appearance Generation', () => {
 
         // 3. Multiline text field
         const multilineField = new PdfAcroFormField({ form: acroform })
-        multilineField.set('FT', new PdfName('Tx'))
+        multilineField.fieldType = 'Tx'
         multilineField.name = 'MultilineText'
         multilineField.rect = [50, 600, 300, 680]
-        multilineField.set('DA', new PdfString('/Helv 10 Tf 0 g'))
-        multilineField.set('Ff', new PdfNumber(4096)) // Multiline flag
+        multilineField.defaultAppearance = '/Helv 12 Tf 0 g'
+        multilineField.multiline = true
         multilineField.isWidget = true
         multilineField.parentRef = firstPageRef
         multilineField.value = 'Line 1\nLine 2\nLine 3'
@@ -1182,10 +1182,10 @@ describe('AcroForm Appearance Generation', () => {
 
         // 4. Checkbox (unchecked)
         const checkboxUnchecked = new PdfAcroFormField({ form: acroform })
-        checkboxUnchecked.set('FT', new PdfName('Btn'))
+        checkboxUnchecked.fieldType = 'Btn'
         checkboxUnchecked.name = 'CheckboxUnchecked'
         checkboxUnchecked.rect = [50, 550, 70, 570]
-        checkboxUnchecked.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        checkboxUnchecked.defaultAppearance = '/Helv 12 Tf 0 g'
         checkboxUnchecked.isWidget = true
         checkboxUnchecked.parentRef = firstPageRef
         checkboxUnchecked.checked = false
@@ -1193,10 +1193,10 @@ describe('AcroForm Appearance Generation', () => {
 
         // 5. Checkbox (checked)
         const checkboxChecked = new PdfAcroFormField({ form: acroform })
-        checkboxChecked.set('FT', new PdfName('Btn'))
+        checkboxChecked.fieldType = 'Btn'
         checkboxChecked.name = 'CheckboxChecked'
         checkboxChecked.rect = [100, 550, 120, 570]
-        checkboxChecked.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        checkboxChecked.defaultAppearance = '/Helv 12 Tf 0 g'
         checkboxChecked.isWidget = true
         checkboxChecked.parentRef = firstPageRef
         checkboxChecked.checked = true
@@ -1204,14 +1204,58 @@ describe('AcroForm Appearance Generation', () => {
 
         // 6. Choice/Dropdown field
         const choiceField = new PdfAcroFormField({ form: acroform })
-        choiceField.set('FT', new PdfName('Ch'))
+        choiceField.fieldType = 'Ch'
         choiceField.name = 'DropdownField'
         choiceField.rect = [50, 450, 250, 470]
-        choiceField.set('DA', new PdfString('/Helv 11 Tf 0 g'))
+        choiceField.defaultAppearance = '/Helv 11 Tf 0 g'
+        choiceField.combo = true // Combo flag = dropdown
+        choiceField.options = ['Option 1', 'Selected Option', 'Option 3']
         choiceField.isWidget = true
         choiceField.parentRef = firstPageRef
         choiceField.value = 'Selected Option'
         acroform.fields.push(choiceField)
+
+        // 7. List box (Choice field without Combo flag)
+        const listField = new PdfAcroFormField({ form: acroform })
+        listField.fieldType = 'Ch'
+        listField.name = 'ListField'
+        listField.rect = [50, 350, 250, 430]
+        listField.defaultAppearance = '/Helv 11 Tf 0 g'
+        // No Combo flag = list box
+        listField.options = ['List Item 1', 'List Item 2', 'List Item 3']
+        listField.isWidget = true
+        listField.parentRef = firstPageRef
+        listField.value = 'List Item 2'
+        acroform.fields.push(listField)
+
+        // 8. Radio button group
+        // Note: In PDF, radio buttons that are mutually exclusive should share the same parent field
+        // For now, we'll create them as separate fields but with proper Radio flag
+        // TODO: Implement proper parent/child radio button group structure
+        const radioButton1 = new PdfAcroFormField({ form: acroform })
+        radioButton1.fieldType = 'Btn'
+        radioButton1.name = 'RadioButton1'
+        radioButton1.rect = [50, 300, 70, 320]
+        radioButton1.defaultAppearance = '/Helv 12 Tf 0 g'
+        radioButton1.radio = true
+        radioButton1.noToggleToOff = true
+        radioButton1.isWidget = true
+        radioButton1.parentRef = firstPageRef
+        radioButton1.checked = false
+        acroform.fields.push(radioButton1)
+
+        // 9. Radio button group (selected)
+        const radioButton2 = new PdfAcroFormField({ form: acroform })
+        radioButton2.fieldType = 'Btn'
+        radioButton2.name = 'RadioButton2'
+        radioButton2.rect = [100, 300, 120, 320]
+        radioButton2.defaultAppearance = '/Helv 12 Tf 0 g'
+        radioButton2.radio = true
+        radioButton2.noToggleToOff = true
+        radioButton2.isWidget = true
+        radioButton2.parentRef = firstPageRef
+        radioButton2.checked = true
+        acroform.fields.push(radioButton2)
 
         // Generate appearances for all fields
         const textSuccess = textField.generateAppearance()
@@ -1220,6 +1264,9 @@ describe('AcroForm Appearance Generation', () => {
         const checkboxUncheckedSuccess = checkboxUnchecked.generateAppearance()
         const checkboxCheckedSuccess = checkboxChecked.generateAppearance()
         const choiceSuccess = choiceField.generateAppearance()
+        const listSuccess = listField.generateAppearance()
+        const radio1Success = radioButton1.generateAppearance()
+        const radio2Success = radioButton2.generateAppearance()
 
         // Verify all generated successfully
         expect(textSuccess).toBe(true)
@@ -1228,6 +1275,9 @@ describe('AcroForm Appearance Generation', () => {
         expect(checkboxUncheckedSuccess).toBe(true)
         expect(checkboxCheckedSuccess).toBe(true)
         expect(choiceSuccess).toBe(true)
+        expect(listSuccess).toBe(true)
+        expect(radio1Success).toBe(true)
+        expect(radio2Success).toBe(true)
 
         // Verify appearance streams exist
         expect(textField.getAppearanceStream()).toBeDefined()
@@ -1236,6 +1286,9 @@ describe('AcroForm Appearance Generation', () => {
         expect(checkboxUnchecked.getAppearanceStream()).toBeDefined()
         expect(checkboxChecked.getAppearanceStream()).toBeDefined()
         expect(choiceField.getAppearanceStream()).toBeDefined()
+        expect(listField.getAppearanceStream()).toBeDefined()
+        expect(radioButton1.getAppearanceStream()).toBeDefined()
+        expect(radioButton2.getAppearanceStream()).toBeDefined()
 
         // Verify appearance content
         const checkboxStream =
@@ -1246,6 +1299,10 @@ describe('AcroForm Appearance Generation', () => {
             multilineField.getAppearanceStream()!.rawAsString
         expect(multilineStream).toContain('Line 1')
         expect(multilineStream).toContain('Line 2')
+
+        // Verify radio button appearance (selected one should have filled circle)
+        const radioStream = radioButton2.getAppearanceStream()!.rawAsString
+        expect(radioStream.length).toBeGreaterThan(0) // Should have content for selected state
 
         await server.commands.writeFile(
             './test/unit/tmp/all-field-types-v1.pdf',

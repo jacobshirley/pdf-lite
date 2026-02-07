@@ -45,12 +45,14 @@ export class PdfAcroFormField extends PdfDictionary<{
     AP?: PdfDictionary
     Q?: PdfNumber
     MaxLen?: PdfNumber
+    Opt?: PdfArray<PdfString>
 }> {
     parent?: PdfAcroFormField
     readonly container?: PdfIndirectObject
     form?: PdfAcroForm
     defaultGenerateAppearance: boolean = true
     private _appearanceStream?: PdfStream
+    private _appearanceStreamYes?: PdfStream // For button fields: checked state
 
     constructor(options?: {
         container?: PdfIndirectObject
@@ -420,13 +422,6 @@ export class PdfAcroFormField extends PdfDictionary<{
     }
 
     /**
-     * Gets the maximum length for the field (used with comb fields)
-     */
-    get maxLen(): number | null {
-        return this.get('MaxLen')?.as(PdfNumber)?.value ?? null
-    }
-
-    /**
      * Gets the quadding (text alignment) for this field.
      * 0 = left-justified, 1 = centered, 2 = right-justified
      */
@@ -440,6 +435,99 @@ export class PdfAcroFormField extends PdfDictionary<{
      */
     set quadding(q: number) {
         this.set('Q', new PdfNumber(q))
+    }
+
+    /**
+     * Gets the options for choice fields (dropdowns, list boxes).
+     * Returns an array of option strings.
+     */
+    get options(): string[] {
+        const opt = this.get('Opt')?.as(PdfArray<PdfString>)
+        if (!opt) return []
+        return opt.items.map((item) => item.value)
+    }
+
+    /**
+     * Sets the options for choice fields (dropdowns, list boxes).
+     * Pass an array of strings.
+     */
+    set options(options: string[]) {
+        if (options.length === 0) {
+            this.delete('Opt')
+            return
+        }
+        const optArray = new PdfArray<PdfString>(
+            options.map((opt) => new PdfString(opt)),
+        )
+        this.set('Opt', optArray)
+    }
+
+    get defaultAppearance(): string | null {
+        return this.get('DA')?.as(PdfString)?.value ?? null
+    }
+
+    set defaultAppearance(da: string) {
+        this.set('DA', new PdfString(da))
+    }
+
+    set combo(isCombo: boolean) {
+        if (isCombo) {
+            this.flags = this.flags | 131072
+        } else {
+            this.flags = this.flags & ~131072
+        }
+    }
+
+    get combo(): boolean {
+        return (this.flags & 131072) !== 0
+    }
+
+    get radio(): boolean {
+        return (this.flags & 32768) !== 0
+    }
+
+    set radio(isRadio: boolean) {
+        if (isRadio) {
+            this.flags = this.flags | 32768
+        } else {
+            this.flags = this.flags & ~32768
+        }
+    }
+
+    get noToggleToOff(): boolean {
+        return (this.flags & 16384) !== 0
+    }
+
+    set noToggleToOff(noToggle: boolean) {
+        if (noToggle) {
+            this.flags = this.flags | 16384
+        } else {
+            this.flags = this.flags & ~16384
+        }
+    }
+
+    get combField(): boolean {
+        return (this.flags & 16777216) !== 0
+    }
+
+    set combField(isComb: boolean) {
+        if (isComb) {
+            this.flags = this.flags | 16777216
+        } else {
+            this.flags = this.flags & ~16777216
+        }
+    }
+
+    get maxLen(): number | null {
+        return this.get('MaxLen')?.as(PdfNumber)?.value ?? null
+    }
+
+    set maxLen(maxLen: number | null) {
+        if (maxLen === null) {
+            this.delete('MaxLen')
+        } else {
+            this.set('MaxLen', new PdfNumber(maxLen))
+        }
     }
 
     /**
@@ -685,34 +773,71 @@ EMC
         const height = y2 - y1
         const size = Math.min(width, height)
 
-        // Get the current value/state
-        const isChecked = this.checked
-
         // Check if this is a radio button by looking at parent/siblings
         // Radio buttons typically have Ff bit 15 (Radio) set
         const isRadio = (this.flags & 32768) !== 0
 
-        // Generate appropriate appearance based on state
-        let contentStream: string
+        // Helper to create appearance stream dictionary
+        const createAppearanceStream = (content: string) => {
+            const appearanceDict = new PdfDictionary()
+            appearanceDict.set('Type', new PdfName('XObject'))
+            appearanceDict.set('Subtype', new PdfName('Form'))
+            appearanceDict.set('FormType', new PdfNumber(1))
+            appearanceDict.set(
+                'BBox',
+                new PdfArray([
+                    new PdfNumber(0),
+                    new PdfNumber(0),
+                    new PdfNumber(width),
+                    new PdfNumber(height),
+                ]),
+            )
 
-        if (isChecked) {
-            if (isRadio) {
-                // Radio button: filled circle
-                const center = size / 2
-                const radius = size * 0.3
-                contentStream = `q
-${center} ${center} m
-${center + radius} ${center} l
-${center + radius} ${center + radius} ${center} ${center + radius} ${center - radius} ${center} c
-${center - radius} ${center - radius} ${center} ${center - radius} ${center} ${center} c
+            // Add ZapfDingbats font for checkmarks
+            const resources = new PdfDictionary()
+            const fonts = new PdfDictionary()
+            const zapfFont = new PdfDictionary()
+            zapfFont.set('Type', new PdfName('Font'))
+            zapfFont.set('Subtype', new PdfName('Type1'))
+            zapfFont.set('BaseFont', new PdfName('ZapfDingbats'))
+            fonts.set('ZaDb', zapfFont)
+            resources.set('Font', fonts)
+            appearanceDict.set('Resources', resources)
+
+            return new PdfStream({
+                header: appearanceDict,
+                original: content,
+            })
+        }
+
+        // Generate "Off" state appearance (unchecked/empty)
+        const offStream = createAppearanceStream('')
+
+        // Generate "Yes" state appearance (checked)
+        let yesContent: string
+        if (isRadio) {
+            // Radio button: filled circle using 4 Bezier curves to approximate a circle
+            const center = size / 2
+            const radius = size * 0.35
+            const k = 0.5522847498 // Magic number for circular Bezier curves (4/3 * tan(π/8))
+            const kRadius = k * radius
+
+            // Draw a filled circle using 4 cubic Bezier curves
+            yesContent = `q
+0 0 0 rg
+${center} ${center + radius} m
+${center + kRadius} ${center + radius} ${center + radius} ${center + kRadius} ${center + radius} ${center} c
+${center + radius} ${center - kRadius} ${center + kRadius} ${center - radius} ${center} ${center - radius} c
+${center - kRadius} ${center - radius} ${center - radius} ${center - kRadius} ${center - radius} ${center} c
+${center - radius} ${center + kRadius} ${center - kRadius} ${center + radius} ${center} ${center + radius} c
 f
 Q
 `
-            } else {
-                // Checkbox: checkmark (using ZapfDingbats character)
-                const checkSize = size * 0.8
-                const offset = (size - checkSize) / 2
-                contentStream = `q
+        } else {
+            // Checkbox: checkmark (using ZapfDingbats character)
+            const checkSize = size * 0.8
+            const offset = (size - checkSize) / 2
+            yesContent = `q
 BT
 /ZaDb ${checkSize} Tf
 ${offset} ${offset} Td
@@ -720,44 +845,13 @@ ${offset} ${offset} Td
 ET
 Q
 `
-            }
-        } else {
-            // Unchecked: empty
-            contentStream = ''
         }
+        const yesStream = createAppearanceStream(yesContent)
 
-        // Create the appearance stream
-        const appearanceDict = new PdfDictionary()
-        appearanceDict.set('Type', new PdfName('XObject'))
-        appearanceDict.set('Subtype', new PdfName('Form'))
-        appearanceDict.set('FormType', new PdfNumber(1))
-        appearanceDict.set(
-            'BBox',
-            new PdfArray([
-                new PdfNumber(0),
-                new PdfNumber(0),
-                new PdfNumber(width),
-                new PdfNumber(height),
-            ]),
-        )
-
-        // Add ZapfDingbats font for checkmarks
-        const resources = new PdfDictionary()
-        const fonts = new PdfDictionary()
-        const zapfFont = new PdfDictionary()
-        zapfFont.set('Type', new PdfName('Font'))
-        zapfFont.set('Subtype', new PdfName('Type1'))
-        zapfFont.set('BaseFont', new PdfName('ZapfDingbats'))
-        fonts.set('ZaDb', zapfFont)
-        resources.set('Font', fonts)
-        appearanceDict.set('Resources', resources)
-
-        const stream = new PdfStream({
-            header: appearanceDict,
-            original: contentStream,
-        })
-
-        this._appearanceStream = stream
+        // Store both appearance streams in a state dictionary
+        // We'll use a special structure to hold both states
+        this._appearanceStream = offStream // Store Off as default
+        this._appearanceStreamYes = yesStream // Store Yes state separately
 
         if (options?.makeReadOnly) {
             this.readOnly = true
@@ -811,7 +905,31 @@ Q
             .replace(/\(/g, '\\(')
             .replace(/\)/g, '\\)')
 
-        // Generate appearance similar to text field
+        // Check if this is a combo box (dropdown) - Ff bit 17 (131072)
+        const isCombo = (this.flags & 131072) !== 0
+
+        // Draw dropdown arrow for combo boxes
+        let arrowGraphics = ''
+        if (isCombo) {
+            // Reserve space for the arrow on the right
+            const arrowWidth = height * 0.8 // Arrow area width
+            const arrowX = width - arrowWidth - 2 // X position for arrow
+            const arrowY = height / 2 // Y center
+            const arrowSize = height * 0.3 // Triangle size
+
+            // Draw a small downward-pointing triangle
+            arrowGraphics = `
+q
+0.5 0.5 0.5 rg
+${arrowX + arrowWidth / 2} ${arrowY - arrowSize / 3} m
+${arrowX + arrowWidth / 2 - arrowSize / 2} ${arrowY + arrowSize / 3} l
+${arrowX + arrowWidth / 2 + arrowSize / 2} ${arrowY + arrowSize / 3} l
+f
+Q
+`
+        }
+
+        // Generate appearance with text and optional dropdown arrow
         const contentStream = `/Tx BMC
 q
 BT
@@ -819,7 +937,7 @@ ${reconstructedDA}
 ${textX} ${textY} Td
 (${escapedValue}) Tj
 ET
-Q
+${arrowGraphics}Q
 EMC
 `
 
@@ -867,25 +985,67 @@ EMC
 
     /**
      * Gets the stored appearance stream if one has been generated.
+     * For button fields, returns the appropriate stream based on the current state.
      * @internal
      */
     getAppearanceStream(): PdfStream | undefined {
+        // For button fields, return the appropriate stream based on state
+        if (this.fieldType === PdfFieldType.Button) {
+            if (this.checked && this._appearanceStreamYes) {
+                return this._appearanceStreamYes
+            }
+            return this._appearanceStream // Return "Off" state
+        }
         return this._appearanceStream
+    }
+
+    /**
+     * Gets all appearance streams for writing to PDF.
+     * For button fields, returns both Off and Yes states.
+     * For other fields, returns just the primary appearance.
+     * @internal
+     */
+    getAppearanceStreamsForWriting():
+        | {
+              primary: PdfStream
+              secondary?: PdfStream
+          }
+        | undefined {
+        if (!this._appearanceStream) return undefined
+
+        return {
+            primary: this._appearanceStream,
+            secondary:
+                this.fieldType === PdfFieldType.Button
+                    ? this._appearanceStreamYes
+                    : undefined,
+        }
     }
 
     /**
      * Sets the appearance dictionary reference for this field.
      * @internal - This is called automatically by PdfAcroForm.write()
      */
-    private setAppearanceReference(
+    setAppearanceReference(
         appearanceStreamRef: PdfObjectReference,
+        appearanceStreamYesRef?: PdfObjectReference,
     ): void {
         let apDict = this.get('AP')?.as(PdfDictionary)
         if (!apDict) {
             apDict = new PdfDictionary()
             this.set('AP', apDict)
         }
-        apDict.set('N', appearanceStreamRef)
+
+        // For button fields with multiple states, create a state dictionary
+        if (appearanceStreamYesRef && this.fieldType === PdfFieldType.Button) {
+            const stateDict = new PdfDictionary()
+            stateDict.set('Off', appearanceStreamRef)
+            stateDict.set('Yes', appearanceStreamYesRef)
+            apDict.set('N', stateDict)
+        } else {
+            // For other fields, set the appearance stream directly
+            apDict.set('N', appearanceStreamRef)
+        }
     }
 }
 
@@ -1345,16 +1505,31 @@ export class PdfAcroForm<
             let fieldReference: PdfObjectReference | undefined
 
             if (field.isModified()) {
-                // If the field has a generated appearance stream, create it as an indirect object first
-                const appearanceStream = field.getAppearanceStream()
-                if (appearanceStream) {
-                    const appearanceObj = new PdfIndirectObject({
-                        content: appearanceStream,
+                // If the field has generated appearance streams, create them as indirect objects
+                const appearances = field.getAppearanceStreamsForWriting()
+                if (appearances) {
+                    // Create the primary appearance stream
+                    const primaryAppearanceObj = new PdfIndirectObject({
+                        content: appearances.primary,
                     })
-                    document.add(appearanceObj)
+                    document.add(primaryAppearanceObj)
 
-                    // Set the appearance reference on the field
-                    field['setAppearanceReference'](appearanceObj.reference)
+                    // Create the secondary appearance stream if present (for button fields)
+                    let secondaryAppearanceRef: PdfObjectReference | undefined
+                    if (appearances.secondary) {
+                        const secondaryAppearanceObj = new PdfIndirectObject({
+                            content: appearances.secondary,
+                        })
+                        document.add(secondaryAppearanceObj)
+                        secondaryAppearanceRef =
+                            secondaryAppearanceObj.reference
+                    }
+
+                    // Set the appearance references on the field
+                    field.setAppearanceReference(
+                        primaryAppearanceObj.reference,
+                        secondaryAppearanceRef,
+                    )
 
                     // Ensure field has the Print flag set (bit 2)
                     // This ensures the appearance is used for display and printing

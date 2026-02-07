@@ -87,11 +87,15 @@ PDF version string (e.g., '1.7', '2.0') or version comment
 
 ## Properties
 
-### header
+### immutable
 
-> **header**: [`PdfComment`](../../../core/objects/pdf-comment/classes/PdfComment.md)
+> `protected` **immutable**: `boolean` = `false`
 
-PDF version comment header
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`immutable`](../../../core/objects/pdf-object/classes/PdfObject.md#immutable)
 
 ---
 
@@ -203,6 +207,32 @@ Font manager for embedding and managing fonts
 
 ---
 
+### header
+
+#### Get Signature
+
+> **get** **header**(): [`PdfComment`](../../../core/objects/pdf-comment/classes/PdfComment.md) \| `undefined`
+
+##### Returns
+
+[`PdfComment`](../../../core/objects/pdf-comment/classes/PdfComment.md) \| `undefined`
+
+#### Set Signature
+
+> **set** **header**(`comment`): `void`
+
+##### Parameters
+
+###### comment
+
+[`PdfComment`](../../../core/objects/pdf-comment/classes/PdfComment.md) | `undefined`
+
+##### Returns
+
+`void`
+
+---
+
 ### latestRevision
 
 #### Get Signature
@@ -273,13 +303,13 @@ The type of this PDF object
 
 ---
 
-### rootDictionary
+### root
 
 #### Get Signature
 
-> **get** **rootDictionary**(): [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\> \| `undefined`
+> **get** **root**(): [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\>
 
-Gets the document catalog (root) dictionary.
+Gets the document catalog (root) dictionary, or creates one if it doesn't exist.
 
 ##### Throws
 
@@ -287,9 +317,21 @@ Error if the Root reference points to a non-dictionary object
 
 ##### Returns
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\> \| `undefined`
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\>
 
-The root dictionary or undefined if not found
+The root dictionary
+
+---
+
+### rootReference
+
+#### Get Signature
+
+> **get** **rootReference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+
+##### Returns
+
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
 
 ---
 
@@ -569,6 +611,22 @@ True if the object exists in the document
 
 ---
 
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`isImmutable`](../../../core/objects/pdf-object/classes/PdfObject.md#isimmutable)
+
+---
+
 ### isIncremental()
 
 > **isIncremental**(): `boolean`
@@ -660,6 +718,28 @@ The Document Security Store object to set
 #### Throws
 
 Error if the document has no root dictionary
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable
+
+`boolean` = `true`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`setImmutable`](../../../core/objects/pdf-object/classes/PdfObject.md#setimmutable)
 
 ---
 

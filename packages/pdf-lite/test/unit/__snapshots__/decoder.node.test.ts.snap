@@ -3,6 +3,7 @@
 exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byte the same 1`] = `
 [
   PdfComment {
+    "immutable": false,
     "modified": false,
     "postTokens": [
       PdfWhitespaceToken {
@@ -23,6 +24,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     ],
   },
   PdfComment {
+    "immutable": false,
     "modified": false,
     "postTokens": [
       PdfWhitespaceToken {
@@ -46,6 +48,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -65,10 +68,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 30,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 16,
     },
@@ -135,11 +140,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         120,
@@ -218,10 +225,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 31,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 103,
     },
@@ -773,11 +782,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         200,
@@ -903,10 +914,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 40,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 548,
     },
@@ -922,6 +935,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -941,10 +955,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 32,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 735,
     },
@@ -960,6 +976,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -979,10 +996,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 33,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 991,
     },
@@ -998,6 +1017,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -1017,10 +1037,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 34,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 1103,
     },
@@ -1036,6 +1058,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -1055,10 +1078,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 35,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 1617,
     },
@@ -1074,6 +1099,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -1093,10 +1119,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 36,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 1656,
     },
@@ -1113,11 +1141,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         207,
@@ -1675,10 +1705,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 37,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 1839,
     },
@@ -1695,11 +1727,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         74,
@@ -1825,10 +1859,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 38,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 2440,
     },
@@ -1845,11 +1881,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         114,
@@ -2167,10 +2205,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 1,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 2636,
     },
@@ -2187,11 +2227,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         93,
@@ -2397,10 +2439,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 2,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 3024,
     },
@@ -2417,11 +2461,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         71,
@@ -4883,10 +4929,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 3,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 3272,
     },
@@ -4903,11 +4951,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         101,
@@ -57849,10 +57899,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 4,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 5777,
     },
@@ -57869,11 +57921,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         68,
@@ -58719,10 +58773,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 5,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 58763,
     },
@@ -58739,11 +58795,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         34,
@@ -59669,10 +59727,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 6,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 59651,
     },
@@ -59689,11 +59749,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         95,
@@ -59995,10 +60057,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 7,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 60619,
     },
@@ -60015,11 +60079,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         18,
@@ -61201,10 +61267,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 8,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 60963,
     },
@@ -61221,11 +61289,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         46,
@@ -61287,10 +61357,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 9,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 62188,
     },
@@ -61307,11 +61379,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         139,
@@ -62461,10 +62535,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 10,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 62270,
     },
@@ -62481,11 +62557,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         73,
@@ -63171,10 +63249,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 11,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 63493,
     },
@@ -63191,11 +63271,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         53,
@@ -63529,10 +63611,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 12,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 64224,
     },
@@ -63549,11 +63633,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         197,
@@ -64015,10 +64101,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 13,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 64603,
     },
@@ -64035,11 +64123,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         60,
@@ -69655,10 +69745,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 14,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 65110,
     },
@@ -69675,11 +69767,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         121,
@@ -69901,10 +69995,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 15,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 70785,
     },
@@ -69921,11 +70017,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         120,
@@ -70048,10 +70146,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 29,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 71079,
     },
@@ -70066,9 +70166,11 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfStartXRef {
+    "immutable": false,
     "modified": false,
     "offset": PdfNumber {
       "decimalPlaces": 0,
+      "immutable": false,
       "isByteOffset": true,
       "modified": false,
       "padTo": 0,
@@ -70091,6 +70193,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfComment {
+    "immutable": false,
     "modified": false,
     "postTokens": [
       PdfWhitespaceToken {
@@ -70109,6 +70212,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -70128,10 +70232,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 33,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 71443,
     },
@@ -70147,6 +70253,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -70166,10 +70273,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 41,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 71568,
     },
@@ -70186,11 +70295,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         201,
@@ -70476,10 +70587,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 44,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 81872,
     },
@@ -70496,11 +70609,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         120,
@@ -70570,10 +70685,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 45,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 82230,
     },
@@ -70588,9 +70705,11 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfStartXRef {
+    "immutable": false,
     "modified": false,
     "offset": PdfNumber {
       "decimalPlaces": 0,
+      "immutable": false,
       "isByteOffset": true,
       "modified": false,
       "padTo": 0,
@@ -70613,6 +70732,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfComment {
+    "immutable": false,
     "modified": false,
     "postTokens": [
       PdfWhitespaceToken {
@@ -70632,11 +70752,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         60,
@@ -75938,10 +76060,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 14,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 82588,
     },
@@ -75957,6 +76081,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -75976,10 +76101,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 32,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 87947,
     },
@@ -75995,6 +76122,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -76014,10 +76142,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 33,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88182,
     },
@@ -76033,6 +76163,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -76052,10 +76183,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 46,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88354,
     },
@@ -76071,6 +76204,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -76090,10 +76224,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 47,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88407,
     },
@@ -76109,6 +76245,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -76128,10 +76265,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 48,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88510,
     },
@@ -76147,6 +76286,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -76166,10 +76306,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 49,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88560,
     },
@@ -76185,6 +76327,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -76204,10 +76347,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 50,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88596,
     },
@@ -76223,10 +76368,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfArray {
+      "immutable": false,
       "innerTokens": [],
       "items": [
         PdfObjectReference {
           "generationNumber": 0,
+          "immutable": false,
           "modified": false,
           "objectNumber": 52,
           "postTokens": [],
@@ -76251,10 +76398,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 51,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88659,
     },
@@ -76270,6 +76419,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -76289,10 +76439,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 52,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88684,
     },
@@ -76308,6 +76460,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -76327,10 +76480,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 53,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88732,
     },
@@ -76346,6 +76501,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -76365,10 +76521,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 54,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88777,
     },
@@ -76385,11 +76543,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         19,
@@ -77401,10 +77561,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 55,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 88938,
     },
@@ -77420,6 +77582,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -77439,10 +77602,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 56,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 89965,
     },
@@ -77459,11 +77624,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         98,
@@ -77675,10 +77842,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 57,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 90056,
     },
@@ -77695,11 +77864,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         204,
@@ -78999,10 +79170,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 58,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 90322,
     },
@@ -79019,11 +79192,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         236,
@@ -85555,10 +85730,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 59,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 91677,
     },
@@ -85575,11 +85752,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         66,
@@ -85663,10 +85842,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 60,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 98264,
     },
@@ -85682,6 +85863,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -85701,10 +85883,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 61,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 98401,
     },
@@ -85720,6 +85904,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -85739,10 +85924,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 62,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 99587,
     },
@@ -85758,6 +85945,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -85777,10 +85965,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 63,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 100767,
     },
@@ -85796,6 +85986,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -85815,10 +86006,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 64,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 101943,
     },
@@ -85834,6 +86027,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -85853,10 +86047,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 65,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 103118,
     },
@@ -85872,6 +86068,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -85891,10 +86088,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 66,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 103368,
     },
@@ -85910,6 +86109,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -85929,10 +86129,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 67,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 103619,
     },
@@ -85948,6 +86150,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   },
   PdfIndirectObject {
     "content": PdfDictionary {
+      "immutable": false,
       "innerTokens": [],
       "modified": false,
       "postTokens": [
@@ -85967,10 +86170,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 68,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 103875,
     },
@@ -85987,11 +86192,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         137,
@@ -86331,10 +86538,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 69,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 104139,
     },
@@ -86351,11 +86560,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         221,
@@ -86695,10 +86906,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 70,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 104537,
     },
@@ -86715,11 +86928,13 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
   PdfIndirectObject {
     "content": PdfStream {
       "header": PdfDictionary {
+        "immutable": false,
         "innerTokens": [],
         "modified": false,
         "postTokens": [],
         "preTokens": [],
       },
+      "immutable": false,
       "modified": false,
       "original": Uint8Array [
         104,
@@ -86869,10 +87084,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     },
     "encryptable": undefined,
     "generationNumber": 0,
+    "immutable": false,
     "modified": false,
     "objectNumber": 71,
     "offset": Ref {
       "callbacks": [],
+      "immutable": false,
       "isModified": false,
       "value": 104935,
     },
@@ -86887,9 +87104,11 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfStartXRef {
+    "immutable": false,
     "modified": false,
     "offset": PdfNumber {
       "decimalPlaces": 0,
+      "immutable": false,
       "isByteOffset": true,
       "modified": false,
       "padTo": 0,
@@ -86922,6 +87141,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfComment {
+    "immutable": false,
     "modified": false,
     "postTokens": [
       PdfWhitespaceToken {

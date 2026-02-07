@@ -1,5 +1,4 @@
 import { ByteArray } from '../../types.js'
-import { stringToBytes } from '../../utils/stringToBytes.js'
 import { needsUnicodeEncoding } from '../../utils/needsUnicodeEncoding.js'
 import { encodeAsUTF16BE } from '../../utils/encodeAsUTF16BE.js'
 import { encodeToPDFDocEncoding } from '../../utils/encodeToPDFDocEncoding.js'
@@ -14,7 +13,13 @@ export class PdfString extends PdfObject {
      */
     private _raw: ByteArray
 
-    constructor(raw: ByteArray | string) {
+    /**
+     * Original bytes from the PDF file, including parentheses and escape sequences.
+     * Used to preserve exact formatting for incremental updates.
+     */
+    private _originalBytes?: ByteArray
+
+    constructor(raw: ByteArray | string, originalBytes?: ByteArray) {
         super()
         if (typeof raw === 'string') {
             // Check if the string contains non-ASCII characters
@@ -28,6 +33,7 @@ export class PdfString extends PdfObject {
         } else {
             this._raw = raw
         }
+        this._originalBytes = originalBytes
     }
 
     get raw(): ByteArray {
@@ -35,17 +41,29 @@ export class PdfString extends PdfObject {
     }
 
     set raw(raw: ByteArray) {
+        if (this.isImmutable()) {
+            throw new Error('Cannot modify an immutable PdfString')
+        }
+
         this.setModified()
         this._raw = raw
+        // Clear original bytes when modified
+        this._originalBytes = undefined
+    }
+
+    /**
+     * Checks if this string is UTF-16BE encoded (has UTF-16BE BOM).
+     * UTF-16BE strings start with the byte order mark 0xFE 0xFF.
+     */
+    get isUTF16BE(): boolean {
+        return (
+            this.raw.length >= 2 && this.raw[0] === 0xfe && this.raw[1] === 0xff
+        )
     }
 
     get value(): string {
         // Check for UTF-16BE BOM (0xFE 0xFF)
-        if (
-            this.raw.length >= 2 &&
-            this.raw[0] === 0xfe &&
-            this.raw[1] === 0xff
-        ) {
+        if (this.isUTF16BE) {
             return decodeFromUTF16BE(this.raw)
         }
 
@@ -54,10 +72,15 @@ export class PdfString extends PdfObject {
     }
 
     protected tokenize() {
-        return [new PdfStringToken(this.raw)]
+        return [new PdfStringToken(this.raw, this._originalBytes)]
     }
 
     clone(): this {
-        return new PdfString(new Uint8Array(this.raw)) as this
+        return new PdfString(
+            new Uint8Array(this.raw),
+            this._originalBytes
+                ? new Uint8Array(this._originalBytes)
+                : undefined,
+        ) as this
     }
 }

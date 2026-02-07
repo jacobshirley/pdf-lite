@@ -60,6 +60,9 @@ export class PdfNumber extends PdfObject {
     }
 
     set value(value: number) {
+        if (this.isImmutable()) {
+            throw new Error('Cannot modify an immutable PdfNumber')
+        }
         this.#value.update(value)
     }
 

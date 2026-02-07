@@ -42,6 +42,18 @@
 
 ---
 
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfNumber`](PdfNumber.md).[`immutable`](PdfNumber.md#immutable)
+
+---
+
 ### isByteOffset
 
 > **isByteOffset**: `boolean` = `true`
@@ -228,6 +240,22 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfNumber`](PdfNumber.md).[`isImmutable`](PdfNumber.md#isimmutable)
+
+---
+
 ### isModified()
 
 > **isModified**(): `boolean`
@@ -261,6 +289,28 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Inherited from
 
 [`PdfNumber`](PdfNumber.md).[`onChange`](PdfNumber.md#onchange)
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable
+
+`boolean` = `true`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfNumber`](PdfNumber.md).[`setImmutable`](PdfNumber.md#setimmutable)
 
 ---
 

@@ -14,13 +14,17 @@
 
 ### Constructor
 
-> **new PdfStringToken**(`value`): `PdfStringToken`
+> **new PdfStringToken**(`value`, `originalBytes?`): `PdfStringToken`
 
 #### Parameters
 
 ##### value
 
 `string` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+##### originalBytes?
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
 
 #### Returns
 
@@ -61,6 +65,18 @@
 #### Inherited from
 
 [`PdfToken`](../../token/classes/PdfToken.md).[`byteLength`](../../token/classes/PdfToken.md#bytelength)
+
+---
+
+### originalBytes
+
+#### Get Signature
+
+> **get** **originalBytes**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| `undefined`
+
+##### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| `undefined`
 
 ---
 

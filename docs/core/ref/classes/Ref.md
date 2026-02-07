@@ -59,6 +59,12 @@ Registered callbacks for update notifications
 
 ---
 
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+---
+
 ### isModified
 
 > **isModified**: `boolean` = `false`
@@ -72,6 +78,18 @@ Registered callbacks for update notifications
 The current value or a reference to another Ref
 
 ## Methods
+
+### clone()
+
+> **clone**(): `Ref`\<`T`\>
+
+Creates a new Ref with the same resolved value.
+
+#### Returns
+
+`Ref`\<`T`\>
+
+---
 
 ### equals()
 
@@ -92,6 +110,16 @@ The value or Ref to compare against
 `boolean`
 
 True if the resolved values are equal
+
+---
+
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+#### Returns
+
+`boolean`
 
 ---
 
@@ -126,6 +154,22 @@ Resolves the reference chain to get the final value.
 `T`
 
 The resolved value of type T
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable`): `void`
+
+#### Parameters
+
+##### immutable
+
+`boolean` = `true`
+
+#### Returns
+
+`void`
 
 ---
 

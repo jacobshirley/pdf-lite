@@ -51,4 +51,9 @@ export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
             super.isModified() || this.items.some((item) => item.isModified())
         )
     }
+
+    setImmutable(immutable?: boolean): void {
+        super.setImmutable(immutable)
+        this.items.forEach((item) => item.setImmutable(immutable))
+    }
 }

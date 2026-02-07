@@ -361,10 +361,10 @@ export class PdfFontManager {
     private async collectAllFontsFromPdf(): Promise<Map<string, PdfFont>> {
         const fonts = new Map<string, PdfFont>()
 
-        const catalog = this.document.rootDictionary
+        const catalog = this.document.root
         if (!catalog) return fonts
 
-        const pagesRef = catalog.get('Pages')
+        const pagesRef = catalog.content.get('Pages')
         if (!pagesRef) return fonts
 
         const pagesObjRef = pagesRef.as(PdfObjectReference)
@@ -382,11 +382,11 @@ export class PdfFontManager {
         resourceName: string,
         fontObject: PdfIndirectObject<PdfDictionary>,
     ): Promise<void> {
-        const catalog = this.document.rootDictionary
+        const catalog = this.document.root
         if (!catalog) return
 
         // Get AcroForm dictionary
-        const acroFormRef = catalog.get('AcroForm')
+        const acroFormRef = catalog.content.get('AcroForm')
         if (!acroFormRef) return
 
         let acroFormDict: PdfDictionary | undefined
@@ -439,10 +439,8 @@ export class PdfFontManager {
         resourceName: string,
         fontObject: PdfIndirectObject<PdfDictionary>,
     ): Promise<void> {
-        const catalog = this.document.rootDictionary
-        if (!catalog) return
-
-        const pagesRef = catalog.get('Pages')
+        const catalog = this.document.root
+        const pagesRef = catalog.content.get('Pages')
         if (!pagesRef) return
 
         const pagesObjRef = pagesRef.as(PdfObjectReference)

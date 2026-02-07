@@ -42,7 +42,7 @@ import { PdfStartXRefToken } from './tokens/start-xref-token.js'
 import { PdfStartXRef } from './objects/pdf-start-xref.js'
 import { PdfWhitespaceToken } from './tokens/whitespace-token.js'
 import { PdfToken } from './tokens/token.js'
-import { IncrementalParser } from './incremental-parser.js'
+import { IncrementalParser } from './parser/incremental-parser.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { ByteArray } from '../types.js'
 import { Ref } from './ref.js'
@@ -230,7 +230,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
         } else if (token instanceof PdfBooleanToken) {
             out = new PdfBoolean(token.value)
         } else if (token instanceof PdfHexadecimalToken) {
-            out = new PdfHexadecimal(token.raw, 'hex')
+            out = new PdfHexadecimal(token.raw, 'hex', token.originalBytes)
         } else if (token instanceof PdfNullToken) {
             out = new PdfNull()
         } else if (token instanceof PdfObjectReferenceToken) {
@@ -239,7 +239,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
                 token.generationNumber,
             )
         } else if (token instanceof PdfStringToken) {
-            out = new PdfString(token.value)
+            out = new PdfString(token.value, token.originalBytes)
         } else {
             throw new Error(`Unknown primitive token type: ${token.type}`)
         }

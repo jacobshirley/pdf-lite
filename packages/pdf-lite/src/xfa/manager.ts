@@ -78,10 +78,8 @@ export class PdfXfaManager {
      * @returns The AcroForm dictionary or null if not found
      */
     private async getAcroForm(): Promise<PdfDictionary | null> {
-        const catalog = this.document.rootDictionary
-        if (!catalog) return null
-
-        const acroFormRef = catalog.get('AcroForm')
+        const catalog = this.document.root
+        const acroFormRef = catalog.content.get('AcroForm')
 
         if (!acroFormRef) return null
 

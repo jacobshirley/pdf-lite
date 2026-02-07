@@ -60,6 +60,9 @@ export class PdfStream<
     }
 
     set raw(data: ByteArray) {
+        if (this.isImmutable()) {
+            throw new Error('Cannot modify an immutable PdfStream')
+        }
         this.setModified()
         this.original = data
         this.header.set('Length', new PdfNumber(data.length))

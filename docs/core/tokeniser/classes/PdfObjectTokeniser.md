@@ -10,7 +10,7 @@ Tokenizes PDF objects into a stream of PDF tokens.
 
 ## Extends
 
-- [`Parser`](../../parser/classes/Parser.md)\<[`PdfObject`](../../objects/pdf-object/classes/PdfObject.md), [`PdfToken`](../../tokens/token/classes/PdfToken.md)\>
+- [`Parser`](../../parser/parser/classes/Parser.md)\<[`PdfObject`](../../objects/pdf-object/classes/PdfObject.md), [`PdfToken`](../../tokens/token/classes/PdfToken.md)\>
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Tokenizes PDF objects into a stream of PDF tokens.
 
 #### Inherited from
 
-[`Parser`](../../parser/classes/Parser.md).[`constructor`](../../parser/classes/Parser.md#constructor)
+[`Parser`](../../parser/parser/classes/Parser.md).[`constructor`](../../parser/parser/classes/Parser.md#constructor)
 
 ## Methods
 
@@ -48,7 +48,7 @@ PDF objects to tokenize
 
 #### Overrides
 
-[`Parser`](../../parser/classes/Parser.md).[`feed`](../../parser/classes/Parser.md#feed)
+[`Parser`](../../parser/parser/classes/Parser.md).[`feed`](../../parser/parser/classes/Parser.md#feed)
 
 ---
 
@@ -66,4 +66,4 @@ A generator yielding PDF tokens
 
 #### Overrides
 
-[`Parser`](../../parser/classes/Parser.md).[`nextItems`](../../parser/classes/Parser.md#nextitems)
+[`Parser`](../../parser/parser/classes/Parser.md).[`nextItems`](../../parser/parser/classes/Parser.md#nextitems)

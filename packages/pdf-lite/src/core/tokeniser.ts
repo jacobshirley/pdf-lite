@@ -1,6 +1,7 @@
 import { assert } from '../utils/assert.js'
 import { bytesToString } from '../utils/bytesToString.js'
-import { IncrementalParser } from './incremental-parser.js'
+import { unescapeString } from '../utils/unescapeString.js'
+import { IncrementalParser } from './parser/incremental-parser.js'
 import { PdfObject } from './objects/pdf-object.js'
 import { PdfToken } from './tokens/token.js'
 import { PdfBooleanToken } from './tokens/boolean-token.js'
@@ -26,7 +27,7 @@ import { PdfWhitespaceToken } from './tokens/whitespace-token.js'
 import { PdfXRefTableEntryToken } from './tokens/xref-table-entry-token.js'
 import { PdfXRefTableSectionStartToken } from './tokens/xref-table-section-start-token.js'
 import { PdfXRefTableStartToken } from './tokens/xref-table-start-token.js'
-import { Parser } from './parser.js'
+import { Parser } from './parser/parser.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { stringToBytes } from '../utils/stringToBytes.js'
 import { ByteArray } from '../types.js'
@@ -144,6 +145,7 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
         this.expect(ByteMap.SLASH)
         const nameBytes: number[] = []
         let byte = this.peek()
+
         while (
             byte !== null &&
             !PdfByteStreamTokeniser.isNameEnd(byte) &&
@@ -153,7 +155,9 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
             byte = this.peek()
         }
 
-        return new PdfNameToken(bytesToString(new Uint8Array(nameBytes)))
+        const name = bytesToString(new Uint8Array(nameBytes))
+
+        return new PdfNameToken(name)
     }
 
     private nextDictionaryEndToken(): PdfEndDictionaryToken {
@@ -163,6 +167,9 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
     }
 
     private nextHexadecimalToken(): PdfHexadecimalToken {
+        // Capture starting position (before the opening angle bracket)
+        const startIndex = this.bufferIndex
+
         this.expect(ByteMap.LEFT_ANGLE_BRACKET)
 
         const hexBytes: number[] = []
@@ -179,7 +186,13 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
 
         this.expect(ByteMap.RIGHT_ANGLE_BRACKET)
 
-        return new PdfHexadecimalToken(new Uint8Array(hexBytes))
+        // Capture original bytes including angle brackets for incremental updates
+        const endIndex = this.bufferIndex // After the closing angle bracket
+        const originalBytes = new Uint8Array(
+            this.buffer.slice(startIndex, endIndex),
+        )
+
+        return new PdfHexadecimalToken(new Uint8Array(hexBytes), originalBytes)
     }
 
     private nextNumberToken(): PdfNumberToken {
@@ -237,9 +250,13 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
     }
 
     private nextStringToken(): PdfStringToken {
+        // Capture starting position (before the opening parenthesis)
+        const startIndex = this.bufferIndex
+
         this.expect(ByteMap.LEFT_PARENTHESIS)
 
-        const stringBytes: number[] = []
+        // Collect raw bytes until we find the matching closing parenthesis
+        const rawBytes: number[] = []
         let nesting = 1
         let inEscape = false
 
@@ -250,92 +267,37 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
                 throw new Error('Unexpected end of input in string token')
             }
 
-            if (byte === ByteMap.LEFT_PARENTHESIS) {
-                nesting++
-            } else if (byte === ByteMap.RIGHT_PARENTHESIS) {
-                nesting--
-                if (nesting === 0) {
-                    break
-                }
-            } else if (byte === ByteMap.BACKSLASH || inEscape) {
-                inEscape = true
-                const next = this.next()
+            // Add byte to rawBytes first (including the closing parenthesis)
+            rawBytes.push(byte)
 
-                if (next === null) {
-                    throw new Error('Unexpected end of input in string token')
-                }
-
-                switch (next) {
-                    case ByteMap.n:
-                        stringBytes.push(0x0a)
-                        break // \n
-                    case ByteMap.r:
-                        stringBytes.push(0x0d)
-                        break // \r
-                    case ByteMap.t:
-                        stringBytes.push(0x09)
-                        break // \t
-                    case ByteMap.b:
-                        stringBytes.push(0x08)
-                        break // \b
-                    case ByteMap.f:
-                        stringBytes.push(0x0c)
-                        break // \f
-                    case ByteMap.LEFT_PARENTHESIS:
-                        stringBytes.push(ByteMap.LEFT_PARENTHESIS)
-                        break // \(
-                    case ByteMap.RIGHT_PARENTHESIS:
-                        stringBytes.push(ByteMap.RIGHT_PARENTHESIS)
-                        break // \)
-                    case ByteMap.BACKSLASH:
-                        stringBytes.push(ByteMap.BACKSLASH)
-                        break // \\
-                    case ByteMap.LINE_FEED: // Line feed
-                    case ByteMap.CARRIAGE_RETURN: // Carriage return
-                        stringBytes.push(next)
+            // Track nesting level for proper parenthesis matching
+            if (!inEscape) {
+                if (byte === ByteMap.LEFT_PARENTHESIS) {
+                    nesting++
+                } else if (byte === ByteMap.RIGHT_PARENTHESIS) {
+                    nesting--
+                    if (nesting === 0) {
                         break
-                    default:
-                        if (PdfByteStreamTokeniser.isOctet(next)) {
-                            let octal = String.fromCharCode(next)
-                            // Octal: up to 3 digits
-                            const next2 = this.peek()
-                            if (next2 === null) {
-                                throw new Error(
-                                    'Unexpected end of input in string token',
-                                )
-                            }
-
-                            if (PdfByteStreamTokeniser.isOctet(next2)) {
-                                octal += String.fromCharCode(this.next()!)
-                            }
-
-                            const next3 = this.peek()
-                            if (next3 === null) {
-                                throw new Error(
-                                    'Unexpected end of input in string token',
-                                )
-                            }
-
-                            if (PdfByteStreamTokeniser.isOctet(next3)) {
-                                octal += String.fromCharCode(this.next()!)
-                            }
-
-                            stringBytes.push(parseInt(octal, 8))
-                        } else {
-                            // If it's not a valid escape sequence, just add the next byte
-                            stringBytes.push(next)
-                        }
-                        break
+                    }
+                } else if (byte === ByteMap.BACKSLASH) {
+                    inEscape = true
                 }
-
+            } else {
                 inEscape = false
-                continue
             }
-
-            stringBytes.push(byte)
         }
 
-        return new PdfStringToken(new Uint8Array(stringBytes))
+        // Capture original bytes including parentheses for incremental updates
+        const endIndex = this.bufferIndex // After the closing parenthesis
+        const originalBytes = new Uint8Array(
+            this.buffer.slice(startIndex, endIndex),
+        )
+
+        // Use unescapeString utility to process escape sequences
+        // unescapeString expects bytes including the closing parenthesis
+        const unescapedBytes = unescapeString(new Uint8Array(rawBytes))
+
+        return new PdfStringToken(unescapedBytes, originalBytes)
     }
 
     private nextEndObjectToken(): PdfEndObjectToken {

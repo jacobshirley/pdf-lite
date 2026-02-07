@@ -1,10 +1,10 @@
-[**pdf-lite**](../../README.md)
+[**pdf-lite**](../../../README.md)
 
 ---
 
-[pdf-lite](../../README.md) / core/incremental-parser
+[pdf-lite](../../../README.md) / core/parser/incremental-parser
 
-# core/incremental-parser
+# core/parser/incremental-parser
 
 ## Classes
 

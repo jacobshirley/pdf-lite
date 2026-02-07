@@ -1247,76 +1247,18 @@ describe('AcroForm Appearance Generation', () => {
         expect(multilineStream).toContain('Line 1')
         expect(multilineStream).toContain('Line 2')
 
+        await server.commands.writeFile(
+            './test/unit/tmp/all-field-types-v1.pdf',
+            bytesToBase64(document.toBytes()),
+            { encoding: 'base64' },
+        )
+
         acroform.needAppearances = false
-
-        // Manually add appearance streams and fields to document
-        // This avoids the incremental update issue from write()
-        const fieldsArray = new PdfArray<PdfObjectReference>()
-        const pageAnnots = new PdfArray<PdfObjectReference>()
-
-        for (const field of acroform.fields) {
-            const appearanceStream = field.getAppearanceStream()
-            if (appearanceStream) {
-                const appearanceObj = new PdfIndirectObject({
-                    content: appearanceStream,
-                })
-                document.add(appearanceObj)
-                field['setAppearanceReference'](appearanceObj.reference)
-
-                const currentF = field.get('F')?.as(PdfNumber)?.value ?? 0
-                if ((currentF & 4) === 0) {
-                    field.set('F', new PdfNumber(currentF | 4))
-                }
-            }
-
-            const fieldIndirect = new PdfIndirectObject({
-                content: field,
-            })
-            document.add(fieldIndirect)
-            fieldsArray.push(fieldIndirect.reference)
-
-            // Add field to page annotations if it's a widget
-            if (field.isWidget) {
-                pageAnnots.push(fieldIndirect.reference)
-            }
-        }
-
-        // Update page with Annots array
-        const pageObj = await document.readObject({
-            objectNumber: firstPageRef.objectNumber,
-            generationNumber: firstPageRef.generationNumber,
-        })
-        const pageDict = pageObj!.content.as(PdfDictionary)
-        pageDict.set('Annots', pageAnnots)
-        const updatedPageIndirect = new PdfIndirectObject({
-            objectNumber: firstPageRef.objectNumber,
-            generationNumber: firstPageRef.generationNumber,
-            content: pageDict,
-        })
-        document.add(updatedPageIndirect)
-
-        acroform.set('Fields', fieldsArray)
-        const acroFormIndirect = new PdfIndirectObject({ content: acroform })
-        document.add(acroFormIndirect)
-
-        const updatedCatalog = document.rootDictionary?.clone()
-        if (!updatedCatalog) {
-            throw new Error('No root catalog found')
-        }
-        updatedCatalog.set('AcroForm', acroFormIndirect.reference)
-        const rootRef = document.trailerDict.get('Root') as PdfObjectReference
-        const updatedCatalogIndirect = new PdfIndirectObject({
-            objectNumber: rootRef.objectNumber,
-            generationNumber: rootRef.generationNumber,
-            content: updatedCatalog,
-        })
-        document.add(updatedCatalogIndirect)
-
-        await document.commit()
+        await document.acroForm.write(acroform)
 
         // Save to file
         await server.commands.writeFile(
-            './test/unit/tmp/all-field-types.pdf',
+            './test/unit/tmp/all-field-types-v2.pdf',
             bytesToBase64(document.toBytes()),
             { encoding: 'base64' },
         )

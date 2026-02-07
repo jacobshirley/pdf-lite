@@ -1292,7 +1292,7 @@ export class PdfAcroForm<
 
             if (!pageObj) continue
 
-            const pageDict = pageObj.content.as(PdfDictionary)
+            const pageDict = pageObj.content.as(PdfDictionary).clone()
             const annotsInfo = await this.getPageAnnotsArray(document, pageDict)
 
             this.addFieldsToAnnots(annotsInfo.annotsArray, fieldRefs)
@@ -1366,7 +1366,8 @@ export class PdfAcroForm<
 
                 // Write modified field as an indirect object
                 const acroFormFieldIndirect = new PdfIndirectObject({
-                    ...field.container,
+                    objectNumber: field.container?.objectNumber,
+                    generationNumber: field.container?.generationNumber,
                     content: field,
                 })
                 document.add(acroFormFieldIndirect)
@@ -1392,12 +1393,8 @@ export class PdfAcroForm<
                 }
             } else {
                 // Unmodified field: reuse existing indirect reference information
-                const container: any = field.container as any
-                if (
-                    container &&
-                    typeof container.objectNumber === 'number' &&
-                    typeof container.generationNumber === 'number'
-                ) {
+                const container = field.container
+                if (container) {
                     fieldReference = new PdfObjectReference(
                         container.objectNumber,
                         container.generationNumber,
@@ -1416,7 +1413,8 @@ export class PdfAcroForm<
         if (this.isModified()) {
             // Create or update the AcroForm entry in the catalog
             const acroFormIndirect = new PdfIndirectObject({
-                ...this.container,
+                objectNumber: this.container?.objectNumber,
+                generationNumber: this.container?.generationNumber,
                 content: this,
             })
             document.add(acroFormIndirect)

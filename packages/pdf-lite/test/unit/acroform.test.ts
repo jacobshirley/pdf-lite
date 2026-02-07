@@ -1005,6 +1005,7 @@ describe('AcroForm Appearance Generation', () => {
         // Helper to create page
         const createPage = (
             contentStreamRef: PdfObjectReference,
+            fontRef: PdfObjectReference,
         ): PdfIndirectObject<PdfDictionary> => {
             const pageDict = new PdfDictionary()
             pageDict.set('Type', new PdfName('Page'))
@@ -1018,6 +1019,14 @@ describe('AcroForm Appearance Generation', () => {
                 ]),
             )
             pageDict.set('Contents', contentStreamRef)
+
+            // Add Resources dictionary with font
+            const resourcesDict = new PdfDictionary()
+            const fontDict = new PdfDictionary()
+            fontDict.set('Helv', fontRef)
+            resourcesDict.set('Font', fontDict)
+            pageDict.set('Resources', resourcesDict)
+
             return new PdfIndirectObject({ content: pageDict })
         }
 
@@ -1069,7 +1078,7 @@ describe('AcroForm Appearance Generation', () => {
         document.add(contentStream)
 
         // Create page
-        const page = createPage(contentStream.reference)
+        const page = createPage(contentStream.reference, font.reference)
         document.add(page)
 
         // Create pages collection
@@ -1107,6 +1116,7 @@ describe('AcroForm Appearance Generation', () => {
         document.add(catalog)
         document.trailerDict.set('Root', catalog.reference)
 
+        // Commit the basic structure first
         await document.commit()
 
         const acroform = await document.acroForm.read()
@@ -1238,7 +1248,71 @@ describe('AcroForm Appearance Generation', () => {
         expect(multilineStream).toContain('Line 2')
 
         acroform.needAppearances = false
-        await document.acroForm.write(acroform)
+
+        // Manually add appearance streams and fields to document
+        // This avoids the incremental update issue from write()
+        const fieldsArray = new PdfArray<PdfObjectReference>()
+        const pageAnnots = new PdfArray<PdfObjectReference>()
+
+        for (const field of acroform.fields) {
+            const appearanceStream = field.getAppearanceStream()
+            if (appearanceStream) {
+                const appearanceObj = new PdfIndirectObject({
+                    content: appearanceStream,
+                })
+                document.add(appearanceObj)
+                field['setAppearanceReference'](appearanceObj.reference)
+
+                const currentF = field.get('F')?.as(PdfNumber)?.value ?? 0
+                if ((currentF & 4) === 0) {
+                    field.set('F', new PdfNumber(currentF | 4))
+                }
+            }
+
+            const fieldIndirect = new PdfIndirectObject({
+                content: field,
+            })
+            document.add(fieldIndirect)
+            fieldsArray.push(fieldIndirect.reference)
+
+            // Add field to page annotations if it's a widget
+            if (field.isWidget) {
+                pageAnnots.push(fieldIndirect.reference)
+            }
+        }
+
+        // Update page with Annots array
+        const pageObj = await document.readObject({
+            objectNumber: firstPageRef.objectNumber,
+            generationNumber: firstPageRef.generationNumber,
+        })
+        const pageDict = pageObj!.content.as(PdfDictionary)
+        pageDict.set('Annots', pageAnnots)
+        const updatedPageIndirect = new PdfIndirectObject({
+            objectNumber: firstPageRef.objectNumber,
+            generationNumber: firstPageRef.generationNumber,
+            content: pageDict,
+        })
+        document.add(updatedPageIndirect)
+
+        acroform.set('Fields', fieldsArray)
+        const acroFormIndirect = new PdfIndirectObject({ content: acroform })
+        document.add(acroFormIndirect)
+
+        const updatedCatalog = document.rootDictionary?.clone()
+        if (!updatedCatalog) {
+            throw new Error('No root catalog found')
+        }
+        updatedCatalog.set('AcroForm', acroFormIndirect.reference)
+        const rootRef = document.trailerDict.get('Root') as PdfObjectReference
+        const updatedCatalogIndirect = new PdfIndirectObject({
+            objectNumber: rootRef.objectNumber,
+            generationNumber: rootRef.generationNumber,
+            content: updatedCatalog,
+        })
+        document.add(updatedCatalogIndirect)
+
+        await document.commit()
 
         // Save to file
         await server.commands.writeFile(

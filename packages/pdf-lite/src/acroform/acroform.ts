@@ -35,6 +35,23 @@ export type PdfAppearanceStreamDictionary = PdfDictionary<{
     D?: PdfStream
 }>
 
+export type PdfDefaultResourcesDictionary = PdfDictionary<{
+    /** Font resources used in the form */
+    Font?: PdfDictionary
+    /** Procedure sets */
+    ProcSet?: PdfArray
+    /** Extended graphics states */
+    ExtGState?: PdfDictionary
+    /** Color spaces */
+    ColorSpace?: PdfDictionary
+    /** Patterns */
+    Pattern?: PdfDictionary
+    /** Shading dictionaries */
+    Shading?: PdfDictionary
+    /** External objects */
+    XObject?: PdfDictionary
+}>
+
 export class PdfAcroFormField extends PdfIndirectObject<
     PdfDictionary<{
         FT: PdfName<(typeof PdfFieldType)[keyof typeof PdfFieldType]>
@@ -81,6 +98,13 @@ export class PdfAcroFormField extends PdfIndirectObject<
             )
             this.form = form
         }
+    }
+
+    /**
+     * Convenience method to check if field dictionary is modified
+     */
+    isModified(): boolean {
+        return this.content.isModified()
     }
 
     /**
@@ -828,7 +852,7 @@ export class PdfAcroFormField extends PdfIndirectObject<
         this.content.set('Kids', kidsArray)
     }
 
-    get apperanceStreamDict(): PdfAppearanceStreamDictionary | null {
+    get apperanceStreamDict(): PdfDictionary | null {
         const apDict = this.content.get('AP')?.as(PdfDictionary)
         if (!apDict) return null
         return apDict
@@ -1030,7 +1054,7 @@ EMC
         // Set up resources with the font from the form's default resources
         // We need to copy the fonts, not just reference them, to ensure Acrobat can find them
         if (this.form) {
-            const formResources = this.form.content.get('DR')?.as(PdfDictionary)
+            const formResources = this.form.defaultResources
             if (formResources) {
                 const fonts = formResources.get('Font')?.as(PdfDictionary)
                 if (fonts) {
@@ -1267,7 +1291,7 @@ EMC
         )
 
         if (this.form) {
-            const formResources = this.form.content.get('DR')?.as(PdfDictionary)
+            const formResources = this.form.defaultResources
             if (formResources) {
                 const fonts = formResources.get('Font')?.as(PdfDictionary)
                 if (fonts) {
@@ -1368,7 +1392,7 @@ export class PdfAcroForm<
         NeedAppearances?: PdfBoolean
         SigFlags?: PdfNumber
         CO?: PdfArray<PdfObjectReference>
-        DR?: PdfDictionary
+        DR?: PdfDefaultResourcesDictionary
         DA?: PdfString
         Q?: PdfNumber
     }>
@@ -1397,6 +1421,34 @@ export class PdfAcroForm<
         super(indirectObj)
         this.fields = options?.fields ?? []
         this.document = options?.document
+    }
+
+    /**
+     * Convenience method to get a value from the form dictionary
+     */
+    get(key: string): any {
+        return this.content.get(key as any)
+    }
+
+    /**
+     * Convenience method to set a value in the form dictionary
+     */
+    set(key: string, value: any): void {
+        this.content.set(key as any, value)
+    }
+
+    /**
+     * Convenience method to delete a key from the form dictionary
+     */
+    delete(key: string): void {
+        this.content.delete(key as any)
+    }
+
+    /**
+     * Convenience method to check if form dictionary is modified
+     */
+    isModified(): boolean {
+        return this.content.isModified()
     }
 
     /**
@@ -1459,6 +1511,24 @@ export class PdfAcroForm<
     }
 
     /**
+     * Gets the default resources dictionary for the form
+     */
+    get defaultResources(): PdfDefaultResourcesDictionary | null {
+        return this.content.get('DR')?.as(PdfDictionary) ?? null
+    }
+
+    /**
+     * Sets the default resources dictionary for the form
+     */
+    set defaultResources(resources: PdfDefaultResourcesDictionary | null) {
+        if (resources === null) {
+            this.content.delete('DR')
+        } else {
+            this.content.set('DR', resources)
+        }
+    }
+
+    /**
      * Sets multiple field values by field name.
      * @param values Object with field names as keys and values to set
      * */
@@ -1504,8 +1574,8 @@ export class PdfAcroForm<
             return this.fontEncodingMaps.get(fontName)!
         }
 
-        // Get the font from DR (default resources)
-        const dr = this.content.get('DR')?.as(PdfDictionary)
+        // Get the font from default resources
+        const dr = this.defaultResources
         if (!dr) {
             this.fontEncodingMaps.set(fontName, null)
             return null

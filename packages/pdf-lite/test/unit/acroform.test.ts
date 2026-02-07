@@ -4,7 +4,7 @@ import { server } from 'vitest/browser'
 import { ByteArray } from '../../src/types'
 import { PdfString } from '../../src/core/objects/pdf-string'
 import { PdfArray } from '../../src/core/objects/pdf-array'
-import { PdfAcroFormField } from '../../src/acroform/acroform'
+import { PdfAcroForm, PdfAcroFormField } from '../../src/acroform/acroform'
 import { PdfObjectReference } from '../../src/core/objects/pdf-object-reference'
 import {
     PdfDictionary,
@@ -595,8 +595,6 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
             },
         } as any
 
-        const { PdfAcroForm } = await import('../../src/acroform/acroform')
-
         const drDict = new PdfDictionary()
         const fontDict = new PdfDictionary()
         fontDict.set('Helv', new PdfObjectReference(1, 0))
@@ -606,9 +604,9 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         acroFormDict.set('DR', drDict)
 
         const acroForm = new PdfAcroForm({
-            dict: acroFormDict,
             document: mockDocument,
         })
+        acroForm.defaultResources = drDict
 
         const field = new PdfAcroFormField({ form: acroForm })
         field.name = 'PriceField'
@@ -622,11 +620,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
     })
 
     it('should decode UTF-16BE encoded field values correctly', async () => {
-        const { PdfAcroForm } = await import('../../src/acroform/acroform')
-
-        const acroForm = new PdfAcroForm({
-            dict: new PdfDictionary(),
-        })
+        const acroForm = new PdfAcroForm()
 
         const field = new PdfAcroFormField({ form: acroForm })
         field.name = 'UTF16Field'
@@ -671,8 +665,6 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
             },
         } as any
 
-        const { PdfAcroForm } = await import('../../src/acroform/acroform')
-
         const drDict = new PdfDictionary()
         const fontDict = new PdfDictionary()
         fontDict.set('Helv', new PdfObjectReference(1, 0))
@@ -681,10 +673,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         const acroFormDict = new PdfDictionary()
         acroFormDict.set('DR', drDict)
 
-        const acroForm = new PdfAcroForm({
-            dict: acroFormDict,
-            document: mockDocument,
-        })
+        const acroForm = new PdfAcroForm()
 
         await acroForm.getFontEncodingMap('Helv')
 
@@ -722,8 +711,6 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
             },
         } as any
 
-        const { PdfAcroForm } = await import('../../src/acroform/acroform')
-
         const drDict = new PdfDictionary()
         const fontDict = new PdfDictionary()
         fontDict.set('Helv', new PdfObjectReference(1, 0))
@@ -733,9 +720,9 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         acroFormDict.set('DR', drDict)
 
         const acroForm = new PdfAcroForm({
-            dict: acroFormDict,
             document: mockDocument,
         })
+        acroForm.defaultResources = drDict
 
         await acroForm.getFontEncodingMap('Helv')
         const firstCallCount = readObjectCalls.length

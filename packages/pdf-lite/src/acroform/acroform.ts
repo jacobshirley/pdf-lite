@@ -24,10 +24,10 @@ export const PdfFieldType = {
     Signature: 'Sig',
 } as const
 
-export type PdfFieldType = (typeof PdfFieldType)[keyof typeof PdfFieldType]
+export type PdfFieldType = keyof typeof PdfFieldType
 
 export class PdfAcroFormField extends PdfDictionary<{
-    FT: PdfName<PdfFieldType>
+    FT: PdfName<(typeof PdfFieldType)[keyof typeof PdfFieldType]>
     T?: PdfString
     V?: PdfString | PdfName
     DV?: PdfString | PdfName
@@ -67,14 +67,26 @@ export class PdfAcroFormField extends PdfDictionary<{
      * Gets the field type
      */
     get fieldType(): PdfFieldType | null {
-        return this.get('FT')?.as(PdfName)?.value ?? null
+        const ft = this.get('FT')?.value
+        switch (ft) {
+            case 'Tx':
+                return 'Text'
+            case 'Btn':
+                return 'Button'
+            case 'Ch':
+                return 'Choice'
+            case 'Sig':
+                return 'Signature'
+            default:
+                return null
+        }
     }
 
     set fieldType(type: PdfFieldType | null) {
         if (type === null) {
             this.delete('FT')
         } else {
-            this.set('FT', new PdfName(type))
+            this.set('FT', new PdfName(PdfFieldType[type]))
         }
     }
 
@@ -163,7 +175,7 @@ export class PdfAcroFormField extends PdfDictionary<{
      */
     set defaultValue(val: string) {
         const fieldType = this.fieldType
-        if (fieldType === PdfFieldType.Button) {
+        if (fieldType === 'Button') {
             this.set('DV', new PdfName(val))
         } else {
             this.set('DV', new PdfString(val))
@@ -215,7 +227,7 @@ export class PdfAcroFormField extends PdfDictionary<{
         }
 
         const fieldType = this.get('FT')?.as(PdfName)?.value
-        if (fieldType === PdfFieldType.Button) {
+        if (fieldType === 'Button') {
             if (val.trim() === '') {
                 this.delete('V')
                 this.delete('AS')
@@ -233,8 +245,7 @@ export class PdfAcroFormField extends PdfDictionary<{
     }
 
     get checked(): boolean {
-        const fieldType = this.get('FT')?.as(PdfName)?.value
-        if (fieldType === PdfFieldType.Button) {
+        if (this.fieldType === 'Button') {
             const v = this.get('V')
             return v instanceof PdfName && v.value === 'Yes'
         }
@@ -242,8 +253,7 @@ export class PdfAcroFormField extends PdfDictionary<{
     }
 
     set checked(isChecked: boolean) {
-        const fieldType = this.get('FT')?.as(PdfName)?.value
-        if (fieldType === PdfFieldType.Button) {
+        if (this.fieldType === 'Button') {
             if (isChecked) {
                 this.set('V', new PdfName('Yes'))
                 this.set('AS', new PdfName('Yes'))
@@ -558,11 +568,11 @@ export class PdfAcroFormField extends PdfDictionary<{
         const fieldType = this.fieldType
 
         // Route to appropriate generation method based on field type
-        if (fieldType === PdfFieldType.Text) {
+        if (fieldType === 'Text') {
             return this.generateTextAppearance(options)
-        } else if (fieldType === PdfFieldType.Button) {
+        } else if (fieldType === 'Button') {
             return this.generateButtonAppearance(options)
-        } else if (fieldType === PdfFieldType.Choice) {
+        } else if (fieldType === 'Choice') {
             return this.generateChoiceAppearance(options)
         }
 
@@ -990,7 +1000,7 @@ EMC
      */
     getAppearanceStream(): PdfStream | undefined {
         // For button fields, return the appropriate stream based on state
-        if (this.fieldType === PdfFieldType.Button) {
+        if (this.fieldType === 'Button') {
             if (this.checked && this._appearanceStreamYes) {
                 return this._appearanceStreamYes
             }
@@ -1016,7 +1026,7 @@ EMC
         return {
             primary: this._appearanceStream,
             secondary:
-                this.fieldType === PdfFieldType.Button
+                this.fieldType === 'Button'
                     ? this._appearanceStreamYes
                     : undefined,
         }
@@ -1037,7 +1047,7 @@ EMC
         }
 
         // For button fields with multiple states, create a state dictionary
-        if (appearanceStreamYesRef && this.fieldType === PdfFieldType.Button) {
+        if (appearanceStreamYesRef && this.fieldType === 'Button') {
             const stateDict = new PdfDictionary()
             stateDict.set('Off', appearanceStreamRef)
             stateDict.set('Yes', appearanceStreamYesRef)

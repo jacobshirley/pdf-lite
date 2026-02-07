@@ -378,7 +378,7 @@ describe('AcroForm', () => {
 
         // Create a new field using PdfAcroFormField with visual properties
         const newField = new PdfAcroFormField()
-        newField.fieldType = 'Tx' // Text field
+        newField.fieldType = 'Text' // Text field
         newField.name = 'New Test Field'
         newField.value = 'New Field Value'
         newField.defaultValue = 'New Field Value'
@@ -890,7 +890,7 @@ describe('AcroForm Appearance Generation', () => {
 
         // Generate empty appearances for editable text fields (iText approach)
         for (const field of acroform.fields) {
-            if (field.fieldType === 'Tx' && field.value && field.rect) {
+            if (field.fieldType === 'Text' && field.value && field.rect) {
                 field.generateAppearance()
             }
         }
@@ -972,7 +972,7 @@ describe('AcroForm Appearance Generation', () => {
         }
 
         const buttonField = new PdfAcroFormField({ form: acroform })
-        buttonField.fieldType = 'Btn'
+        buttonField.fieldType = 'Button'
         buttonField.rect = [100, 100, 150, 120]
         buttonField.checked = true
 
@@ -983,7 +983,7 @@ describe('AcroForm Appearance Generation', () => {
 
     it('should return false when field has no rectangle', async () => {
         const textField = new PdfAcroFormField()
-        textField.fieldType = 'Tx'
+        textField.fieldType = 'Text'
         textField.set('DA', new PdfString('/Helv 12 Tf 0 g'))
         textField.value = 'Test'
 
@@ -993,7 +993,7 @@ describe('AcroForm Appearance Generation', () => {
 
     it('should return false when field has no default appearance', async () => {
         const textField = new PdfAcroFormField()
-        textField.fieldType = 'Tx'
+        textField.fieldType = 'Text'
         textField.rect = [100, 100, 300, 120]
         textField.value = 'Test'
 
@@ -1146,7 +1146,7 @@ describe('AcroForm Appearance Generation', () => {
 
         // 1. Regular text field
         const textField = new PdfAcroFormField({ form: acroform })
-        textField.fieldType = 'Tx'
+        textField.fieldType = 'Text'
         textField.name = 'RegularText'
         textField.rect = [50, 750, 300, 770]
         textField.defaultAppearance = '/Helv 12 Tf 0 g'
@@ -1157,7 +1157,7 @@ describe('AcroForm Appearance Generation', () => {
 
         // 2. Comb field
         const combField = new PdfAcroFormField({ form: acroform })
-        combField.fieldType = 'Tx'
+        combField.fieldType = 'Text'
         combField.name = 'CombField'
         combField.rect = [50, 700, 250, 720]
         combField.defaultAppearance = '/Helv 12 Tf 0 g'
@@ -1170,7 +1170,7 @@ describe('AcroForm Appearance Generation', () => {
 
         // 3. Multiline text field
         const multilineField = new PdfAcroFormField({ form: acroform })
-        multilineField.fieldType = 'Tx'
+        multilineField.fieldType = 'Text'
         multilineField.name = 'MultilineText'
         multilineField.rect = [50, 600, 300, 680]
         multilineField.defaultAppearance = '/Helv 12 Tf 0 g'
@@ -1182,7 +1182,7 @@ describe('AcroForm Appearance Generation', () => {
 
         // 4. Checkbox (unchecked)
         const checkboxUnchecked = new PdfAcroFormField({ form: acroform })
-        checkboxUnchecked.fieldType = 'Btn'
+        checkboxUnchecked.fieldType = 'Button'
         checkboxUnchecked.name = 'CheckboxUnchecked'
         checkboxUnchecked.rect = [50, 550, 70, 570]
         checkboxUnchecked.defaultAppearance = '/Helv 12 Tf 0 g'
@@ -1193,7 +1193,7 @@ describe('AcroForm Appearance Generation', () => {
 
         // 5. Checkbox (checked)
         const checkboxChecked = new PdfAcroFormField({ form: acroform })
-        checkboxChecked.fieldType = 'Btn'
+        checkboxChecked.fieldType = 'Button'
         checkboxChecked.name = 'CheckboxChecked'
         checkboxChecked.rect = [100, 550, 120, 570]
         checkboxChecked.defaultAppearance = '/Helv 12 Tf 0 g'
@@ -1204,7 +1204,7 @@ describe('AcroForm Appearance Generation', () => {
 
         // 6. Choice/Dropdown field
         const choiceField = new PdfAcroFormField({ form: acroform })
-        choiceField.fieldType = 'Ch'
+        choiceField.fieldType = 'Choice'
         choiceField.name = 'DropdownField'
         choiceField.rect = [50, 450, 250, 470]
         choiceField.defaultAppearance = '/Helv 11 Tf 0 g'
@@ -1217,7 +1217,7 @@ describe('AcroForm Appearance Generation', () => {
 
         // 7. List box (Choice field without Combo flag)
         const listField = new PdfAcroFormField({ form: acroform })
-        listField.fieldType = 'Ch'
+        listField.fieldType = 'Choice'
         listField.name = 'ListField'
         listField.rect = [50, 350, 250, 430]
         listField.defaultAppearance = '/Helv 11 Tf 0 g'
@@ -1233,7 +1233,7 @@ describe('AcroForm Appearance Generation', () => {
         // For now, we'll create them as separate fields but with proper Radio flag
         // TODO: Implement proper parent/child radio button group structure
         const radioButton1 = new PdfAcroFormField({ form: acroform })
-        radioButton1.fieldType = 'Btn'
+        radioButton1.fieldType = 'Button'
         radioButton1.name = 'RadioButton1'
         radioButton1.rect = [50, 300, 70, 320]
         radioButton1.defaultAppearance = '/Helv 12 Tf 0 g'
@@ -1246,7 +1246,7 @@ describe('AcroForm Appearance Generation', () => {
 
         // 9. Radio button group (selected)
         const radioButton2 = new PdfAcroFormField({ form: acroform })
-        radioButton2.fieldType = 'Btn'
+        radioButton2.fieldType = 'Button'
         radioButton2.name = 'RadioButton2'
         radioButton2.rect = [100, 300, 120, 320]
         radioButton2.defaultAppearance = '/Helv 12 Tf 0 g'

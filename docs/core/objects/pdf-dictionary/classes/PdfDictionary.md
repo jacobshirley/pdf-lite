@@ -12,8 +12,6 @@
 
 ## Extended by
 
-- [`PdfAcroFormField`](../../../../acroform/acroform/classes/PdfAcroFormField.md)
-- [`PdfAcroForm`](../../../../acroform/acroform/classes/PdfAcroForm.md)
 - [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)
 - [`PdfDocumentSecurityStoreDictionary`](../../../../signing/document-security-store/classes/PdfDocumentSecurityStoreDictionary.md)
 - [`PdfSignatureDictionary`](../../../../signing/signatures/base/classes/PdfSignatureDictionary.md)
@@ -45,6 +43,18 @@
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`constructor`](../../pdf-object/classes/PdfObject.md#constructor)
 
 ## Properties
+
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`immutable`](../../pdf-object/classes/PdfObject.md#immutable)
+
+---
 
 ### innerTokens
 
@@ -279,6 +289,22 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`isImmutable`](../../pdf-object/classes/PdfObject.md#isimmutable)
+
+---
+
 ### isModified()
 
 > **isModified**(): `boolean`
@@ -318,6 +344,28 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Returns
 
 `void`
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable?`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable?
+
+`boolean`
+
+#### Returns
+
+`void`
+
+#### Overrides
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`setImmutable`](../../pdf-object/classes/PdfObject.md#setimmutable)
 
 ---
 

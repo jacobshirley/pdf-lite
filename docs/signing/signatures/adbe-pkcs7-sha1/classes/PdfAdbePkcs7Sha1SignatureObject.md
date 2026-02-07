@@ -102,6 +102,18 @@ Signing date.
 
 ---
 
+### immutable
+
+> `protected` **immutable**: `boolean` = `false`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`immutable`](../../base/classes/PdfSignatureObject.md#immutable)
+
+---
+
 ### issuerCertificate?
 
 > `optional` **issuerCertificate**: [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
@@ -450,6 +462,26 @@ True if arrays are equal, false otherwise.
 
 ---
 
+### copyFrom()
+
+> **copyFrom**(`other`): `void`
+
+#### Parameters
+
+##### other
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`copyFrom`](../../base/classes/PdfSignatureObject.md#copyfrom)
+
+---
+
 ### equals()
 
 > **equals**(`other?`): `boolean`
@@ -497,6 +529,22 @@ Compares this object to another for equality based on their token representation
 #### Inherited from
 
 [`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`isEncryptable`](../../base/classes/PdfSignatureObject.md#isencryptable)
+
+---
+
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`isImmutable`](../../base/classes/PdfSignatureObject.md#isimmutable)
 
 ---
 
@@ -579,6 +627,28 @@ Error if ByteRange entry is missing.
 #### Inherited from
 
 [`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`setByteRange`](../../base/classes/PdfSignatureObject.md#setbyterange)
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable?`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable?
+
+`boolean`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`setImmutable`](../../base/classes/PdfSignatureObject.md#setimmutable)
 
 ---
 

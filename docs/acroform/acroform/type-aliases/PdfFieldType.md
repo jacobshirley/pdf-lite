@@ -6,4 +6,4 @@
 
 # Type Alias: PdfFieldType
 
-> **PdfFieldType** = _typeof_ [`PdfFieldType`](../variables/PdfFieldType.md)\[keyof _typeof_ [`PdfFieldType`](../variables/PdfFieldType.md)\]
+> **PdfFieldType** = keyof _typeof_ [`PdfFieldType`](../variables/PdfFieldType.md)

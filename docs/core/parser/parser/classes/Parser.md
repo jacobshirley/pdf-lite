@@ -1,8 +1,8 @@
-[**pdf-lite**](../../../README.md)
+[**pdf-lite**](../../../../README.md)
 
 ---
 
-[pdf-lite](../../../README.md) / [core/parser](../README.md) / Parser
+[pdf-lite](../../../../README.md) / [core/parser/parser](../README.md) / Parser
 
 # Abstract Class: Parser\<I, O\>
 
@@ -11,9 +11,9 @@ Provides a common interface for feeding input and generating output.
 
 ## Extended by
 
+- [`PdfTokenSerializer`](../../../serializer/classes/PdfTokenSerializer.md)
+- [`PdfObjectTokeniser`](../../../tokeniser/classes/PdfObjectTokeniser.md)
 - [`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md)
-- [`PdfTokenSerializer`](../../serializer/classes/PdfTokenSerializer.md)
-- [`PdfObjectTokeniser`](../../tokeniser/classes/PdfObjectTokeniser.md)
 
 ## Type Parameters
 

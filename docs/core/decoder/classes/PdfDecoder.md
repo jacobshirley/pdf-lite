@@ -11,7 +11,7 @@ Handles parsing of all PDF object types including dictionaries, arrays, streams,
 
 ## Extends
 
-- [`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md)\<[`PdfToken`](../../tokens/token/classes/PdfToken.md), [`PdfObject`](../../objects/pdf-object/classes/PdfObject.md)\>
+- [`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md)\<[`PdfToken`](../../tokens/token/classes/PdfToken.md), [`PdfObject`](../../objects/pdf-object/classes/PdfObject.md)\>
 
 ## Constructors
 
@@ -45,7 +45,7 @@ Maximum buffer size before compaction (default: 10MB)
 
 #### Overrides
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`constructor`](../../incremental-parser/classes/IncrementalParser.md#constructor)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`constructor`](../../parser/incremental-parser/classes/IncrementalParser.md#constructor)
 
 ## Properties
 
@@ -57,7 +57,7 @@ Buffer holding input items
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`buffer`](../../incremental-parser/classes/IncrementalParser.md#buffer)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`buffer`](../../parser/incremental-parser/classes/IncrementalParser.md#buffer)
 
 ---
 
@@ -69,7 +69,7 @@ Current position in the buffer
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`bufferIndex`](../../incremental-parser/classes/IncrementalParser.md#bufferindex)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`bufferIndex`](../../parser/incremental-parser/classes/IncrementalParser.md#bufferindex)
 
 ---
 
@@ -81,7 +81,7 @@ Whether end of file has been signaled
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`eof`](../../incremental-parser/classes/IncrementalParser.md#eof)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`eof`](../../parser/incremental-parser/classes/IncrementalParser.md#eof)
 
 ---
 
@@ -93,7 +93,7 @@ Current position in the input stream
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`inputOffset`](../../incremental-parser/classes/IncrementalParser.md#inputoffset)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`inputOffset`](../../parser/incremental-parser/classes/IncrementalParser.md#inputoffset)
 
 ---
 
@@ -105,7 +105,7 @@ Number of outputs generated
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`outputOffset`](../../incremental-parser/classes/IncrementalParser.md#outputoffset)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`outputOffset`](../../parser/incremental-parser/classes/IncrementalParser.md#outputoffset)
 
 ## Methods
 
@@ -123,7 +123,7 @@ True if no more input is available
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`atEof`](../../incremental-parser/classes/IncrementalParser.md#ateof)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`atEof`](../../parser/incremental-parser/classes/IncrementalParser.md#ateof)
 
 ---
 
@@ -152,7 +152,7 @@ boolean indicating whether to compact the buffer
 
 #### Overrides
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`canCompact`](../../incremental-parser/classes/IncrementalParser.md#cancompact)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`canCompact`](../../parser/incremental-parser/classes/IncrementalParser.md#cancompact)
 
 ---
 
@@ -168,7 +168,7 @@ Compacts the buffer by removing consumed items
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`compact`](../../incremental-parser/classes/IncrementalParser.md#compact)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`compact`](../../parser/incremental-parser/classes/IncrementalParser.md#compact)
 
 ---
 
@@ -206,7 +206,7 @@ Error if the item doesn't match the expected type/value
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`expect`](../../incremental-parser/classes/IncrementalParser.md#expect)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`expect`](../../parser/incremental-parser/classes/IncrementalParser.md#expect)
 
 ---
 
@@ -230,7 +230,7 @@ Input items to add to the buffer
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`feed`](../../incremental-parser/classes/IncrementalParser.md#feed)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`feed`](../../parser/incremental-parser/classes/IncrementalParser.md#feed)
 
 ---
 
@@ -256,7 +256,7 @@ EofReachedError if at EOF and no more items available
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`next`](../../incremental-parser/classes/IncrementalParser.md#next)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`next`](../../parser/incremental-parser/classes/IncrementalParser.md#next)
 
 ---
 
@@ -275,7 +275,7 @@ A generator yielding parsed output items
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`nextItems`](../../incremental-parser/classes/IncrementalParser.md#nextitems)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`nextItems`](../../parser/incremental-parser/classes/IncrementalParser.md#nextitems)
 
 ---
 
@@ -310,7 +310,7 @@ Error if all parsing functions fail
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`oneOf`](../../incremental-parser/classes/IncrementalParser.md#oneof)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`oneOf`](../../parser/incremental-parser/classes/IncrementalParser.md#oneof)
 
 ---
 
@@ -329,7 +329,7 @@ The parsed output item
 
 #### Overrides
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`parse`](../../incremental-parser/classes/IncrementalParser.md#parse)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`parse`](../../parser/incremental-parser/classes/IncrementalParser.md#parse)
 
 ---
 
@@ -359,4 +359,4 @@ NoMoreTokensError if more input is needed and EOF not signaled
 
 #### Inherited from
 
-[`IncrementalParser`](../../incremental-parser/classes/IncrementalParser.md).[`peek`](../../incremental-parser/classes/IncrementalParser.md#peek)
+[`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`peek`](../../parser/incremental-parser/classes/IncrementalParser.md#peek)

@@ -1,8 +1,8 @@
-[**pdf-lite**](../../../README.md)
+[**pdf-lite**](../../../../README.md)
 
 ---
 
-[pdf-lite](../../../README.md) / [core/incremental-parser](../README.md) / EofReachedError
+[pdf-lite](../../../../README.md) / [core/parser/incremental-parser](../README.md) / EofReachedError
 
 # Class: EofReachedError
 

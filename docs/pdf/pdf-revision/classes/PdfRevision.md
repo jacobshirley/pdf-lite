@@ -56,11 +56,15 @@ Previous revision or xref lookup to link to
 
 ## Properties
 
-### locked
+### immutable
 
-> **locked**: `boolean` = `false`
+> `protected` **immutable**: `boolean` = `false`
 
-Whether this revision is locked (cannot be modified)
+Indicates whether the object is immutable (cannot be modified)
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`immutable`](../../../core/objects/pdf-object/classes/PdfObject.md#immutable)
 
 ---
 
@@ -73,14 +77,6 @@ Indicates whether the object has been modified. By default, assume it has been m
 #### Inherited from
 
 [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`modified`](../../../core/objects/pdf-object/classes/PdfObject.md#modified)
-
----
-
-### objects
-
-> **objects**: [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)[] = `[]`
-
-Objects contained in this revision
 
 ---
 
@@ -115,6 +111,100 @@ Optional tokens to prepend or append during serialization
 Cross-reference lookup table for this revision
 
 ## Accessors
+
+### header
+
+#### Get Signature
+
+> **get** **header**(): [`PdfComment`](../../../core/objects/pdf-comment/classes/PdfComment.md) \| `undefined`
+
+##### Returns
+
+[`PdfComment`](../../../core/objects/pdf-comment/classes/PdfComment.md) \| `undefined`
+
+#### Set Signature
+
+> **set** **header**(`comment`): `void`
+
+##### Parameters
+
+###### comment
+
+[`PdfComment`](../../../core/objects/pdf-comment/classes/PdfComment.md)
+
+##### Returns
+
+`void`
+
+---
+
+### locked
+
+#### Get Signature
+
+> **get** **locked**(): `boolean`
+
+Gets whether this revision is locked (cannot be modified).
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **locked**(`value`): `void`
+
+Sets whether this revision is locked.
+When locking, creates a cached clone of all objects to freeze their state.
+When unlocking, clears the cache.
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### objects
+
+#### Get Signature
+
+> **get** **objects**(): readonly [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)[]
+
+Gets the objects in this revision.
+Returns fresh clones of cached objects if the revision is locked, otherwise returns live objects.
+Each access to a locked revision's objects returns new clones to prevent mutations.
+
+##### Returns
+
+readonly [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)[]
+
+#### Set Signature
+
+> **set** **objects**(`value`): `void`
+
+Sets the objects array.
+
+##### Throws
+
+Error if the revision is locked
+
+##### Parameters
+
+###### value
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)[]
+
+##### Returns
+
+`void`
+
+---
 
 ### objectType
 
@@ -167,6 +257,10 @@ Objects to add to the revision
 #### Returns
 
 `void`
+
+#### Throws
+
+Error if the revision is locked
 
 ---
 
@@ -336,6 +430,22 @@ True if an equal object exists in this revision
 
 ---
 
+### isImmutable()
+
+> **isImmutable**(): `boolean`
+
+Indicates whether the object is immutable (cannot be modified)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`isImmutable`](../../../core/objects/pdf-object/classes/PdfObject.md#isimmutable)
+
+---
+
 ### isModified()
 
 > **isModified**(): `boolean`
@@ -349,6 +459,28 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Overrides
 
 [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`isModified`](../../../core/objects/pdf-object/classes/PdfObject.md#ismodified)
+
+---
+
+### setImmutable()
+
+> **setImmutable**(`immutable`): `void`
+
+Sets the immutable state of the object
+
+#### Parameters
+
+##### immutable
+
+`boolean` = `true`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`setImmutable`](../../../core/objects/pdf-object/classes/PdfObject.md#setimmutable)
 
 ---
 
@@ -409,21 +541,15 @@ Indirect objects are placed before other objects.
 
 ### toBytes()
 
-> **toBytes**(`padTo?`): [`ByteArray`](../../../types/type-aliases/ByteArray.md)
+> **toBytes**(): [`ByteArray`](../../../types/type-aliases/ByteArray.md)
 
 Converts the object to a ByteArray, optionally padding to a specified length
-
-#### Parameters
-
-##### padTo?
-
-`number`
 
 #### Returns
 
 [`ByteArray`](../../../types/type-aliases/ByteArray.md)
 
-#### Inherited from
+#### Overrides
 
 [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`toBytes`](../../../core/objects/pdf-object/classes/PdfObject.md#tobytes)
 
@@ -494,6 +620,10 @@ Objects to add at the beginning
 #### Returns
 
 `void`
+
+#### Throws
+
+Error if the revision is locked
 
 ---
 

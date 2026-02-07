@@ -16,19 +16,19 @@ Re-exports [bytesToPdfObjects](generators/functions/bytesToPdfObjects.md)
 
 ### EofReachedError
 
-Re-exports [EofReachedError](incremental-parser/classes/EofReachedError.md)
+Re-exports [EofReachedError](parser/incremental-parser/classes/EofReachedError.md)
 
 ---
 
 ### IncrementalParser
 
-Re-exports [IncrementalParser](incremental-parser/classes/IncrementalParser.md)
+Re-exports [IncrementalParser](parser/incremental-parser/classes/IncrementalParser.md)
 
 ---
 
 ### NoMoreTokensError
 
-Re-exports [NoMoreTokensError](incremental-parser/classes/NoMoreTokensError.md)
+Re-exports [NoMoreTokensError](parser/incremental-parser/classes/NoMoreTokensError.md)
 
 ---
 
@@ -40,7 +40,7 @@ Re-exports [objectToTokens](tokeniser/functions/objectToTokens.md)
 
 ### Parser
 
-Re-exports [Parser](parser/classes/Parser.md)
+Re-exports [Parser](parser/parser/classes/Parser.md)
 
 ---
 
@@ -448,4 +448,4 @@ Re-exports [stringToPdfObjects](generators/functions/stringToPdfObjects.md)
 
 ### UnexpectedTokenError
 
-Re-exports [UnexpectedTokenError](incremental-parser/classes/UnexpectedTokenError.md)
+Re-exports [UnexpectedTokenError](parser/incremental-parser/classes/UnexpectedTokenError.md)

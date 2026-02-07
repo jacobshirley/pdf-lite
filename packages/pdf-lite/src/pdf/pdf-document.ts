@@ -34,6 +34,7 @@ import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { PdfXfaManager } from '../xfa/manager.js'
 import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/font-manager.js'
+import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -53,8 +54,6 @@ import { PdfFontManager } from '../fonts/font-manager.js'
  * ```
  */
 export class PdfDocument extends PdfObject {
-    /** PDF version comment header */
-    header: PdfComment = PdfComment.versionComment('1.7')
     /** List of document revisions for incremental updates */
     revisions: PdfRevision[]
     /** Signer instance for digital signature operations */
@@ -111,6 +110,14 @@ export class PdfDocument extends PdfObject {
 
         this.securityHandler =
             options?.securityHandler ?? this.getSecurityHandler()
+    }
+
+    get header(): PdfComment | undefined {
+        return this.revisions[0].header
+    }
+
+    set header(comment: PdfComment | undefined) {
+        if (comment) this.revisions[0].header = comment
     }
 
     /** XFA manager for handling XFA forms */
@@ -202,6 +209,9 @@ export class PdfDocument extends PdfObject {
         }
 
         for (const obj of objects) {
+            if (obj.isImmutable()) {
+                throw new Error('Risky adding a immutable obj')
+            }
             this.toBeCommitted.push(obj)
             this.latestRevision.addObject(obj)
         }
@@ -297,17 +307,26 @@ export class PdfDocument extends PdfObject {
         return encryptionDictObject as PdfEncryptionDictionaryObject
     }
 
+    get rootReference(): PdfObjectReference {
+        return this.root.reference
+    }
+
     /**
-     * Gets the document catalog (root) dictionary.
+     * Gets the document catalog (root) dictionary, or creates one if it doesn't exist.
      *
-     * @returns The root dictionary or undefined if not found
+     * @returns The root dictionary
      * @throws Error if the Root reference points to a non-dictionary object
      */
-    get rootDictionary(): PdfDictionary | undefined {
+    get root(): PdfIndirectObject<PdfDictionary> {
         const rootRef = this.trailerDict.get('Root')?.as(PdfObjectReference)
 
         if (!rootRef) {
-            return undefined
+            const rootObject = new PdfIndirectObject({
+                content: new PdfDictionary(),
+            })
+            this.add(rootObject)
+            this.trailerDict.set('Root', rootObject.reference)
+            return rootObject
         }
 
         const rootObject = this.findUncompressedObject(rootRef)
@@ -322,7 +341,7 @@ export class PdfDocument extends PdfObject {
             )
         }
 
-        return rootObject.content
+        return rootObject as PdfIndirectObject<PdfDictionary>
     }
 
     /**
@@ -331,12 +350,12 @@ export class PdfDocument extends PdfObject {
      * @returns The metadata stream reference or undefined if not present
      */
     get metadataStreamReference(): PdfObjectReference | undefined {
-        const root = this.rootDictionary
+        const root = this.root
         if (!root) {
             return
         }
 
-        const metadataRef = root.get('Metadata')?.as(PdfObjectReference)
+        const metadataRef = root.content.get('Metadata')?.as(PdfObjectReference)
 
         if (!metadataRef) {
             return
@@ -681,8 +700,6 @@ export class PdfDocument extends PdfObject {
         if (this.securityHandler && this.isObjectEncryptable(foundObject)) {
             foundObject = foundObject.clone()
             await this.securityHandler.decryptObject(foundObject)
-        } else if (this.isIncremental()) {
-            foundObject = foundObject.clone() // Clone to prevent modifications in locked revisions
         }
 
         return foundObject
@@ -796,7 +813,7 @@ export class PdfDocument extends PdfObject {
     async setDocumentSecurityStore(
         dss: PdfDocumentSecurityStoreObject,
     ): Promise<void> {
-        let rootDictionary = this.rootDictionary
+        let rootDictionary = this.root?.content
         if (!rootDictionary) {
             throw new Error('Cannot set DSS - document has no root dictionary')
         }
@@ -830,12 +847,6 @@ export class PdfDocument extends PdfObject {
             }
             return tokens.map((token) => ({ token, object: obj }))
         })
-
-        const headerTokens = this.header
-            .toTokens()
-            .map((token) => ({ token, object: this.header }))
-
-        documentTokens.unshift(...headerTokens)
 
         return documentTokens
     }
@@ -936,9 +947,7 @@ export class PdfDocument extends PdfObject {
     toBytes(): ByteArray {
         this.calculateOffsets()
         this.updateRevisions()
-        const serializer = new PdfTokenSerializer()
-        serializer.feedMany(this.toTokens())
-        return serializer.toBytes()
+        return concatUint8Arrays(...this.revisions.map((x) => x.toBytes()))
     }
 
     /**
@@ -965,7 +974,7 @@ export class PdfDocument extends PdfObject {
         const clonedRevisions = this.revisions.map((rev) => rev.clone())
         return new PdfDocument({
             revisions: clonedRevisions,
-            version: this.header.clone(),
+            version: this.header?.clone(),
             securityHandler: this.securityHandler,
         }) as this
     }

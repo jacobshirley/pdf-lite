@@ -24,6 +24,7 @@ export class Ref<T> {
     /** Registered callbacks for update notifications */
     callbacks: Array<RefUpdateCallback<T>> = []
     isModified: boolean = false
+    protected immutable: boolean = false
 
     /**
      * Creates a new Ref with an initial value.
@@ -36,6 +37,14 @@ export class Ref<T> {
             throw new Error('Cannot create Ref to itself')
         }
         this.value = value
+    }
+
+    setImmutable(immutable: boolean = true): void {
+        this.immutable = immutable
+    }
+
+    isImmutable(): boolean {
+        return this.immutable
     }
 
     /**
@@ -54,6 +63,11 @@ export class Ref<T> {
 
         const oldValue = this.resolve()
         if (oldValue !== resolvedNewValue) {
+            if (this.immutable) {
+                throw new Error(
+                    `Cannot update an immutable Ref (${oldValue} -> ${resolvedNewValue})`,
+                )
+            }
             this.isModified = true
         }
 
@@ -98,5 +112,10 @@ export class Ref<T> {
      */
     onUpdate(callback: RefUpdateCallback<T>): void {
         this.callbacks.push(callback)
+    }
+
+    /** Creates a new Ref with the same resolved value. */
+    clone(): Ref<T> {
+        return new Ref(this.resolve())
     }
 }

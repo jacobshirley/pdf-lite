@@ -496,11 +496,12 @@ export class PdfXrefLookup {
      * @returns The xref entry or undefined if not found
      */
     getObject(objectNumber: number): PdfXRefStreamEntry | undefined {
-        if (!this.entries.has(objectNumber) && this.prev) {
+        const entry = this.entries.get(objectNumber)
+        if (this.prev && !entry) {
             return this.prev.getObject(objectNumber)
         }
 
-        return this.entries.get(objectNumber)
+        return entry
     }
 
     /**

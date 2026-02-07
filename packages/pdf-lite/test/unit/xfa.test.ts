@@ -58,7 +58,7 @@ describe('XFA', () => {
         const document = await PdfDocument.fromBytes([pdfBuffer])
         document.setPassword('')
 
-        await document.xfa.hasXfaForms()
+        expect(await document.xfa.hasXfaForms()).toBe(true)
 
         // Read the original XML content
         const originalXml = await document.xfa.readXml()
@@ -85,6 +85,12 @@ describe('XFA', () => {
 
         // Write the modified XML back to the document
         await document.xfa.writeXml(modifiedXml)
+
+        await server.commands.writeFile(
+            './test/unit/tmp/modifiedAdobeLivecycle.pdf',
+            document.toBase64(),
+            { encoding: 'base64' },
+        )
 
         const rereadDocument = await PdfDocument.fromBytes([document.toBytes()])
         rereadDocument.setPassword('')

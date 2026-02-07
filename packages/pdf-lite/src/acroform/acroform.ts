@@ -26,48 +26,68 @@ export const PdfFieldType = {
 
 export type PdfFieldType = keyof typeof PdfFieldType
 
-export class PdfAcroFormField extends PdfDictionary<{
-    FT: PdfName<(typeof PdfFieldType)[keyof typeof PdfFieldType]>
-    T?: PdfString
-    V?: PdfString | PdfName
-    DV?: PdfString | PdfName
-    DA?: PdfString
-    AS?: PdfName
-    Kids?: PdfArray<PdfObjectReference>
-    P?: PdfObjectReference
-    Rect?: PdfArray<PdfNumber>
-    F?: PdfNumber
-    Ff?: PdfNumber
-    BS?: PdfDictionary
-    MK?: PdfDictionary
-    Type?: PdfName<'Annot'>
-    Subtype?: PdfName<'Widget'>
-    AP?: PdfDictionary
-    Q?: PdfNumber
-    MaxLen?: PdfNumber
-    Opt?: PdfArray<PdfString>
-}> {
+export type PdfAppearanceStreamDictionary = PdfDictionary<{
+    /** Appearance streams for different states */
+    N: PdfStream
+    /* Optional appearance streams for button fields (e.g. checkboxes) */
+    R?: PdfStream
+    /* Optional appearance stream for "on" state of button fields (e.g. checked state) */
+    D?: PdfStream
+}>
+
+export class PdfAcroFormField extends PdfIndirectObject<
+    PdfDictionary<{
+        FT: PdfName<(typeof PdfFieldType)[keyof typeof PdfFieldType]>
+        T?: PdfString
+        V?: PdfString | PdfName
+        DV?: PdfString | PdfName
+        DA?: PdfString
+        AS?: PdfName
+        Kids?: PdfArray<PdfObjectReference>
+        P?: PdfObjectReference
+        Rect?: PdfArray<PdfNumber>
+        F?: PdfNumber
+        Ff?: PdfNumber
+        BS?: PdfDictionary
+        MK?: PdfDictionary
+        Type?: PdfName<'Annot'>
+        Subtype?: PdfName<'Widget'>
+        AP?: PdfAppearanceStreamDictionary
+        Q?: PdfNumber
+        MaxLen?: PdfNumber
+        Opt?: PdfArray<PdfString>
+    }>
+> {
     parent?: PdfAcroFormField
-    readonly container?: PdfIndirectObject
     form?: PdfAcroForm
     defaultGenerateAppearance: boolean = true
     private _appearanceStream?: PdfStream
     private _appearanceStreamYes?: PdfStream // For button fields: checked state
 
-    constructor(options?: {
-        container?: PdfIndirectObject
-        form?: PdfAcroForm
-    }) {
-        super()
-        this.container = options?.container
-        this.form = options?.form
+    constructor(
+        otherOrOptions?: PdfIndirectObject | { form?: PdfAcroForm },
+        form?: PdfAcroForm,
+    ) {
+        // Support both old and new API
+        if (otherOrOptions && 'form' in otherOrOptions) {
+            // Old API: { form: acroform }
+            super(new PdfIndirectObject({ content: new PdfDictionary() }))
+            this.form = otherOrOptions.form
+        } else {
+            // New API: (other?, form?)
+            super(
+                (otherOrOptions as PdfIndirectObject | undefined) ??
+                    new PdfIndirectObject({ content: new PdfDictionary() }),
+            )
+            this.form = form
+        }
     }
 
     /**
      * Gets the field type
      */
     get fieldType(): PdfFieldType | null {
-        const ft = this.get('FT')?.value
+        const ft = this.content.get('FT')?.value
         switch (ft) {
             case 'Tx':
                 return 'Text'
@@ -84,55 +104,55 @@ export class PdfAcroFormField extends PdfDictionary<{
 
     set fieldType(type: PdfFieldType | null) {
         if (type === null) {
-            this.delete('FT')
+            this.content.delete('FT')
         } else {
-            this.set('FT', new PdfName(PdfFieldType[type]))
+            this.content.set('FT', new PdfName(PdfFieldType[type]))
         }
     }
 
     get rect(): number[] | null {
-        const rectArray = this.get('Rect')?.as(PdfArray<PdfNumber>)
+        const rectArray = this.content.get('Rect')?.as(PdfArray<PdfNumber>)
         if (!rectArray) return null
         return rectArray.items.map((num) => num.value)
     }
 
     set rect(rect: number[] | null) {
         if (rect === null) {
-            this.delete('Rect')
+            this.content.delete('Rect')
             return
         }
         const rectArray = new PdfArray<PdfNumber>(
             rect.map((num) => new PdfNumber(num)),
         )
-        this.set('Rect', rectArray)
+        this.content.set('Rect', rectArray)
     }
 
     get parentRef(): PdfObjectReference | null {
-        const ref = this.get('P')?.as(PdfObjectReference)
+        const ref = this.content.get('P')?.as(PdfObjectReference)
         return ref ?? null
     }
 
     set parentRef(ref: PdfObjectReference | null) {
         if (ref === null) {
-            this.delete('P')
+            this.content.delete('P')
         } else {
-            this.set('P', ref)
+            this.content.set('P', ref)
         }
     }
 
     get isWidget(): boolean {
-        const type = this.get('Type')?.as(PdfName)?.value
-        const subtype = this.get('Subtype')?.as(PdfName)?.value
+        const type = this.content.get('Type')?.as(PdfName)?.value
+        const subtype = this.content.get('Subtype')?.as(PdfName)?.value
         return type === 'Annot' && subtype === 'Widget'
     }
 
     set isWidget(isWidget: boolean) {
         if (isWidget) {
-            this.set('Type', new PdfName('Annot'))
-            this.set('Subtype', new PdfName('Widget'))
+            this.content.set('Type', new PdfName('Annot'))
+            this.content.set('Subtype', new PdfName('Widget'))
         } else {
-            this.delete('Type')
-            this.delete('Subtype')
+            this.content.delete('Type')
+            this.content.delete('Subtype')
         }
     }
 
@@ -141,7 +161,7 @@ export class PdfAcroFormField extends PdfDictionary<{
      */
     get name(): string {
         const parentName = this.parent?.name ?? ''
-        const ownName = this.get('T')?.as(PdfString)?.value ?? ''
+        const ownName = this.content.get('T')?.as(PdfString)?.value ?? ''
 
         if (parentName && ownName) {
             return `${parentName}.${ownName}`
@@ -154,14 +174,14 @@ export class PdfAcroFormField extends PdfDictionary<{
      * Sets the field name
      */
     set name(name: string) {
-        this.set('T', new PdfString(name))
+        this.content.set('T', new PdfString(name))
     }
 
     /**
      * Gets the default value
      */
     get defaultValue(): string {
-        const dv = this.get('DV')
+        const dv = this.content.get('DV')
         if (dv instanceof PdfString) {
             return dv.value
         } else if (dv instanceof PdfName) {
@@ -176,14 +196,14 @@ export class PdfAcroFormField extends PdfDictionary<{
     set defaultValue(val: string) {
         const fieldType = this.fieldType
         if (fieldType === 'Button') {
-            this.set('DV', new PdfName(val))
+            this.content.set('DV', new PdfName(val))
         } else {
-            this.set('DV', new PdfString(val))
+            this.content.set('DV', new PdfString(val))
         }
     }
 
     get value(): string {
-        const v = this.get('V')
+        const v = this.content.get('V')
         if (v instanceof PdfString) {
             // UTF-16BE strings should always use UTF-16BE decoding regardless of font encoding
             if (v.isUTF16BE) {
@@ -210,7 +230,7 @@ export class PdfAcroFormField extends PdfDictionary<{
         if (!this.form) return undefined
 
         // Parse font name from DA (default appearance) string
-        const da = this.get('DA')?.as(PdfString)?.value
+        const da = this.content.get('DA')?.as(PdfString)?.value
         if (!da) return undefined
 
         // Extract font name from DA string (format: /FontName size Tf ...)
@@ -221,22 +241,26 @@ export class PdfAcroFormField extends PdfDictionary<{
         return this.form.fontEncodingMaps.get(fontName)
     }
 
-    set value(val: string) {
+    set value(val: string | PdfString) {
         if (this.value === val) {
             return
         }
 
         const fieldType = this.fieldType
         if (fieldType === 'Button') {
+            val = val instanceof PdfString ? val.value : val
             if (val.trim() === '') {
-                this.delete('V')
-                this.delete('AS')
+                this.content.delete('V')
+                this.content.delete('AS')
                 return
             }
-            this.set('V', new PdfName(val))
-            this.set('AS', new PdfName(val))
+            this.content.set('V', new PdfName(val))
+            this.content.set('AS', new PdfName(val))
         } else {
-            this.set('V', new PdfString(val))
+            this.content.set(
+                'V',
+                val instanceof PdfString ? val : new PdfString(val),
+            )
         }
 
         if (this.defaultGenerateAppearance) {
@@ -246,7 +270,7 @@ export class PdfAcroFormField extends PdfDictionary<{
 
     get checked(): boolean {
         if (this.fieldType === 'Button') {
-            const v = this.get('V')
+            const v = this.content.get('V')
             return v instanceof PdfName && v.value === 'Yes'
         }
         return false
@@ -255,17 +279,17 @@ export class PdfAcroFormField extends PdfDictionary<{
     set checked(isChecked: boolean) {
         if (this.fieldType === 'Button') {
             if (isChecked) {
-                this.set('V', new PdfName('Yes'))
-                this.set('AS', new PdfName('Yes'))
+                this.content.set('V', new PdfName('Yes'))
+                this.content.set('AS', new PdfName('Yes'))
             } else {
-                this.set('V', new PdfName('Off'))
-                this.set('AS', new PdfName('Off'))
+                this.content.set('V', new PdfName('Off'))
+                this.content.set('AS', new PdfName('Off'))
             }
         }
     }
 
     get fontSize(): number | null {
-        const da = this.get('DA')?.as(PdfString)?.value || ''
+        const da = this.content.get('DA')?.as(PdfString)?.value || ''
         const match = da.match(/\/[A-Za-z0-9_-]+\s+([\d.]+)\s+Tf/)
         if (match) {
             return parseFloat(match[1])
@@ -274,20 +298,20 @@ export class PdfAcroFormField extends PdfDictionary<{
     }
 
     set fontSize(size: number) {
-        const da = this.get('DA')?.as(PdfString)?.value || ''
+        const da = this.content.get('DA')?.as(PdfString)?.value || ''
         if (!da) {
-            this.set('DA', new PdfString(`/F1 ${size} Tf 0 g`))
+            this.content.set('DA', new PdfString(`/F1 ${size} Tf 0 g`))
             return
         }
         const updatedDa = da.replace(
             /(\/[A-Za-z0-9_-]+)\s+[\d.]+\s+Tf/g,
             `$1 ${size} Tf`,
         )
-        this.set('DA', new PdfString(updatedDa))
+        this.content.set('DA', new PdfString(updatedDa))
     }
 
     get fontName(): string | null {
-        const da = this.get('DA')?.as(PdfString)?.value || ''
+        const da = this.content.get('DA')?.as(PdfString)?.value || ''
         const match = da.match(/\/([A-Za-z0-9_-]+)\s+[\d.]+\s+Tf/)
         if (match) {
             return match[1]
@@ -296,16 +320,16 @@ export class PdfAcroFormField extends PdfDictionary<{
     }
 
     set fontName(fontName: string) {
-        const da = this.get('DA')?.as(PdfString)?.value || ''
+        const da = this.content.get('DA')?.as(PdfString)?.value || ''
         if (!da) {
-            this.set('DA', new PdfString(`/${fontName} 12 Tf 0 g`))
+            this.content.set('DA', new PdfString(`/${fontName} 12 Tf 0 g`))
             return
         }
         const updatedDa = da.replace(
             /\/[A-Za-z0-9_-]+(\s+[\d.]+\s+Tf)/g,
             `/${fontName}$1`,
         )
-        this.set('DA', new PdfString(updatedDa))
+        this.content.set('DA', new PdfString(updatedDa))
     }
 
     /**
@@ -315,16 +339,16 @@ export class PdfAcroFormField extends PdfDictionary<{
     set font(font: PdfFont | null) {
         if (font === null) {
             // Clear font - set to empty or default
-            this.set('DA', new PdfString(''))
+            this.content.set('DA', new PdfString(''))
             return
         }
 
         const resourceName = font.resourceName
         const currentSize = this.fontSize ?? 12
-        const da = this.get('DA')?.as(PdfString)?.value || ''
+        const da = this.content.get('DA')?.as(PdfString)?.value || ''
 
         if (!da) {
-            this.set(
+            this.content.set(
                 'DA',
                 new PdfString(`/${resourceName} ${currentSize} Tf 0 g`),
             )
@@ -335,35 +359,35 @@ export class PdfAcroFormField extends PdfDictionary<{
             /\/[A-Za-z0-9_-]+(\s+[\d.]+\s+Tf)/g,
             `/${resourceName}$1`,
         )
-        this.set('DA', new PdfString(updatedDa))
+        this.content.set('DA', new PdfString(updatedDa))
     }
 
     /**
      * Gets field flags (bitwise combination of field attributes)
      */
     get flags(): number {
-        return this.get('Ff')?.as(PdfNumber)?.value ?? 0
+        return this.content.get('Ff')?.as(PdfNumber)?.value ?? 0
     }
 
     /**
      * Sets field flags
      */
     set flags(flags: number) {
-        this.set('Ff', new PdfNumber(flags))
+        this.content.set('Ff', new PdfNumber(flags))
     }
 
     /**
      * Gets annotation flags (for visual appearance and behavior)
      */
     get annotationFlags(): number {
-        return this.get('F')?.as(PdfNumber)?.value ?? 0
+        return this.content.get('F')?.as(PdfNumber)?.value ?? 0
     }
 
     /**
      * Sets annotation flags
      */
     set annotationFlags(flags: number) {
-        this.set('F', new PdfNumber(flags))
+        this.content.set('F', new PdfNumber(flags))
     }
 
     /**
@@ -450,7 +474,7 @@ export class PdfAcroFormField extends PdfDictionary<{
      * 0 = left-justified, 1 = centered, 2 = right-justified
      */
     get quadding(): number {
-        return this.get('Q')?.as(PdfNumber)?.value ?? 0
+        return this.content.get('Q')?.as(PdfNumber)?.value ?? 0
     }
 
     /**
@@ -458,7 +482,7 @@ export class PdfAcroFormField extends PdfDictionary<{
      * 0 = left-justified, 1 = centered, 2 = right-justified
      */
     set quadding(q: number) {
-        this.set('Q', new PdfNumber(q))
+        this.content.set('Q', new PdfNumber(q))
     }
 
     /**
@@ -466,7 +490,7 @@ export class PdfAcroFormField extends PdfDictionary<{
      * Returns an array of option strings.
      */
     get options(): string[] {
-        const opt = this.get('Opt')?.as(PdfArray<PdfString>)
+        const opt = this.content.get('Opt')?.as(PdfArray<PdfString>)
         if (!opt) return []
         return opt.items.map((item) => item.value)
     }
@@ -477,21 +501,21 @@ export class PdfAcroFormField extends PdfDictionary<{
      */
     set options(options: string[]) {
         if (options.length === 0) {
-            this.delete('Opt')
+            this.content.delete('Opt')
             return
         }
         const optArray = new PdfArray<PdfString>(
             options.map((opt) => new PdfString(opt)),
         )
-        this.set('Opt', optArray)
+        this.content.set('Opt', optArray)
     }
 
     get defaultAppearance(): string | null {
-        return this.get('DA')?.as(PdfString)?.value ?? null
+        return this.content.get('DA')?.as(PdfString)?.value ?? null
     }
 
     set defaultAppearance(da: string) {
-        this.set('DA', new PdfString(da))
+        this.content.set('DA', new PdfString(da))
     }
 
     set combo(isCombo: boolean) {
@@ -543,14 +567,14 @@ export class PdfAcroFormField extends PdfDictionary<{
     }
 
     get maxLen(): number | null {
-        return this.get('MaxLen')?.as(PdfNumber)?.value ?? null
+        return this.content.get('MaxLen')?.as(PdfNumber)?.value ?? null
     }
 
     set maxLen(maxLen: number | null) {
         if (maxLen === null) {
-            this.delete('MaxLen')
+            this.content.delete('MaxLen')
         } else {
-            this.set('MaxLen', new PdfNumber(maxLen))
+            this.content.set('MaxLen', new PdfNumber(maxLen))
         }
     }
 
@@ -787,6 +811,37 @@ export class PdfAcroFormField extends PdfDictionary<{
         }
     }
 
+    get kids(): PdfObjectReference[] {
+        const kidsArray = this.content
+            .get('Kids')
+            ?.as(PdfArray<PdfObjectReference>)
+        if (!kidsArray) return []
+        return kidsArray.items
+    }
+
+    set kids(kids: PdfObjectReference[]) {
+        if (kids.length === 0) {
+            this.content.delete('Kids')
+            return
+        }
+        const kidsArray = new PdfArray<PdfObjectReference>(kids)
+        this.content.set('Kids', kidsArray)
+    }
+
+    get apperanceStreamDict(): PdfAppearanceStreamDictionary | null {
+        const apDict = this.content.get('AP')?.as(PdfDictionary)
+        if (!apDict) return null
+        return apDict
+    }
+
+    set apperanceStreamDict(dict: PdfAppearanceStreamDictionary | null) {
+        if (dict === null) {
+            this.content.delete('AP')
+            return
+        }
+        this.content.set('AP', dict)
+    }
+
     /**
      * Generates an appearance stream for a text field using iText's approach.
      *
@@ -842,7 +897,7 @@ export class PdfAcroFormField extends PdfDictionary<{
         const height = y2 - y1
 
         // Get the default appearance string
-        const da = this.get('DA')?.as(PdfString)?.value
+        const da = this.content.get('DA')?.as(PdfString)?.value
         if (!da) return false
 
         // Get the field value
@@ -975,7 +1030,7 @@ EMC
         // Set up resources with the font from the form's default resources
         // We need to copy the fonts, not just reference them, to ensure Acrobat can find them
         if (this.form) {
-            const formResources = this.form.get('DR')?.as(PdfDictionary)
+            const formResources = this.form.content.get('DR')?.as(PdfDictionary)
             if (formResources) {
                 const fonts = formResources.get('Font')?.as(PdfDictionary)
                 if (fonts) {
@@ -1133,7 +1188,7 @@ Q
         const height = y2 - y1
 
         // Get the default appearance string
-        const da = this.get('DA')?.as(PdfString)?.value
+        const da = this.content.get('DA')?.as(PdfString)?.value
         if (!da) return false
 
         const value = this.value
@@ -1212,7 +1267,7 @@ EMC
         )
 
         if (this.form) {
-            const formResources = this.form.get('DR')?.as(PdfDictionary)
+            const formResources = this.form.content.get('DR')?.as(PdfDictionary)
             if (formResources) {
                 const fonts = formResources.get('Font')?.as(PdfDictionary)
                 if (fonts) {
@@ -1286,10 +1341,10 @@ EMC
         appearanceStreamRef: PdfObjectReference,
         appearanceStreamYesRef?: PdfObjectReference,
     ): void {
-        let apDict = this.get('AP')?.as(PdfDictionary)
+        let apDict = this.content.get('AP')?.as(PdfDictionary)
         if (!apDict) {
             apDict = new PdfDictionary()
-            this.set('AP', apDict)
+            this.content.set('AP', apDict)
         }
 
         // For button fields with multiple states, create a state dictionary
@@ -1307,74 +1362,85 @@ EMC
 
 export class PdfAcroForm<
     T extends Record<string, string> = Record<string, string>,
-> extends PdfDictionary<{
-    Fields: PdfArray<PdfObjectReference>
-    NeedAppearances?: PdfBoolean
-    SigFlags?: PdfNumber
-    CO?: PdfArray<PdfObjectReference>
-    DR?: PdfDictionary
-    DA?: PdfString
-    Q?: PdfNumber
-}> {
+> extends PdfIndirectObject<
+    PdfDictionary<{
+        Fields: PdfArray<PdfObjectReference>
+        NeedAppearances?: PdfBoolean
+        SigFlags?: PdfNumber
+        CO?: PdfArray<PdfObjectReference>
+        DR?: PdfDictionary
+        DA?: PdfString
+        Q?: PdfNumber
+    }>
+> {
     fields: PdfAcroFormField[]
-    readonly container?: PdfIndirectObject
     readonly fontEncodingMaps: Map<string, Map<number, string> | null> =
         new Map()
     private document?: PdfDocument
 
-    constructor(options: {
-        dict: PdfDictionary
+    constructor(options?: {
+        other?: PdfIndirectObject
+        dict?: PdfDictionary // Old API compatibility
         fields?: PdfAcroFormField[]
-        container?: PdfIndirectObject
         document?: PdfDocument
     }) {
-        super()
-        this.copyFrom(options.dict)
-        this.fields = options.fields ?? []
-        this.container = options.container
-        this.document = options.document
+        // Support both old and new API
+        let indirectObj: PdfIndirectObject
+        if (options?.dict) {
+            // Old API: { dict: someDict }
+            indirectObj = new PdfIndirectObject({ content: options.dict })
+        } else {
+            indirectObj =
+                options?.other ??
+                new PdfIndirectObject({ content: new PdfDictionary() })
+        }
+        super(indirectObj)
+        this.fields = options?.fields ?? []
+        this.document = options?.document
     }
 
     /**
      * Gets the NeedAppearances flag
      */
     get needAppearances(): boolean {
-        return this.get('NeedAppearances')?.as(PdfBoolean)?.value ?? false
+        return (
+            this.content.get('NeedAppearances')?.as(PdfBoolean)?.value ?? false
+        )
     }
 
     /**
      * Sets the NeedAppearances flag to indicate that appearance streams need to be regenerated
      */
     set needAppearances(value: boolean) {
-        this.set('NeedAppearances', new PdfBoolean(value))
+        this.content.set('NeedAppearances', new PdfBoolean(value))
     }
 
     /**
      * Gets the signature flags
      */
     get signatureFlags(): number {
-        return this.get('SigFlags')?.as(PdfNumber)?.value ?? 0
+        return this.content.get('SigFlags')?.as(PdfNumber)?.value ?? 0
     }
 
     /**
      * Sets the signature flags
      */
     set signatureFlags(flags: number) {
-        this.set('SigFlags', new PdfNumber(flags))
+        this.content.set('SigFlags', new PdfNumber(flags))
     }
 
     /**
      * Gets the default appearance string for the form
      */
     get defaultAppearance(): string | null {
-        return this.get('DA')?.as(PdfString)?.value ?? null
+        return this.content.get('DA')?.as(PdfString)?.value ?? null
     }
 
     /**
      * Sets the default appearance string for the form
      */
     set defaultAppearance(da: string) {
-        this.set('DA', new PdfString(da))
+        this.content.set('DA', new PdfString(da))
     }
 
     /**
@@ -1382,14 +1448,14 @@ export class PdfAcroForm<
      * 0 = left, 1 = center, 2 = right
      */
     get defaultQuadding(): number {
-        return this.get('Q')?.as(PdfNumber)?.value ?? 0
+        return this.content.get('Q')?.as(PdfNumber)?.value ?? 0
     }
 
     /**
      * Sets the default quadding (alignment) for the form
      */
     set defaultQuadding(q: number) {
-        this.set('Q', new PdfNumber(q))
+        this.content.set('Q', new PdfNumber(q))
     }
 
     /**
@@ -1439,7 +1505,7 @@ export class PdfAcroForm<
         }
 
         // Get the font from DR (default resources)
-        const dr = this.get('DR')?.as(PdfDictionary)
+        const dr = this.content.get('DR')?.as(PdfDictionary)
         if (!dr) {
             this.fontEncodingMaps.set(fontName, null)
             return null
@@ -1526,23 +1592,20 @@ export class PdfAcroForm<
             acroFormContainer = acroFormObject
         } else if (acroFormRef instanceof PdfDictionary) {
             acroFormDict = acroFormRef
+            acroFormContainer = new PdfIndirectObject({ content: acroFormDict })
         } else {
             return null
         }
 
-        const acroForm = new PdfAcroForm({
-            dict: acroFormDict,
-            container: acroFormContainer,
-            document,
-        })
+        const acroForm = new PdfAcroForm({ other: acroFormContainer, document })
 
         const fields: Map<string, PdfAcroFormField> = new Map()
 
         const getFields = async (
-            fieldRefs: PdfArray<PdfObjectReference>,
+            fieldRefs: PdfObjectReference[],
             parent?: PdfAcroFormField,
         ): Promise<void> => {
-            for (const fieldRef of fieldRefs.items) {
+            for (const fieldRef of fieldRefs) {
                 const refKey = fieldRef.toString().trim()
                 if (fields.has(refKey)) {
                     fields.get(refKey)!.parent = parent
@@ -1557,16 +1620,12 @@ export class PdfAcroForm<
                 if (!fieldObject) continue
                 if (!(fieldObject.content instanceof PdfDictionary)) continue
 
-                const field = new PdfAcroFormField({
-                    container: fieldObject,
-                    form: acroForm,
-                })
+                const field = new PdfAcroFormField(fieldObject, acroForm)
                 field.parent = parent
-                field.copyFrom(fieldObject.content)
 
                 // Process child fields (Kids) before adding the parent
-                const kids = field.get('Kids')?.as(PdfArray<PdfObjectReference>)
-                if (kids) {
+                const kids = field.kids
+                if (kids.length > 0) {
                     await getFields(kids, field)
                 }
 
@@ -1577,17 +1636,22 @@ export class PdfAcroForm<
         }
 
         const fieldsArray: PdfArray<PdfObjectReference> = new PdfArray()
-        if (acroForm.get('Fields') instanceof PdfArray) {
+        if (acroForm.content.get('Fields') instanceof PdfArray) {
             fieldsArray.items.push(
-                ...acroForm.get('Fields')!.as(PdfArray<PdfObjectReference>)
-                    .items,
+                ...acroForm.content
+                    .get('Fields')!
+                    .as(PdfArray<PdfObjectReference>).items,
             )
-        } else if (acroForm.get('Fields') instanceof PdfObjectReference) {
+        } else if (
+            acroForm.content.get('Fields') instanceof PdfObjectReference
+        ) {
             const fieldsObj = await document.readObject({
-                objectNumber: acroForm.get('Fields')!.as(PdfObjectReference)
-                    .objectNumber,
-                generationNumber: acroForm.get('Fields')!.as(PdfObjectReference)
-                    .generationNumber,
+                objectNumber: acroForm.content
+                    .get('Fields')!
+                    .as(PdfObjectReference).objectNumber,
+                generationNumber: acroForm.content
+                    .get('Fields')!
+                    .as(PdfObjectReference).generationNumber,
             })
 
             if (fieldsObj && fieldsObj.content instanceof PdfArray) {
@@ -1597,7 +1661,7 @@ export class PdfAcroForm<
             }
         }
 
-        await getFields(fieldsArray)
+        await getFields(fieldsArray.items)
 
         // Pre-cache font encoding maps for all fonts used in fields
         await acroForm.cacheAllFontEncodings()
@@ -1614,7 +1678,7 @@ export class PdfAcroForm<
 
         // Collect all font names from field DA strings
         for (const field of this.fields) {
-            const da = field.get('DA')?.as(PdfString)?.value
+            const da = field.content.get('DA')?.as(PdfString)?.value
             if (da) {
                 const fontMatch = da.match(/\/(\w+)\s+[\d.]+\s+Tf/)
                 if (fontMatch) {
@@ -1746,7 +1810,7 @@ export class PdfAcroForm<
         document.setIncremental(true)
 
         const fieldsArray = new PdfArray<PdfObjectReference>()
-        this.set('Fields', fieldsArray)
+        this.content.set('Fields', fieldsArray)
 
         // Track fields that need to be added to page annotations
         const fieldsByPage = new Map<
@@ -1794,18 +1858,12 @@ export class PdfAcroForm<
                     }
                 }
 
-                // Write modified field as an indirect object
-                const acroFormFieldIndirect = new PdfIndirectObject({
-                    objectNumber: field.container?.objectNumber,
-                    generationNumber: field.container?.generationNumber,
-                    content: field,
-                })
-                document.add(acroFormFieldIndirect)
+                document.add(field)
 
                 // Create a proper PdfObjectReference (not the proxy from .reference)
                 fieldReference = new PdfObjectReference(
-                    acroFormFieldIndirect.objectNumber,
-                    acroFormFieldIndirect.generationNumber,
+                    field.objectNumber,
+                    field.generationNumber,
                 )
 
                 // Track if this field needs to be added to a page's Annots
@@ -1822,14 +1880,7 @@ export class PdfAcroForm<
                     fieldsByPage.get(pageKey)!.fieldRefs.push(fieldReference)
                 }
             } else {
-                // Unmodified field: reuse existing indirect reference information
-                const container = field.container
-                if (container) {
-                    fieldReference = new PdfObjectReference(
-                        container.objectNumber,
-                        container.generationNumber,
-                    )
-                }
+                fieldReference = field.reference
             }
 
             if (fieldReference) {
@@ -1841,14 +1892,8 @@ export class PdfAcroForm<
         await this.updatePageAnnotations(document, fieldsByPage)
 
         if (this.isModified()) {
-            // Create or update the AcroForm entry in the catalog
-            const acroFormIndirect = new PdfIndirectObject({
-                objectNumber: this.container?.objectNumber,
-                generationNumber: this.container?.generationNumber,
-                content: this,
-            })
-            document.add(acroFormIndirect)
-            catalog.set('AcroForm', acroFormIndirect.reference)
+            document.add(this)
+            catalog.set('AcroForm', this.reference)
 
             // In incremental mode, ensure the updated catalog is written
             const rootRef = document.trailerDict

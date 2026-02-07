@@ -19,16 +19,24 @@ export class PdfIndirectObject<
     orderIndex?: number
 
     constructor(
-        options:
+        options?:
             | {
                   objectNumber?: number
                   generationNumber?: number
-                  content: T
+                  content?: T
                   offset?: number | Ref<number>
                   encryptable?: boolean
               }
-            | T,
+            | T
+            | PdfIndirectObject,
     ) {
+        if (options instanceof PdfIndirectObject) {
+            super(options.objectNumber, options.generationNumber)
+            this.content = options.content.clone() as T
+            this.offset = options.offset.clone()
+            return
+        }
+
         if (options instanceof PdfObject) {
             super(-1, 0)
             this.content = options
@@ -36,13 +44,13 @@ export class PdfIndirectObject<
             return
         }
 
-        super(options.objectNumber ?? -1, options.generationNumber ?? 0)
-        this.content = options.content
+        super(options?.objectNumber ?? -1, options?.generationNumber ?? 0)
+        this.content = options?.content ?? (new PdfNull() as unknown as T)
         this.offset =
-            options.offset instanceof Ref
+            options?.offset instanceof Ref
                 ? options.offset
-                : new Ref(options.offset ?? 0)
-        this.encryptable = options.encryptable
+                : new Ref(options?.offset ?? 0)
+        this.encryptable = options?.encryptable
     }
 
     get reference(): PdfObjectReference {

@@ -169,7 +169,7 @@ describe('AcroForm', () => {
         expect(textField).toBeDefined()
 
         // Set a proper default appearance string first to ensure we have a valid DA
-        textField!.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        textField!.defaultAppearance = '/Helv 12 Tf 0 g'
 
         // Now change the font size
         textField!.fontSize = 20
@@ -217,7 +217,7 @@ describe('AcroForm', () => {
         expect(textField).toBeDefined()
 
         // Set a proper default appearance string first
-        textField!.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        textField!.defaultAppearance = '/Helv 12 Tf 0 g'
 
         // Verify original font name
         expect(textField!.fontName).toBe('Helv')
@@ -226,7 +226,7 @@ describe('AcroForm', () => {
         textField!.fontName = 'Times'
 
         // Verify DA string is correct after change
-        const daAfterChange = textField!.get('DA')?.as(PdfString)?.value
+        const daAfterChange = textField!.defaultAppearance
         expect(daAfterChange).toBe('/Times 12 Tf 0 g')
 
         // Verify the fontName was set correctly before writing
@@ -421,10 +421,10 @@ describe('AcroForm', () => {
         expect(addedField!.value).toBe('New Field Value')
 
         // Verify the field has positioning information
-        const rect = addedField!.get('Rect')?.as(PdfArray<PdfNumber>)
+        const rect = addedField!.rect!
         expect(rect).toBeDefined()
-        expect(rect!.items[0].value).toBe(50)
-        expect(rect!.items[1].value).toBe(50)
+        expect(rect[0]).toBe(50)
+        expect(rect[1]).toBe(50)
     })
 
     describe('Font Encoding', () => {
@@ -611,9 +611,9 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         })
 
         const field = new PdfAcroFormField({ form: acroForm })
-        field.set('T', new PdfString('PriceField'))
-        field.set('DA', new PdfString('/Helv 12 Tf'))
-        field.set('V', new PdfString(new Uint8Array([160, 53, 48]))) // Euro + "50"
+        field.name = 'PriceField'
+        field.defaultAppearance = '/Helv 12 Tf'
+        field.value = '\xA050' // Byte 160 (0xA0) should map to Euro symbol
 
         acroForm.fields.push(field)
         await acroForm.getFontEncodingMap('Helv')
@@ -629,7 +629,8 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         })
 
         const field = new PdfAcroFormField({ form: acroForm })
-        field.set('T', new PdfString('TextField'))
+        field.name = 'UTF16Field'
+        field.defaultAppearance = '/Helv 12 Tf'
 
         const utf16Bytes = new Uint8Array([
             0xfe,
@@ -645,7 +646,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
             0x00,
             0x6f, // o
         ])
-        field.set('V', new PdfString(utf16Bytes))
+        field.value = new PdfString(utf16Bytes)
 
         expect(field.value).toBe('Hello')
     })
@@ -688,14 +689,11 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         await acroForm.getFontEncodingMap('Helv')
 
         const field = new PdfAcroFormField({ form: acroForm })
-        field.set('DA', new PdfString('/Helv 12 Tf'))
-        field.set(
-            'V',
-            new PdfString(
-                new Uint8Array([
-                    0xfe, 0xff, 0x00, 0x54, 0x00, 0x65, 0x00, 0x78, 0x00, 0x74,
-                ]),
-            ),
+        field.defaultAppearance = '/Helv 12 Tf'
+        field.value = new PdfString(
+            new Uint8Array([
+                0xfe, 0xff, 0x00, 0x54, 0x00, 0x65, 0x00, 0x78, 0x00, 0x74,
+            ]),
         )
 
         expect(field.value).toBe('Text')
@@ -853,7 +851,7 @@ describe('AcroForm Appearance Generation', () => {
         expect(textField).toBeDefined()
 
         // Check that the appearance was set
-        const apDict = textField!.get('AP')?.as(PdfDictionary)
+        const apDict = textField!.apperanceStreamDict
         expect(apDict).toBeDefined()
 
         const normalAppearance = apDict!.get('N')?.as(PdfObjectReference)
@@ -918,7 +916,7 @@ describe('AcroForm Appearance Generation', () => {
             )
             expect(field?.value).toBe(expectedValue)
 
-            const apDict = field?.get('AP')?.as(PdfDictionary)
+            const apDict = field?.apperanceStreamDict
             expect(apDict).toBeDefined()
             expect(apDict?.get('N')).toBeDefined()
         }
@@ -984,7 +982,7 @@ describe('AcroForm Appearance Generation', () => {
     it('should return false when field has no rectangle', async () => {
         const textField = new PdfAcroFormField()
         textField.fieldType = 'Text'
-        textField.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        textField.defaultAppearance = '/Helv 12 Tf 0 g'
         textField.value = 'Test'
 
         const success = textField.generateAppearance()

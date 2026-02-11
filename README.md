@@ -13,10 +13,10 @@ PRs and issues are welcome!
 
 ## Features
 
-- **Zero dependencies**: No external libraries are required, making it lightweight and easy to integrate.
 - **Type-safe**: Built with TypeScript, ensuring type safety and reducing runtime errors.
 - **Browser and Node.js support**: Works seamlessly in both environments, allowing for versatile usage.
 - **Low-level API**: Provides a low-level API for advanced users who want to manipulate PDF files directly, as well as a higher-level API for easier usage.
+- **Minimal dependencies**: A small number external libraries are required, making it lightweight and easy to integrate.
 
 ## Installation
 

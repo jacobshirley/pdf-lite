@@ -75,7 +75,7 @@ export class PdfAcroFormField extends PdfIndirectObject<
         Opt?: PdfArray<PdfString>
     }>
 > {
-    parent?: PdfAcroFormField
+    private _parent?: PdfAcroFormField
     defaultGenerateAppearance: boolean = true
     private _appearanceStream?: PdfStream
     private _appearanceStreamYes?: PdfStream // For button fields: checked state
@@ -87,6 +87,64 @@ export class PdfAcroFormField extends PdfIndirectObject<
                 new PdfIndirectObject({ content: new PdfDictionary() }),
         )
         this.form = options?.form
+    }
+
+    get parent(): PdfAcroFormField | undefined {
+        if (this._parent) return this._parent
+        if (!this.form) return undefined
+        return this.form.fields.find(
+            (f) =>
+                f !== this &&
+                f.kids.some(
+                    (k) =>
+                        k.objectNumber === this.objectNumber &&
+                        k.generationNumber === this.generationNumber,
+                ),
+        )
+    }
+
+    set parent(field: PdfAcroFormField | undefined) {
+        // Remove from old parent's Kids
+        if (this._parent) {
+            this._parent.kids = this._parent.kids.filter(
+                (k) =>
+                    k.objectNumber !== this.objectNumber ||
+                    k.generationNumber !== this.generationNumber,
+            )
+        }
+        this._parent = field
+        // Add to new parent's Kids
+        if (field) {
+            const alreadyInKids = field.kids.some(
+                (k) =>
+                    k.objectNumber === this.objectNumber &&
+                    k.generationNumber === this.generationNumber,
+            )
+            if (!alreadyInKids) {
+                field.kids = [...field.kids, this.reference]
+            }
+        }
+    }
+
+    get children(): PdfAcroFormField[] {
+        if (!this.form) return []
+        return this.form.fields.filter((f) => f.parent === this)
+    }
+
+    set children(fields: PdfAcroFormField[]) {
+        // Clear existing children's parent
+        for (const child of this.children) {
+            child._parent = undefined
+        }
+        // Set new children and update Kids array
+        this.kids = fields.map((f) => f.reference)
+        for (const child of fields) {
+            child._parent = this
+        }
+    }
+
+    get siblings(): PdfAcroFormField[] {
+        return this.parent?.children ?? []
     }
 
     get encodingMap(): Map<number, string> | undefined {
@@ -263,6 +321,17 @@ export class PdfAcroFormField extends PdfIndirectObject<
 
         if (this.defaultGenerateAppearance) {
             this.generateAppearance()
+
+            // If this is a child widget with siblings, regenerate their appearances too
+            for (const sibling of this.siblings) {
+                if (
+                    sibling !== this &&
+                    sibling.rect &&
+                    sibling.defaultGenerateAppearance
+                ) {
+                    sibling.generateAppearance()
+                }
+            }
         }
     }
 

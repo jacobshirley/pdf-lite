@@ -570,6 +570,208 @@ describe('AcroForm', () => {
     })
 })
 
+describe('AcroForm Parent/Child Field Inheritance', () => {
+    it('should inherit value from parent field', () => {
+        // Create parent field with FT, DA, and V
+        const parentField = new PdfAcroFormField()
+        parentField.fieldType = 'Text'
+        parentField.defaultAppearance = '/Helv 12 Tf 0 g'
+        parentField.content.set('V', new PdfString('Parent Value'))
+
+        // Create child widget (no FT, DA, or V of its own)
+        const childField = new PdfAcroFormField()
+        childField.parent = parentField
+        childField.rect = [100, 100, 300, 120]
+        childField.isWidget = true
+
+        // Child should inherit value from parent
+        expect(childField.value).toBe('Parent Value')
+        // Child should inherit fieldType from parent
+        expect(childField.fieldType).toBe('Text')
+        // Child should inherit DA from parent
+        expect(childField.defaultAppearance).toBe('/Helv 12 Tf 0 g')
+    })
+
+    it('should set value on parent when child is updated', () => {
+        // Create parent field
+        const parentField = new PdfAcroFormField()
+        parentField.fieldType = 'Text'
+        parentField.defaultAppearance = '/Helv 12 Tf 0 g'
+
+        // Create child widget
+        const childField = new PdfAcroFormField()
+        childField.parent = parentField
+        childField.rect = [100, 100, 300, 120]
+        childField.isWidget = true
+
+        // Setting value on child should store V on parent
+        childField.value = 'New Value'
+
+        expect(parentField.value).toBe('New Value')
+        expect(childField.value).toBe('New Value')
+    })
+
+    it('should generate appearance for child widget using inherited DA', () => {
+        const acroForm = new PdfAcroForm()
+
+        // Create parent field with FT and DA but no Rect
+        const parentField = new PdfAcroFormField({ form: acroForm })
+        parentField.fieldType = 'Text'
+        parentField.defaultAppearance = '/Helv 12 Tf 0 g'
+
+        // Create child widget with Rect but no FT or DA
+        const childField = new PdfAcroFormField({ form: acroForm })
+        childField.parent = parentField
+        childField.rect = [100, 100, 300, 120]
+        childField.isWidget = true
+
+        childField.value = 'Test'
+
+        const success = childField.generateAppearance()
+        expect(success).toBe(true)
+
+        const appearance = childField.getAppearanceStream()
+        expect(appearance).toBeDefined()
+        expect(appearance!.rawAsString).toContain('(Test) Tj')
+    })
+
+    it('should read value back correctly after write with parent/child fields', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = await document.acroForm.read()
+        if (!acroform) {
+            throw new Error('No AcroForm found in the document')
+        }
+
+        // Set values using importData
+        acroform.importData({
+            'Client Name': 'Test Client',
+            N: '9999',
+        })
+
+        await document.acroForm.write(acroform)
+
+        // Read back and verify
+        const newDocumentBytes = document.toBytes()
+        const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
+        const updatedAcroform = await newDocument.acroForm.read()
+        const exportedData = updatedAcroform?.exportData()!
+
+        expect(exportedData['Client Name']).toBe('Test Client')
+        expect(exportedData['N']).toBe('9999')
+    })
+
+    it('should inherit flags from parent field', () => {
+        const parentField = new PdfAcroFormField()
+        parentField.fieldType = 'Text'
+        parentField.defaultAppearance = '/Helv 12 Tf 0 g'
+        parentField.multiline = true
+        parentField.readOnly = true
+
+        const childField = new PdfAcroFormField()
+        childField.parent = parentField
+        childField.rect = [100, 100, 300, 120]
+
+        expect(childField.multiline).toBe(true)
+        expect(childField.readOnly).toBe(true)
+        expect(childField.flags).toBe(parentField.flags)
+    })
+
+    it('should inherit fontSize and fontName from parent DA', () => {
+        const parentField = new PdfAcroFormField()
+        parentField.fieldType = 'Text'
+        parentField.defaultAppearance = '/Helv 14 Tf 0 g'
+
+        const childField = new PdfAcroFormField()
+        childField.parent = parentField
+        childField.rect = [100, 100, 300, 120]
+
+        expect(childField.fontSize).toBe(14)
+        expect(childField.fontName).toBe('Helv')
+    })
+
+    it('should inherit quadding from parent field', () => {
+        const parentField = new PdfAcroFormField()
+        parentField.fieldType = 'Text'
+        parentField.defaultAppearance = '/Helv 12 Tf 0 g'
+        parentField.quadding = 1 // centered
+
+        const childField = new PdfAcroFormField()
+        childField.parent = parentField
+        childField.rect = [100, 100, 300, 120]
+
+        expect(childField.quadding).toBe(1)
+    })
+
+    it('should inherit defaultValue from parent field', () => {
+        const parentField = new PdfAcroFormField()
+        parentField.fieldType = 'Text'
+        parentField.defaultAppearance = '/Helv 12 Tf 0 g'
+        parentField.defaultValue = 'Default'
+
+        const childField = new PdfAcroFormField()
+        childField.parent = parentField
+        childField.rect = [100, 100, 300, 120]
+
+        expect(childField.defaultValue).toBe('Default')
+    })
+
+    it('should inherit options from parent for choice fields', () => {
+        const parentField = new PdfAcroFormField()
+        parentField.fieldType = 'Choice'
+        parentField.defaultAppearance = '/Helv 12 Tf 0 g'
+        parentField.options = ['A', 'B', 'C']
+
+        const childField = new PdfAcroFormField()
+        childField.parent = parentField
+        childField.rect = [100, 100, 300, 120]
+
+        expect(childField.options).toEqual(['A', 'B', 'C'])
+    })
+
+    it('should inherit checked state from parent for button fields', () => {
+        const parentField = new PdfAcroFormField()
+        parentField.fieldType = 'Button'
+        parentField.checked = true
+
+        const childField = new PdfAcroFormField()
+        childField.parent = parentField
+        childField.rect = [100, 100, 120, 120]
+
+        expect(childField.checked).toBe(true)
+    })
+
+    it('should share value across sibling widgets', () => {
+        // Create parent field
+        const parentField = new PdfAcroFormField()
+        parentField.fieldType = 'Text'
+        parentField.defaultAppearance = '/Helv 12 Tf 0 g'
+
+        // Create two child widgets
+        const child1 = new PdfAcroFormField()
+        child1.parent = parentField
+        child1.rect = [100, 100, 300, 120]
+
+        const child2 = new PdfAcroFormField()
+        child2.parent = parentField
+        child2.rect = [100, 200, 300, 220]
+
+        // Set value on child1
+        child1.value = 'Shared Value'
+
+        // Both children and parent should see the value
+        expect(parentField.value).toBe('Shared Value')
+        expect(child1.value).toBe('Shared Value')
+        expect(child2.value).toBe('Shared Value')
+    })
+})
+
 describe('AcroForm Field Value Decoding with Custom Encoding', () => {
     it('should decode field values with custom Euro encoding', async () => {
         // Create a mock document with font encoding

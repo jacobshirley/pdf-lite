@@ -106,7 +106,9 @@ export class PdfAcroFormField extends PdfIndirectObject<
      * Gets the field type
      */
     get fieldType(): PdfFieldType | null {
-        const ft = this.content.get('FT')?.value
+        const ft =
+            this.content.get('FT')?.value ??
+            this.parent?.content.get('FT')?.value
         switch (ft) {
             case 'Tx':
                 return 'Text'
@@ -200,7 +202,7 @@ export class PdfAcroFormField extends PdfIndirectObject<
      * Gets the default value
      */
     get defaultValue(): string {
-        const dv = this.content.get('DV')
+        const dv = this.content.get('DV') ?? this.parent?.content.get('DV')
         if (dv instanceof PdfString) {
             return dv.value
         } else if (dv instanceof PdfName) {
@@ -222,7 +224,8 @@ export class PdfAcroFormField extends PdfIndirectObject<
     }
 
     get value(): string {
-        const v = this.content.get('V')
+        // V may be on this field or inherited from parent (parent/kids split)
+        const v = this.content.get('V') ?? this.parent?.content.get('V')
         if (v instanceof PdfString) {
             // UTF-16BE strings should always use UTF-16BE decoding regardless of font encoding
             if (v.isUTF16BE) {
@@ -244,18 +247,20 @@ export class PdfAcroFormField extends PdfIndirectObject<
             return
         }
 
+        // In a parent/kids split, V should be set on the parent field
+        const target = this.parent ?? this
         const fieldType = this.fieldType
         if (fieldType === 'Button') {
             val = val instanceof PdfString ? val.value : val
             if (val.trim() === '') {
-                this.content.delete('V')
+                target.content.delete('V')
                 this.content.delete('AS')
                 return
             }
-            this.content.set('V', new PdfName(val))
+            target.content.set('V', new PdfName(val))
             this.content.set('AS', new PdfName(val))
         } else {
-            this.content.set(
+            target.content.set(
                 'V',
                 val instanceof PdfString ? val : new PdfString(val),
             )
@@ -268,7 +273,7 @@ export class PdfAcroFormField extends PdfIndirectObject<
 
     get checked(): boolean {
         if (this.fieldType === 'Button') {
-            const v = this.content.get('V')
+            const v = this.content.get('V') ?? this.parent?.content.get('V')
             return v instanceof PdfName && v.value === 'Yes'
         }
         return false
@@ -276,18 +281,19 @@ export class PdfAcroFormField extends PdfIndirectObject<
 
     set checked(isChecked: boolean) {
         if (this.fieldType === 'Button') {
+            const target = this.parent ?? this
             if (isChecked) {
-                this.content.set('V', new PdfName('Yes'))
+                target.content.set('V', new PdfName('Yes'))
                 this.content.set('AS', new PdfName('Yes'))
             } else {
-                this.content.set('V', new PdfName('Off'))
+                target.content.set('V', new PdfName('Off'))
                 this.content.set('AS', new PdfName('Off'))
             }
         }
     }
 
     get fontSize(): number | null {
-        const da = this.content.get('DA')?.as(PdfString)?.value || ''
+        const da = this.defaultAppearance || ''
         const match = da.match(/\/[A-Za-z0-9_-]+\s+([\d.]+)\s+Tf/)
         if (match) {
             return parseFloat(match[1])
@@ -296,7 +302,7 @@ export class PdfAcroFormField extends PdfIndirectObject<
     }
 
     set fontSize(size: number) {
-        const da = this.content.get('DA')?.as(PdfString)?.value || ''
+        const da = this.defaultAppearance || ''
         if (!da) {
             this.content.set('DA', new PdfString(`/F1 ${size} Tf 0 g`))
             return
@@ -309,7 +315,7 @@ export class PdfAcroFormField extends PdfIndirectObject<
     }
 
     get fontName(): string | null {
-        const da = this.content.get('DA')?.as(PdfString)?.value || ''
+        const da = this.defaultAppearance || ''
         const match = da.match(/\/([A-Za-z0-9_-]+)\s+[\d.]+\s+Tf/)
         if (match) {
             return match[1]
@@ -318,7 +324,7 @@ export class PdfAcroFormField extends PdfIndirectObject<
     }
 
     set fontName(fontName: string) {
-        const da = this.content.get('DA')?.as(PdfString)?.value || ''
+        const da = this.defaultAppearance || ''
         if (!da) {
             this.content.set('DA', new PdfString(`/${fontName} 12 Tf 0 g`))
             return
@@ -343,7 +349,7 @@ export class PdfAcroFormField extends PdfIndirectObject<
 
         const resourceName = font.resourceName
         const currentSize = this.fontSize ?? 12
-        const da = this.content.get('DA')?.as(PdfString)?.value || ''
+        const da = this.defaultAppearance || ''
 
         if (!da) {
             this.content.set(
@@ -364,7 +370,11 @@ export class PdfAcroFormField extends PdfIndirectObject<
      * Gets field flags (bitwise combination of field attributes)
      */
     get flags(): number {
-        return this.content.get('Ff')?.as(PdfNumber)?.value ?? 0
+        return (
+            this.content.get('Ff')?.as(PdfNumber)?.value ??
+            this.parent?.content.get('Ff')?.as(PdfNumber)?.value ??
+            0
+        )
     }
 
     /**
@@ -472,7 +482,11 @@ export class PdfAcroFormField extends PdfIndirectObject<
      * 0 = left-justified, 1 = centered, 2 = right-justified
      */
     get quadding(): number {
-        return this.content.get('Q')?.as(PdfNumber)?.value ?? 0
+        return (
+            this.content.get('Q')?.as(PdfNumber)?.value ??
+            this.parent?.content.get('Q')?.as(PdfNumber)?.value ??
+            0
+        )
     }
 
     /**
@@ -488,7 +502,9 @@ export class PdfAcroFormField extends PdfIndirectObject<
      * Returns an array of option strings.
      */
     get options(): string[] {
-        const opt = this.content.get('Opt')?.as(PdfArray<PdfString>)
+        const opt =
+            this.content.get('Opt')?.as(PdfArray<PdfString>) ??
+            this.parent?.content.get('Opt')?.as(PdfArray<PdfString>)
         if (!opt) return []
         return opt.items.map((item) => item.value)
     }
@@ -509,7 +525,11 @@ export class PdfAcroFormField extends PdfIndirectObject<
     }
 
     get defaultAppearance(): string | null {
-        return this.content.get('DA')?.as(PdfString)?.value ?? null
+        return (
+            this.content.get('DA')?.as(PdfString)?.value ??
+            this.parent?.content.get('DA')?.as(PdfString)?.value ??
+            null
+        )
     }
 
     set defaultAppearance(da: string) {
@@ -894,8 +914,10 @@ export class PdfAcroFormField extends PdfIndirectObject<
         const width = x2 - x1
         const height = y2 - y1
 
-        // Get the default appearance string
-        const da = this.content.get('DA')?.as(PdfString)?.value
+        // Get the default appearance string (may be inherited from parent)
+        const da =
+            this.content.get('DA')?.as(PdfString)?.value ??
+            this.parent?.content.get('DA')?.as(PdfString)?.value
         if (!da) return false
 
         // Get the field value
@@ -1024,6 +1046,27 @@ EMC
                 new PdfNumber(height),
             ]),
         )
+
+        // Add font resources so Acrobat can resolve the font name.
+        // Prefer the field's own DR (which has correctly resolved refs in incremental updates),
+        // then fall back to the AcroForm-level DR.
+        const fieldDR = (this.content as PdfDictionary)
+            .get('DR')
+            ?.as(PdfDictionary)
+        const acroformDR = this.form?.defaultResources
+        const fontSource =
+            fieldDR?.get('Font')?.as(PdfDictionary) ??
+            acroformDR?.get('Font')?.as(PdfDictionary)
+        if (fontSource && fontName) {
+            const fontRef = fontSource.get(fontName)
+            if (fontRef) {
+                const resourceFontDict = new PdfDictionary()
+                resourceFontDict.set(fontName, fontRef)
+                const resourcesDict = new PdfDictionary()
+                resourcesDict.set('Font', resourceFontDict)
+                appearanceDict.set('Resources', resourcesDict)
+            }
+        }
 
         const stream = new PdfStream({
             header: appearanceDict,
@@ -1167,8 +1210,10 @@ Q
         const width = x2 - x1
         const height = y2 - y1
 
-        // Get the default appearance string
-        const da = this.content.get('DA')?.as(PdfString)?.value
+        // Get the default appearance string (may be inherited from parent)
+        const da =
+            this.content.get('DA')?.as(PdfString)?.value ??
+            this.parent?.content.get('DA')?.as(PdfString)?.value
         if (!da) return false
 
         const value = this.value
@@ -1245,6 +1290,25 @@ EMC
                 new PdfNumber(height),
             ]),
         )
+
+        // Add font resources so Acrobat can resolve the font name.
+        const fieldDR = (this.content as PdfDictionary)
+            .get('DR')
+            ?.as(PdfDictionary)
+        const acroformDR = this.form?.defaultResources
+        const fontSource =
+            fieldDR?.get('Font')?.as(PdfDictionary) ??
+            acroformDR?.get('Font')?.as(PdfDictionary)
+        if (fontSource && fontName) {
+            const fontRef = fontSource.get(fontName)
+            if (fontRef) {
+                const resourceFontDict = new PdfDictionary()
+                resourceFontDict.set(fontName, fontRef)
+                const resourcesDict = new PdfDictionary()
+                resourcesDict.set('Font', resourceFontDict)
+                appearanceDict.set('Resources', resourcesDict)
+            }
+        }
 
         const stream = new PdfStream({
             header: appearanceDict,

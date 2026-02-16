@@ -1475,6 +1475,7 @@ export class PdfAcroForm<
         DR?: PdfDefaultResourcesDictionary
         DA?: PdfString
         Q?: PdfNumber
+        XFA?: PdfDictionary
     }>
 > {
     fields: PdfAcroFormField[]
@@ -1494,27 +1495,6 @@ export class PdfAcroForm<
         )
         this.fields = options?.fields ?? []
         this.document = options?.document
-    }
-
-    /**
-     * Convenience method to get a value from the form dictionary
-     */
-    get(key: string): any {
-        return this.content.get(key as any)
-    }
-
-    /**
-     * Convenience method to set a value in the form dictionary
-     */
-    set(key: string, value: any): void {
-        this.content.set(key as any, value)
-    }
-
-    /**
-     * Convenience method to delete a key from the form dictionary
-     */
-    delete(key: string): void {
-        this.content.delete(key as any)
     }
 
     /**
@@ -1943,11 +1923,140 @@ export class PdfAcroForm<
         }
     }
 
+    /**
+     * Updates the XFA datasets XML with current field values.
+     * Returns the datasets indirect object to be added to the document,
+     * or undefined if no XFA update is needed.
+     * @internal
+     */
+    private async buildXfaDatasets(
+        document: PdfDocument,
+    ): Promise<PdfIndirectObject | undefined> {
+        const hasXfa = await document.xfa.hasXfaForms()
+        if (!hasXfa) return undefined
+
+        let xml = await document.xfa.readXml()
+        if (!xml) return undefined
+
+        // Collect modified field values
+        const modifiedValues = new Map<string, string>()
+        for (const field of this.fields) {
+            if (!field.isModified()) continue
+            const fieldType = field.fieldType
+            if (!fieldType || fieldType === 'Signature') continue
+
+            const name = field.name
+            if (!name) continue
+
+            modifiedValues.set(name, field.value)
+        }
+
+        if (modifiedValues.size === 0) return undefined
+
+        // Update XFA datasets XML with modified values
+        for (const [fieldName, value] of modifiedValues) {
+            xml = this.updateXfaFieldValue(xml, fieldName, value)
+        }
+
+        // Get the datasets stream reference to preserve the object number
+        // Access the private method through the xfa manager's internals
+        const acroFormDict = this.content as PdfDictionary
+        const xfaArray = acroFormDict.get('XFA')
+        if (!(xfaArray instanceof PdfArray)) return undefined
+
+        // Find the datasets reference in the XFA array
+        const items = xfaArray.items
+        let datasetsRef: PdfObjectReference | null = null
+        for (let i = 0; i < items.length - 1; i += 2) {
+            const name = items[i]
+            const ref = items[i + 1]
+            if (
+                name instanceof PdfString &&
+                name.value === 'datasets' &&
+                ref instanceof PdfObjectReference
+            ) {
+                datasetsRef = ref
+                break
+            }
+        }
+
+        if (!datasetsRef) return undefined
+
+        return new PdfIndirectObject({
+            objectNumber: datasetsRef.objectNumber,
+            generationNumber: datasetsRef.generationNumber,
+            content: PdfStream.fromString(xml),
+        })
+    }
+
+    /**
+     * Updates a single field value in the XFA datasets XML.
+     * Maps AcroForm field names (e.g. `form1[0].Page1[0].P1_sf[0].P1_bsnss_nm[0]`)
+     * to XFA XML element paths (e.g. `<form1><Page1><P1_sf><P1_bsnss_nm>`).
+     * @internal
+     */
+    private updateXfaFieldValue(
+        xml: string,
+        fieldName: string,
+        value: string,
+    ): string {
+        // Extract the leaf element name by stripping indices from the field name
+        // e.g. "form1[0].Page1[0].P1_sf[0].P1_bsnss_nm[0]" -> "P1_bsnss_nm"
+        const segments = fieldName.split('.')
+        const leafSegment = segments[segments.length - 1]
+        const leafName = leafSegment.replace(/\[\d+\]$/, '')
+
+        // Skip structural XFA names (starting with #)
+        if (leafName.startsWith('#')) return xml
+
+        // Escape XML special characters in the value
+        const escapedValue = value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;')
+
+        // Replace self-closing element: <leafName/> or <leafName />
+        const selfClosingRegex = new RegExp(
+            `<${this.escapeRegex(leafName)}\\s*/>`,
+        )
+        if (selfClosingRegex.test(xml)) {
+            return xml.replace(
+                selfClosingRegex,
+                `<${leafName}>${escapedValue}</${leafName}>`,
+            )
+        }
+
+        // Replace element with existing content: <leafName>old</leafName>
+        // Use non-greedy match to handle the innermost content
+        const contentRegex = new RegExp(
+            `(<${this.escapeRegex(leafName)}(?:\\s[^>]*)?>)[\\s\\S]*?(</${this.escapeRegex(leafName)}\\s*>)`,
+        )
+        if (contentRegex.test(xml)) {
+            return xml.replace(contentRegex, `$1${escapedValue}$2`)
+        }
+
+        return xml
+    }
+
+    /**
+     * Escapes a string for use in a regular expression.
+     * @internal
+     */
+    private escapeRegex(str: string): string {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    }
+
     async write(document: PdfDocument) {
         const catalog = document.root
 
         const isIncremental = document.isIncremental()
         document.setIncremental(true)
+
+        // Build updated XFA datasets if present. We add it to the document
+        // later alongside the other objects to avoid a separate commit cycle.
+        const xfaDatasetsObj = await this.buildXfaDatasets(document)
 
         const fieldsArray = new PdfArray<PdfObjectReference>()
         this.content.set('Fields', fieldsArray)
@@ -2040,6 +2149,11 @@ export class PdfAcroForm<
                 }
                 updatableCatalog.content.set('AcroForm', this.reference)
             }
+        }
+
+        // Add updated XFA datasets to the document if present
+        if (xfaDatasetsObj) {
+            document.add(xfaDatasetsObj)
         }
 
         await document.commit()

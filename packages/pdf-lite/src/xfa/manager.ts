@@ -58,9 +58,10 @@ export class PdfXfaManager {
             throw new Error('Document does not contain XFA forms')
         }
 
-        // Update the cached stream directly with the new XML content
+        // Create a new indirect object with the same object number but new content
         const datasetsIndirect = new PdfIndirectObject({
-            ...stream,
+            objectNumber: stream.objectNumber,
+            generationNumber: stream.generationNumber,
             content: PdfStream.fromString(xml),
         })
 

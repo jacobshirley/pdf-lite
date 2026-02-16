@@ -305,23 +305,26 @@ export class PdfAcroFormField extends PdfIndirectObject<
             return
         }
 
-        // In a parent/kids split, V should be set on the parent field
-        const target = this.parent ?? this
+        // Only propagate V to parent if it's a field (has FT), not a structural container
+        const fieldParent = this.parent?.content.get('FT')
+            ? this.parent
+            : undefined
         const fieldType = this.fieldType
         if (fieldType === 'Button') {
             val = val instanceof PdfString ? val.value : val
             if (val.trim() === '') {
-                target.content.delete('V')
+                this.content.delete('V')
+                fieldParent?.content.delete('V')
                 this.content.delete('AS')
                 return
             }
-            target.content.set('V', new PdfName(val))
+            this.content.set('V', new PdfName(val))
+            fieldParent?.content.set('V', new PdfName(val))
             this.content.set('AS', new PdfName(val))
         } else {
-            target.content.set(
-                'V',
-                val instanceof PdfString ? val : new PdfString(val),
-            )
+            const pdfVal = val instanceof PdfString ? val : new PdfString(val)
+            this.content.set('V', pdfVal)
+            fieldParent?.content.set('V', pdfVal)
         }
 
         if (this.defaultGenerateAppearance) {

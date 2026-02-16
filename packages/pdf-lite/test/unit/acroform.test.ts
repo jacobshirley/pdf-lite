@@ -770,6 +770,40 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
         expect(child1.value).toBe('Shared Value')
         expect(child2.value).toBe('Shared Value')
     })
+
+    it('should generate appearances for all sibling widgets when value is set', () => {
+        const acroForm = new PdfAcroForm()
+
+        // Create parent field with FT and DA but no Rect
+        const parentField = new PdfAcroFormField({ form: acroForm })
+        parentField.fieldType = 'Text'
+        parentField.defaultAppearance = '/Helv 12 Tf 0 g'
+
+        // Create two child widgets
+        const child1 = new PdfAcroFormField({ form: acroForm })
+        child1.parent = parentField
+        child1.rect = [100, 100, 300, 120]
+
+        const child2 = new PdfAcroFormField({ form: acroForm })
+        child2.parent = parentField
+        child2.rect = [100, 200, 300, 220]
+
+        // Register fields in the form so children getter works
+        acroForm.fields.push(parentField, child1, child2)
+
+        // Verify children are resolved
+        expect(parentField.children).toHaveLength(2)
+
+        // Set value on child1 — should trigger appearance on both children
+        child1.value = 'Test'
+
+        expect(child1.getAppearanceStream()).toBeDefined()
+        expect(child2.getAppearanceStream()).toBeDefined()
+
+        // Both should contain the text
+        expect(child1.getAppearanceStream()!.rawAsString).toContain('(Test) Tj')
+        expect(child2.getAppearanceStream()!.rawAsString).toContain('(Test) Tj')
+    })
 })
 
 describe('AcroForm Field Value Decoding with Custom Encoding', () => {

@@ -15,7 +15,7 @@ importers:
   .:
     dependencies:
       pdf-lite:
-        specifier: 1.3.2
+        specifier: 1.3.3
         version: link:packages/pdf-lite
     devDependencies:
       '@commitlint/cli':

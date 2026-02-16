@@ -128,12 +128,6 @@ Indicates whether the object has been modified. By default, assume it has been m
 
 ---
 
-### parent?
-
-> `optional` **parent**: `PdfAcroFormField`
-
----
-
 ### postTokens?
 
 > `optional` **postTokens**: [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[]
@@ -243,6 +237,32 @@ Sets annotation flags
 ###### isChecked
 
 `boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### children
+
+#### Get Signature
+
+> **get** **children**(): `PdfAcroFormField`[]
+
+##### Returns
+
+`PdfAcroFormField`[]
+
+#### Set Signature
+
+> **set** **children**(`fields`): `void`
+
+##### Parameters
+
+###### fields
+
+`PdfAcroFormField`[]
 
 ##### Returns
 
@@ -1065,6 +1085,32 @@ Pass an array of strings.
 
 ---
 
+### parent
+
+#### Get Signature
+
+> **get** **parent**(): `PdfAcroFormField` \| `undefined`
+
+##### Returns
+
+`PdfAcroFormField` \| `undefined`
+
+#### Set Signature
+
+> **set** **parent**(`field`): `void`
+
+##### Parameters
+
+###### field
+
+`PdfAcroFormField` | `undefined`
+
+##### Returns
+
+`void`
+
+---
+
 ### parentRef
 
 #### Get Signature
@@ -1334,6 +1380,18 @@ Sets the field as required or optional
 ##### Returns
 
 `void`
+
+---
+
+### siblings
+
+#### Get Signature
+
+> **get** **siblings**(): `PdfAcroFormField`[]
+
+##### Returns
+
+`PdfAcroFormField`[]
 
 ---
 

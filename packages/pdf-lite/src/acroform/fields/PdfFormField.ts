@@ -10,21 +10,20 @@ import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { decodeWithFontEncoding } from '../../utils/decodeWithFontEncoding.js'
 import { PdfWidgetAnnotation } from '../../annotations/PdfWidgetAnnotation.js'
 import { PdfDefaultAppearance } from './PdfDefaultAppearance.js'
-import { TextAppearanceGenerator } from '../appearance/TextAppearanceGenerator.js'
-import { ButtonAppearanceGenerator } from '../appearance/ButtonAppearanceGenerator.js'
-import { ChoiceAppearanceGenerator } from '../appearance/ChoiceAppearanceGenerator.js'
+import type { PdfAppearanceStream } from '../appearance/PdfAppearanceStream.js'
 import type { FormContext, PdfFieldType } from './types.js'
 import { PdfFieldType as PdfFieldTypeConst } from './types.js'
 
 /**
- * Base form field class. Extends PdfWidgetAnnotation with form-specific properties:
- * FT, V, DA, Ff, T (name), field hierarchy (parent/children/siblings), appearance dispatch.
+ * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
+ * FT, V, DA, Ff, T (name), field hierarchy (parent/children/siblings).
+ * Subclasses must implement generateAppearance().
  */
-export class PdfFormField extends PdfWidgetAnnotation {
+export abstract class PdfFormField extends PdfWidgetAnnotation {
     private _parent?: PdfFormField
     defaultGenerateAppearance: boolean = true
-    protected _appearanceStream?: PdfStream
-    protected _appearanceStreamYes?: PdfStream
+    protected _appearanceStream?: PdfAppearanceStream
+    protected _appearanceStreamYes?: PdfAppearanceStream
     form?: FormContext<PdfFormField>
 
     constructor(options?: {
@@ -239,15 +238,13 @@ export class PdfFormField extends PdfWidgetAnnotation {
     set fontSize(size: number) {
         const da = this.defaultAppearance || ''
         if (!da) {
-            this.content.set('DA', new PdfString(`/F1 ${size} Tf 0 g`))
+            this.content.set('DA', new PdfDefaultAppearance('F1', size, '0 g'))
             return
         }
         const parsed = PdfDefaultAppearance.parse(da)
         if (parsed) {
-            this.content.set(
-                'DA',
-                new PdfString(parsed.withFontSize(size).toString()),
-            )
+            parsed.fontSize = size
+            this.content.set('DA', parsed)
         }
     }
 
@@ -260,15 +257,16 @@ export class PdfFormField extends PdfWidgetAnnotation {
     set fontName(fontName: string) {
         const da = this.defaultAppearance || ''
         if (!da) {
-            this.content.set('DA', new PdfString(`/${fontName} 12 Tf 0 g`))
+            this.content.set(
+                'DA',
+                new PdfDefaultAppearance(fontName, 12, '0 g'),
+            )
             return
         }
         const parsed = PdfDefaultAppearance.parse(da)
         if (parsed) {
-            this.content.set(
-                'DA',
-                new PdfString(parsed.withFontName(fontName).toString()),
-            )
+            parsed.fontName = fontName
+            this.content.set('DA', parsed)
         }
     }
 
@@ -283,16 +281,14 @@ export class PdfFormField extends PdfWidgetAnnotation {
         if (!da) {
             this.content.set(
                 'DA',
-                new PdfString(`/${resourceName} ${currentSize} Tf 0 g`),
+                new PdfDefaultAppearance(resourceName, currentSize, '0 g'),
             )
             return
         }
         const parsed = PdfDefaultAppearance.parse(da)
         if (parsed) {
-            this.content.set(
-                'DA',
-                new PdfString(parsed.withFontName(resourceName).toString()),
-            )
+            parsed.fontName = resourceName
+            this.content.set('DA', parsed)
         }
     }
 
@@ -506,104 +502,23 @@ export class PdfFormField extends PdfWidgetAnnotation {
         this.content.set('Kids', kidsArray)
     }
 
-    generateAppearance(options?: {
+    abstract generateAppearance(options?: {
         makeReadOnly?: boolean
         textYOffset?: number
-    }): boolean {
-        const fieldType = this.fieldType
-        if (fieldType === 'Text') {
-            return this.generateTextAppearance(options)
-        } else if (fieldType === 'Button') {
-            return this.generateButtonAppearance(options)
-        } else if (fieldType === 'Choice') {
-            return this.generateChoiceAppearance(options)
-        }
-        return false
-    }
-
-    private generateTextAppearance(options?: {
-        makeReadOnly?: boolean
-        textYOffset?: number
-    }): boolean {
-        const fieldDR = (this.content as PdfDictionary)
-            .get('DR')
-            ?.as(PdfDictionary)
-        const stream = TextAppearanceGenerator.generate({
-            rect: this.rect,
-            value: this.value,
-            defaultAppearance: this.defaultAppearance,
-            multiline: this.multiline,
-            comb: this.comb,
-            maxLen: this.maxLen,
-            fieldDR,
-            acroformDR: this.form?.defaultResources,
-        })
-        if (!stream) return false
-        this._appearanceStream = stream
-        if (options?.makeReadOnly) {
-            this.readOnly = true
-            this.print = true
-            this.noZoom = true
-        } else {
-            this.print = true
-        }
-        return true
-    }
-
-    private generateButtonAppearance(options?: {
-        makeReadOnly?: boolean
-    }): boolean {
-        const result = ButtonAppearanceGenerator.generate({
-            rect: this.rect,
-            flags: this.flags,
-        })
-        if (!result) return false
-        this._appearanceStream = result.primary
-        this._appearanceStreamYes = result.secondary
-        if (options?.makeReadOnly) {
-            this.readOnly = true
-            this.print = true
-            this.noZoom = true
-        }
-        return true
-    }
-
-    private generateChoiceAppearance(options?: {
-        makeReadOnly?: boolean
-    }): boolean {
-        const fieldDR = (this.content as PdfDictionary)
-            .get('DR')
-            ?.as(PdfDictionary)
-        const stream = ChoiceAppearanceGenerator.generate({
-            rect: this.rect,
-            value: this.value,
-            defaultAppearance: this.defaultAppearance,
-            flags: this.flags,
-            fieldDR,
-            acroformDR: this.form?.defaultResources,
-        })
-        if (!stream) return false
-        this._appearanceStream = stream
-        if (options?.makeReadOnly) {
-            this.readOnly = true
-            this.print = true
-            this.noZoom = true
-        }
-        return true
-    }
+    }): boolean
 
     getAppearanceStream(): PdfStream | undefined {
         if (this.fieldType === 'Button') {
             if (this.checked && this._appearanceStreamYes) {
-                return this._appearanceStreamYes
+                return this._appearanceStreamYes?.content
             }
-            return this._appearanceStream
+            return this._appearanceStream?.content
         }
-        return this._appearanceStream
+        return this._appearanceStream?.content
     }
 
     getAppearanceStreamsForWriting():
-        | { primary: PdfStream; secondary?: PdfStream }
+        | { primary: PdfAppearanceStream; secondary?: PdfAppearanceStream }
         | undefined {
         if (!this._appearanceStream) return undefined
         return {
@@ -632,6 +547,69 @@ export class PdfFormField extends PdfWidgetAnnotation {
         } else {
             apDict.set('N', appearanceStreamRef)
         }
+    }
+
+    private static _fallbackCtor?: new (options?: {
+        other?: PdfIndirectObject
+        form?: FormContext<PdfFormField>
+        parent?: PdfFormField
+    }) => PdfFormField
+
+    private static _registry = new Map<
+        string,
+        new (options?: {
+            other?: PdfIndirectObject
+            form?: FormContext<PdfFormField>
+            parent?: PdfFormField
+        }) => PdfFormField
+    >()
+
+    static registerFieldType(
+        ft: string,
+        ctor: new (options?: {
+            other?: PdfIndirectObject
+            form?: FormContext<PdfFormField>
+            parent?: PdfFormField
+        }) => PdfFormField,
+        options?: { fallback?: boolean },
+    ): void {
+        PdfFormField._registry.set(ft, ctor)
+        if (options?.fallback) {
+            PdfFormField._fallbackCtor = ctor
+        }
+    }
+
+    static create(options: {
+        other: PdfIndirectObject
+        form: FormContext<PdfFormField>
+        parent?: PdfFormField
+    }): PdfFormField {
+        let ft: string | undefined
+        try {
+            const dict = options.other.content.as(PdfDictionary)
+            ft = dict.get('FT')?.as(PdfName)?.value
+        } catch {
+            // content may not be a dictionary
+        }
+
+        if (!ft && options.parent) {
+            try {
+                ft = options.parent.content.get('FT')?.as(PdfName)?.value
+            } catch {
+                // ignore
+            }
+        }
+
+        const Ctor = ft ? PdfFormField._registry.get(ft) : undefined
+        if (!Ctor) {
+            // Fields without FT are parent/container nodes — use the
+            // fallback type (typically Text) as a concrete stand-in.
+            if (!PdfFormField._fallbackCtor) {
+                throw new Error(`Unknown field type: ${ft ?? '(none)'}`)
+            }
+            return new PdfFormField._fallbackCtor(options)
+        }
+        return new Ctor(options)
     }
 }
 

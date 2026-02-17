@@ -4,7 +4,10 @@ import { server } from 'vitest/browser'
 import { ByteArray } from '../../src/types'
 import { PdfString } from '../../src/core/objects/pdf-string'
 import { PdfArray } from '../../src/core/objects/pdf-array'
-import { PdfAcroForm, PdfAcroFormField } from '../../src/acroform/acroform'
+import { PdfAcroForm } from '../../src/acroform/acroform'
+import { PdfTextFormField } from '../../src/acroform/fields/PdfTextFormField'
+import { PdfButtonFormField } from '../../src/acroform/fields/PdfButtonFormField'
+import { PdfChoiceFormField } from '../../src/acroform/fields/PdfChoiceFormField'
 import { PdfObjectReference } from '../../src/core/objects/pdf-object-reference'
 import {
     PdfDictionary,
@@ -376,8 +379,8 @@ describe('AcroForm', () => {
         })
         expect(firstPageObj).toBeDefined()
 
-        // Create a new field using PdfAcroFormField with visual properties
-        const newField = new PdfAcroFormField()
+        // Create a new field using PdfTextFormField with visual properties
+        const newField = new PdfTextFormField()
         newField.fieldType = 'Text' // Text field
         newField.name = 'New Test Field'
         newField.value = 'New Field Value'
@@ -573,13 +576,13 @@ describe('AcroForm', () => {
 describe('AcroForm Parent/Child Field Inheritance', () => {
     it('should inherit value from parent field', () => {
         // Create parent field with FT, DA, and V
-        const parentField = new PdfAcroFormField()
+        const parentField = new PdfTextFormField()
         parentField.fieldType = 'Text'
         parentField.defaultAppearance = '/Helv 12 Tf 0 g'
         parentField.content.set('V', new PdfString('Parent Value'))
 
         // Create child widget (no FT, DA, or V of its own)
-        const childField = new PdfAcroFormField()
+        const childField = new PdfTextFormField()
         childField.parent = parentField
         childField.rect = [100, 100, 300, 120]
         childField.isWidget = true
@@ -594,12 +597,12 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
 
     it('should set value on parent when child is updated', () => {
         // Create parent field
-        const parentField = new PdfAcroFormField()
+        const parentField = new PdfTextFormField()
         parentField.fieldType = 'Text'
         parentField.defaultAppearance = '/Helv 12 Tf 0 g'
 
         // Create child widget
-        const childField = new PdfAcroFormField()
+        const childField = new PdfTextFormField()
         childField.parent = parentField
         childField.rect = [100, 100, 300, 120]
         childField.isWidget = true
@@ -615,12 +618,12 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
         const acroForm = new PdfAcroForm()
 
         // Create parent field with FT and DA but no Rect
-        const parentField = new PdfAcroFormField({ form: acroForm })
+        const parentField = new PdfTextFormField({ form: acroForm })
         parentField.fieldType = 'Text'
         parentField.defaultAppearance = '/Helv 12 Tf 0 g'
 
         // Create child widget with Rect but no FT or DA
-        const childField = new PdfAcroFormField({ form: acroForm })
+        const childField = new PdfTextFormField({ form: acroForm })
         childField.parent = parentField
         childField.rect = [100, 100, 300, 120]
         childField.isWidget = true
@@ -668,13 +671,13 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
     })
 
     it('should inherit flags from parent field', () => {
-        const parentField = new PdfAcroFormField()
+        const parentField = new PdfTextFormField()
         parentField.fieldType = 'Text'
         parentField.defaultAppearance = '/Helv 12 Tf 0 g'
         parentField.multiline = true
         parentField.readOnly = true
 
-        const childField = new PdfAcroFormField()
+        const childField = new PdfTextFormField()
         childField.parent = parentField
         childField.rect = [100, 100, 300, 120]
 
@@ -684,11 +687,11 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
     })
 
     it('should inherit fontSize and fontName from parent DA', () => {
-        const parentField = new PdfAcroFormField()
+        const parentField = new PdfTextFormField()
         parentField.fieldType = 'Text'
         parentField.defaultAppearance = '/Helv 14 Tf 0 g'
 
-        const childField = new PdfAcroFormField()
+        const childField = new PdfTextFormField()
         childField.parent = parentField
         childField.rect = [100, 100, 300, 120]
 
@@ -697,12 +700,12 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
     })
 
     it('should inherit quadding from parent field', () => {
-        const parentField = new PdfAcroFormField()
+        const parentField = new PdfTextFormField()
         parentField.fieldType = 'Text'
         parentField.defaultAppearance = '/Helv 12 Tf 0 g'
         parentField.quadding = 1 // centered
 
-        const childField = new PdfAcroFormField()
+        const childField = new PdfTextFormField()
         childField.parent = parentField
         childField.rect = [100, 100, 300, 120]
 
@@ -710,12 +713,12 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
     })
 
     it('should inherit defaultValue from parent field', () => {
-        const parentField = new PdfAcroFormField()
+        const parentField = new PdfTextFormField()
         parentField.fieldType = 'Text'
         parentField.defaultAppearance = '/Helv 12 Tf 0 g'
         parentField.defaultValue = 'Default'
 
-        const childField = new PdfAcroFormField()
+        const childField = new PdfTextFormField()
         childField.parent = parentField
         childField.rect = [100, 100, 300, 120]
 
@@ -723,12 +726,12 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
     })
 
     it('should inherit options from parent for choice fields', () => {
-        const parentField = new PdfAcroFormField()
+        const parentField = new PdfChoiceFormField()
         parentField.fieldType = 'Choice'
         parentField.defaultAppearance = '/Helv 12 Tf 0 g'
         parentField.options = ['A', 'B', 'C']
 
-        const childField = new PdfAcroFormField()
+        const childField = new PdfChoiceFormField()
         childField.parent = parentField
         childField.rect = [100, 100, 300, 120]
 
@@ -736,11 +739,11 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
     })
 
     it('should inherit checked state from parent for button fields', () => {
-        const parentField = new PdfAcroFormField()
+        const parentField = new PdfButtonFormField()
         parentField.fieldType = 'Button'
         parentField.checked = true
 
-        const childField = new PdfAcroFormField()
+        const childField = new PdfButtonFormField()
         childField.parent = parentField
         childField.rect = [100, 100, 120, 120]
 
@@ -749,16 +752,16 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
 
     it('should share value across sibling widgets', () => {
         // Create parent field
-        const parentField = new PdfAcroFormField()
+        const parentField = new PdfTextFormField()
         parentField.fieldType = 'Text'
         parentField.defaultAppearance = '/Helv 12 Tf 0 g'
 
         // Create two child widgets
-        const child1 = new PdfAcroFormField()
+        const child1 = new PdfTextFormField()
         child1.parent = parentField
         child1.rect = [100, 100, 300, 120]
 
-        const child2 = new PdfAcroFormField()
+        const child2 = new PdfTextFormField()
         child2.parent = parentField
         child2.rect = [100, 200, 300, 220]
 
@@ -775,16 +778,16 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
         const acroForm = new PdfAcroForm()
 
         // Create parent field with FT and DA but no Rect
-        const parentField = new PdfAcroFormField({ form: acroForm })
+        const parentField = new PdfTextFormField({ form: acroForm })
         parentField.fieldType = 'Text'
         parentField.defaultAppearance = '/Helv 12 Tf 0 g'
 
         // Create two child widgets
-        const child1 = new PdfAcroFormField({ form: acroForm })
+        const child1 = new PdfTextFormField({ form: acroForm })
         child1.parent = parentField
         child1.rect = [100, 100, 300, 120]
 
-        const child2 = new PdfAcroFormField({ form: acroForm })
+        const child2 = new PdfTextFormField({ form: acroForm })
         child2.parent = parentField
         child2.rect = [100, 200, 300, 220]
 
@@ -844,7 +847,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         })
         acroForm.defaultResources = drDict
 
-        const field = new PdfAcroFormField({ form: acroForm })
+        const field = new PdfTextFormField({ form: acroForm })
         field.name = 'PriceField'
         field.defaultAppearance = '/Helv 12 Tf'
         field.value = '\xA050' // Byte 160 (0xA0) should map to Euro symbol
@@ -858,7 +861,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
     it('should decode UTF-16BE encoded field values correctly', async () => {
         const acroForm = new PdfAcroForm()
 
-        const field = new PdfAcroFormField({ form: acroForm })
+        const field = new PdfTextFormField({ form: acroForm })
         field.name = 'UTF16Field'
         field.defaultAppearance = '/Helv 12 Tf'
 
@@ -913,7 +916,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
 
         await acroForm.getFontEncodingMap('Helv')
 
-        const field = new PdfAcroFormField({ form: acroForm })
+        const field = new PdfTextFormField({ form: acroForm })
         field.defaultAppearance = '/Helv 12 Tf'
         field.value = new PdfString(
             new Uint8Array([
@@ -1192,7 +1195,7 @@ describe('AcroForm Appearance Generation', () => {
             throw new Error('No AcroForm found in the document')
         }
 
-        const buttonField = new PdfAcroFormField({ form: acroform })
+        const buttonField = new PdfButtonFormField({ form: acroform })
         buttonField.fieldType = 'Button'
         buttonField.rect = [100, 100, 150, 120]
         buttonField.checked = true
@@ -1203,7 +1206,7 @@ describe('AcroForm Appearance Generation', () => {
     })
 
     it('should return false when field has no rectangle', async () => {
-        const textField = new PdfAcroFormField()
+        const textField = new PdfTextFormField()
         textField.fieldType = 'Text'
         textField.defaultAppearance = '/Helv 12 Tf 0 g'
         textField.value = 'Test'
@@ -1213,7 +1216,7 @@ describe('AcroForm Appearance Generation', () => {
     })
 
     it('should return false when field has no default appearance', async () => {
-        const textField = new PdfAcroFormField()
+        const textField = new PdfTextFormField()
         textField.fieldType = 'Text'
         textField.rect = [100, 100, 300, 120]
         textField.value = 'Test'
@@ -1366,7 +1369,7 @@ describe('AcroForm Appearance Generation', () => {
         const firstPageRef = kidsArray.items[0]
 
         // 1. Regular text field
-        const textField = new PdfAcroFormField({ form: acroform })
+        const textField = new PdfTextFormField({ form: acroform })
         textField.fieldType = 'Text'
         textField.name = 'RegularText'
         textField.rect = [50, 750, 300, 770]
@@ -1377,7 +1380,7 @@ describe('AcroForm Appearance Generation', () => {
         acroform.fields.push(textField)
 
         // 2. Comb field
-        const combField = new PdfAcroFormField({ form: acroform })
+        const combField = new PdfTextFormField({ form: acroform })
         combField.fieldType = 'Text'
         combField.name = 'CombField'
         combField.rect = [50, 700, 250, 720]
@@ -1390,7 +1393,7 @@ describe('AcroForm Appearance Generation', () => {
         acroform.fields.push(combField)
 
         // 3. Multiline text field
-        const multilineField = new PdfAcroFormField({ form: acroform })
+        const multilineField = new PdfTextFormField({ form: acroform })
         multilineField.fieldType = 'Text'
         multilineField.name = 'MultilineText'
         multilineField.rect = [50, 600, 300, 680]
@@ -1402,7 +1405,7 @@ describe('AcroForm Appearance Generation', () => {
         acroform.fields.push(multilineField)
 
         // 4. Checkbox (unchecked)
-        const checkboxUnchecked = new PdfAcroFormField({ form: acroform })
+        const checkboxUnchecked = new PdfButtonFormField({ form: acroform })
         checkboxUnchecked.fieldType = 'Button'
         checkboxUnchecked.name = 'CheckboxUnchecked'
         checkboxUnchecked.rect = [50, 550, 70, 570]
@@ -1413,7 +1416,7 @@ describe('AcroForm Appearance Generation', () => {
         acroform.fields.push(checkboxUnchecked)
 
         // 5. Checkbox (checked)
-        const checkboxChecked = new PdfAcroFormField({ form: acroform })
+        const checkboxChecked = new PdfButtonFormField({ form: acroform })
         checkboxChecked.fieldType = 'Button'
         checkboxChecked.name = 'CheckboxChecked'
         checkboxChecked.rect = [100, 550, 120, 570]
@@ -1424,7 +1427,7 @@ describe('AcroForm Appearance Generation', () => {
         acroform.fields.push(checkboxChecked)
 
         // 6. Choice/Dropdown field
-        const choiceField = new PdfAcroFormField({ form: acroform })
+        const choiceField = new PdfChoiceFormField({ form: acroform })
         choiceField.fieldType = 'Choice'
         choiceField.name = 'DropdownField'
         choiceField.rect = [50, 450, 250, 470]
@@ -1437,7 +1440,7 @@ describe('AcroForm Appearance Generation', () => {
         acroform.fields.push(choiceField)
 
         // 7. List box (Choice field without Combo flag)
-        const listField = new PdfAcroFormField({ form: acroform })
+        const listField = new PdfChoiceFormField({ form: acroform })
         listField.fieldType = 'Choice'
         listField.name = 'ListField'
         listField.rect = [50, 350, 250, 430]
@@ -1453,7 +1456,7 @@ describe('AcroForm Appearance Generation', () => {
         // Note: In PDF, radio buttons that are mutually exclusive should share the same parent field
         // For now, we'll create them as separate fields but with proper Radio flag
         // TODO: Implement proper parent/child radio button group structure
-        const radioButton1 = new PdfAcroFormField({ form: acroform })
+        const radioButton1 = new PdfButtonFormField({ form: acroform })
         radioButton1.fieldType = 'Button'
         radioButton1.name = 'RadioButton1'
         radioButton1.rect = [50, 300, 70, 320]
@@ -1466,7 +1469,7 @@ describe('AcroForm Appearance Generation', () => {
         acroform.fields.push(radioButton1)
 
         // 9. Radio button group (selected)
-        const radioButton2 = new PdfAcroFormField({ form: acroform })
+        const radioButton2 = new PdfButtonFormField({ form: acroform })
         radioButton2.fieldType = 'Button'
         radioButton2.name = 'RadioButton2'
         radioButton2.rect = [100, 300, 120, 320]

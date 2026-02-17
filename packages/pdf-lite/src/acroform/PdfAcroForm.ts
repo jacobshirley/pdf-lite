@@ -7,10 +7,14 @@ import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfBoolean } from '../core/objects/pdf-boolean.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfFontEncodingCache } from './PdfFontEncodingCache.js'
-import { PdfAnnotationWriter } from './PdfAnnotationWriter.js'
+import { PdfAnnotationWriter } from '../annotations/PdfAnnotationWriter.js'
 import { PdfXfaDatasets } from './xfa/PdfXfaDatasets.js'
 import { PdfFormField } from './fields/PdfFormField.js'
-import { PdfFormFieldFactory } from './fields/PdfFormFieldFactory.js'
+// Import subclasses to trigger static registration blocks
+import './fields/PdfTextFormField.js'
+import './fields/PdfButtonFormField.js'
+import './fields/PdfChoiceFormField.js'
+import './fields/PdfSignatureFormField.js'
 import type { FormContext } from './fields/types.js'
 
 export type PdfDefaultResourcesDictionary = PdfDictionary<{
@@ -215,7 +219,7 @@ export class PdfAcroForm<
                 if (!fieldObject) continue
                 if (!(fieldObject.content instanceof PdfDictionary)) continue
 
-                const field = PdfFormFieldFactory.create({
+                const field = PdfFormField.create({
                     other: fieldObject,
                     form: acroForm,
                     parent,
@@ -326,24 +330,15 @@ export class PdfAcroForm<
             if (field.isModified()) {
                 const appearances = field.getAppearanceStreamsForWriting()
                 if (appearances) {
-                    const primaryAppearanceObj = new PdfIndirectObject({
-                        content: appearances.primary,
-                    })
-                    document.add(primaryAppearanceObj)
+                    document.add(appearances.primary)
 
-                    let secondaryAppearanceRef: PdfObjectReference | undefined
                     if (appearances.secondary) {
-                        const secondaryAppearanceObj = new PdfIndirectObject({
-                            content: appearances.secondary,
-                        })
-                        document.add(secondaryAppearanceObj)
-                        secondaryAppearanceRef =
-                            secondaryAppearanceObj.reference
+                        document.add(appearances.secondary)
                     }
 
                     field.setAppearanceReference(
-                        primaryAppearanceObj.reference,
-                        secondaryAppearanceRef,
+                        appearances.primary.reference,
+                        appearances.secondary?.reference,
                     )
 
                     if (!field.print) {

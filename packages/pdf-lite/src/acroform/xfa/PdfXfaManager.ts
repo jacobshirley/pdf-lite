@@ -1,18 +1,18 @@
-import { PdfDocument } from '../pdf/pdf-document.js'
-import { PdfStream } from '../core/objects/pdf-stream.js'
-import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
-import { PdfArray } from '../core/objects/pdf-array.js'
-import { PdfString } from '../core/objects/pdf-string.js'
-import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
-import { PdfIndirectObject } from '../core/index.js'
+import { PdfDocument } from '../../pdf/pdf-document.js'
+import { PdfStream } from '../../core/objects/pdf-stream.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
+import { PdfArray } from '../../core/objects/pdf-array.js'
+import { PdfString } from '../../core/objects/pdf-string.js'
+import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
+import { PdfIndirectObject } from '../../core/index.js'
 
 /**
  * Manages XFA (XML Forms Architecture) forms in PDF documents.
  * Provides methods to read and write XFA form data as XML.
  */
 export class PdfXfaManager {
-    private document: PdfDocument
-    private _datasetsStream?: PdfIndirectObject<PdfStream>
+    document: PdfDocument
+    _datasetsStream?: PdfIndirectObject<PdfStream>
 
     constructor(document: PdfDocument) {
         this.document = document

@@ -1,2 +1,7 @@
 export * from './manager.js'
-export * from './acroform.js'
+export * from './PdfAcroForm.js'
+export * from './fields/index.js'
+export * from './appearance/index.js'
+export * from './xfa/index.js'
+export { PdfFontEncodingCache } from './PdfFontEncodingCache.js'
+export { PdfAnnotationWriter } from './PdfAnnotationWriter.js'

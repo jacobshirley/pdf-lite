@@ -1,6 +1,6 @@
 import { PdfDocument } from '../pdf/pdf-document.js'
 import { PdfAcroForm } from './acroform.js'
-import { PdfXfaManager } from './xfa/PdfXfaManager.js'
+import { PdfXfaForm } from './xfa/PdfXfaForm.js'
 
 /**
  * Manages AcroForm fields in PDF documents.
@@ -8,11 +8,21 @@ import { PdfXfaManager } from './xfa/PdfXfaManager.js'
  */
 export class PdfAcroFormManager {
     private document: PdfDocument
-    readonly xfa: PdfXfaManager
+    private _xfa: PdfXfaForm | null | undefined = undefined
 
     constructor(document: PdfDocument) {
         this.document = document
-        this.xfa = new PdfXfaManager(document)
+    }
+
+    /**
+     * Gets the XFA form wrapper, loading it lazily on first access.
+     * @returns The PdfXfaForm or null if no XFA forms exist
+     */
+    async getXfa(): Promise<PdfXfaForm | null> {
+        if (this._xfa === undefined) {
+            this._xfa = await PdfXfaForm.fromDocument(this.document)
+        }
+        return this._xfa
     }
 
     /**

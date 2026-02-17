@@ -8,7 +8,7 @@ import { PdfBoolean } from '../core/objects/pdf-boolean.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfFontEncodingCache } from './PdfFontEncodingCache.js'
 import { PdfAnnotationWriter } from '../annotations/PdfAnnotationWriter.js'
-import { PdfXfaDatasets } from './xfa/PdfXfaDatasets.js'
+import { PdfXfaForm } from './xfa/PdfXfaForm.js'
 import { PdfFormField } from './fields/PdfFormField.js'
 // Import subclasses to trigger static registration blocks
 import './fields/PdfTextFormField.js'
@@ -286,32 +286,24 @@ export class PdfAcroForm<
         await PdfAnnotationWriter.updatePageAnnotations(document, fieldsByPage)
     }
 
-    private async buildXfaDatasets(
-        document: PdfDocument,
-    ): Promise<PdfIndirectObject | undefined> {
-        const modifiedFields = this.fields
-            .filter((field) => {
-                if (!field.isModified()) return false
-                const fieldType = field.fieldType
-                if (!fieldType || fieldType === 'Signature') return false
-                return !!field.name
-            })
-            .map((field) => ({ name: field.name, value: field.value }))
-
-        return PdfXfaDatasets.build(
-            document,
-            this.content as PdfDictionary,
-            modifiedFields,
-        )
-    }
-
     async write(document: PdfDocument) {
         const catalog = document.root
 
         const isIncremental = document.isIncremental()
         document.setIncremental(true)
 
-        const xfaDatasetsObj = await this.buildXfaDatasets(document)
+        const xfaForm = await PdfXfaForm.fromDocument(document)
+        if (xfaForm) {
+            const modifiedFields = this.fields
+                .filter(
+                    (f) =>
+                        f.isModified() && f.fieldType !== 'Signature' && f.name,
+                )
+                .map((f) => ({ name: f.name, value: f.value }))
+            if (modifiedFields.length > 0) {
+                xfaForm.datasets?.updateFields(modifiedFields)
+            }
+        }
 
         const fieldsArray = new PdfArray<PdfObjectReference>()
         this.content.set('Fields', fieldsArray)
@@ -387,8 +379,8 @@ export class PdfAcroForm<
             }
         }
 
-        if (xfaDatasetsObj) {
-            document.add(xfaDatasetsObj)
+        if (xfaForm) {
+            xfaForm.write(document)
         }
 
         await document.commit()

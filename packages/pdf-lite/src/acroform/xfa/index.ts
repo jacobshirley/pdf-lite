@@ -1,2 +1,3 @@
-export { PdfXfaManager } from './PdfXfaManager.js'
-export { PdfXfaDatasets } from './PdfXfaDatasets.js'
+export { PdfXfaForm } from './PdfXfaForm.js'
+export { PdfXfaData } from './PdfXfaData.js'
+export type { XfaFieldData } from './PdfXfaData.js'

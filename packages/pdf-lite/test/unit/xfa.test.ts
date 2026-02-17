@@ -27,11 +27,12 @@ describe('XFA', () => {
         document.setPassword('')
 
         // Check that document has XFA forms
-        const hasXfa = await document.acroForm.xfa.hasXfaForms()
-        expect(hasXfa).toBe(true)
+        const xfaForm = await document.acroForm.getXfa()
+        expect(xfaForm).not.toBeNull()
+        expect(xfaForm!.datasets).not.toBeNull()
 
         // Read the XFA form data as XML
-        const xmlContent = await document.acroForm.xfa.readXml()
+        const xmlContent = xfaForm!.datasets!.readXml()
         expect(xmlContent).toBeDefined()
         expect(xmlContent).not.toBeNull()
 
@@ -58,10 +59,12 @@ describe('XFA', () => {
         const document = await PdfDocument.fromBytes([pdfBuffer])
         document.setPassword('')
 
-        expect(await document.acroForm.xfa.hasXfaForms()).toBe(true)
+        const xfaForm = await document.acroForm.getXfa()
+        expect(xfaForm).not.toBeNull()
+        expect(xfaForm!.datasets).not.toBeNull()
 
         // Read the original XML content
-        const originalXml = await document.acroForm.xfa.readXml()
+        const originalXml = xfaForm!.datasets!.readXml()
         expect(originalXml).toBeDefined()
         expect(originalXml).not.toBeNull()
 
@@ -83,8 +86,15 @@ describe('XFA', () => {
         expect(modifiedXml).toContain('NEW COMPANY NAME LLC')
         expect(modifiedXml).not.toEqual(originalXml)
 
-        // Write the modified XML back to the document
-        await document.acroForm.xfa.writeXml(modifiedXml)
+        // Write the modified XML back
+        xfaForm!.datasets!.writeXml(modifiedXml)
+
+        // Write the XFA form to the document
+        const isIncremental = document.isIncremental()
+        document.setIncremental(true)
+        xfaForm!.write(document)
+        await document.commit()
+        document.setIncremental(isIncremental)
 
         await server.commands.writeFile(
             './test/unit/tmp/modifiedAdobeLivecycle.pdf',
@@ -96,7 +106,9 @@ describe('XFA', () => {
         rereadDocument.setPassword('')
 
         // Read it back to verify the changes were applied
-        const updatedXml = await rereadDocument.acroForm.xfa.readXml()
+        const rereadXfa = await rereadDocument.acroForm.getXfa()
+        expect(rereadXfa).not.toBeNull()
+        const updatedXml = rereadXfa!.datasets!.readXml()
         expect(updatedXml).toContain('NEW COMPANY NAME LLC')
 
         rereadDocument.toString() // Ensure no errors on toString

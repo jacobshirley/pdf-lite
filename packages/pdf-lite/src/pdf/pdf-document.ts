@@ -31,7 +31,6 @@ import { PdfDocumentSecurityStoreObject } from '../signing/document-security-sto
 import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
-import { PdfXfaManager } from '../acroform/xfa/PdfXfaManager.js'
 import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/font-manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'

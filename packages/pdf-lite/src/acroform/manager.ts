@@ -1,5 +1,6 @@
 import { PdfDocument } from '../pdf/pdf-document.js'
 import { PdfAcroForm } from './acroform.js'
+import { PdfXfaManager } from './xfa/PdfXfaManager.js'
 
 /**
  * Manages AcroForm fields in PDF documents.
@@ -7,9 +8,11 @@ import { PdfAcroForm } from './acroform.js'
  */
 export class PdfAcroFormManager {
     private document: PdfDocument
+    readonly xfa: PdfXfaManager
 
     constructor(document: PdfDocument) {
         this.document = document
+        this.xfa = new PdfXfaManager(document)
     }
 
     /**

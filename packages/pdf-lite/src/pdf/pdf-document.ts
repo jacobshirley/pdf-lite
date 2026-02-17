@@ -61,9 +61,10 @@ export class PdfDocument extends PdfObject {
     /** Security handler for encryption/decryption operations */
     securityHandler?: PdfSecurityHandler
 
-    private _xfa?: PdfXfaManager
-    private _acroForm?: PdfAcroFormManager
-    private _fonts?: PdfFontManager
+    /**  */
+    readonly acroForm: PdfAcroFormManager
+    readonly fonts: PdfFontManager
+
     private hasEncryptionDictionary?: boolean = false
     private toBeCommitted: PdfObject[] = []
 
@@ -110,6 +111,9 @@ export class PdfDocument extends PdfObject {
 
         this.securityHandler =
             options?.securityHandler ?? this.getSecurityHandler()
+
+        this.acroForm = new PdfAcroFormManager(this)
+        this.fonts = new PdfFontManager(this)
     }
 
     get header(): PdfComment | undefined {
@@ -118,30 +122,6 @@ export class PdfDocument extends PdfObject {
 
     set header(comment: PdfComment | undefined) {
         if (comment) this.revisions[0].header = comment
-    }
-
-    /** XFA manager for handling XFA forms */
-    get xfa(): PdfXfaManager {
-        if (!this._xfa) {
-            this._xfa = new PdfXfaManager(this)
-        }
-        return this._xfa
-    }
-
-    /** AcroForm manager for handling form fields */
-    get acroForm(): PdfAcroFormManager {
-        if (!this._acroForm) {
-            this._acroForm = new PdfAcroFormManager(this)
-        }
-        return this._acroForm
-    }
-
-    /** Font manager for embedding and managing fonts */
-    get fonts(): PdfFontManager {
-        if (!this._fonts) {
-            this._fonts = new PdfFontManager(this)
-        }
-        return this._fonts
     }
 
     /**

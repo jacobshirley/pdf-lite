@@ -24,10 +24,10 @@ export class PdfXfaDatasets {
         acroFormContent: PdfDictionary,
         modifiedFields: XfaFieldData[],
     ): Promise<PdfIndirectObject | undefined> {
-        const hasXfa = await document.xfa.hasXfaForms()
+        const hasXfa = await document.acroForm.xfa.hasXfaForms()
         if (!hasXfa) return undefined
 
-        let xml = await document.xfa.readXml()
+        let xml = await document.acroForm.xfa.readXml()
         if (!xml) return undefined
 
         if (modifiedFields.length === 0) return undefined

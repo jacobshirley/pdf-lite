@@ -27,11 +27,11 @@ describe('XFA', () => {
         document.setPassword('')
 
         // Check that document has XFA forms
-        const hasXfa = await document.xfa.hasXfaForms()
+        const hasXfa = await document.acroForm.xfa.hasXfaForms()
         expect(hasXfa).toBe(true)
 
         // Read the XFA form data as XML
-        const xmlContent = await document.xfa.readXml()
+        const xmlContent = await document.acroForm.xfa.readXml()
         expect(xmlContent).toBeDefined()
         expect(xmlContent).not.toBeNull()
 
@@ -58,10 +58,10 @@ describe('XFA', () => {
         const document = await PdfDocument.fromBytes([pdfBuffer])
         document.setPassword('')
 
-        expect(await document.xfa.hasXfaForms()).toBe(true)
+        expect(await document.acroForm.xfa.hasXfaForms()).toBe(true)
 
         // Read the original XML content
-        const originalXml = await document.xfa.readXml()
+        const originalXml = await document.acroForm.xfa.readXml()
         expect(originalXml).toBeDefined()
         expect(originalXml).not.toBeNull()
 
@@ -84,7 +84,7 @@ describe('XFA', () => {
         expect(modifiedXml).not.toEqual(originalXml)
 
         // Write the modified XML back to the document
-        await document.xfa.writeXml(modifiedXml)
+        await document.acroForm.xfa.writeXml(modifiedXml)
 
         await server.commands.writeFile(
             './test/unit/tmp/modifiedAdobeLivecycle.pdf',
@@ -96,7 +96,7 @@ describe('XFA', () => {
         rereadDocument.setPassword('')
 
         // Read it back to verify the changes were applied
-        const updatedXml = await rereadDocument.xfa.readXml()
+        const updatedXml = await rereadDocument.acroForm.xfa.readXml()
         expect(updatedXml).toContain('NEW COMPANY NAME LLC')
 
         rereadDocument.toString() // Ensure no errors on toString

@@ -130,7 +130,7 @@ export class PdfIndirectObject<
         this.modified = true
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfIndirectObject({
             objectNumber: this.objectNumber,
             generationNumber: this.generationNumber,

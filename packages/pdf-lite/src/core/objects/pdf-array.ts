@@ -42,8 +42,9 @@ export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
         ]
     }
 
-    clone(): this {
-        return new PdfArray(this.items.map((x) => x.clone())) as this
+    cloneImpl(): this {
+        const cloned = new PdfArray(this.items.map((x) => x.clone())) as this
+        return cloned
     }
 
     isModified(): boolean {

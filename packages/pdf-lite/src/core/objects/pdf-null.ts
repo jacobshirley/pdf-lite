@@ -8,7 +8,8 @@ export class PdfNull extends PdfObject {
         return [new PdfNullToken()]
     }
 
-    clone(): this {
-        return new PdfNull() as this
+    cloneImpl(): this {
+        const cloned = new PdfNull() as this
+        return cloned
     }
 }

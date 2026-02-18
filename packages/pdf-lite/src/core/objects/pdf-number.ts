@@ -83,12 +83,13 @@ export class PdfNumber extends PdfObject {
         return [this.toToken()]
     }
 
-    clone(): this {
-        return new PdfNumber({
+    cloneImpl(): this {
+        const cloned = new PdfNumber({
             value: this.value,
             padTo: this.padTo,
             decimalPlaces: this.decimalPlaces,
         }) as this
+        return cloned
     }
 
     isModified(): boolean {

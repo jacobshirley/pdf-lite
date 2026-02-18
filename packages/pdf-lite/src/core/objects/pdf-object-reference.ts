@@ -21,10 +21,11 @@ export class PdfObjectReference extends PdfObject {
         ]
     }
 
-    clone(): this {
-        return new PdfObjectReference(
+    cloneImpl(): this {
+        const cloned = new PdfObjectReference(
             this.objectNumber,
             this.generationNumber,
         ) as this
+        return cloned
     }
 }

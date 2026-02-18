@@ -92,12 +92,13 @@ export class PdfString extends PdfObject {
         return [new PdfStringToken(this.raw, this._originalBytes)]
     }
 
-    clone(): this {
-        return new PdfString(
+    cloneImpl(): this {
+        const cloned = new PdfString(
             new Uint8Array(this.raw),
             this._originalBytes
                 ? new Uint8Array(this._originalBytes)
                 : undefined,
         ) as this
+        return cloned
     }
 }

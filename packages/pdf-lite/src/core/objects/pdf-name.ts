@@ -13,8 +13,9 @@ export class PdfName<T extends string = string> extends PdfObject {
         return [new PdfNameToken(PdfName.escapeName(this.value))]
     }
 
-    clone(): this {
-        return new PdfName(this.value) as this
+    cloneImpl(): this {
+        const cloned = new PdfName(this.value) as this
+        return cloned
     }
 
     /**

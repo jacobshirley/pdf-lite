@@ -283,7 +283,7 @@ export class PdfStream<
         return result
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfStream({
             header: this.header.clone(),
             original: new Uint8Array(this.original),
@@ -419,7 +419,7 @@ export class PdfObjStream extends PdfStream {
         return Array.from(this.getObjectStream())
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfObjStream({
             header: this.header.clone(),
             original: new Uint8Array(this.original),
@@ -725,7 +725,7 @@ export class PdfXRefStream extends PdfStream {
         return value
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfXRefStream({
             header: this.header.clone(),
             original: new Uint8Array(this.original),

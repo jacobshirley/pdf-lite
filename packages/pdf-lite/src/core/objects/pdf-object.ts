@@ -84,8 +84,16 @@ export abstract class PdfObject {
         )
     }
 
+    /** Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly */
+    protected abstract cloneImpl(): this
+
     /** Creates a deep clone of the object */
-    abstract clone(): this
+    clone(): this {
+        const cloned = this.cloneImpl()
+        cloned.setModified(this.modified)
+        cloned.setImmutable(this.immutable)
+        return cloned
+    }
 
     /** Compares this object to another for equality based on their token representations */
     equals(other?: PdfObject): boolean {

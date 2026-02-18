@@ -74,13 +74,14 @@ export class PdfHexadecimal extends PdfObject {
         return [new PdfHexadecimalToken(this.raw, this._originalBytes)]
     }
 
-    clone(): this {
-        return new PdfHexadecimal(
+    cloneImpl(): this {
+        const cloned = new PdfHexadecimal(
             new Uint8Array(this.raw),
             'hex',
             this._originalBytes
                 ? new Uint8Array(this._originalBytes)
                 : undefined,
         ) as this
+        return cloned
     }
 }

@@ -174,12 +174,13 @@ export class PdfDictionary<
         this.modified = true
     }
 
-    clone(): this {
+    cloneImpl(): this {
         const clonedEntries = new Map<PdfName, PdfObject | undefined>()
         for (const [key, value] of this.#entries) {
             clonedEntries.set(key.clone(), value ? value.clone() : undefined)
         }
-        return new PdfDictionary(clonedEntries) as this
+        const cloned = new PdfDictionary(clonedEntries) as this
+        return cloned
     }
 
     isModified(): boolean {

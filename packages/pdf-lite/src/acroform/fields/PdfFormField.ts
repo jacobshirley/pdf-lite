@@ -98,10 +98,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return this.form?.fontEncodingMaps?.get(fontName)
     }
 
-    isModified(): boolean {
-        return this.content.isModified()
-    }
-
     get fieldType(): PdfFieldType | null {
         const ft =
             this.content.get('FT')?.as(PdfName)?.value ??

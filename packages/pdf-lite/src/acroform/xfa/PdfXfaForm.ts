@@ -52,16 +52,16 @@ export class PdfXfaForm extends PdfArray {
                 name.value === 'datasets' &&
                 ref instanceof PdfObjectReference
             ) {
-                const datasetObject = await document.readObject({
-                    objectNumber: ref.objectNumber,
-                    generationNumber: ref.generationNumber,
-                    allowUnindexed: true,
-                })
+                const datasetObject = (
+                    await document.readObject({
+                        objectNumber: ref.objectNumber,
+                        generationNumber: ref.generationNumber,
+                        allowUnindexed: true,
+                    })
+                )?.as(PdfIndirectObject<PdfStream>)
 
                 if (datasetObject) {
-                    form.datasets = new PdfXfaData(
-                        datasetObject as PdfIndirectObject<PdfStream>,
-                    )
+                    form.datasets = new PdfXfaData(datasetObject)
                 }
                 break
             }

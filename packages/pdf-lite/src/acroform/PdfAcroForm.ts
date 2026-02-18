@@ -224,9 +224,6 @@ export class PdfAcroForm<
                     form: acroForm,
                     parent,
                 })
-                if (parent) {
-                    field.parent = parent
-                }
 
                 const kids = field.kids
                 if (kids.length > 0) {
@@ -266,6 +263,11 @@ export class PdfAcroForm<
 
         await getFields(fieldsArray.items)
 
+        // Reset field-level modified flag so only explicitly changed fields are detected
+        for (const field of acroForm.fields) {
+            field.setModified(false)
+        }
+
         return acroForm
     }
 
@@ -294,14 +296,15 @@ export class PdfAcroForm<
 
         const xfaForm = await PdfXfaForm.fromDocument(document)
         if (xfaForm) {
-            const modifiedFields = this.fields
+            // Only send fields whose value was explicitly changed (field.isModified())
+            const xfaFields = this.fields
                 .filter(
                     (f) =>
                         f.isModified() && f.fieldType !== 'Signature' && f.name,
                 )
                 .map((f) => ({ name: f.name, value: f.value }))
-            if (modifiedFields.length > 0) {
-                xfaForm.datasets?.updateFields(modifiedFields)
+            if (xfaFields.length > 0) {
+                xfaForm.datasets?.updateFields(xfaFields)
             }
         }
 
@@ -316,10 +319,12 @@ export class PdfAcroForm<
             }
         >()
 
-        for (const field of this.fields) {
-            let fieldReference: PdfObjectReference
+        // Phase 1: add appearance streams standalone (PdfStream — cannot go in ObjStm)
+        // and collect field dicts for ObjStm batching.
+        const compressibleFields: PdfIndirectObject[] = []
 
-            if (field.isModified()) {
+        for (const field of this.fields) {
+            if (field.content.isModified()) {
                 const appearances = field.getAppearanceStreamsForWriting()
                 if (appearances) {
                     document.add(appearances.primary)
@@ -338,8 +343,18 @@ export class PdfAcroForm<
                     }
                 }
 
-                document.add(field)
+                compressibleFields.push(field)
+            }
+        }
 
+        // Phase 2: pack field dicts into ObjStm — pre-assigns their object numbers.
+        document.addObjectsAsStream(compressibleFields)
+
+        // Phase 3: build fieldsArray now that field object numbers are stable.
+        for (const field of this.fields) {
+            let fieldReference: PdfObjectReference
+
+            if (field.content.isModified()) {
                 fieldReference = new PdfObjectReference(
                     field.objectNumber,
                     field.generationNumber,
@@ -366,8 +381,10 @@ export class PdfAcroForm<
 
         await this.updatePageAnnotations(document, fieldsByPage)
 
+        // Phase 4: pack AcroForm dict into ObjStm AFTER fieldsArray is populated,
+        // so the dict is serialized with the correct Fields array.
         if (this.isModified()) {
-            document.add(this)
+            document.addObjectsAsStream([this])
 
             if (!catalog.content.has('AcroForm')) {
                 let updatableCatalog = catalog
@@ -379,6 +396,7 @@ export class PdfAcroForm<
             }
         }
 
+        // XFA datasets stream — PdfXfaData extends PdfIndirectObject<PdfStream>, must stay standalone
         if (xfaForm) {
             xfaForm.write(document)
         }

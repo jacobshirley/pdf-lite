@@ -36,10 +36,10 @@ export class PdfTextFormField extends PdfFormField {
 
         if (options?.makeReadOnly) {
             this.readOnly = true
-            this.print = true
+            if (!this.print) this.print = true
             this.noZoom = true
         } else {
-            this.print = true
+            if (!this.print) this.print = true
         }
         return true
     }

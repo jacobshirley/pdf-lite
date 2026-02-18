@@ -197,6 +197,43 @@ export class PdfDocument extends PdfObject {
     }
 
     /**
+     * Packs non-stream indirect objects into compressed ObjStm containers.
+     * Objects that already have an object number are left unchanged.
+     * Appearance streams and other PdfStream objects must NOT be passed here —
+     * only non-stream indirect objects (dictionaries, arrays, etc.) are eligible.
+     *
+     * @param objects - Non-stream indirect objects to compress into ObjStm
+     * @param batchSize - Maximum objects per ObjStm container (default 100)
+     */
+    addObjectsAsStream(objects: PdfIndirectObject[], batchSize = 100): void {
+        if (objects.length === 0) return
+
+        for (let start = 0; start < objects.length; start += batchSize) {
+            const batch = objects.slice(
+                start,
+                Math.min(start + batchSize, objects.length),
+            )
+
+            // Pre-assign a contiguous block of object numbers for the batch
+            const xref = this.latestRevision.xref
+            const startNum = xref.reserveObjectNumbers(batch.length)
+            for (let i = 0; i < batch.length; i++) {
+                if (!batch[i].inPdf()) {
+                    batch[i].objectNumber = startNum + i
+                }
+            }
+
+            // Build the ObjStm and apply FlateDecode compression
+            const objStream = PdfObjStream.fromObjects(batch)
+            objStream.addFilter('FlateDecode')
+
+            // Add the container — xref.addObject() auto-registers children as type-2 entries
+            const container = new PdfIndirectObject({ content: objStream })
+            this.add(container)
+        }
+    }
+
+    /**
      * Gets the latest (most recent) revision of the document.
      *
      * @returns The latest PdfRevision

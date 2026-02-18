@@ -91,7 +91,6 @@ export abstract class PdfObject {
     clone(): this {
         const cloned = this.cloneImpl()
         cloned.setModified(this.modified)
-        cloned.setImmutable(this.immutable)
         return cloned
     }
 

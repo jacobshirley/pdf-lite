@@ -1536,3 +1536,180 @@ describe('AcroForm Appearance Generation', () => {
         )
     })
 })
+
+describe('AcroForm Field DA Inheritance from Form Level', () => {
+    it('should return form-level DA when field has no own DA', () => {
+        const acroForm = new PdfAcroForm()
+        acroForm.defaultAppearance = '/Helv 12 Tf 0 g'
+
+        const field = new PdfTextFormField({ form: acroForm })
+        // No DA set on field
+
+        expect(field.defaultAppearance).toBe('/Helv 12 Tf 0 g')
+    })
+
+    it('should prefer field-level DA over form-level DA', () => {
+        const acroForm = new PdfAcroForm()
+        acroForm.defaultAppearance = '/Helv 12 Tf 0 g'
+
+        const field = new PdfTextFormField({ form: acroForm })
+        field.defaultAppearance = '/Cour 10 Tf 0 g'
+
+        expect(field.defaultAppearance).toBe('/Cour 10 Tf 0 g')
+    })
+
+    it('should prefer parent-level DA over form-level DA', () => {
+        const acroForm = new PdfAcroForm()
+        acroForm.defaultAppearance = '/Helv 12 Tf 0 g'
+
+        const parent = new PdfTextFormField({ form: acroForm })
+        parent.defaultAppearance = '/Cour 10 Tf 0 g'
+
+        const child = new PdfTextFormField({ form: acroForm })
+        child.parent = parent
+        // No DA on child
+
+        expect(child.defaultAppearance).toBe('/Cour 10 Tf 0 g')
+    })
+
+    it('should return null when no DA at any level', () => {
+        const acroForm = new PdfAcroForm()
+        // No defaultAppearance on form
+
+        const field = new PdfTextFormField({ form: acroForm })
+        // No DA on field
+
+        expect(field.defaultAppearance).toBeNull()
+    })
+
+    it('should generate text field appearance using form-level DA fallback', () => {
+        const acroForm = new PdfAcroForm()
+        acroForm.defaultAppearance = '/Helv 12 Tf 0 g'
+
+        const field = new PdfTextFormField({ form: acroForm })
+        field.rect = [100, 100, 300, 120]
+        field.fieldType = 'Text'
+        field.value = 'Test'
+        // No DA on field — relies on form-level DA
+
+        expect(field.generateAppearance()).toBe(true)
+        expect(field.getAppearanceStream()).toBeDefined()
+        expect(field.getAppearanceStream()!.rawAsString).toContain('(Test) Tj')
+    })
+
+    it('should generate choice field appearance using form-level DA fallback', () => {
+        const acroForm = new PdfAcroForm()
+        acroForm.defaultAppearance = '/Helv 12 Tf 0 g'
+
+        const field = new PdfChoiceFormField({ form: acroForm })
+        field.rect = [100, 100, 300, 120]
+        field.fieldType = 'Choice'
+        field.combo = true
+        field.options = ['Option A', 'Option B']
+        field.value = 'Option A'
+        // No DA on field — relies on form-level DA
+
+        expect(field.generateAppearance()).toBe(true)
+        expect(field.getAppearanceStream()).toBeDefined()
+        expect(field.getAppearanceStream()!.rawAsString).toContain(
+            '(Option A) Tj',
+        )
+    })
+})
+
+describe('AcroForm Appearance Stream Font Resources', () => {
+    function makeDrFontDict(): PdfDictionary {
+        const helvFont = new PdfDictionary()
+        helvFont.set('Type', new PdfName('Font'))
+        helvFont.set('Subtype', new PdfName('Type1'))
+        helvFont.set('BaseFont', new PdfName('Helvetica'))
+
+        const drFontDict = new PdfDictionary()
+        drFontDict.set('Helv', helvFont)
+
+        const dr = new PdfDictionary()
+        dr.set('Font', drFontDict)
+        return dr
+    }
+
+    it('should embed DR Font in text field appearance XObject Resources', () => {
+        const acroForm = new PdfAcroForm()
+        acroForm.defaultAppearance = '/Helv 12 Tf 0 g'
+        acroForm.defaultResources = makeDrFontDict()
+
+        const field = new PdfTextFormField({ form: acroForm })
+        field.rect = [100, 100, 300, 120]
+        field.fieldType = 'Text'
+        field.value = 'Test'
+
+        field.generateAppearance()
+
+        const stream = field.getAppearanceStream()
+        expect(stream).toBeDefined()
+
+        const resources = stream!.header.get('Resources')?.as(PdfDictionary)
+        expect(resources).toBeDefined()
+
+        const fontDict = resources!.get('Font')?.as(PdfDictionary)
+        expect(fontDict).toBeDefined()
+        expect(fontDict!.get('Helv')).toBeDefined()
+    })
+
+    it('should embed DR Font in choice field appearance XObject Resources', () => {
+        const acroForm = new PdfAcroForm()
+        acroForm.defaultAppearance = '/Helv 12 Tf 0 g'
+        acroForm.defaultResources = makeDrFontDict()
+
+        const field = new PdfChoiceFormField({ form: acroForm })
+        field.rect = [100, 100, 300, 120]
+        field.fieldType = 'Choice'
+        field.combo = true
+        field.options = ['Option A', 'Option B']
+        field.value = 'Option A'
+
+        field.generateAppearance()
+
+        const stream = field.getAppearanceStream()
+        expect(stream).toBeDefined()
+
+        const resources = stream!.header.get('Resources')?.as(PdfDictionary)
+        expect(resources).toBeDefined()
+
+        const fontDict = resources!.get('Font')?.as(PdfDictionary)
+        expect(fontDict).toBeDefined()
+        expect(fontDict!.get('Helv')).toBeDefined()
+    })
+
+    it('should generate appearance without Resources when no DR is set', () => {
+        const field = new PdfTextFormField()
+        field.rect = [100, 100, 300, 120]
+        field.defaultAppearance = '/Helv 12 Tf 0 g'
+        field.value = 'Test'
+
+        expect(field.generateAppearance()).toBe(true)
+
+        const stream = field.getAppearanceStream()
+        expect(stream).toBeDefined()
+        // No Resources in XObject is valid — viewer falls back to page resources
+        expect(stream!.header.get('Resources')).toBeUndefined()
+    })
+
+    it('should always embed ZapfDingbats in button field appearance XObject', () => {
+        const field = new PdfButtonFormField()
+        field.rect = [100, 100, 120, 120]
+        field.fieldType = 'Button'
+        field.checked = true
+
+        field.generateAppearance()
+
+        const stream = field.getAppearanceStream()
+        expect(stream).toBeDefined()
+
+        const resources = stream!.header.get('Resources')?.as(PdfDictionary)
+        expect(resources).toBeDefined()
+
+        const fontDict = resources!.get('Font')?.as(PdfDictionary)
+        expect(fontDict).toBeDefined()
+        expect(fontDict!.get('ZaDb')).toBeDefined()
+    })
+})

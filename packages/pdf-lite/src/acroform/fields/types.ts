@@ -18,6 +18,7 @@ export type PdfFieldType = keyof typeof PdfFieldType
  */
 export interface FormContext<TField = any> {
     defaultResources: PdfDefaultResourcesDictionary | null
+    defaultAppearance: string | null
     fontEncodingMaps: Map<string, Map<number, string>>
     fields: TField[]
 }

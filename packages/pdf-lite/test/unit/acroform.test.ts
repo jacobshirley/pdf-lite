@@ -1000,7 +1000,6 @@ describe('AcroForm Appearance Generation', () => {
 
         textField!.value = 'Test Value'
 
-        // Generate appearance for editable field (iText approach)
         const successEditable = textField!.generateAppearance()
         expect(successEditable).toBe(true)
 
@@ -1041,7 +1040,6 @@ describe('AcroForm Appearance Generation', () => {
         expect(bbox!.items[2].value).toBe(width)
         expect(bbox!.items[3].value).toBe(height)
 
-        // Appearance stream should contain marked content and text (iText format)
         const readOnlyStreamContent = appearance!.rawAsString
         expect(readOnlyStreamContent).toContain('/Tx BMC') // marked content start
         expect(readOnlyStreamContent).toContain('EMC') // marked content end
@@ -1108,17 +1106,10 @@ describe('AcroForm Appearance Generation', () => {
         const valuesToSet: Record<string, string> = {
             'Client Name': 'Jane Doe',
             N: '9876543210',
+            'date 1': '10012024',
         }
 
         acroform.importData(valuesToSet)
-
-        // Generate empty appearances for editable text fields (iText approach)
-        for (const field of acroform.fields) {
-            if (field.fieldType === 'Text' && field.value && field.rect) {
-                field.generateAppearance()
-            }
-        }
-
         acroform.needAppearances = false
         await document.acroForm.write(acroform)
 

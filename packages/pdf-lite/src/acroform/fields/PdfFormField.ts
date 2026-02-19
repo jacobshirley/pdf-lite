@@ -461,6 +461,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return (
             this.content.get('DA')?.as(PdfString)?.value ??
             this.parent?.content.get('DA')?.as(PdfString)?.value ??
+            this.form?.defaultAppearance ??
             null
         )
     }

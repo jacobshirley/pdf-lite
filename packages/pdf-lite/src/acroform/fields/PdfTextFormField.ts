@@ -1,6 +1,7 @@
 import { PdfFormField } from './PdfFormField.js'
 import { PdfDefaultAppearance } from './PdfDefaultAppearance.js'
 import { PdfTextAppearanceStream } from '../appearance/PdfTextAppearanceStream.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 
 /**
  * Text form field subtype.
@@ -25,6 +26,15 @@ export class PdfTextFormField extends PdfFormField {
         const parsed = PdfDefaultAppearance.parse(da)
         if (!parsed) return false
 
+        let fontResources: PdfDictionary | undefined
+        const drFontValue = this.form?.defaultResources?.get('Font')
+        const drFonts =
+            drFontValue instanceof PdfDictionary ? drFontValue : undefined
+        if (drFonts) {
+            fontResources = new PdfDictionary()
+            fontResources.set('Font', drFonts)
+        }
+
         this._appearanceStream = new PdfTextAppearanceStream({
             rect: rect as [number, number, number, number],
             value: this.value,
@@ -32,6 +42,7 @@ export class PdfTextFormField extends PdfFormField {
             multiline: this.multiline,
             comb: this.comb,
             maxLen: this.maxLen,
+            fontResources,
         })
 
         if (options?.makeReadOnly) {

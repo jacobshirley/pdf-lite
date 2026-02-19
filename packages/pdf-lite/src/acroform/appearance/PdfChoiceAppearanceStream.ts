@@ -1,5 +1,6 @@
 import { PdfDefaultAppearance } from '../fields/PdfDefaultAppearance.js'
 import { PdfAppearanceStream } from './PdfAppearanceStream.js'
+import type { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 
 /**
  * Appearance stream for choice fields (dropdowns, list boxes).
@@ -10,6 +11,7 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         value: string
         da: PdfDefaultAppearance
         flags: number
+        fontResources?: PdfDictionary
     }) {
         const [x1, y1, x2, y2] = ctx.rect
         const width = x2 - x1
@@ -58,6 +60,6 @@ ${arrowGraphics}Q
 EMC
 `
 
-        super({ width, height, contentStream })
+        super({ width, height, contentStream, resources: ctx.fontResources })
     }
 }

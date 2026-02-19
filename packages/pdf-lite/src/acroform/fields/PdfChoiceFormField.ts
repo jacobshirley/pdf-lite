@@ -1,6 +1,7 @@
 import { PdfFormField } from './PdfFormField.js'
 import { PdfDefaultAppearance } from './PdfDefaultAppearance.js'
 import { PdfChoiceAppearanceStream } from '../appearance/PdfChoiceAppearanceStream.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 
 /**
  * Choice form field subtype (dropdowns, list boxes).
@@ -23,11 +24,21 @@ export class PdfChoiceFormField extends PdfFormField {
         const parsed = PdfDefaultAppearance.parse(da)
         if (!parsed) return false
 
+        let fontResources: PdfDictionary | undefined
+        const drFontValue = this.form?.defaultResources?.get('Font')
+        const drFonts =
+            drFontValue instanceof PdfDictionary ? drFontValue : undefined
+        if (drFonts) {
+            fontResources = new PdfDictionary()
+            fontResources.set('Font', drFonts)
+        }
+
         this._appearanceStream = new PdfChoiceAppearanceStream({
             rect: rect as [number, number, number, number],
             value,
             da: parsed,
             flags: this.flags,
+            fontResources,
         })
 
         if (options?.makeReadOnly) {

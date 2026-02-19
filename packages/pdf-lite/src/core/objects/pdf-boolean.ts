@@ -13,7 +13,8 @@ export class PdfBoolean extends PdfObject {
         return [new PdfBooleanToken(this.value)]
     }
 
-    clone(): this {
-        return new PdfBoolean(this.value) as this
+    cloneImpl(): this {
+        const cloned = new PdfBoolean(this.value) as this
+        return cloned
     }
 }

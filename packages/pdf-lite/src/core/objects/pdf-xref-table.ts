@@ -53,7 +53,7 @@ export class PdfXRefTableEntry extends PdfObject {
         ]
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfXRefTableEntry({
             byteOffset: this.byteOffset.clone(),
             objectNumber: this.objectNumber.clone(),
@@ -94,7 +94,7 @@ export class PdfXRefTableSectionHeader extends PdfObject {
         ]
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfXRefTableSectionHeader({
             startObjectNumber: this.startObjectNumber.clone(),
             entryCount: this.entryCount.clone(),
@@ -254,7 +254,7 @@ export class PdfXRefTable extends PdfObject {
         return sections
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfXRefTable({
             sections: this.sections.map((s) => s.clone()),
             entries: this.entries.map((e) => e.clone()),

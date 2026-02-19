@@ -1539,9 +1539,9 @@ Compares this object to another for equality based on their token representation
 
 > **generateAppearance**(`options?`): `boolean`
 
-Generates an appearance stream for a text field using iText's approach.
+Generates an appearance stream for a text field.
 
-This generates an appearance with text using the same positioning formula as iText:
+This generates an appearance with text using the following positioning formula:
 
 - textY = (height - fontSize) / 2 + fontSize \* 0.2
 - Wrapped in marked content blocks (/Tx BMC ... EMC)
@@ -1552,7 +1552,6 @@ For editable fields (default, no options):
 - Text visible immediately
 - Field remains fully editable
 - No save dialog (needAppearances = false)
-- Text positioning matches iText
 
 For read-only fields (makeReadOnly: true):
 

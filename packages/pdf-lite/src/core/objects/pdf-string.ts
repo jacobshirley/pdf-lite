@@ -61,6 +61,23 @@ export class PdfString extends PdfObject {
         )
     }
 
+    set value(str: string) {
+        if (this.isImmutable()) {
+            throw new Error('Cannot modify an immutable PdfString')
+        }
+
+        this.setModified()
+
+        if (needsUnicodeEncoding(str)) {
+            this._raw = encodeAsUTF16BE(str)
+        } else {
+            this._raw = encodeToPDFDocEncoding(str)
+        }
+
+        // Clear original bytes when modified
+        this._originalBytes = undefined
+    }
+
     get value(): string {
         // Check for UTF-16BE BOM (0xFE 0xFF)
         if (this.isUTF16BE) {
@@ -75,12 +92,13 @@ export class PdfString extends PdfObject {
         return [new PdfStringToken(this.raw, this._originalBytes)]
     }
 
-    clone(): this {
-        return new PdfString(
+    cloneImpl(): this {
+        const cloned = new PdfString(
             new Uint8Array(this.raw),
             this._originalBytes
                 ? new Uint8Array(this._originalBytes)
                 : undefined,
         ) as this
+        return cloned
     }
 }

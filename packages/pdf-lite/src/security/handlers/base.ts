@@ -222,6 +222,7 @@ export abstract class PdfSecurityHandler {
                     generationNumber,
                 )
                 obj.raw = decryptedData
+                obj.setModified(false)
             } else if (obj instanceof PdfStream) {
                 const decryptedData = await this.decrypt(
                     'stream',
@@ -233,6 +234,8 @@ export abstract class PdfSecurityHandler {
                 obj.raw = decryptedData
 
                 await decryptObject(obj.header)
+                obj.setModified(false)
+                obj.header.setModified(false)
             } else if (obj instanceof PdfDictionary) {
                 const values = obj.values
                 for (const key in values) {

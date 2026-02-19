@@ -43,8 +43,9 @@ export class PdfTrailer extends PdfObject {
         ]
     }
 
-    clone(): this {
-        return new PdfTrailer(this.dict.clone()) as this
+    cloneImpl(): this {
+        const cloned = new PdfTrailer(this.dict.clone()) as this
+        return cloned
     }
 
     isModified(): boolean {

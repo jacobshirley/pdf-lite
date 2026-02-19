@@ -31,7 +31,6 @@ import { PdfDocumentSecurityStoreObject } from '../signing/document-security-sto
 import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
-import { PdfXfaManager } from '../xfa/manager.js'
 import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/font-manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
@@ -61,9 +60,10 @@ export class PdfDocument extends PdfObject {
     /** Security handler for encryption/decryption operations */
     securityHandler?: PdfSecurityHandler
 
-    private _xfa?: PdfXfaManager
-    private _acroForm?: PdfAcroFormManager
-    private _fonts?: PdfFontManager
+    /**  */
+    readonly acroForm: PdfAcroFormManager
+    readonly fonts: PdfFontManager
+
     private hasEncryptionDictionary?: boolean = false
     private toBeCommitted: PdfObject[] = []
 
@@ -110,6 +110,9 @@ export class PdfDocument extends PdfObject {
 
         this.securityHandler =
             options?.securityHandler ?? this.getSecurityHandler()
+
+        this.acroForm = new PdfAcroFormManager(this)
+        this.fonts = new PdfFontManager(this)
     }
 
     get header(): PdfComment | undefined {
@@ -118,30 +121,6 @@ export class PdfDocument extends PdfObject {
 
     set header(comment: PdfComment | undefined) {
         if (comment) this.revisions[0].header = comment
-    }
-
-    /** XFA manager for handling XFA forms */
-    get xfa(): PdfXfaManager {
-        if (!this._xfa) {
-            this._xfa = new PdfXfaManager(this)
-        }
-        return this._xfa
-    }
-
-    /** AcroForm manager for handling form fields */
-    get acroForm(): PdfAcroFormManager {
-        if (!this._acroForm) {
-            this._acroForm = new PdfAcroFormManager(this)
-        }
-        return this._acroForm
-    }
-
-    /** Font manager for embedding and managing fonts */
-    get fonts(): PdfFontManager {
-        if (!this._fonts) {
-            this._fonts = new PdfFontManager(this)
-        }
-        return this._fonts
     }
 
     /**
@@ -214,6 +193,43 @@ export class PdfDocument extends PdfObject {
             }
             this.toBeCommitted.push(obj)
             this.latestRevision.addObject(obj)
+        }
+    }
+
+    /**
+     * Packs non-stream indirect objects into compressed ObjStm containers.
+     * Objects that already have an object number are left unchanged.
+     * Appearance streams and other PdfStream objects must NOT be passed here —
+     * only non-stream indirect objects (dictionaries, arrays, etc.) are eligible.
+     *
+     * @param objects - Non-stream indirect objects to compress into ObjStm
+     * @param batchSize - Maximum objects per ObjStm container (default 100)
+     */
+    addObjectsAsStream(objects: PdfIndirectObject[], batchSize = 100): void {
+        if (objects.length === 0) return
+
+        for (let start = 0; start < objects.length; start += batchSize) {
+            const batch = objects.slice(
+                start,
+                Math.min(start + batchSize, objects.length),
+            )
+
+            // Pre-assign a contiguous block of object numbers for the batch
+            const xref = this.latestRevision.xref
+            const startNum = xref.reserveObjectNumbers(batch.length)
+            for (let i = 0; i < batch.length; i++) {
+                if (!batch[i].inPdf()) {
+                    batch[i].objectNumber = startNum + i
+                }
+            }
+
+            // Build the ObjStm and apply FlateDecode compression
+            const objStream = PdfObjStream.fromObjects(batch)
+            objStream.addFilter('FlateDecode')
+
+            // Add the container — xref.addObject() auto-registers children as type-2 entries
+            const container = new PdfIndirectObject({ content: objStream })
+            this.add(container)
         }
     }
 
@@ -970,7 +986,7 @@ export class PdfDocument extends PdfObject {
      *
      * @returns A cloned PdfDocument instance
      */
-    clone(): this {
+    cloneImpl(): this {
         const clonedRevisions = this.revisions.map((rev) => rev.clone())
         return new PdfDocument({
             revisions: clonedRevisions,

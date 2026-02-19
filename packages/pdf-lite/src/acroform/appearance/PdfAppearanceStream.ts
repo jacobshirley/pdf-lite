@@ -1,0 +1,44 @@
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
+import { PdfArray } from '../../core/objects/pdf-array.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
+import { PdfNumber } from '../../core/objects/pdf-number.js'
+import { PdfStream } from '../../core/objects/pdf-stream.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+
+/**
+ * Base class for PDF appearance streams (Form XObjects).
+ * Wraps a PdfStream as a PdfIndirectObject so it can be added directly to a document.
+ */
+export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
+    constructor(options: {
+        width: number
+        height: number
+        contentStream: string
+        resources?: PdfDictionary
+    }) {
+        const appearanceDict = new PdfDictionary()
+        appearanceDict.set('Type', new PdfName('XObject'))
+        appearanceDict.set('Subtype', new PdfName('Form'))
+        appearanceDict.set('FormType', new PdfNumber(1))
+        appearanceDict.set(
+            'BBox',
+            new PdfArray([
+                new PdfNumber(0),
+                new PdfNumber(0),
+                new PdfNumber(options.width),
+                new PdfNumber(options.height),
+            ]),
+        )
+
+        if (options.resources) {
+            appearanceDict.set('Resources', options.resources)
+        }
+
+        const stream = new PdfStream({
+            header: appearanceDict,
+            original: options.contentStream,
+        })
+
+        super({ content: stream })
+    }
+}

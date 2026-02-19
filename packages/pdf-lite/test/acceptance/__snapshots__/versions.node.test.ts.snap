@@ -2,9 +2,14 @@
 
 exports[`PDF 1.3 acceptance tests > 1.3-basic.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
@@ -12299,9 +12304,14 @@ PdfDocument {
 
 exports[`PDF 1.4 acceptance tests > 1.4-basic.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
@@ -19414,9 +19424,14 @@ PdfDocument {
 
 exports[`PDF 1.4 acceptance tests > 1.4-basic-aes-128.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
@@ -22358,9 +22373,14 @@ PdfDocument {
 
 exports[`PDF 1.4 acceptance tests > 1.4-basic-aes-256.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
@@ -25510,9 +25530,14 @@ PdfDocument {
 
 exports[`PDF 1.4 acceptance tests > 1.4-basic-rc4-40.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
@@ -28454,9 +28479,14 @@ PdfDocument {
 
 exports[`PDF 1.4 acceptance tests > 1.4-basic-rc4-128.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
@@ -31398,9 +31428,14 @@ PdfDocument {
 
 exports[`PDF 1.5 acceptance tests > 1.5-basic.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
@@ -38649,9 +38684,14 @@ PdfDocument {
 
 exports[`PDF 1.6 acceptance tests > 1.6-basic.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
@@ -45900,9 +45940,14 @@ PdfDocument {
 
 exports[`PDF 1.7 acceptance tests > 1.7-basic.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
@@ -53151,9 +53196,14 @@ PdfDocument {
 
 exports[`PDF 2.0 acceptance tests > 2.0-basic.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
@@ -54977,9 +55027,14 @@ PdfDocument {
 
 exports[`PDF 2.0 acceptance tests > 2.0-basic-aes-128.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
@@ -57209,9 +57264,14 @@ PdfDocument {
 
 exports[`PDF 2.0 acceptance tests > 2.0-basic-aes-256.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
@@ -59606,9 +59666,14 @@ PdfDocument {
 
 exports[`PDF 2.0 acceptance tests > 2.0-basic-rc4-40.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
@@ -61838,9 +61903,14 @@ PdfDocument {
 
 exports[`PDF 2.0 acceptance tests > 2.0-basic-rc4-128.pdf 1`] = `
 PdfDocument {
-  "_acroForm": undefined,
-  "_fonts": undefined,
-  "_xfa": undefined,
+  "acroForm": PdfAcroFormManager {
+    "_xfa": undefined,
+    "document": [Circular],
+  },
+  "fonts": PdfFontManager {
+    "document": [Circular],
+    "fontResourceCounter": 0,
+  },
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,

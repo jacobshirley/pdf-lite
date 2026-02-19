@@ -283,7 +283,7 @@ export class PdfStream<
         return result
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfStream({
             header: this.header.clone(),
             original: new Uint8Array(this.original),
@@ -312,28 +312,57 @@ export class PdfObjStream extends PdfStream {
     }
 
     static fromObjects(objects: Iterable<PdfIndirectObject>): PdfObjStream {
-        let header = ''
-        let objectData = ''
-
+        const objByteChunks: ByteArray[] = []
+        const headerParts: string[] = []
         let offset = 0
+        let objectCount = 0
 
         for (const obj of objects) {
-            header += `${obj.objectNumber} ${offset} `
-            const objString = obj.content.toString()
-            objectData += objString + '\n'
-            offset += objString.length + 1
+            // Use toBytes() to preserve binary content (e.g. UTF-16BE strings)
+            // instead of toString() which is Latin-1 and would be re-encoded as UTF-8
+            headerParts.push(`${obj.objectNumber} ${offset}`)
+            const bytes = obj.content.toBytes()
+            objByteChunks.push(bytes, new Uint8Array([0x0a])) // object + newline
+            offset += bytes.length + 1
+            objectCount++
         }
+
+        const headerStr = headerParts.join(' ')
+        // First = byte offset of first compressed object from stream start
+        const first = objectCount > 0 ? headerStr.length + 1 : 0
 
         const headerDict = new PdfDictionary()
         headerDict.set('Type', new PdfName('ObjStm'))
-        headerDict.set('N', new PdfNumber(header.length))
-        headerDict.set('First', new PdfNumber(offset))
+        headerDict.set('N', new PdfNumber(objectCount))
+        headerDict.set('First', new PdfNumber(first))
 
-        objectData = `${header.trim()}\n${objectData.trim()}`
+        if (objectCount === 0) {
+            return new PdfObjStream({
+                header: headerDict,
+                original: new Uint8Array(),
+            })
+        }
+
+        // Build stream bytes: headerStr + '\n' + obj1bytes + obj2bytes + ...
+        // Drop trailing newline after the last object
+        objByteChunks.pop()
+        const headerBytes = stringToBytes(headerStr + '\n')
+        const totalLength = objByteChunks.reduce(
+            (sum, chunk) => sum + chunk.length,
+            headerBytes.length,
+        )
+        const streamBytes = new Uint8Array(totalLength)
+        let pos = 0
+        streamBytes.set(headerBytes, pos)
+        pos += headerBytes.length
+        for (const chunk of objByteChunks) {
+            streamBytes.set(chunk, pos)
+            pos += chunk.length
+        }
 
         return new PdfObjStream({
             header: headerDict,
-            original: objectData,
+            original: streamBytes,
         })
     }
 
@@ -390,7 +419,7 @@ export class PdfObjStream extends PdfStream {
         return Array.from(this.getObjectStream())
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfObjStream({
             header: this.header.clone(),
             original: new Uint8Array(this.original),
@@ -696,7 +725,7 @@ export class PdfXRefStream extends PdfStream {
         return value
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfXRefStream({
             header: this.header.clone(),
             original: new Uint8Array(this.original),

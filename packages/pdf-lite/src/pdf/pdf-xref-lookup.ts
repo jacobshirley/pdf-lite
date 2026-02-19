@@ -401,6 +401,19 @@ export class PdfXrefLookup {
     }
 
     /**
+     * Reserves a contiguous block of object numbers without registering objects.
+     * Use this to pre-assign numbers to objects that will live inside an ObjStm.
+     *
+     * @param count - Number of object numbers to reserve
+     * @returns The first reserved object number
+     */
+    reserveObjectNumbers(count: number): number {
+        const startNum = this.size
+        this.size += count
+        return startNum
+    }
+
+    /**
      * Adds an indirect object to the xref lookup.
      * Assigns an object number if not already set.
      *

@@ -44,7 +44,7 @@ export class PdfComment extends PdfObject {
         return [new PdfCommentToken(this.raw)]
     }
 
-    clone(): this {
+    cloneImpl(): this {
         return new PdfComment(new Uint8Array(this.raw)) as this
     }
 }

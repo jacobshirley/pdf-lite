@@ -536,6 +536,30 @@ Re-exports [PdfAdbePkcsX509RsaSha1SignatureObject](../signing/signatures/adbe-x5
 
 ---
 
+### PdfAnnotation
+
+Re-exports [PdfAnnotation](../annotations/PdfAnnotation/classes/PdfAnnotation.md)
+
+---
+
+### PdfAnnotationFlags
+
+Re-exports [PdfAnnotationFlags](../annotations/PdfAnnotationFlags/classes/PdfAnnotationFlags.md)
+
+---
+
+### PdfAnnotationWriter
+
+Re-exports [PdfAnnotationWriter](../annotations/PdfAnnotationWriter/classes/PdfAnnotationWriter.md)
+
+---
+
+### PdfAppearanceStreamDictionary
+
+Re-exports [PdfAppearanceStreamDictionary](../annotations/PdfAnnotation/type-aliases/PdfAppearanceStreamDictionary.md)
+
+---
+
 ### PdfArray
 
 Re-exports [PdfArray](../core/objects/pdf-array/classes/PdfArray.md)
@@ -1133,6 +1157,12 @@ Re-exports [PdfVriObject](../signing/document-security-store/type-aliases/PdfVri
 ### PdfWhitespaceToken
 
 Re-exports [PdfWhitespaceToken](../core/tokens/whitespace-token/classes/PdfWhitespaceToken.md)
+
+---
+
+### PdfWidgetAnnotation
+
+Re-exports [PdfWidgetAnnotation](../annotations/PdfWidgetAnnotation/classes/PdfWidgetAnnotation.md)
 
 ---
 

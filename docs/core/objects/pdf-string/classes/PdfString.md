@@ -12,6 +12,7 @@
 
 ## Extended by
 
+- [`PdfDefaultAppearance`](../../../../acroform/fields/PdfDefaultAppearance/classes/PdfDefaultAppearance.md)
 - [`PdfDate`](../../pdf-date/classes/PdfDate.md)
 
 ## Constructors
@@ -157,6 +158,20 @@ The type of this PDF object
 
 `string`
 
+#### Set Signature
+
+> **set** **value**(`str`): `void`
+
+##### Parameters
+
+###### str
+
+`string`
+
+##### Returns
+
+`void`
+
 ## Methods
 
 ### as()
@@ -197,9 +212,25 @@ Creates a deep clone of the object
 
 `this`
 
-#### Overrides
+#### Inherited from
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`clone`](../../pdf-object/classes/PdfObject.md#clone)
+
+---
+
+### cloneImpl()
+
+> **cloneImpl**(): `this`
+
+Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly
+
+#### Returns
+
+`this`
+
+#### Overrides
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`cloneImpl`](../../pdf-object/classes/PdfObject.md#cloneimpl)
 
 ---
 

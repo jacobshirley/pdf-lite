@@ -287,6 +287,29 @@ The indirect object to remove
 
 ---
 
+### reserveObjectNumbers()
+
+> **reserveObjectNumbers**(`count`): `number`
+
+Reserves a contiguous block of object numbers without registering objects.
+Use this to pre-assign numbers to objects that will live inside an ObjStm.
+
+#### Parameters
+
+##### count
+
+`number`
+
+Number of object numbers to reserve
+
+#### Returns
+
+`number`
+
+The first reserved object number
+
+---
+
 ### setPrev()
 
 > **setPrev**(`xref`): `void`

@@ -12,12 +12,14 @@
 
 ## Extended by
 
-- [`PdfAcroFormField`](../../../../acroform/acroform/classes/PdfAcroFormField.md)
-- [`PdfAcroForm`](../../../../acroform/acroform/classes/PdfAcroForm.md)
+- [`PdfAcroForm`](../../../../acroform/PdfAcroForm/classes/PdfAcroForm.md)
+- [`PdfAnnotation`](../../../../annotations/PdfAnnotation/classes/PdfAnnotation.md)
 - [`PdfCertObject`](../../../../signing/document-security-store/classes/PdfCertObject.md)
 - [`PdfCrlObject`](../../../../signing/document-security-store/classes/PdfCrlObject.md)
 - [`PdfOcspObject`](../../../../signing/document-security-store/classes/PdfOcspObject.md)
 - [`PdfDocumentSecurityStoreObject`](../../../../signing/document-security-store/classes/PdfDocumentSecurityStoreObject.md)
+- [`PdfAppearanceStream`](../../../../acroform/appearance/PdfAppearanceStream/classes/PdfAppearanceStream.md)
+- [`PdfXfaData`](../../../../acroform/xfa/PdfXfaData/classes/PdfXfaData.md)
 - [`PdfSignatureObject`](../../../../signing/signatures/base/classes/PdfSignatureObject.md)
 
 ## Type Parameters
@@ -214,9 +216,25 @@ Creates a deep clone of the object
 
 `this`
 
-#### Overrides
+#### Inherited from
 
 [`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`clone`](../../pdf-object-reference/classes/PdfObjectReference.md#clone)
+
+---
+
+### cloneImpl()
+
+> **cloneImpl**(): `this`
+
+Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly
+
+#### Returns
+
+`this`
+
+#### Overrides
+
+[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`cloneImpl`](../../pdf-object-reference/classes/PdfObjectReference.md#cloneimpl)
 
 ---
 

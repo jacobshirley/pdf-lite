@@ -41,15 +41,29 @@ True if the document has AcroForm fields, false otherwise
 
 ---
 
+### getXfa()
+
+> **getXfa**(): `Promise`\<[`PdfXfaForm`](../../xfa/PdfXfaForm/classes/PdfXfaForm.md) \| `null`\>
+
+Gets the XFA form wrapper, loading it lazily on first access.
+
+#### Returns
+
+`Promise`\<[`PdfXfaForm`](../../xfa/PdfXfaForm/classes/PdfXfaForm.md) \| `null`\>
+
+The PdfXfaForm or null if no XFA forms exist
+
+---
+
 ### read()
 
-> **read**(): `Promise`\<[`PdfAcroForm`](../../acroform/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`\>
+> **read**(): `Promise`\<[`PdfAcroForm`](../../PdfAcroForm/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`\>
 
 Gets the AcroForm object from the document catalog.
 
 #### Returns
 
-`Promise`\<[`PdfAcroForm`](../../acroform/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`\>
+`Promise`\<[`PdfAcroForm`](../../PdfAcroForm/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`\>
 
 The AcroForm object or null if not found
 
@@ -65,7 +79,7 @@ Writes the provided AcroForm to the associated PDF document.
 
 ##### acroForm
 
-[`PdfAcroForm`](../../acroform/classes/PdfAcroForm.md)
+[`PdfAcroForm`](../../PdfAcroForm/classes/PdfAcroForm.md)
 
 The AcroForm instance to serialize into the document.
 

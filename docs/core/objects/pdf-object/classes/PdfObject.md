@@ -111,9 +111,21 @@ Attempts to cast the object to a specific PdfObject subclass
 
 ### clone()
 
-> `abstract` **clone**(): `this`
+> **clone**(): `this`
 
 Creates a deep clone of the object
+
+#### Returns
+
+`this`
+
+---
+
+### cloneImpl()
+
+> `abstract` `protected` **cloneImpl**(): `this`
+
+Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly
 
 #### Returns
 

@@ -10,6 +10,10 @@
 
 - [`PdfObject`](../../pdf-object/classes/PdfObject.md)
 
+## Extended by
+
+- [`PdfXfaForm`](../../../../acroform/xfa/PdfXfaForm/classes/PdfXfaForm.md)
+
 ## Type Parameters
 
 ### T
@@ -166,9 +170,25 @@ Creates a deep clone of the object
 
 `this`
 
-#### Overrides
+#### Inherited from
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`clone`](../../pdf-object/classes/PdfObject.md#clone)
+
+---
+
+### cloneImpl()
+
+> **cloneImpl**(): `this`
+
+Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly
+
+#### Returns
+
+`this`
+
+#### Overrides
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`cloneImpl`](../../pdf-object/classes/PdfObject.md#cloneimpl)
 
 ---
 

@@ -326,6 +326,22 @@ Attempts to cast the object to a specific PdfObject subclass
 
 > **clone**(): `this`
 
+Creates a deep clone of the object
+
+#### Returns
+
+`this`
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`clone`](../../../core/objects/pdf-object/classes/PdfObject.md#clone)
+
+---
+
+### cloneImpl()
+
+> **cloneImpl**(): `this`
+
 Creates a deep copy of this revision.
 
 #### Returns
@@ -336,7 +352,7 @@ A cloned PdfRevision instance
 
 #### Overrides
 
-[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`clone`](../../../core/objects/pdf-object/classes/PdfObject.md#clone)
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`cloneImpl`](../../../core/objects/pdf-object/classes/PdfObject.md#cloneimpl)
 
 ---
 

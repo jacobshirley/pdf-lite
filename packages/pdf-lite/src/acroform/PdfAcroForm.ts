@@ -47,6 +47,7 @@ export class PdfAcroForm<
     fields: PdfFormField[]
     private _fontEncodingCache?: PdfFontEncodingCache
     private document?: PdfDocument
+    private _xfa?: PdfXfaForm | null // undefined = not set; null = explicitly no XFA
 
     constructor(options?: {
         other?: PdfIndirectObject
@@ -75,6 +76,10 @@ export class PdfAcroForm<
 
     get fontEncodingMaps(): Map<string, Map<number, string>> {
         return this.fontEncodingCache.fontEncodingMaps
+    }
+
+    setXfa(xfa: PdfXfaForm | null): void {
+        this._xfa = xfa
     }
 
     isModified(): boolean {
@@ -288,13 +293,36 @@ export class PdfAcroForm<
         await PdfAnnotationWriter.updatePageAnnotations(document, fieldsByPage)
     }
 
-    async write(document: PdfDocument) {
+    async getXfa(document?: PdfDocument): Promise<PdfXfaForm | null> {
+        if (this._xfa) {
+            return this._xfa
+        }
+
+        const doc = document || this.document
+        if (!doc) {
+            throw new Error(
+                'No document available to load XFA form. Provide a document or ensure this AcroForm is associated with a document.',
+            )
+        }
+        this._xfa = await PdfXfaForm.fromDocument(doc)
+        return this._xfa
+    }
+
+    async write(document?: PdfDocument) {
+        document ||= this.document
+        if (!document) {
+            throw new Error('No document associated with this AcroForm')
+        }
+
         const catalog = document.root
 
         const isIncremental = document.isIncremental()
         document.setIncremental(true)
 
-        const xfaForm = await PdfXfaForm.fromDocument(document)
+        const xfaForm =
+            this._xfa !== undefined
+                ? this._xfa
+                : await PdfXfaForm.fromDocument(document)
         if (xfaForm) {
             // Only send fields whose value was explicitly changed (field.isModified())
             const xfaFields = this.fields
@@ -397,8 +425,8 @@ export class PdfAcroForm<
         }
 
         // XFA datasets stream — PdfXfaData extends PdfIndirectObject<PdfStream>, must stay standalone
-        if (xfaForm) {
-            xfaForm.write(document)
+        if (xfaForm?.datasets?.isModified()) {
+            document.add(xfaForm.datasets)
         }
 
         await document.commit()

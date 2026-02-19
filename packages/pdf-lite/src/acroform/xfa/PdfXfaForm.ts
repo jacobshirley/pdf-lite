@@ -69,10 +69,4 @@ export class PdfXfaForm extends PdfArray {
 
         return form
     }
-
-    write(document: PdfDocument): void {
-        if (this.datasets?.isModified()) {
-            document.add(this.datasets)
-        }
-    }
 }

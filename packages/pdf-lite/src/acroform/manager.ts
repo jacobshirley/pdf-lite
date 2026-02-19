@@ -8,7 +8,7 @@ import { PdfXfaForm } from './xfa/PdfXfaForm.js'
  */
 export class PdfAcroFormManager {
     private document: PdfDocument
-    private _xfa: PdfXfaForm | null | undefined = undefined
+    private _acroform: PdfAcroForm | null = null
 
     constructor(document: PdfDocument) {
         this.document = document
@@ -19,10 +19,7 @@ export class PdfAcroFormManager {
      * @returns The PdfXfaForm or null if no XFA forms exist
      */
     async getXfa(): Promise<PdfXfaForm | null> {
-        if (this._xfa === undefined) {
-            this._xfa = await PdfXfaForm.fromDocument(this.document)
-        }
-        return this._xfa
+        return (await (await this.read())?.getXfa()) || null
     }
 
     /**
@@ -43,7 +40,16 @@ export class PdfAcroFormManager {
      * @returns The AcroForm object or null if not found
      */
     async read(): Promise<PdfAcroForm | null> {
-        return await PdfAcroForm.fromDocument(this.document)
+        if (this._acroform) return this._acroform
+        this._acroform = await PdfAcroForm.fromDocument(this.document)
+        return this._acroform
+    }
+
+    /**
+     * Explicitly sets the XFA form instance, bypassing the lazy load on next write.
+     */
+    async setXfa(xfa: PdfXfaForm): Promise<void> {
+        ;(await this.read())?.setXfa(xfa)
     }
 
     /**
@@ -51,7 +57,7 @@ export class PdfAcroFormManager {
      * @param acroForm The AcroForm instance to serialize into the document.
      * @throws Error If writing the AcroForm to the document fails.
      */
-    async write(acroForm: PdfAcroForm): Promise<void> {
-        await acroForm.write(this.document)
+    async write(acroForm?: PdfAcroForm): Promise<void> {
+        await (acroForm ?? (await this.read()))?.write(this.document)
     }
 }

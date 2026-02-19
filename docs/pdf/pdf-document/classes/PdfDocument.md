@@ -87,6 +87,18 @@ PDF version string (e.g., '1.7', '2.0') or version comment
 
 ## Properties
 
+### acroForm
+
+> `readonly` **acroForm**: [`PdfAcroFormManager`](../../../acroform/manager/classes/PdfAcroFormManager.md)
+
+---
+
+### fonts
+
+> `readonly` **fonts**: [`PdfFontManager`](../../../fonts/font-manager/classes/PdfFontManager.md)
+
+---
+
 ### immutable
 
 > `protected` **immutable**: `boolean` = `false`
@@ -159,20 +171,6 @@ Signer instance for digital signature operations
 
 ## Accessors
 
-### acroForm
-
-#### Get Signature
-
-> **get** **acroForm**(): [`PdfAcroFormManager`](../../../acroform/manager/classes/PdfAcroFormManager.md)
-
-AcroForm manager for handling form fields
-
-##### Returns
-
-[`PdfAcroFormManager`](../../../acroform/manager/classes/PdfAcroFormManager.md)
-
----
-
 ### encryptionDictionary
 
 #### Get Signature
@@ -190,20 +188,6 @@ Error if the encryption dictionary reference points to a non-dictionary object
 [`PdfEncryptionDictionaryObject`](../../../security/types/type-aliases/PdfEncryptionDictionaryObject.md) \| `undefined`
 
 The encryption dictionary object or undefined if not encrypted
-
----
-
-### fonts
-
-#### Get Signature
-
-> **get** **fonts**(): [`PdfFontManager`](../../../fonts/font-manager/classes/PdfFontManager.md)
-
-Font manager for embedding and managing fonts
-
-##### Returns
-
-[`PdfFontManager`](../../../fonts/font-manager/classes/PdfFontManager.md)
 
 ---
 
@@ -351,20 +335,6 @@ The trailer dictionary containing document metadata references
 
 ---
 
-### xfa
-
-#### Get Signature
-
-> **get** **xfa**(): [`PdfXfaManager`](../../../xfa/manager/classes/PdfXfaManager.md)
-
-XFA manager for handling XFA forms
-
-##### Returns
-
-[`PdfXfaManager`](../../../xfa/manager/classes/PdfXfaManager.md)
-
----
-
 ### xrefLookup
 
 #### Get Signature
@@ -395,6 +365,35 @@ Automatically starts a new revision if the current one is locked.
 ...[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)[]
 
 PDF objects to add to the document
+
+#### Returns
+
+`void`
+
+---
+
+### addObjectsAsStream()
+
+> **addObjectsAsStream**(`objects`, `batchSize`): `void`
+
+Packs non-stream indirect objects into compressed ObjStm containers.
+Objects that already have an object number are left unchanged.
+Appearance streams and other PdfStream objects must NOT be passed here —
+only non-stream indirect objects (dictionaries, arrays, etc.) are eligible.
+
+#### Parameters
+
+##### objects
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>[]
+
+Non-stream indirect objects to compress into ObjStm
+
+##### batchSize
+
+`number` = `100`
+
+Maximum objects per ObjStm container (default 100)
 
 #### Returns
 
@@ -434,6 +433,22 @@ Attempts to cast the object to a specific PdfObject subclass
 
 > **clone**(): `this`
 
+Creates a deep clone of the object
+
+#### Returns
+
+`this`
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`clone`](../../../core/objects/pdf-object/classes/PdfObject.md#clone)
+
+---
+
+### cloneImpl()
+
+> **cloneImpl**(): `this`
+
 Creates a deep copy of the document.
 
 #### Returns
@@ -444,7 +459,7 @@ A cloned PdfDocument instance
 
 #### Overrides
 
-[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`clone`](../../../core/objects/pdf-object/classes/PdfObject.md#clone)
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`cloneImpl`](../../../core/objects/pdf-object/classes/PdfObject.md#cloneimpl)
 
 ---
 

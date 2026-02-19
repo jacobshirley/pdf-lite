@@ -6,17 +6,32 @@
 
 # acroform/acroform
 
-## Classes
+## References
 
-- [PdfAcroForm](classes/PdfAcroForm.md)
-- [PdfAcroFormField](classes/PdfAcroFormField.md)
+### PdfAcroForm
 
-## Type Aliases
+Re-exports [PdfAcroForm](../PdfAcroForm/classes/PdfAcroForm.md)
 
-- [PdfAppearanceStreamDictionary](type-aliases/PdfAppearanceStreamDictionary.md)
-- [PdfDefaultResourcesDictionary](type-aliases/PdfDefaultResourcesDictionary.md)
-- [PdfFieldType](type-aliases/PdfFieldType.md)
+---
 
-## Variables
+### PdfAcroFormField
 
-- [PdfFieldType](variables/PdfFieldType.md)
+Renames and re-exports [PdfFormField](../fields/PdfFormField/classes/PdfFormField.md)
+
+---
+
+### PdfAppearanceStreamDictionary
+
+Re-exports [PdfAppearanceStreamDictionary](../../annotations/PdfAnnotation/type-aliases/PdfAppearanceStreamDictionary.md)
+
+---
+
+### PdfDefaultResourcesDictionary
+
+Re-exports [PdfDefaultResourcesDictionary](../PdfAcroForm/type-aliases/PdfDefaultResourcesDictionary.md)
+
+---
+
+### PdfFieldType
+
+Re-exports [PdfFieldType](../fields/types/variables/PdfFieldType.md)

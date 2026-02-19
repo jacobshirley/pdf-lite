@@ -296,9 +296,25 @@ Creates a deep clone of the object
 
 `this`
 
-#### Overrides
+#### Inherited from
 
 [`PdfStream`](PdfStream.md).[`clone`](PdfStream.md#clone)
+
+---
+
+### cloneImpl()
+
+> **cloneImpl**(): `this`
+
+Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly
+
+#### Returns
+
+`this`
+
+#### Overrides
+
+[`PdfStream`](PdfStream.md).[`cloneImpl`](PdfStream.md#cloneimpl)
 
 ---
 

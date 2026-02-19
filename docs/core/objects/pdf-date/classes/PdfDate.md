@@ -155,7 +155,7 @@ The type of this PDF object
 
 #### Inherited from
 
-[`PdfString`](../../pdf-string/classes/PdfString.md).[`raw`](../../pdf-string/classes/PdfString.md#raw)
+[`PdfDefaultAppearance`](../../../../acroform/fields/PdfDefaultAppearance/classes/PdfDefaultAppearance.md).[`raw`](../../../../acroform/fields/PdfDefaultAppearance/classes/PdfDefaultAppearance.md#raw)
 
 ---
 
@@ -168,6 +168,20 @@ The type of this PDF object
 ##### Returns
 
 `string`
+
+#### Set Signature
+
+> **set** **value**(`str`): `void`
+
+##### Parameters
+
+###### str
+
+`string`
+
+##### Returns
+
+`void`
 
 #### Inherited from
 
@@ -216,6 +230,22 @@ Creates a deep clone of the object
 #### Inherited from
 
 [`PdfString`](../../pdf-string/classes/PdfString.md).[`clone`](../../pdf-string/classes/PdfString.md#clone)
+
+---
+
+### cloneImpl()
+
+> **cloneImpl**(): `this`
+
+Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly
+
+#### Returns
+
+`this`
+
+#### Inherited from
+
+[`PdfString`](../../pdf-string/classes/PdfString.md).[`cloneImpl`](../../pdf-string/classes/PdfString.md#cloneimpl)
 
 ---
 

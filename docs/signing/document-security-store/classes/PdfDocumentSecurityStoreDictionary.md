@@ -171,6 +171,22 @@ Creates a deep clone of the object
 
 ---
 
+### cloneImpl()
+
+> **cloneImpl**(): `this`
+
+Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly
+
+#### Returns
+
+`this`
+
+#### Inherited from
+
+[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`cloneImpl`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#cloneimpl)
+
+---
+
 ### copyFrom()
 
 > **copyFrom**(`other`): `void`

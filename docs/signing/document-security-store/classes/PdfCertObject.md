@@ -230,6 +230,22 @@ Creates a deep clone of the object
 
 ---
 
+### cloneImpl()
+
+> **cloneImpl**(): `this`
+
+Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly
+
+#### Returns
+
+`this`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`cloneImpl`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#cloneimpl)
+
+---
+
 ### copyFrom()
 
 > **copyFrom**(`other`): `void`

@@ -55,12 +55,6 @@ export class PdfFont extends PdfDictionary<{
 
     /**
      * @internal
-     * Reference to the font manager that created this font.
-     */
-    private manager?: PdfFontManager
-
-    /**
-     * @internal
      * Font descriptor with metrics and properties.
      */
     private _descriptor?: FontDescriptor | UnicodeFontDescriptor
@@ -71,6 +65,7 @@ export class PdfFont extends PdfDictionary<{
      */
     private _fontData?: ByteArray
 
+    constructor(fontName: string)
     constructor(options: {
         dict?: PdfDictionary
         fontName?: string
@@ -80,15 +75,37 @@ export class PdfFont extends PdfDictionary<{
         container?: PdfIndirectObject
         descriptor?: FontDescriptor | UnicodeFontDescriptor
         fontData?: ByteArray
-    }) {
+    })
+    constructor(
+        optionsOrFontName:
+            | string
+            | {
+                  dict?: PdfDictionary
+                  fontName?: string
+                  resourceName?: string
+                  encoding?: string
+                  container?: PdfIndirectObject
+                  descriptor?: FontDescriptor | UnicodeFontDescriptor
+                  fontData?: ByteArray
+              },
+    ) {
         super()
+
+        // Handle string parameter (simple fontName)
+        if (typeof optionsOrFontName === 'string') {
+            this.fontName = optionsOrFontName
+            this.resourceName = optionsOrFontName
+            return
+        }
+
+        // Handle options object (existing behavior)
+        const options = optionsOrFontName
         if (options.dict) {
             this.copyFrom(options.dict)
         }
         this.fontName = options.fontName
         this.resourceName = options.resourceName ?? ''
         this.encoding = options.encoding
-        this.manager = options.manager
         this.container = options.container
         this._descriptor = options.descriptor
         this._fontData = options.fontData
@@ -234,6 +251,71 @@ export class PdfFont extends PdfDictionary<{
         } else {
             this.delete('Widths')
         }
+    }
+
+    /**
+     * Gets the raw character width (in 1000-unit em square) for a character code.
+     * Returns null if the character is not in the font's width table.
+     *
+     * @param charCode - The character code to get the width for
+     * @returns The raw character width or null if not found
+     */
+    getRawCharacterWidth(charCode: number): number | null {
+        if (this.widths === undefined || this.firstChar === undefined) {
+            return null
+        }
+
+        const widthIndex = charCode - this.firstChar
+        if (widthIndex >= 0 && widthIndex < this.widths.length) {
+            return this.widths[widthIndex]
+        }
+
+        return null
+    }
+
+    /**
+     * Gets the character width scaled to the specified font size.
+     * Returns null if the character is not in the font's width table.
+     *
+     * @param charCode - The character code to get the width for
+     * @param fontSize - The font size to scale to
+     * @returns The scaled character width or null if not found
+     */
+    getCharacterWidth(charCode: number, fontSize: number): number | null {
+        const rawWidth = this.getRawCharacterWidth(charCode)
+        return rawWidth !== null ? (rawWidth * fontSize) / 1000 : null
+    }
+
+    /**
+     * Checks if the font has width data for a character code.
+     *
+     * @param charCode - The character code to check
+     * @returns True if width data is available, false otherwise
+     */
+    hasCharacterWidth(charCode: number): boolean {
+        return this.getRawCharacterWidth(charCode) !== null
+    }
+
+    /**
+     * Gets character widths for all characters in a string.
+     * Returns null for characters not in the font's width table.
+     *
+     * @param text - The text to get character widths for
+     * @param fontSize - The font size to scale to
+     * @returns Array of character widths (null for missing characters)
+     */
+    getCharacterWidthsForString(
+        text: string,
+        fontSize: number,
+    ): (number | null)[] {
+        const widths: (number | null)[] = []
+
+        for (const char of text) {
+            const charCode = char.charCodeAt(0)
+            widths.push(this.getCharacterWidth(charCode, fontSize))
+        }
+
+        return widths
     }
 
     /**

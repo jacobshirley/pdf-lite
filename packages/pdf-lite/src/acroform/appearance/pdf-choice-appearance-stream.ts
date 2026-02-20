@@ -32,7 +32,7 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         g.raw('/Tx BMC')
         g.save()
         g.beginText()
-        g.setFont(ctx.da)
+        g.setDefaultAppearance(ctx.da)
         g.moveTo(padding, textY)
         g.showText(ctx.value, isUnicode, reverseEncodingMap)
         g.endText()

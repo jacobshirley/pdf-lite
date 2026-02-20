@@ -4,6 +4,7 @@ import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfNumber } from '../../core/objects/pdf-number.js'
 import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+import { PdfGraphics } from './pdf-graphics.js'
 
 /**
  * Base class for PDF appearance streams (Form XObjects).
@@ -11,6 +12,8 @@ import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
  */
 export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
     constructor(options: {
+        x?: number
+        y?: number
         width: number
         height: number
         contentStream: string
@@ -23,8 +26,8 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
         appearanceDict.set(
             'BBox',
             new PdfArray([
-                new PdfNumber(0),
-                new PdfNumber(0),
+                new PdfNumber(options.x ?? 0),
+                new PdfNumber(options.y ?? 0),
                 new PdfNumber(options.width),
                 new PdfNumber(options.height),
             ]),
@@ -40,5 +43,13 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
         })
 
         super({ content: stream })
+    }
+
+    get raw() {
+        return this.content.rawAsString
+    }
+
+    get rawAsString(): string {
+        return this.content.rawAsString
     }
 }

@@ -89,27 +89,6 @@ describe('PdfGraphics', () => {
             })
         })
 
-        describe('getCharacterWidths', () => {
-            it('should return width array for each character', () => {
-                const da = PdfDefaultAppearance.parse('/TestFont 10 Tf 0 g')!
-                graphics.setDefaultAppearance(da)
-
-                const widths = graphics.getCharacterWidths('AB')
-                expect(widths).toHaveLength(2)
-                expect(widths[0]).toBeCloseTo(7.5, 1) // A = 750 * 10 / 1000
-                expect(widths[1]).toBeCloseTo(7.5, 1) // B = 750 * 10 / 1000
-            })
-
-            it('should handle mixed case text', () => {
-                const da = PdfDefaultAppearance.parse('/TestFont 10 Tf 0 g')!
-                graphics.setDefaultAppearance(da)
-
-                const widths = graphics.getCharacterWidths('Aa')
-                expect(widths[0]).toBeCloseTo(7.5, 1) // A = 750 * 10 / 1000
-                expect(widths[1]).toBeCloseTo(5.0, 1) // a = 500 * 10 / 1000
-            })
-        })
-
         describe('wrapTextToLines', () => {
             beforeEach(() => {
                 const da = PdfDefaultAppearance.parse('/TestFont 10 Tf 0 g')!
@@ -236,6 +215,88 @@ describe('PdfGraphics', () => {
                 expect(content).toContain('BT')
                 expect(content).toContain('ET')
                 expect(content).toContain('(Hello) Tj')
+            })
+        })
+
+        describe('color methods', () => {
+            it('setFillRGB should emit r g b rg operator', () => {
+                graphics.setFillRGB(1, 0.5, 0)
+                expect(graphics.build()).toContain('1 0.5 0 rg')
+            })
+
+            it('setFillRGB with black should emit 0 0 0 rg', () => {
+                graphics.setFillRGB(0, 0, 0)
+                expect(graphics.build()).toContain('0 0 0 rg')
+            })
+
+            it('setFillGray should emit v g operator', () => {
+                graphics.setFillGray(0.5)
+                expect(graphics.build()).toContain('0.5 g')
+            })
+
+            it('setFillGray with 0 should emit 0 g', () => {
+                graphics.setFillGray(0)
+                expect(graphics.build()).toContain('0 g')
+            })
+        })
+
+        describe('setFont', () => {
+            it('should emit /name size Tf operator', () => {
+                graphics.setFont('ZaDb', 12)
+                expect(graphics.build()).toContain('/ZaDb 12 Tf')
+            })
+
+            it('should emit correct operator for fractional size', () => {
+                graphics.setFont('Helvetica', 8.5)
+                expect(graphics.build()).toContain('/Helvetica 8.5 Tf')
+            })
+        })
+
+        describe('path drawing methods', () => {
+            it('movePath should emit x y m operator', () => {
+                graphics.movePath(10, 20)
+                expect(graphics.build()).toContain('10 20 m')
+            })
+
+            it('lineTo should emit x y l operator', () => {
+                graphics.lineTo(30, 40)
+                expect(graphics.build()).toContain('30 40 l')
+            })
+
+            it('curveTo should emit x1 y1 x2 y2 x3 y3 c operator', () => {
+                graphics.curveTo(1, 2, 3, 4, 5, 6)
+                expect(graphics.build()).toContain('1 2 3 4 5 6 c')
+            })
+
+            it('fill should emit f operator', () => {
+                graphics.fill()
+                expect(graphics.build()).toContain('f')
+            })
+
+            it('stroke should emit S operator', () => {
+                graphics.stroke()
+                expect(graphics.build()).toContain('S')
+            })
+
+            it('closePath should emit h operator', () => {
+                graphics.closePath()
+                expect(graphics.build()).toContain('h')
+            })
+
+            it('should chain path operations correctly', () => {
+                graphics
+                    .setFillRGB(0, 0, 0)
+                    .movePath(5, 10)
+                    .lineTo(15, 10)
+                    .lineTo(10, 20)
+                    .fill()
+
+                const content = graphics.build()
+                expect(content).toContain('0 0 0 rg')
+                expect(content).toContain('5 10 m')
+                expect(content).toContain('15 10 l')
+                expect(content).toContain('10 20 l')
+                expect(content).toContain('f')
             })
         })
     })

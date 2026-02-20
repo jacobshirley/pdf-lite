@@ -68,6 +68,58 @@ export class PdfGraphics {
         return this
     }
 
+    setFillRGB(r: number, g: number, b: number): this {
+        this.lines.push(`${r} ${g} ${b} rg`)
+        return this
+    }
+
+    setFillGray(v: number): this {
+        this.lines.push(`${v} g`)
+        return this
+    }
+
+    setFont(name: string, size: number): this {
+        this.lines.push(`/${name} ${size} Tf`)
+        return this
+    }
+
+    movePath(x: number, y: number): this {
+        this.lines.push(`${x} ${y} m`)
+        return this
+    }
+
+    lineTo(x: number, y: number): this {
+        this.lines.push(`${x} ${y} l`)
+        return this
+    }
+
+    curveTo(
+        x1: number,
+        y1: number,
+        x2: number,
+        y2: number,
+        x3: number,
+        y3: number,
+    ): this {
+        this.lines.push(`${x1} ${y1} ${x2} ${y2} ${x3} ${y3} c`)
+        return this
+    }
+
+    fill(): this {
+        this.lines.push('f')
+        return this
+    }
+
+    stroke(): this {
+        this.lines.push('S')
+        return this
+    }
+
+    closePath(): this {
+        this.lines.push('h')
+        return this
+    }
+
     build(): string {
         return this.lines.join('\n') + '\n'
     }
@@ -116,35 +168,6 @@ export class PdfGraphics {
 
         // Fallback: estimate width for standard fonts
         return this.estimateTextWidth(text, size)
-    }
-
-    /**
-     * Get character widths for each character in the given text.
-     */
-    getCharacterWidths(text: string): number[] {
-        if (!this.currentFont) {
-            throw new Error('No font set - call setDefaultAppearance() first')
-        }
-
-        const { size, fontObject } = this.currentFont
-        const widths: number[] = []
-
-        for (const char of text) {
-            const charCode = char.charCodeAt(0)
-
-            if (fontObject?.widths && fontObject.firstChar !== undefined) {
-                const charWidth = fontObject.getCharacterWidth(charCode, size)
-                if (charWidth !== null) {
-                    widths.push(charWidth)
-                } else {
-                    widths.push(size * 0.6) // Fallback
-                }
-            } else {
-                widths.push(this.estimateCharWidth(char, size))
-            }
-        }
-
-        return widths
     }
 
     /**

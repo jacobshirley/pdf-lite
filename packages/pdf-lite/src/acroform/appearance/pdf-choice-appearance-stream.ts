@@ -44,15 +44,17 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
             const arrowSize = height * 0.3
 
             g.save()
-            g.raw('0.5 0.5 0.5 rg')
-            g.raw(`${arrowX + arrowWidth / 2} ${arrowY - arrowSize / 3} m`)
-            g.raw(
-                `${arrowX + arrowWidth / 2 - arrowSize / 2} ${arrowY + arrowSize / 3} l`,
+            g.setFillGray(0.5)
+            g.movePath(arrowX + arrowWidth / 2, arrowY - arrowSize / 3)
+            g.lineTo(
+                arrowX + arrowWidth / 2 - arrowSize / 2,
+                arrowY + arrowSize / 3,
             )
-            g.raw(
-                `${arrowX + arrowWidth / 2 + arrowSize / 2} ${arrowY + arrowSize / 3} l`,
+            g.lineTo(
+                arrowX + arrowWidth / 2 + arrowSize / 2,
+                arrowY + arrowSize / 3,
             )
-            g.raw('f')
+            g.fill()
             g.restore()
         }
 

@@ -42,21 +42,41 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
             const kRadius = k * radius
 
             g.save()
-            g.raw('0 0 0 rg')
-            g.raw(`${center} ${center + radius} m`)
-            g.raw(
-                `${center + kRadius} ${center + radius} ${center + radius} ${center + kRadius} ${center + radius} ${center} c`,
+            g.setFillRGB(0, 0, 0)
+            g.movePath(center, center + radius)
+            g.curveTo(
+                center + kRadius,
+                center + radius,
+                center + radius,
+                center + kRadius,
+                center + radius,
+                center,
             )
-            g.raw(
-                `${center + radius} ${center - kRadius} ${center + kRadius} ${center - radius} ${center} ${center - radius} c`,
+            g.curveTo(
+                center + radius,
+                center - kRadius,
+                center + kRadius,
+                center - radius,
+                center,
+                center - radius,
             )
-            g.raw(
-                `${center - kRadius} ${center - radius} ${center - radius} ${center - kRadius} ${center - radius} ${center} c`,
+            g.curveTo(
+                center - kRadius,
+                center - radius,
+                center - radius,
+                center - kRadius,
+                center - radius,
+                center,
             )
-            g.raw(
-                `${center - radius} ${center + kRadius} ${center - kRadius} ${center + radius} ${center} ${center + radius} c`,
+            g.curveTo(
+                center - radius,
+                center + kRadius,
+                center - kRadius,
+                center + radius,
+                center,
+                center + radius,
             )
-            g.raw('f')
+            g.fill()
             g.restore()
         } else {
             const checkSize = size * 0.8
@@ -64,7 +84,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
 
             g.save()
             g.beginText()
-            g.raw(`/ZaDb ${checkSize} Tf`)
+            g.setFont('ZaDb', checkSize)
             g.moveTo(offset, offset)
             g.raw('(4) Tj')
             g.endText()

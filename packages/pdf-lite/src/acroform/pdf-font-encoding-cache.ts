@@ -44,14 +44,11 @@ export class PdfFontEncodingCache {
         const fontEntry = fonts.get(fontName)
         const fontRef =
             fontEntry instanceof PdfObjectReference ? fontEntry : null
-        if (!fontRef || !this.document) return null
+        if (!fontRef) return null
 
         this.fontRefs.set(fontName, fontRef)
 
-        const fontObj = await this.document.readObject({
-            objectNumber: fontRef.objectNumber,
-            generationNumber: fontRef.generationNumber,
-        })
+        const fontObj = await this.document?.readObject(fontRef)
         if (!fontObj) return null
 
         const fontDict =
@@ -70,10 +67,7 @@ export class PdfFontEncodingCache {
 
         let encodingDict: PdfDictionary | null = null
         if (encoding instanceof PdfObjectReference) {
-            const encodingObj = await this.document.readObject({
-                objectNumber: encoding.objectNumber,
-                generationNumber: encoding.generationNumber,
-            })
+            const encodingObj = await this.document?.readObject(encoding)
             encodingDict =
                 encodingObj?.content instanceof PdfDictionary
                     ? encodingObj.content

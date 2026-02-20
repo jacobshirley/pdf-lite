@@ -218,7 +218,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [
@@ -1592,7 +1591,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -1677,7 +1675,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -1719,7 +1716,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -1761,7 +1757,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -1803,7 +1798,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -1868,7 +1862,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -1910,7 +1903,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -1952,7 +1944,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -1994,7 +1985,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -2195,7 +2185,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -2237,7 +2226,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -2279,7 +2267,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -2321,7 +2308,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -5920,7 +5906,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -5962,7 +5947,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -6004,7 +5988,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [
@@ -7053,7 +7036,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": undefined,
         "trailerDict": PdfDictionary {
@@ -10729,7 +10711,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -10771,7 +10752,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [
@@ -12540,7 +12520,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [
@@ -13914,7 +13893,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -13999,7 +13977,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -14041,7 +14018,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -14083,7 +14059,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -14125,7 +14100,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -14190,7 +14164,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -14232,7 +14205,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -14274,7 +14246,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -14316,7 +14287,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -14517,7 +14487,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -14559,7 +14528,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -14601,7 +14569,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -14643,7 +14610,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -18305,7 +18271,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -18347,7 +18312,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -18389,7 +18353,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [
@@ -19438,7 +19401,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": undefined,
         "trailerDict": PdfDictionary {
@@ -19564,7 +19526,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -19612,7 +19573,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -20349,7 +20309,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -20397,7 +20356,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -20445,7 +20403,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -20493,7 +20450,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -20541,7 +20497,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -20752,7 +20707,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -20800,7 +20754,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -20848,7 +20801,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -20896,7 +20848,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -20944,7 +20895,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -20992,7 +20942,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -21061,7 +21010,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -21109,7 +21057,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -21252,7 +21199,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -22144,7 +22090,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": undefined,
         "trailerDict": PdfDictionary {
@@ -22530,7 +22475,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -22578,7 +22522,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -23336,7 +23279,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -23384,7 +23326,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -23432,7 +23373,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -23480,7 +23420,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -23528,7 +23467,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -23758,7 +23696,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -23806,7 +23743,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -23854,7 +23790,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -23902,7 +23837,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -23950,7 +23884,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -23998,7 +23931,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -24100,7 +24032,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -24148,7 +24079,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -24290,7 +24220,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -25181,7 +25110,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": undefined,
         "trailerDict": PdfDictionary {
@@ -25704,7 +25632,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -25752,7 +25679,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -26489,7 +26415,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -26537,7 +26462,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -26585,7 +26509,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -26633,7 +26556,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -26681,7 +26603,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -26892,7 +26813,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -26940,7 +26860,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -26988,7 +26907,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -27036,7 +26954,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -27084,7 +27001,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -27132,7 +27048,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -27201,7 +27116,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -27249,7 +27163,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -27392,7 +27305,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -28284,7 +28196,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": undefined,
         "trailerDict": PdfDictionary {
@@ -28670,7 +28581,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -28718,7 +28628,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -29455,7 +29364,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -29503,7 +29411,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -29551,7 +29458,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -29599,7 +29505,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -29647,7 +29552,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -29858,7 +29762,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -29906,7 +29809,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -29954,7 +29856,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -30002,7 +29903,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -30050,7 +29950,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -30098,7 +29997,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -30167,7 +30065,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -30215,7 +30112,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -30358,7 +30254,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -31250,7 +31145,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": undefined,
         "trailerDict": PdfDictionary {
@@ -31750,7 +31644,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -31856,7 +31749,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -32349,7 +32241,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": PdfXrefLookup {
           "entries": Map {
@@ -33061,7 +32952,6 @@ PdfDocument {
               },
             ],
             "preTokens": [],
-            "resolver": [Circular],
           },
           "prev": undefined,
           "trailerDict": PdfDictionary {
@@ -33219,7 +33109,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -33261,7 +33150,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -33303,7 +33191,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -33368,7 +33255,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -33469,7 +33355,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -33659,7 +33544,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -33860,7 +33744,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -37522,7 +37405,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -37666,7 +37548,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -37882,7 +37763,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -38004,7 +37884,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -38782,7 +38661,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": undefined,
         "trailerDict": PdfDictionary {
@@ -39022,7 +38900,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -39128,7 +39005,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -39621,7 +39497,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": PdfXrefLookup {
           "entries": Map {
@@ -40333,7 +40208,6 @@ PdfDocument {
               },
             ],
             "preTokens": [],
-            "resolver": [Circular],
           },
           "prev": undefined,
           "trailerDict": PdfDictionary {
@@ -40491,7 +40365,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -40533,7 +40406,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -40575,7 +40447,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -40640,7 +40511,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -40741,7 +40611,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -40931,7 +40800,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -41132,7 +41000,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -44794,7 +44661,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -44938,7 +44804,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -45154,7 +45019,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -45276,7 +45140,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -46054,7 +45917,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": undefined,
         "trailerDict": PdfDictionary {
@@ -46294,7 +46156,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -46400,7 +46261,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -46893,7 +46753,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": PdfXrefLookup {
           "entries": Map {
@@ -47605,7 +47464,6 @@ PdfDocument {
               },
             ],
             "preTokens": [],
-            "resolver": [Circular],
           },
           "prev": undefined,
           "trailerDict": PdfDictionary {
@@ -47763,7 +47621,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -47805,7 +47662,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -47847,7 +47703,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -47912,7 +47767,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -48013,7 +47867,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -48203,7 +48056,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -48404,7 +48256,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -52066,7 +51917,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -52210,7 +52060,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -52426,7 +52275,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfXRefStream {
@@ -52548,7 +52396,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfStartXRef {
           "immutable": false,
@@ -53326,7 +53173,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         "prev": undefined,
         "trailerDict": PdfDictionary {
@@ -53452,7 +53298,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -53500,7 +53345,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -53548,7 +53392,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -53596,7 +53439,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -53774,7 +53616,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -53822,7 +53663,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -53870,7 +53710,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [
@@ -55290,7 +55129,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -55338,7 +55176,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -55386,7 +55223,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -55434,7 +55270,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -55588,7 +55423,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -55636,7 +55470,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -55684,7 +55517,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -55732,7 +55564,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [
@@ -57535,7 +57366,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -57583,7 +57413,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -57631,7 +57460,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -57679,7 +57507,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -57861,7 +57688,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -57909,7 +57735,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -57957,7 +57782,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -58005,7 +57829,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [
@@ -59945,7 +59768,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -59993,7 +59815,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -60041,7 +59862,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -60089,7 +59909,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -60243,7 +60062,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -60291,7 +60109,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -60339,7 +60156,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -60387,7 +60203,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [
@@ -62190,7 +62005,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -62238,7 +62052,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -62286,7 +62099,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -62334,7 +62146,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfStream {
@@ -62488,7 +62299,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -62536,7 +62346,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -62584,7 +62393,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfIndirectObject {
           "content": PdfDictionary {
@@ -62632,7 +62440,6 @@ PdfDocument {
             },
           ],
           "preTokens": [],
-          "resolver": [Circular],
         },
         PdfXRefTable {
           "entries": [

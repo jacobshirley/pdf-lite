@@ -24,10 +24,7 @@ export class PdfXfaForm extends PdfArray {
         let acroFormDict: PdfDictionary
 
         if (acroFormRef instanceof PdfObjectReference) {
-            const acroFormObject = await document.readObject({
-                objectNumber: acroFormRef.objectNumber,
-                generationNumber: acroFormRef.generationNumber,
-            })
+            const acroFormObject = await document.readObject(acroFormRef)
             if (!acroFormObject) return null
             acroFormDict = acroFormObject.content.as(PdfDictionary)
         } else if (acroFormRef instanceof PdfDictionary) {

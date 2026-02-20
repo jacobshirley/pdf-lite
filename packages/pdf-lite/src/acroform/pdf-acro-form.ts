@@ -188,10 +188,7 @@ export class PdfAcroForm<
         let acroFormContainer: PdfIndirectObject | undefined
 
         if (acroFormRef instanceof PdfObjectReference) {
-            const acroFormObject = await document.readObject({
-                objectNumber: acroFormRef.objectNumber,
-                generationNumber: acroFormRef.generationNumber,
-            })
+            const acroFormObject = await document.readObject(acroFormRef)
 
             if (!acroFormObject) return null
             if (!(acroFormObject.content instanceof PdfDictionary))
@@ -221,10 +218,7 @@ export class PdfAcroForm<
                     continue
                 }
 
-                const fieldObject = await document.readObject({
-                    objectNumber: fieldRef.objectNumber,
-                    generationNumber: fieldRef.generationNumber,
-                })
+                const fieldObject = await document.readObject(fieldRef)
 
                 if (!fieldObject) continue
                 if (!(fieldObject.content instanceof PdfDictionary)) continue
@@ -255,14 +249,9 @@ export class PdfAcroForm<
         } else if (
             acroForm.content.get('Fields') instanceof PdfObjectReference
         ) {
-            const fieldsObj = await document.readObject({
-                objectNumber: acroForm.content
-                    .get('Fields')!
-                    .as(PdfObjectReference).objectNumber,
-                generationNumber: acroForm.content
-                    .get('Fields')!
-                    .as(PdfObjectReference).generationNumber,
-            })
+            const fieldsObj = await document.readObject(
+                acroForm.content.get('Fields')!.as(PdfObjectReference),
+            )
 
             if (fieldsObj && fieldsObj.content instanceof PdfArray) {
                 fieldsArray.items.push(

@@ -1,6 +1,6 @@
 import { PdfObject } from '../objects/pdf-object.js'
 import { ByteArray } from '../../types.js'
-import { IterableReadableStream } from '../../utils/IterableReadableStream.js'
+import { IterableReadableStream } from '../../utils/iterable-readable-stream.js'
 import { pdfDecoderAsync } from '../generators.js'
 
 export class PdfObjectStream extends IterableReadableStream<PdfObject> {

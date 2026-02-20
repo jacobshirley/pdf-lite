@@ -1,6 +1,6 @@
 import { PdfDocument } from '../pdf/pdf-document.js'
 import { PdfAcroForm } from './acroform.js'
-import { PdfXfaForm } from './xfa/PdfXfaForm.js'
+import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
 
 /**
  * Manages AcroForm fields in PDF documents.

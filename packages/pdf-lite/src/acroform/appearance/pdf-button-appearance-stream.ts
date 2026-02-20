@@ -1,7 +1,7 @@
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfName } from '../../core/objects/pdf-name.js'
-import { PdfAppearanceStream } from './PdfAppearanceStream.js'
-import { PdfGraphics } from './PdfGraphics.js'
+import { PdfAppearanceStream } from './pdf-appearance-stream.js'
+import { PdfGraphics } from './pdf-graphics.js'
 
 /**
  * Appearance stream for button fields (checkboxes, radio buttons).

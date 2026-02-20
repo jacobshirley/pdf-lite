@@ -5,9 +5,9 @@ import { ByteArray } from '../../src/types'
 import { PdfString } from '../../src/core/objects/pdf-string'
 import { PdfArray } from '../../src/core/objects/pdf-array'
 import { PdfAcroForm } from '../../src/acroform/acroform'
-import { PdfTextFormField } from '../../src/acroform/fields/PdfTextFormField'
-import { PdfButtonFormField } from '../../src/acroform/fields/PdfButtonFormField'
-import { PdfChoiceFormField } from '../../src/acroform/fields/PdfChoiceFormField'
+import { PdfTextFormField } from '../../src/acroform/fields/pdf-text-form-field'
+import { PdfButtonFormField } from '../../src/acroform/fields/pdf-button-form-field'
+import { PdfChoiceFormField } from '../../src/acroform/fields/pdf-choice-form-field'
 import { PdfObjectReference } from '../../src/core/objects/pdf-object-reference'
 import {
     PdfDictionary,

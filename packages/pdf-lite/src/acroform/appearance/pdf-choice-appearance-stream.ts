@@ -1,7 +1,7 @@
-import { PdfDefaultAppearance } from '../fields/PdfDefaultAppearance.js'
-import { PdfAppearanceStream } from './PdfAppearanceStream.js'
+import { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
+import { PdfAppearanceStream } from './pdf-appearance-stream.js'
 import type { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
-import { PdfGraphics } from './PdfGraphics.js'
+import { PdfGraphics } from './pdf-graphics.js'
 
 /**
  * Appearance stream for choice fields (dropdowns, list boxes).

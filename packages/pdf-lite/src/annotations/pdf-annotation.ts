@@ -3,7 +3,7 @@ import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
-import { PdfAnnotationFlags } from './PdfAnnotationFlags.js'
+import { PdfAnnotationFlags } from './pdf-annotation-flags.js'
 
 export type PdfAppearanceStreamDictionary = PdfDictionary<{
     N: PdfObjectReference | PdfDictionary

@@ -1,5 +1,5 @@
-import { PdfFormField } from './PdfFormField.js'
-import { PdfButtonAppearanceStream } from '../appearance/PdfButtonAppearanceStream.js'
+import { PdfFormField } from './pdf-form-field.js'
+import { PdfButtonAppearanceStream } from '../appearance/pdf-button-appearance-stream.js'
 
 /**
  * Button form field subtype (checkboxes, radio buttons, push buttons).

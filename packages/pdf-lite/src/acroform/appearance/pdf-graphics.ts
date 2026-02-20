@@ -1,5 +1,5 @@
 import { encodePdfText } from '../../utils/encodePdfText.js'
-import type { PdfDefaultAppearance } from '../fields/PdfDefaultAppearance.js'
+import type { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
 
 /**
  * Lightweight builder for PDF content streams.

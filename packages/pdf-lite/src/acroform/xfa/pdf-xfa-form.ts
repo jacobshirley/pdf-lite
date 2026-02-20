@@ -5,7 +5,7 @@ import { PdfString } from '../../core/objects/pdf-string.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
-import { PdfXfaData } from './PdfXfaData.js'
+import { PdfXfaData } from './pdf-xfa-data.js'
 
 /**
  * Typed wrapper around the XFA name/stream-ref array.

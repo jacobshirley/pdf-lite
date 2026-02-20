@@ -1,7 +1,7 @@
 export {
     PdfAnnotation,
     type PdfAppearanceStreamDictionary,
-} from './PdfAnnotation.js'
-export { PdfAnnotationFlags } from './PdfAnnotationFlags.js'
-export { PdfWidgetAnnotation } from './PdfWidgetAnnotation.js'
-export { PdfAnnotationWriter } from './PdfAnnotationWriter.js'
+} from './pdf-annotation.js'
+export { PdfAnnotationFlags } from './pdf-annotation-flags.js'
+export { PdfWidgetAnnotation } from './pdf-widget-annotation.js'
+export { PdfAnnotationWriter } from './pdf-annotation-writer.js'

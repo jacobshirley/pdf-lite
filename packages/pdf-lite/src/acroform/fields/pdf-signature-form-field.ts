@@ -1,4 +1,4 @@
-import { PdfFormField } from './PdfFormField.js'
+import { PdfFormField } from './pdf-form-field.js'
 
 /**
  * Signature form field subtype.

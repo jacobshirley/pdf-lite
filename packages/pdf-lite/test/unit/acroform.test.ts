@@ -1104,7 +1104,7 @@ describe('AcroForm Appearance Generation', () => {
         }
 
         const valuesToSet: Record<string, string> = {
-            'Client Name': 'Jane Doe',
+            'Client Name': 'Jane Doe PROSZĘ',
             N: '9876543210',
             'date 1': '10012024',
         }

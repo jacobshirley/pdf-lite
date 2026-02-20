@@ -1,6 +1,7 @@
 import { PdfDefaultAppearance } from '../fields/PdfDefaultAppearance.js'
 import { PdfAppearanceStream } from './PdfAppearanceStream.js'
 import type { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
+import { PdfGraphics } from './PdfGraphics.js'
 
 /**
  * Appearance stream for text fields (single-line, multiline, comb).
@@ -14,86 +15,71 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         comb: boolean
         maxLen: number | null
         fontResources?: PdfDictionary
+        isUnicode?: boolean
+        reverseEncodingMap?: Map<string, number>
     }) {
         const [x1, y1, x2, y2] = ctx.rect
         const width = x2 - x1
         const height = y2 - y1
 
         const value = ctx.value
-        const reconstructedDA = ctx.da.toString()
         const fontSize = ctx.da.fontSize
+        const isUnicode = ctx.isUnicode ?? false
+        const reverseEncodingMap = ctx.reverseEncodingMap
 
         const padding = 2
         const textY = (height - fontSize) / 2 + fontSize * 0.2
 
-        const escapedValue = value
-            .replace(/\\/g, '\\\\')
-            .replace(/\(/g, '\\(')
-            .replace(/\)/g, '\\)')
-            .replace(/\r/g, '\\r')
-            .replace(/\n/g, '\\n')
-
-        let textContent: string
+        const g = new PdfGraphics()
+        g.raw('/Tx BMC')
+        g.save()
 
         if (ctx.multiline) {
             const lines = value.split('\n')
             const lineHeight = fontSize * 1.2
             const startY = height - padding - fontSize
 
-            textContent = 'BT\n'
-            textContent += `${reconstructedDA}\n`
-            textContent += `${padding} ${startY} Td\n`
-
+            g.beginText()
+            g.setFont(ctx.da)
+            g.moveTo(padding, startY)
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i]
-                    .replace(/\\/g, '\\\\')
-                    .replace(/\(/g, '\\(')
-                    .replace(/\)/g, '\\)')
-                    .replace(/\r/g, '')
-
-                if (i > 0) {
-                    textContent += `0 ${-lineHeight} Td\n`
-                }
-                textContent += `(${line}) Tj\n`
+                if (i > 0) g.moveTo(0, -lineHeight)
+                g.showText(
+                    lines[i].replace(/\r/g, ''),
+                    isUnicode,
+                    reverseEncodingMap,
+                )
             }
-
-            textContent += 'ET\n'
+            g.endText()
         } else if (ctx.comb && ctx.maxLen) {
             const cellWidth = width / ctx.maxLen
-            const chars = value.split('')
+            const chars = [...value]
 
-            textContent = 'BT\n'
-            textContent += `${reconstructedDA}\n`
-
+            g.beginText()
+            g.setFont(ctx.da)
             for (let i = 0; i < chars.length && i < ctx.maxLen; i++) {
                 const cellX = cellWidth * i + cellWidth / 2 - fontSize * 0.3
-                const escapedChar = chars[i]
-                    .replace(/\\/g, '\\\\')
-                    .replace(/\(/g, '\\(')
-                    .replace(/\)/g, '\\)')
-
-                textContent += `${cellX} ${textY} Td\n`
-                textContent += `(${escapedChar}) Tj\n`
-                textContent += `${-cellX} ${-textY} Td\n`
+                g.moveTo(cellX, textY)
+                g.showText(chars[i], isUnicode, reverseEncodingMap)
+                g.moveTo(-cellX, -textY)
             }
-
-            textContent += 'ET\n'
+            g.endText()
         } else {
-            const textX = padding
-            textContent = `BT
-${reconstructedDA}
-${textX} ${textY} Td
-(${escapedValue}) Tj
-ET
-`
+            g.beginText()
+            g.setFont(ctx.da)
+            g.moveTo(padding, textY)
+            g.showText(value, isUnicode, reverseEncodingMap)
+            g.endText()
         }
 
-        const contentStream = `/Tx BMC
-q
-${textContent}Q
-EMC
-`
+        g.restore()
+        g.raw('EMC')
 
-        super({ width, height, contentStream, resources: ctx.fontResources })
+        super({
+            width,
+            height,
+            contentStream: g.build(),
+            resources: ctx.fontResources,
+        })
     }
 }

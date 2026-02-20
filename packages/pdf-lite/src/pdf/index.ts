@@ -1,4 +1,3 @@
-export * from './errors.js'
 export * from './pdf-document.js'
 export * from './pdf-reader.js'
 export * from './pdf-revision.js'

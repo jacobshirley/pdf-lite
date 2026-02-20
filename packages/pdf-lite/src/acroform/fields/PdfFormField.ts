@@ -13,6 +13,7 @@ import { PdfDefaultAppearance } from './PdfDefaultAppearance.js'
 import type { PdfAppearanceStream } from '../appearance/PdfAppearanceStream.js'
 import type { FormContext, PdfFieldType } from './types.js'
 import { PdfFieldType as PdfFieldTypeConst } from './types.js'
+import { PdfFontEncodingError } from '../../errors.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -191,16 +192,26 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
 
         if (this.defaultGenerateAppearance) {
-            this.generateAppearance()
+            this.tryGenerateAppearance(this)
             for (const sibling of this.siblings) {
                 if (
                     sibling !== this &&
                     sibling.rect &&
                     sibling.defaultGenerateAppearance
                 ) {
-                    sibling.generateAppearance()
+                    this.tryGenerateAppearance(sibling)
                 }
             }
+        }
+    }
+
+    private tryGenerateAppearance(field: PdfFormField): void {
+        try {
+            field.generateAppearance()
+        } catch (e) {
+            if (!(e instanceof PdfFontEncodingError)) throw e
+            field._appearanceStream = undefined
+            if (this.form) this.form.needAppearances = true
         }
     }
 

@@ -14,7 +14,10 @@ import {
     PdfXRefStreamCompressedEntry,
 } from '../core/objects/pdf-stream.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
-import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
+import {
+    PdfObjectReference,
+    PdfObjectResolver,
+} from '../core/objects/pdf-object-reference.js'
 import { PdfXrefLookup } from './pdf-xref-lookup.js'
 import { PdfTokenSerializer } from '../core/serializer.js'
 import { PdfRevision } from './pdf-revision.js'
@@ -26,7 +29,7 @@ import { PdfXRefTableEntryToken } from '../core/tokens/xref-table-entry-token.js
 import { Ref } from '../core/ref.js'
 import { PdfStartXRef } from '../core/objects/pdf-start-xref.js'
 import { PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
-import { FoundCompressedObjectError } from './errors.js'
+import { FoundCompressedObjectError } from '../errors.js'
 import { PdfDocumentSecurityStoreObject } from '../signing/document-security-store.js'
 import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
@@ -34,6 +37,7 @@ import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/font-manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
+import { PdfArray } from '../index.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -52,7 +56,7 @@ import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
  * await document.commit()
  * ```
  */
-export class PdfDocument extends PdfObject {
+export class PdfDocument extends PdfObject implements PdfObjectResolver {
     /** List of document revisions for incremental updates */
     revisions: PdfRevision[]
     /** Signer instance for digital signature operations */
@@ -113,6 +117,8 @@ export class PdfDocument extends PdfObject {
 
         this.acroForm = new PdfAcroFormManager(this)
         this.fonts = new PdfFontManager(this)
+
+        this.attachObjectResolverToReferences()
     }
 
     get header(): PdfComment | undefined {
@@ -121,6 +127,31 @@ export class PdfDocument extends PdfObject {
 
     set header(comment: PdfComment | undefined) {
         if (comment) this.revisions[0].header = comment
+    }
+
+    private attachObjectResolverToReferences(): void {
+        const attachResolver = (obj: PdfObject): void => {
+            if (obj instanceof PdfObjectReference) {
+                obj.resolver = this
+            } else if (obj instanceof PdfIndirectObject) {
+                attachResolver(obj.content)
+            } else if (obj instanceof PdfDictionary) {
+                for (const [key, value] of obj.entries()) {
+                    if (!value) continue
+                    attachResolver(value)
+                }
+            } else if (obj instanceof PdfArray) {
+                for (const item of obj.items) {
+                    attachResolver(item)
+                }
+            } else if (obj instanceof PdfStream) {
+                attachResolver(obj.header)
+            }
+        }
+
+        for (const obj of this.objects) {
+            attachResolver(obj)
+        }
     }
 
     /**
@@ -1020,5 +1051,21 @@ export class PdfDocument extends PdfObject {
      */
     async verifySignatures(): Promise<PdfDocumentVerificationResult> {
         return await this.signer.verify(this)
+    }
+
+    /**
+     * Resolves a PdfObjectReference to its actual object by looking it up in the document.
+     * @param ref - The object reference to resolve
+     * @returns A promise that resolves to the actual PdfObject
+     */
+    async resolve(
+        ref: PdfObjectReference,
+    ): Promise<PdfIndirectObject | undefined> {
+        const foundObject = await this.readObject({
+            objectNumber: ref.objectNumber,
+            generationNumber: ref.generationNumber,
+        })
+
+        return foundObject
     }
 }

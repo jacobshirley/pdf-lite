@@ -23,16 +23,23 @@ export class PdfAnnotation extends PdfIndirectObject<PdfDictionary> {
             options?.other ??
                 new PdfIndirectObject({ content: new PdfDictionary() }),
         )
-        this._annotationFlags = new PdfAnnotationFlags(this.content)
+        const flagValue = this.content.get('F')?.as(PdfNumber)?.value ?? 0
+        this._annotationFlags = new PdfAnnotationFlags(flagValue)
+        this.content.set('F', this._annotationFlags)
     }
 
-    get rect(): number[] | null {
+    get rect(): [number, number, number, number] | null {
         const rectArray = this.content.get('Rect')?.as(PdfArray<PdfNumber>)
         if (!rectArray) return null
-        return rectArray.items.map((num) => num.value)
+        return rectArray.items.map((num) => num.value) as [
+            number,
+            number,
+            number,
+            number,
+        ]
     }
 
-    set rect(rect: number[] | null) {
+    set rect(rect: [number, number, number, number] | null) {
         if (rect === null) {
             this.content.delete('Rect')
             return

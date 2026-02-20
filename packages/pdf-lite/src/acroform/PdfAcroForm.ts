@@ -78,6 +78,10 @@ export class PdfAcroForm<
         return this.fontEncodingCache.fontEncodingMaps
     }
 
+    get fontRefs(): Map<string, PdfObjectReference> {
+        return this.fontEncodingCache.fontRefs
+    }
+
     setXfa(xfa: PdfXfaForm | null): void {
         this._xfa = xfa
     }
@@ -167,6 +171,10 @@ export class PdfAcroForm<
         return this.fontEncodingCache.getFontEncodingMap(fontName)
     }
 
+    isFontUnicode(fontName: string): boolean {
+        return this.fontEncodingCache.isFontUnicode(fontName)
+    }
+
     static async fromDocument(
         document: PdfDocument,
     ): Promise<PdfAcroForm | null> {
@@ -199,9 +207,6 @@ export class PdfAcroForm<
         }
 
         const acroForm = new PdfAcroForm({ other: acroFormContainer, document })
-
-        // Pre-cache font encoding maps for all fonts used in fields
-        await acroForm.cacheAllFontEncodings()
 
         const fields: Map<string, PdfFormField> = new Map()
 
@@ -267,6 +272,9 @@ export class PdfAcroForm<
         }
 
         await getFields(fieldsArray.items)
+
+        // Pre-cache font encoding maps now that this.fields is populated
+        await acroForm.cacheAllFontEncodings()
 
         // Reset field-level modified flag so only explicitly changed fields are detected
         for (const field of acroForm.fields) {

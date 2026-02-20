@@ -1,6 +1,7 @@
 import { PdfDocument } from '../pdf/pdf-document.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
+import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfString } from '../core/objects/pdf-string.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
@@ -11,6 +12,9 @@ import type { PdfDefaultResourcesDictionary } from './acroform.js'
  */
 export class PdfFontEncodingCache {
     readonly fontEncodingMaps: Map<string, Map<number, string>> = new Map()
+    readonly fontTypes: Map<string, string> = new Map()
+    /** Object references for all resolved fonts, keyed by resource name. */
+    readonly fontRefs: Map<string, PdfObjectReference> = new Map()
     private document?: PdfDocument
     private defaultResources: PdfDefaultResourcesDictionary | null
 
@@ -32,11 +36,17 @@ export class PdfFontEncodingCache {
         const dr = this.defaultResources
         if (!dr) return null
 
-        const fonts = dr.get('Font')?.as(PdfDictionary)
+        const fontDictEntry = dr.get('Font')
+        const fonts =
+            fontDictEntry instanceof PdfDictionary ? fontDictEntry : null
         if (!fonts) return null
 
-        const fontRef = fonts.get(fontName)?.as(PdfObjectReference)
+        const fontEntry = fonts.get(fontName)
+        const fontRef =
+            fontEntry instanceof PdfObjectReference ? fontEntry : null
         if (!fontRef || !this.document) return null
+
+        this.fontRefs.set(fontName, fontRef)
 
         const fontObj = await this.document.readObject({
             objectNumber: fontRef.objectNumber,
@@ -44,7 +54,18 @@ export class PdfFontEncodingCache {
         })
         if (!fontObj) return null
 
-        const fontDict = fontObj.content.as(PdfDictionary)
+        const fontDict =
+            fontObj.content instanceof PdfDictionary ? fontObj.content : null
+        if (!fontDict) return null
+
+        // Cache font subtype (Type0, TrueType, Type1, etc.)
+        const subtypeEntry = fontDict.get('Subtype')
+        const subtype =
+            subtypeEntry instanceof PdfName ? subtypeEntry.value : undefined
+        if (subtype) {
+            this.fontTypes.set(fontName, subtype)
+        }
+
         const encoding = fontDict.get('Encoding')
 
         let encodingDict: PdfDictionary | null = null
@@ -53,7 +74,10 @@ export class PdfFontEncodingCache {
                 objectNumber: encoding.objectNumber,
                 generationNumber: encoding.generationNumber,
             })
-            encodingDict = encodingObj?.content.as(PdfDictionary) ?? null
+            encodingDict =
+                encodingObj?.content instanceof PdfDictionary
+                    ? encodingObj.content
+                    : null
         } else if (encoding instanceof PdfDictionary) {
             encodingDict = encoding
         }
@@ -73,20 +97,136 @@ export class PdfFontEncodingCache {
     async cacheAllFontEncodings(
         fields: Array<{ content: PdfDictionary }>,
     ): Promise<void> {
-        const fontNames = new Set<string>()
+        // Collect font names with an associated page ref for the first field
+        // that uses them (needed to fall back to page resources).
+        const fontPageRefs = new Map<string, PdfObjectReference | null>()
 
         for (const field of fields) {
-            const da = field.content.get('DA')?.as(PdfString)?.value
+            const daEntry = field.content.get('DA')
+            const da = daEntry instanceof PdfString ? daEntry.value : undefined
             if (da) {
                 const fontMatch = da.match(/\/(\w+)\s+[\d.]+\s+Tf/)
                 if (fontMatch) {
-                    fontNames.add(fontMatch[1])
+                    const fontName = fontMatch[1]
+                    if (!fontPageRefs.has(fontName)) {
+                        const pageEntry = field.content.get('P')
+                        const pageRef =
+                            pageEntry instanceof PdfObjectReference
+                                ? pageEntry
+                                : null
+                        fontPageRefs.set(fontName, pageRef)
+                    }
                 }
             }
         }
 
-        for (const fontName of fontNames) {
+        for (const [fontName, pageRef] of fontPageRefs) {
             await this.getFontEncodingMap(fontName)
+            // If the font was not in the AcroForm DR, try the field's page resources
+            if (!this.fontRefs.has(fontName) && pageRef) {
+                await this.resolveFontFromPage(fontName, pageRef)
+            }
         }
+    }
+
+    /**
+     * Walks the page-tree (page → parent → … → Pages root), looking for the
+     * font in each node's /Resources/Font dict. Stops as soon as it finds the
+     * font. PDF resource inheritance means any ancestor can supply the font.
+     */
+    private async resolveFontFromPage(
+        fontName: string,
+        pageRef: PdfObjectReference,
+    ): Promise<void> {
+        if (!this.document) return
+
+        // Walk up the parent chain (max 16 levels to avoid infinite loops)
+        let currentRef: PdfObjectReference | null = pageRef
+        for (let depth = 0; depth < 16 && currentRef; depth++) {
+            const nodeObj = await this.document.readObject({
+                objectNumber: currentRef.objectNumber,
+                generationNumber: currentRef.generationNumber,
+            })
+            const nodeDict =
+                nodeObj?.content instanceof PdfDictionary
+                    ? nodeObj.content
+                    : null
+            if (!nodeDict) break
+
+            // Try Resources.Font in this node
+            const resourcesEntry = nodeDict.get('Resources')
+            const resources =
+                resourcesEntry instanceof PdfDictionary ? resourcesEntry : null
+            if (resources) {
+                const fontsEntry = resources.get('Font')
+                const fonts =
+                    fontsEntry instanceof PdfDictionary ? fontsEntry : null
+                if (fonts) {
+                    const fontEntry = fonts.get(fontName)
+                    const fontRef =
+                        fontEntry instanceof PdfObjectReference
+                            ? fontEntry
+                            : null
+                    if (fontRef) {
+                        // Found — cache and finish
+                        currentRef = fontRef
+                        break
+                    }
+                }
+            }
+
+            // Walk to parent
+            const parentEntry = nodeDict.get('Parent')
+            currentRef =
+                parentEntry instanceof PdfObjectReference ? parentEntry : null
+        }
+
+        const fontRef = currentRef
+        if (!fontRef) return
+
+        this.fontRefs.set(fontName, fontRef)
+
+        const fontObj = await this.document.readObject({
+            objectNumber: fontRef.objectNumber,
+            generationNumber: fontRef.generationNumber,
+        })
+        const fontDict =
+            fontObj?.content instanceof PdfDictionary ? fontObj.content : null
+        if (!fontDict) return
+
+        const subtypeEntry = fontDict.get('Subtype')
+        const subtype =
+            subtypeEntry instanceof PdfName ? subtypeEntry.value : undefined
+        if (subtype) this.fontTypes.set(fontName, subtype)
+
+        // Also resolve encoding map if present
+        const encoding = fontDict.get('Encoding')
+        let encodingDict: PdfDictionary | null = null
+        if (encoding instanceof PdfObjectReference) {
+            const encodingObj = await this.document.readObject({
+                objectNumber: encoding.objectNumber,
+                generationNumber: encoding.generationNumber,
+            })
+            encodingDict =
+                encodingObj?.content instanceof PdfDictionary
+                    ? encodingObj.content
+                    : null
+        } else if (encoding instanceof PdfDictionary) {
+            encodingDict = encoding
+        }
+
+        if (!encodingDict) return
+
+        const differencesEntry = encodingDict.get('Differences')
+        if (!(differencesEntry instanceof PdfArray)) return
+
+        const encodingMap = buildEncodingMap(differencesEntry)
+        if (encodingMap) {
+            this.fontEncodingMaps.set(fontName, encodingMap)
+        }
+    }
+
+    isFontUnicode(fontName: string): boolean {
+        return this.fontTypes.get(fontName) === 'Type0'
     }
 }

@@ -136,6 +136,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -778,6 +779,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -932,6 +934,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -973,6 +976,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -1014,6 +1018,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -1055,6 +1060,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -1096,6 +1102,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -1137,6 +1144,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -1723,6 +1731,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -1877,6 +1886,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -2223,6 +2233,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -2457,6 +2468,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -4947,6 +4959,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -57917,6 +57930,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -58791,6 +58805,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -59745,6 +59760,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -60075,6 +60091,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -61285,6 +61302,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -61375,6 +61393,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -62553,6 +62572,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -63267,6 +63287,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -63629,6 +63650,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -64119,6 +64141,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -69763,6 +69786,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -70013,6 +70037,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -70164,6 +70189,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfStartXRef {
     "immutable": false,
@@ -70250,6 +70276,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -70291,6 +70318,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -70605,6 +70633,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -70703,6 +70732,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfStartXRef {
     "immutable": false,
@@ -76078,6 +76108,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76119,6 +76150,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76160,6 +76192,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76201,6 +76234,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76242,6 +76276,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76283,6 +76318,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76324,6 +76360,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76365,6 +76402,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfArray {
@@ -76378,6 +76416,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
           "objectNumber": 52,
           "postTokens": [],
           "preTokens": [],
+          "resolver": undefined,
         },
       ],
       "modified": false,
@@ -76416,6 +76455,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76457,6 +76497,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76498,6 +76539,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -76539,6 +76581,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -77579,6 +77622,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -77620,6 +77664,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -77860,6 +77905,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -79188,6 +79234,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -85748,6 +85795,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -85860,6 +85908,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -85901,6 +85950,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -85942,6 +85992,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -85983,6 +86034,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -86024,6 +86076,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -86065,6 +86118,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -86106,6 +86160,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -86147,6 +86202,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfDictionary {
@@ -86188,6 +86244,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -86556,6 +86613,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -86924,6 +86982,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "content": PdfStream {
@@ -87102,6 +87161,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfStartXRef {
     "immutable": false,

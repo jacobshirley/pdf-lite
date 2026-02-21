@@ -14,21 +14,9 @@ Re-exports [bytesToPdfObjects](generators/functions/bytesToPdfObjects.md)
 
 ---
 
-### EofReachedError
-
-Re-exports [EofReachedError](parser/incremental-parser/classes/EofReachedError.md)
-
----
-
 ### IncrementalParser
 
 Re-exports [IncrementalParser](parser/incremental-parser/classes/IncrementalParser.md)
-
----
-
-### NoMoreTokensError
-
-Re-exports [NoMoreTokensError](parser/incremental-parser/classes/NoMoreTokensError.md)
 
 ---
 
@@ -443,9 +431,3 @@ Re-exports [RefUpdateCallback](ref/type-aliases/RefUpdateCallback.md)
 ### stringToPdfObjects
 
 Re-exports [stringToPdfObjects](generators/functions/stringToPdfObjects.md)
-
----
-
-### UnexpectedTokenError
-
-Re-exports [UnexpectedTokenError](parser/incremental-parser/classes/UnexpectedTokenError.md)

@@ -10,22 +10,22 @@
 
 ### PdfAppearanceStream
 
-Re-exports [PdfAppearanceStream](PdfAppearanceStream/classes/PdfAppearanceStream.md)
+Re-exports [PdfAppearanceStream](pdf-appearance-stream/classes/PdfAppearanceStream.md)
 
 ---
 
 ### PdfButtonAppearanceStream
 
-Re-exports [PdfButtonAppearanceStream](PdfButtonAppearanceStream/classes/PdfButtonAppearanceStream.md)
+Re-exports [PdfButtonAppearanceStream](pdf-button-appearance-stream/classes/PdfButtonAppearanceStream.md)
 
 ---
 
 ### PdfChoiceAppearanceStream
 
-Re-exports [PdfChoiceAppearanceStream](PdfChoiceAppearanceStream/classes/PdfChoiceAppearanceStream.md)
+Re-exports [PdfChoiceAppearanceStream](pdf-choice-appearance-stream/classes/PdfChoiceAppearanceStream.md)
 
 ---
 
 ### PdfTextAppearanceStream
 
-Re-exports [PdfTextAppearanceStream](PdfTextAppearanceStream/classes/PdfTextAppearanceStream.md)
+Re-exports [PdfTextAppearanceStream](pdf-text-appearance-stream/classes/PdfTextAppearanceStream.md)

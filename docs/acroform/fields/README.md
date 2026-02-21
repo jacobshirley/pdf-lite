@@ -16,25 +16,25 @@ Re-exports [FormContext](types/interfaces/FormContext.md)
 
 ### PdfAcroFormField
 
-Renames and re-exports [PdfFormField](PdfFormField/classes/PdfFormField.md)
+Renames and re-exports [PdfFormField](pdf-form-field/classes/PdfFormField.md)
 
 ---
 
 ### PdfButtonFormField
 
-Re-exports [PdfButtonFormField](PdfButtonFormField/classes/PdfButtonFormField.md)
+Re-exports [PdfButtonFormField](pdf-button-form-field/classes/PdfButtonFormField.md)
 
 ---
 
 ### PdfChoiceFormField
 
-Re-exports [PdfChoiceFormField](PdfChoiceFormField/classes/PdfChoiceFormField.md)
+Re-exports [PdfChoiceFormField](pdf-choice-form-field/classes/PdfChoiceFormField.md)
 
 ---
 
 ### PdfDefaultAppearance
 
-Re-exports [PdfDefaultAppearance](PdfDefaultAppearance/classes/PdfDefaultAppearance.md)
+Re-exports [PdfDefaultAppearance](pdf-default-appearance/classes/PdfDefaultAppearance.md)
 
 ---
 
@@ -46,22 +46,22 @@ Re-exports [PdfFieldType](types/variables/PdfFieldType.md)
 
 ### PdfFormField
 
-Re-exports [PdfFormField](PdfFormField/classes/PdfFormField.md)
+Re-exports [PdfFormField](pdf-form-field/classes/PdfFormField.md)
 
 ---
 
 ### PdfFormFieldFlags
 
-Re-exports [PdfFormFieldFlags](PdfFormFieldFlags/classes/PdfFormFieldFlags.md)
+Re-exports [PdfFormFieldFlags](pdf-form-field-flags/classes/PdfFormFieldFlags.md)
 
 ---
 
 ### PdfSignatureFormField
 
-Re-exports [PdfSignatureFormField](PdfSignatureFormField/classes/PdfSignatureFormField.md)
+Re-exports [PdfSignatureFormField](pdf-signature-form-field/classes/PdfSignatureFormField.md)
 
 ---
 
 ### PdfTextFormField
 
-Re-exports [PdfTextFormField](PdfTextFormField/classes/PdfTextFormField.md)
+Re-exports [PdfTextFormField](pdf-text-form-field/classes/PdfTextFormField.md)

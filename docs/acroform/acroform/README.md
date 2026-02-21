@@ -10,25 +10,25 @@
 
 ### PdfAcroForm
 
-Re-exports [PdfAcroForm](../PdfAcroForm/classes/PdfAcroForm.md)
+Re-exports [PdfAcroForm](../pdf-acro-form/classes/PdfAcroForm.md)
 
 ---
 
 ### PdfAcroFormField
 
-Renames and re-exports [PdfFormField](../fields/PdfFormField/classes/PdfFormField.md)
+Renames and re-exports [PdfFormField](../fields/pdf-form-field/classes/PdfFormField.md)
 
 ---
 
 ### PdfAppearanceStreamDictionary
 
-Re-exports [PdfAppearanceStreamDictionary](../../annotations/PdfAnnotation/type-aliases/PdfAppearanceStreamDictionary.md)
+Re-exports [PdfAppearanceStreamDictionary](../../annotations/pdf-annotation/type-aliases/PdfAppearanceStreamDictionary.md)
 
 ---
 
 ### PdfDefaultResourcesDictionary
 
-Re-exports [PdfDefaultResourcesDictionary](../PdfAcroForm/type-aliases/PdfDefaultResourcesDictionary.md)
+Re-exports [PdfDefaultResourcesDictionary](../pdf-acro-form/type-aliases/PdfDefaultResourcesDictionary.md)
 
 ---
 

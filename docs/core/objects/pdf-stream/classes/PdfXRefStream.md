@@ -216,6 +216,20 @@ The type of this PDF object
 
 `string`
 
+#### Set Signature
+
+> **set** **rawAsString**(`str`): `void`
+
+##### Parameters
+
+###### str
+
+`string`
+
+##### Returns
+
+`void`
+
 #### Inherited from
 
 [`PdfStream`](PdfStream.md).[`rawAsString`](PdfStream.md#rawasstring)

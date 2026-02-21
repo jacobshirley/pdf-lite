@@ -25,7 +25,7 @@ Uses generic field type to avoid circular dependency.
 
 ### defaultResources
 
-> **defaultResources**: [`PdfDefaultResourcesDictionary`](../../../PdfAcroForm/type-aliases/PdfDefaultResourcesDictionary.md) \| `null`
+> **defaultResources**: [`PdfDefaultResourcesDictionary`](../../../pdf-acro-form/type-aliases/PdfDefaultResourcesDictionary.md) \| `null`
 
 ---
 
@@ -38,3 +38,33 @@ Uses generic field type to avoid circular dependency.
 ### fontEncodingMaps
 
 > **fontEncodingMaps**: `Map`\<`string`, `Map`\<`number`, `string`\>\>
+
+---
+
+### fontRefs
+
+> **fontRefs**: `Map`\<`string`, [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>
+
+Object references for all resolved fonts, keyed by resource name.
+
+---
+
+### isFontUnicode()
+
+> **isFontUnicode**: (`fontName`) => `boolean`
+
+#### Parameters
+
+##### fontName
+
+`string`
+
+#### Returns
+
+`boolean`
+
+---
+
+### needAppearances
+
+> **needAppearances**: `boolean`

@@ -76,7 +76,7 @@ Re-exports [PdfFont](pdf-font/classes/PdfFont.md)
 
 ### PdfFontManager
 
-Re-exports [PdfFontManager](font-manager/classes/PdfFontManager.md)
+Re-exports [PdfFontManager](manager/classes/PdfFontManager.md)
 
 ---
 

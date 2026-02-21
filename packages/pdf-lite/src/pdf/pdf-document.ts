@@ -36,6 +36,8 @@ import { PdfFontManager } from '../fonts/manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfArray } from '../index.js'
 import type { PdfFormField } from '../acroform/fields/pdf-form-field.js'
+import { PdfXfaTemplate } from '../acroform/xfa/pdf-xfa-template.js'
+import { PdfXfaAppearance } from '../acroform/xfa/pdf-xfa-appearance.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -1074,6 +1076,14 @@ export class PdfDocument extends PdfObject {
             { pageRef: PdfObjectReference; entries: EffectiveEntry[] }
         >()
 
+        // Apply XFA template appearances when the document has an XFA template
+        // and some fields still lack AP streams (common in LiveCycle documents).
+        const xfaTemplate = await PdfXfaTemplate.fromDocument(this)
+        if (xfaTemplate && acroForm.fields.length > 0) {
+            const layouts = xfaTemplate.extractFieldLayouts()
+            PdfXfaAppearance.apply(layouts, acroForm)
+        }
+
         for (const field of acroForm.fields) {
             const rect = field.rect
             const pageRef = field.parentRef
@@ -1279,7 +1289,9 @@ export class PdfDocument extends PdfObject {
                 if (apFonts) {
                     for (const [key, val] of apFonts.entries()) {
                         if (val && !fontDict.has(key as never)) {
-                            fontDict.set(key as never, val as never)
+                            // Clone to strip parsed preTokens/postTokens so
+                            // PdfDictionary serialization inserts correct spaces.
+                            fontDict.set(key as never, val.clone() as never)
                         }
                     }
                 }

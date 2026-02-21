@@ -17,6 +17,14 @@ const base64ToBytes = (base64: string): ByteArray => {
     return bytes
 }
 
+const bytesToBase64 = (bytes: ByteArray): string => {
+    let binaryString = ''
+    for (let i = 0; i < bytes.length; i++) {
+        binaryString += String.fromCharCode(bytes[i])
+    }
+    return btoa(binaryString)
+}
+
 async function loadPdf(path: string): Promise<PdfDocument> {
     const b64 = await server.commands.readFile(path, { encoding: 'base64' })
     return PdfDocument.fromBytes([base64ToBytes(b64)])
@@ -182,6 +190,44 @@ describe('PdfDocument.flatten()', () => {
         // Should re-parse without throwing
         const reparsed = await PdfDocument.fromBytes([bytes])
         expect(reparsed).toBeDefined()
+    })
+})
+
+describe('PdfDocument.flatten() – XFA document', () => {
+    it('removes /AcroForm from catalog after flattening XFA document', async () => {
+        const document = await loadPdf(
+            './test/unit/fixtures/protectedAdobeLivecycle.pdf',
+        )
+        document.setPassword('')
+
+        expect(await document.acroForm.exists()).toBe(true)
+
+        await document.flatten()
+
+        expect(document.root.content.has('AcroForm')).toBe(false)
+    })
+
+    it('flattened XFA document round-trips cleanly', async () => {
+        const document = await loadPdf(
+            './test/unit/fixtures/protectedAdobeLivecycle.pdf',
+        )
+        document.setPassword('')
+
+        await document.flatten()
+
+        const bytes = document.toBytes()
+        expect(bytes.length).toBeGreaterThan(0)
+
+        const reparsed = await PdfDocument.fromBytes([bytes])
+        expect(await reparsed.acroForm.exists()).toBe(false)
+
+        await server.commands.writeFile(
+            './test/unit/tmp/flattenedXFA.pdf',
+            bytesToBase64(bytes),
+            {
+                encoding: 'base64',
+            },
+        )
     })
 })
 

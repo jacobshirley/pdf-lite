@@ -5,7 +5,6 @@ import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfArray } from '../../core/objects/pdf-array.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
-import { assertEncodable } from '../../errors.js'
 
 /**
  * Choice form field subtype (dropdowns, list boxes).
@@ -141,8 +140,6 @@ export class PdfChoiceFormField extends PdfFormField {
         const reverseEncodingMap: Map<string, number> | undefined = encodingMap
             ? new Map(Array.from(encodingMap, ([code, char]) => [char, code]))
             : undefined
-
-        assertEncodable(value, isUnicode, reverseEncodingMap, parsed.fontName)
 
         this._appearanceStream = new PdfChoiceAppearanceStream({
             rect: rect as [number, number, number, number],

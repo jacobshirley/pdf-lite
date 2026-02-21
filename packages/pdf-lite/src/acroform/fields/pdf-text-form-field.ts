@@ -3,7 +3,6 @@ import { PdfDefaultAppearance } from './pdf-default-appearance.js'
 import { PdfTextAppearanceStream } from '../appearance/pdf-text-appearance-stream.js'
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
-import { assertEncodable } from '../../errors.js'
 
 /**
  * Text form field subtype.
@@ -71,13 +70,6 @@ export class PdfTextFormField extends PdfFormField {
         const reverseEncodingMap: Map<string, number> | undefined = encodingMap
             ? new Map(Array.from(encodingMap, ([code, char]) => [char, code]))
             : undefined
-
-        assertEncodable(
-            this.value,
-            isUnicode,
-            reverseEncodingMap,
-            parsed.fontName,
-        )
 
         this._appearanceStream = new PdfTextAppearanceStream({
             rect: rect,

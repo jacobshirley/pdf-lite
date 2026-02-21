@@ -22,7 +22,6 @@ import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
  * Subclasses must implement generateAppearance().
  */
 export abstract class PdfFormField extends PdfWidgetAnnotation {
-    flags: PdfFormFieldFlags
     private _parent?: PdfFormField
     defaultGenerateAppearance: boolean = true
     protected _appearanceStream?: PdfAppearanceStream
@@ -39,10 +38,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         if (options?.parent) {
             this._parent = options.parent
         }
-        this.flags = new PdfFormFieldFlags(this.content.get('Ff'))
-        this.flags.onChange(() => {
-            this.content.set('Ff', this.flags)
-        })
     }
 
     get parent(): PdfFormField | undefined {
@@ -284,6 +279,20 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             parsed.fontName = resourceName
             this.content.set('DA', parsed)
         }
+    }
+
+    get flags(): PdfFormFieldFlags {
+        const flags = new PdfFormFieldFlags(
+            this.content.get('Ff') ?? this.parent?.content.get('Ff') ?? 0,
+        )
+        flags.onChange(() => {
+            this.flags = flags
+        })
+        return flags
+    }
+
+    set flags(v: PdfFormFieldFlags) {
+        this.content.set('Ff', v)
     }
 
     get readOnly(): boolean {

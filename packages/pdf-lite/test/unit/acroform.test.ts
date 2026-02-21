@@ -683,7 +683,7 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
 
         expect(childField.multiline).toBe(true)
         expect(childField.readOnly).toBe(true)
-        expect(childField.flags).toBe(parentField.flags)
+        expect(childField.flags).toEqual(parentField.flags)
     })
 
     it('should inherit fontSize and fontName from parent DA', () => {
@@ -735,7 +735,9 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
         childField.parent = parentField
         childField.rect = [100, 100, 300, 120]
 
-        expect(childField.options).toEqual(['A', 'B', 'C'])
+        expect(childField.options).toEqual(
+            ['A', 'B', 'C'].map((opt) => ({ value: opt, label: opt })),
+        )
     })
 
     it('should inherit checked state from parent for button fields', () => {

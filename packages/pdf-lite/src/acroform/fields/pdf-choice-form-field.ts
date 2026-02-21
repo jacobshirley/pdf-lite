@@ -52,18 +52,29 @@ export class PdfChoiceFormField extends PdfFormField {
     }
 
     set options(
-        values: {
-            label: string
-            value: string
-        }[],
+        values:
+            | {
+                  label: string
+                  value: string
+              }[]
+            | string[]
+            | undefined,
     ) {
+        if (values === undefined) {
+            this.content.delete('Opt')
+            return
+        }
+
         if (values.length === 0) {
             this.content.delete('Opt')
             return
         }
+
         const optArray = new PdfArray<PdfString | PdfArray<PdfString>>()
         for (const option of values) {
-            if (option.label === option.value) {
+            if (typeof option === 'string') {
+                optArray.items.push(new PdfString(option))
+            } else if (option.label === option.value) {
                 optArray.items.push(new PdfString(option.value))
             } else {
                 const pair = new PdfArray<PdfString>()

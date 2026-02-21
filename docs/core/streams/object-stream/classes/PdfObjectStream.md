@@ -20,7 +20,7 @@ for await (const chunk of stream) {
 
 ## Extends
 
-- [`IterableReadableStream`](../../../../utils/IterableReadableStream/classes/IterableReadableStream.md)\<[`PdfObject`](../../../objects/pdf-object/classes/PdfObject.md)\>
+- [`IterableReadableStream`](../../../../utils/iterable-readable-stream/classes/IterableReadableStream.md)\<[`PdfObject`](../../../objects/pdf-object/classes/PdfObject.md)\>
 
 ## Constructors
 
@@ -40,7 +40,7 @@ for await (const chunk of stream) {
 
 #### Overrides
 
-[`IterableReadableStream`](../../../../utils/IterableReadableStream/classes/IterableReadableStream.md).[`constructor`](../../../../utils/IterableReadableStream/classes/IterableReadableStream.md#constructor)
+[`IterableReadableStream`](../../../../utils/iterable-readable-stream/classes/IterableReadableStream.md).[`constructor`](../../../../utils/iterable-readable-stream/classes/IterableReadableStream.md#constructor)
 
 ## Methods
 
@@ -66,4 +66,4 @@ An async iterator that yields chunks from the stream.
 
 #### Inherited from
 
-[`IterableReadableStream`](../../../../utils/IterableReadableStream/classes/IterableReadableStream.md).[`[asyncIterator]`](../../../../utils/IterableReadableStream/classes/IterableReadableStream.md#asynciterator)
+[`IterableReadableStream`](../../../../utils/iterable-readable-stream/classes/IterableReadableStream.md).[`[asyncIterator]`](../../../../utils/iterable-readable-stream/classes/IterableReadableStream.md#asynciterator)

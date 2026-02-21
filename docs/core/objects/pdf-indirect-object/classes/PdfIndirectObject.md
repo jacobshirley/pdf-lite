@@ -12,14 +12,14 @@
 
 ## Extended by
 
-- [`PdfAcroForm`](../../../../acroform/PdfAcroForm/classes/PdfAcroForm.md)
-- [`PdfAnnotation`](../../../../annotations/PdfAnnotation/classes/PdfAnnotation.md)
+- [`PdfAcroForm`](../../../../acroform/pdf-acro-form/classes/PdfAcroForm.md)
+- [`PdfAnnotation`](../../../../annotations/pdf-annotation/classes/PdfAnnotation.md)
 - [`PdfCertObject`](../../../../signing/document-security-store/classes/PdfCertObject.md)
 - [`PdfCrlObject`](../../../../signing/document-security-store/classes/PdfCrlObject.md)
 - [`PdfOcspObject`](../../../../signing/document-security-store/classes/PdfOcspObject.md)
 - [`PdfDocumentSecurityStoreObject`](../../../../signing/document-security-store/classes/PdfDocumentSecurityStoreObject.md)
-- [`PdfAppearanceStream`](../../../../acroform/appearance/PdfAppearanceStream/classes/PdfAppearanceStream.md)
-- [`PdfXfaData`](../../../../acroform/xfa/PdfXfaData/classes/PdfXfaData.md)
+- [`PdfAppearanceStream`](../../../../acroform/appearance/pdf-appearance-stream/classes/PdfAppearanceStream.md)
+- [`PdfXfaData`](../../../../acroform/xfa/pdf-xfa-data/classes/PdfXfaData.md)
 - [`PdfSignatureObject`](../../../../signing/signatures/base/classes/PdfSignatureObject.md)
 
 ## Type Parameters

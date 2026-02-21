@@ -8,12 +8,6 @@
 
 ## References
 
-### FoundCompressedObjectError
-
-Re-exports [FoundCompressedObjectError](errors/classes/FoundCompressedObjectError.md)
-
----
-
 ### PdfDocument
 
 Re-exports [PdfDocument](pdf-document/classes/PdfDocument.md)

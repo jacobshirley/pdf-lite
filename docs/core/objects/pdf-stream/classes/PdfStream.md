@@ -181,6 +181,20 @@ The type of this PDF object
 
 `string`
 
+#### Set Signature
+
+> **set** **rawAsString**(`str`): `void`
+
+##### Parameters
+
+###### str
+
+`string`
+
+##### Returns
+
+`void`
+
 ## Methods
 
 ### addFilter()

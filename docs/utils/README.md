@@ -160,7 +160,7 @@ Re-exports [inflateData](algos/functions/inflateData.md)
 
 ### IterableReadableStream
 
-Re-exports [IterableReadableStream](IterableReadableStream/classes/IterableReadableStream.md)
+Re-exports [IterableReadableStream](iterable-readable-stream/classes/IterableReadableStream.md)
 
 ---
 

@@ -10,16 +10,16 @@
 
 ### PdfXfaData
 
-Re-exports [PdfXfaData](PdfXfaData/classes/PdfXfaData.md)
+Re-exports [PdfXfaData](pdf-xfa-data/classes/PdfXfaData.md)
 
 ---
 
 ### PdfXfaForm
 
-Re-exports [PdfXfaForm](PdfXfaForm/classes/PdfXfaForm.md)
+Re-exports [PdfXfaForm](pdf-xfa-form/classes/PdfXfaForm.md)
 
 ---
 
 ### XfaFieldData
 
-Re-exports [XfaFieldData](PdfXfaData/interfaces/XfaFieldData.md)
+Re-exports [XfaFieldData](pdf-xfa-data/interfaces/XfaFieldData.md)

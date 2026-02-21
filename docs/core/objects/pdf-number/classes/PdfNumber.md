@@ -12,6 +12,8 @@
 
 ## Extended by
 
+- [`PdfAnnotationFlags`](../../../../annotations/pdf-annotation-flags/classes/PdfAnnotationFlags.md)
+- [`PdfFormFieldFlags`](../../../../acroform/fields/pdf-form-field-flags/classes/PdfFormFieldFlags.md)
 - [`PdfByteOffsetNumber`](PdfByteOffsetNumber.md)
 
 ## Constructors

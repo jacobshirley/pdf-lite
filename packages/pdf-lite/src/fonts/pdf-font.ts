@@ -576,7 +576,7 @@ export class PdfFont extends PdfDictionary<{
     /**
      * Returns the static PdfFont instance for a standard font name, or null if not found.
      */
-    static getStandardFont(fontName: PdfStandardFontName): PdfFont | null {
+    static getStandardFont(fontName: string): PdfFont | null {
         const font = PdfFont.BY_BASE_FONT.get(fontName)
         return font ?? null
     }

@@ -59,6 +59,7 @@ describe('XFA', () => {
         const document = await PdfDocument.fromBytes([pdfBuffer])
         document.setPassword('')
 
+        const acroform = await document.acroForm.read()
         const xfaForm = await document.acroForm.getXfa()
         expect(xfaForm).not.toBeNull()
         expect(xfaForm!.datasets).not.toBeNull()
@@ -89,12 +90,10 @@ describe('XFA', () => {
         // Write the modified XML back
         xfaForm!.datasets!.writeXml(modifiedXml)
 
-        // Write the XFA form to the document
-        const isIncremental = document.isIncremental()
-        document.setIncremental(true)
-        xfaForm!.write(document)
-        await document.commit()
-        document.setIncremental(isIncremental)
+        // Write the XFA form to the document via the standard acroform write path
+
+        //acroform?.setXfa(xfaForm!)
+        await acroform?.write()
 
         await server.commands.writeFile(
             './test/unit/tmp/modifiedAdobeLivecycle.pdf',

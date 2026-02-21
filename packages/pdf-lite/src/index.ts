@@ -1,4 +1,5 @@
 export * from './types.js'
+export * from './errors.js'
 export * from './core/index.js'
 export * from './crypto/index.js'
 export * from './filters/index.js'

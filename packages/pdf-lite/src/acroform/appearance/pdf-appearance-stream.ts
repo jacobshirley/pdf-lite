@@ -4,6 +4,7 @@ import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfNumber } from '../../core/objects/pdf-number.js'
 import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+import { PdfGraphics } from './pdf-graphics.js'
 
 /**
  * Base class for PDF appearance streams (Form XObjects).
@@ -11,9 +12,11 @@ import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
  */
 export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
     constructor(options: {
-        width: number
-        height: number
-        contentStream: string
+        x?: number
+        y?: number
+        width?: number
+        height?: number
+        contentStream?: string
         resources?: PdfDictionary
     }) {
         const appearanceDict = new PdfDictionary()
@@ -23,10 +26,10 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
         appearanceDict.set(
             'BBox',
             new PdfArray([
-                new PdfNumber(0),
-                new PdfNumber(0),
-                new PdfNumber(options.width),
-                new PdfNumber(options.height),
+                new PdfNumber(options.x ?? 0),
+                new PdfNumber(options.y ?? 0),
+                new PdfNumber(options.width ?? 100),
+                new PdfNumber(options.height ?? 100),
             ]),
         )
 
@@ -36,9 +39,21 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
 
         const stream = new PdfStream({
             header: appearanceDict,
-            original: options.contentStream,
+            original: options.contentStream ?? '',
         })
 
         super({ content: stream })
+    }
+
+    get contentStream(): string {
+        return this.content.rawAsString
+    }
+
+    set contentStream(newContent: string) {
+        this.content.rawAsString = newContent
+    }
+
+    set graphics(g: PdfGraphics) {
+        this.contentStream = g.build()
     }
 }

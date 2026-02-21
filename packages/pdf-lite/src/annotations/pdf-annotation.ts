@@ -3,7 +3,9 @@ import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
-import { PdfAnnotationFlags } from './PdfAnnotationFlags.js'
+import { PdfAnnotationFlags } from './pdf-annotation-flags.js'
+import { PdfName } from '../core/objects/pdf-name.js'
+import { PdfString } from '../core/objects/pdf-string.js'
 
 export type PdfAppearanceStreamDictionary = PdfDictionary<{
     N: PdfObjectReference | PdfDictionary
@@ -13,9 +15,28 @@ export type PdfAppearanceStreamDictionary = PdfDictionary<{
 
 /**
  * Base class for all PDF annotations.
- * Owns: Rect, annotation flags (F), AP (appearance streams), P (page reference).
  */
-export class PdfAnnotation extends PdfIndirectObject<PdfDictionary> {
+export class PdfAnnotation extends PdfIndirectObject<
+    PdfDictionary<{
+        Type: PdfName
+        Subtype: PdfName
+        AS: PdfName
+        Ff: PdfNumber
+        FT: PdfName
+        T: PdfString
+        DV: PdfString | PdfName
+        V: PdfString | PdfName
+        DA: PdfString
+        Opt: PdfArray<PdfString | PdfArray<PdfString>>
+        MaxLen: PdfNumber
+        Q: PdfNumber
+        Kids: PdfArray<PdfObjectReference>
+        Rect: PdfArray<PdfNumber>
+        F: PdfNumber
+        AP?: PdfAppearanceStreamDictionary
+        P?: PdfObjectReference
+    }>
+> {
     private _annotationFlags: PdfAnnotationFlags
 
     constructor(options?: { other?: PdfIndirectObject }) {
@@ -23,16 +44,23 @@ export class PdfAnnotation extends PdfIndirectObject<PdfDictionary> {
             options?.other ??
                 new PdfIndirectObject({ content: new PdfDictionary() }),
         )
-        this._annotationFlags = new PdfAnnotationFlags(this.content)
+        const flagValue = this.content.get('F')?.as(PdfNumber)?.value ?? 0
+        this._annotationFlags = new PdfAnnotationFlags(flagValue)
+        this.content.set('F', this._annotationFlags)
     }
 
-    get rect(): number[] | null {
+    get rect(): [number, number, number, number] | null {
         const rectArray = this.content.get('Rect')?.as(PdfArray<PdfNumber>)
         if (!rectArray) return null
-        return rectArray.items.map((num) => num.value)
+        return rectArray.items.map((num) => num.value) as [
+            number,
+            number,
+            number,
+            number,
+        ]
     }
 
-    set rect(rect: number[] | null) {
+    set rect(rect: [number, number, number, number] | null) {
         if (rect === null) {
             this.content.delete('Rect')
             return

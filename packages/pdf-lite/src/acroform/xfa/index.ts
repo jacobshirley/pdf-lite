@@ -1,3 +1,3 @@
-export { PdfXfaForm } from './PdfXfaForm.js'
-export { PdfXfaData } from './PdfXfaData.js'
-export type { XfaFieldData } from './PdfXfaData.js'
+export { PdfXfaForm } from './pdf-xfa-form.js'
+export { PdfXfaData } from './pdf-xfa-data.js'
+export type { XfaFieldData } from './pdf-xfa-data.js'

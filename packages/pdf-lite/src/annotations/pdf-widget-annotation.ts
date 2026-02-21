@@ -1,6 +1,6 @@
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfName } from '../core/objects/pdf-name.js'
-import { PdfAnnotation } from './PdfAnnotation.js'
+import { PdfAnnotation } from './pdf-annotation.js'
 
 /**
  * Widget annotation subtype. Extends PdfAnnotation with widget-specific

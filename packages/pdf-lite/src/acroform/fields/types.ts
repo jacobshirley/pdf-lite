@@ -1,4 +1,5 @@
 import type { PdfDefaultResourcesDictionary } from '../acroform.js'
+import type { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 
 /**
  * Field types for AcroForm fields
@@ -20,5 +21,9 @@ export interface FormContext<TField = any> {
     defaultResources: PdfDefaultResourcesDictionary | null
     defaultAppearance: string | null
     fontEncodingMaps: Map<string, Map<number, string>>
+    /** Object references for all resolved fonts, keyed by resource name. */
+    fontRefs: Map<string, PdfObjectReference>
     fields: TField[]
+    isFontUnicode: (fontName: string) => boolean
+    needAppearances: boolean
 }

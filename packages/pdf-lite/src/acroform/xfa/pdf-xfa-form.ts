@@ -5,7 +5,7 @@ import { PdfString } from '../../core/objects/pdf-string.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
-import { PdfXfaData } from './PdfXfaData.js'
+import { PdfXfaData } from './pdf-xfa-data.js'
 
 /**
  * Typed wrapper around the XFA name/stream-ref array.
@@ -24,10 +24,7 @@ export class PdfXfaForm extends PdfArray {
         let acroFormDict: PdfDictionary
 
         if (acroFormRef instanceof PdfObjectReference) {
-            const acroFormObject = await document.readObject({
-                objectNumber: acroFormRef.objectNumber,
-                generationNumber: acroFormRef.generationNumber,
-            })
+            const acroFormObject = await document.readObject(acroFormRef)
             if (!acroFormObject) return null
             acroFormDict = acroFormObject.content.as(PdfDictionary)
         } else if (acroFormRef instanceof PdfDictionary) {
@@ -68,11 +65,5 @@ export class PdfXfaForm extends PdfArray {
         }
 
         return form
-    }
-
-    write(document: PdfDocument): void {
-        if (this.datasets?.isModified()) {
-            document.add(this.datasets)
-        }
     }
 }

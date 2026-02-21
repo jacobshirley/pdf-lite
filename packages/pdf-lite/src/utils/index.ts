@@ -1,4 +1,4 @@
-export * from './IterableReadableStream.js'
+export * from './iterable-readable-stream.js'
 export * from './algos.js'
 export * from './assert.js'
 export * from './bytesToHex.js'

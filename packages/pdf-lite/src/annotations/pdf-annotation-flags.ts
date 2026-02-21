@@ -1,23 +1,20 @@
 import { PdfNumber } from '../core/objects/pdf-number.js'
-import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 
 /**
  * Provides annotation flag (F field) accessors for PDF annotations.
  * These are generic to all annotation types per the PDF spec.
  */
-export class PdfAnnotationFlags {
-    readonly dict: PdfDictionary
-
-    constructor(dict: PdfDictionary) {
-        this.dict = dict
+export class PdfAnnotationFlags extends PdfNumber {
+    constructor(value: number = 0) {
+        super(value)
     }
 
     get annotationFlags(): number {
-        return this.dict.get('F')?.as(PdfNumber)?.value ?? 0
+        return this.value
     }
 
     set annotationFlags(flags: number) {
-        this.dict.set('F', new PdfNumber(flags))
+        this.value = flags
     }
 
     get invisible(): boolean {

@@ -6,7 +6,7 @@ import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfString } from '../core/objects/pdf-string.js'
-import type { PdfFontManager } from './font-manager.js'
+import type { PdfFontManager } from './manager.js'
 import type {
     FontDescriptor,
     UnicodeFontDescriptor,
@@ -16,8 +16,22 @@ import type {
 import type { ByteArray } from '../types.js'
 import { parseFont } from './parsers/font-parser.js'
 import { OtfParser } from './parsers/otf-parser.js'
-import { TtfParser } from './parsers/ttf-parser.js'
-import { WoffParser } from './parsers/woff-parser.js'
+
+type PdfStandardFontName =
+    | 'Helvetica'
+    | 'Helvetica-Bold'
+    | 'Helvetica-Oblique'
+    | 'Helvetica-BoldOblique'
+    | 'Times-Roman'
+    | 'Times-Bold'
+    | 'Times-Italic'
+    | 'Times-BoldItalic'
+    | 'Courier'
+    | 'Courier-Bold'
+    | 'Courier-Oblique'
+    | 'Courier-BoldOblique'
+    | 'Symbol'
+    | 'ZapfDingbats'
 
 /**
  * Represents an embedded font in a PDF document.
@@ -55,12 +69,6 @@ export class PdfFont extends PdfDictionary<{
 
     /**
      * @internal
-     * Reference to the font manager that created this font.
-     */
-    private manager?: PdfFontManager
-
-    /**
-     * @internal
      * Font descriptor with metrics and properties.
      */
     private _descriptor?: FontDescriptor | UnicodeFontDescriptor
@@ -71,6 +79,7 @@ export class PdfFont extends PdfDictionary<{
      */
     private _fontData?: ByteArray
 
+    constructor(fontName: string)
     constructor(options: {
         dict?: PdfDictionary
         fontName?: string
@@ -80,15 +89,37 @@ export class PdfFont extends PdfDictionary<{
         container?: PdfIndirectObject
         descriptor?: FontDescriptor | UnicodeFontDescriptor
         fontData?: ByteArray
-    }) {
+    })
+    constructor(
+        optionsOrFontName:
+            | string
+            | {
+                  dict?: PdfDictionary
+                  fontName?: string
+                  resourceName?: string
+                  encoding?: string
+                  container?: PdfIndirectObject
+                  descriptor?: FontDescriptor | UnicodeFontDescriptor
+                  fontData?: ByteArray
+              },
+    ) {
         super()
+
+        // Handle string parameter (simple fontName)
+        if (typeof optionsOrFontName === 'string') {
+            this.fontName = optionsOrFontName
+            this.resourceName = optionsOrFontName
+            return
+        }
+
+        // Handle options object (existing behavior)
+        const options = optionsOrFontName
         if (options.dict) {
             this.copyFrom(options.dict)
         }
         this.fontName = options.fontName
         this.resourceName = options.resourceName ?? ''
         this.encoding = options.encoding
-        this.manager = options.manager
         this.container = options.container
         this._descriptor = options.descriptor
         this._fontData = options.fontData
@@ -237,6 +268,71 @@ export class PdfFont extends PdfDictionary<{
     }
 
     /**
+     * Gets the raw character width (in 1000-unit em square) for a character code.
+     * Returns null if the character is not in the font's width table.
+     *
+     * @param charCode - The character code to get the width for
+     * @returns The raw character width or null if not found
+     */
+    getRawCharacterWidth(charCode: number): number | null {
+        if (this.widths === undefined || this.firstChar === undefined) {
+            return null
+        }
+
+        const widthIndex = charCode - this.firstChar
+        if (widthIndex >= 0 && widthIndex < this.widths.length) {
+            return this.widths[widthIndex]
+        }
+
+        return null
+    }
+
+    /**
+     * Gets the character width scaled to the specified font size.
+     * Returns null if the character is not in the font's width table.
+     *
+     * @param charCode - The character code to get the width for
+     * @param fontSize - The font size to scale to
+     * @returns The scaled character width or null if not found
+     */
+    getCharacterWidth(charCode: number, fontSize: number): number | null {
+        const rawWidth = this.getRawCharacterWidth(charCode)
+        return rawWidth !== null ? (rawWidth * fontSize) / 1000 : null
+    }
+
+    /**
+     * Checks if the font has width data for a character code.
+     *
+     * @param charCode - The character code to check
+     * @returns True if width data is available, false otherwise
+     */
+    hasCharacterWidth(charCode: number): boolean {
+        return this.getRawCharacterWidth(charCode) !== null
+    }
+
+    /**
+     * Gets character widths for all characters in a string.
+     * Returns null for characters not in the font's width table.
+     *
+     * @param text - The text to get character widths for
+     * @param fontSize - The font size to scale to
+     * @returns Array of character widths (null for missing characters)
+     */
+    getCharacterWidthsForString(
+        text: string,
+        fontSize: number,
+    ): (number | null)[] {
+        const widths: (number | null)[] = []
+
+        for (const char of text) {
+            const charCode = char.charCodeAt(0)
+            widths.push(this.getCharacterWidth(charCode, fontSize))
+        }
+
+        return widths
+    }
+
+    /**
      * Returns the resource name for string coercion.
      * This enables using PdfFont objects in template literals like:
      * ```typescript
@@ -309,24 +405,12 @@ export class PdfFont extends PdfDictionary<{
      * These fonts don't require font data as they're built into PDF viewers.
      *
      * @param fontName - One of the 14 standard PDF fonts
+     * @param widths - Optional AFM widths array (1/1000 em units) for chars 32–126
      * @returns A PdfFont instance ready to be written to the PDF
      */
     static fromStandardFont(
-        fontName:
-            | 'Helvetica'
-            | 'Helvetica-Bold'
-            | 'Helvetica-Oblique'
-            | 'Helvetica-BoldOblique'
-            | 'Times-Roman'
-            | 'Times-Bold'
-            | 'Times-Italic'
-            | 'Times-BoldItalic'
-            | 'Courier'
-            | 'Courier-Bold'
-            | 'Courier-Oblique'
-            | 'Courier-BoldOblique'
-            | 'Symbol'
-            | 'ZapfDingbats',
+        fontName: PdfStandardFontName,
+        widths?: number[],
     ): PdfFont {
         const font = new PdfFont({ fontName })
 
@@ -335,7 +419,165 @@ export class PdfFont extends PdfDictionary<{
         font.set('Subtype', new PdfName('Type1'))
         font.set('BaseFont', new PdfName(fontName))
 
+        if (widths) {
+            font.firstChar = 32
+            font.lastChar = 32 + widths.length - 1
+            font.widths = widths
+        }
+
         return font
+    }
+
+    // Helvetica AFM widths, chars 32–126 (95 values, 1/1000 em units)
+    private static readonly _HELVETICA_WIDTHS: readonly number[] = [
+        278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333,
+        278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278,
+        584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278,
+        500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944,
+        667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556,
+        278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500,
+        278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584,
+    ]
+
+    // Helvetica-Bold AFM widths, chars 32–126
+    private static readonly _HELVETICA_BOLD_WIDTHS: readonly number[] = [
+        278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333,
+        278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333,
+        584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278,
+        556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944,
+        667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556,
+        333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556,
+        333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584,
+    ]
+
+    // Times-Roman AFM widths, chars 32–126
+    private static readonly _TIMES_ROMAN_WIDTHS: readonly number[] = [
+        250, 333, 408, 500, 500, 833, 778, 180, 333, 333, 500, 564, 250, 333,
+        250, 278, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 278, 278,
+        564, 564, 564, 444, 921, 722, 667, 667, 722, 611, 556, 722, 722, 333,
+        389, 722, 611, 889, 722, 722, 556, 722, 667, 556, 611, 722, 722, 944,
+        722, 722, 611, 333, 278, 333, 469, 500, 333, 444, 500, 444, 500, 444,
+        333, 500, 500, 278, 278, 500, 278, 778, 500, 500, 500, 500, 333, 389,
+        278, 500, 500, 722, 500, 500, 444, 480, 200, 480, 541,
+    ]
+
+    // Times-Bold AFM widths, chars 32–126
+    private static readonly _TIMES_BOLD_WIDTHS: readonly number[] = [
+        250, 333, 555, 500, 500, 1000, 833, 278, 333, 333, 500, 570, 250, 333,
+        250, 278, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 333, 333,
+        570, 570, 570, 500, 930, 722, 667, 722, 722, 667, 611, 778, 778, 389,
+        500, 778, 667, 944, 722, 778, 611, 778, 722, 556, 667, 722, 722, 1000,
+        722, 722, 667, 333, 278, 333, 581, 500, 333, 500, 556, 444, 556, 444,
+        333, 500, 556, 278, 333, 556, 278, 833, 556, 500, 556, 556, 444, 389,
+        333, 556, 500, 722, 500, 500, 444, 394, 220, 394, 520,
+    ]
+
+    // Times-Italic AFM widths, chars 32–126
+    private static readonly _TIMES_ITALIC_WIDTHS: readonly number[] = [
+        250, 333, 420, 500, 500, 833, 778, 214, 333, 333, 500, 675, 250, 333,
+        250, 278, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 333, 333,
+        675, 675, 675, 500, 920, 611, 611, 667, 722, 611, 611, 722, 722, 333,
+        444, 667, 556, 833, 667, 722, 611, 722, 611, 500, 556, 722, 611, 833,
+        611, 556, 556, 389, 278, 389, 422, 500, 333, 500, 500, 444, 500, 444,
+        278, 500, 500, 278, 278, 444, 278, 722, 500, 500, 500, 500, 389, 389,
+        278, 500, 444, 667, 444, 444, 389, 400, 275, 400, 541,
+    ]
+
+    // Times-BoldItalic AFM widths, chars 32–126
+    private static readonly _TIMES_BOLD_ITALIC_WIDTHS: readonly number[] = [
+        250, 389, 555, 500, 500, 833, 778, 278, 333, 333, 500, 570, 250, 333,
+        250, 278, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 333, 333,
+        570, 570, 570, 500, 832, 667, 667, 667, 722, 667, 667, 722, 778, 389,
+        500, 667, 611, 889, 722, 722, 611, 722, 667, 556, 611, 722, 667, 889,
+        667, 611, 611, 333, 278, 333, 570, 500, 333, 500, 500, 444, 500, 444,
+        333, 500, 556, 278, 278, 500, 278, 778, 556, 500, 500, 500, 389, 389,
+        278, 556, 444, 667, 500, 444, 389, 348, 220, 348, 570,
+    ]
+
+    static readonly HELVETICA = PdfFont.fromStandardFont('Helvetica', [
+        ...PdfFont._HELVETICA_WIDTHS,
+    ])
+    static readonly HELVETICA_BOLD = PdfFont.fromStandardFont(
+        'Helvetica-Bold',
+        [...PdfFont._HELVETICA_BOLD_WIDTHS],
+    )
+    static readonly HELVETICA_OBLIQUE = PdfFont.fromStandardFont(
+        'Helvetica-Oblique',
+        [...PdfFont._HELVETICA_WIDTHS],
+    )
+    static readonly HELVETICA_BOLD_OBLIQUE = PdfFont.fromStandardFont(
+        'Helvetica-BoldOblique',
+        [...PdfFont._HELVETICA_BOLD_WIDTHS],
+    )
+    static readonly TIMES_ROMAN = PdfFont.fromStandardFont('Times-Roman', [
+        ...PdfFont._TIMES_ROMAN_WIDTHS,
+    ])
+    static readonly TIMES_BOLD = PdfFont.fromStandardFont('Times-Bold', [
+        ...PdfFont._TIMES_BOLD_WIDTHS,
+    ])
+    static readonly TIMES_ITALIC = PdfFont.fromStandardFont('Times-Italic', [
+        ...PdfFont._TIMES_ITALIC_WIDTHS,
+    ])
+    static readonly TIMES_BOLD_ITALIC = PdfFont.fromStandardFont(
+        'Times-BoldItalic',
+        [...PdfFont._TIMES_BOLD_ITALIC_WIDTHS],
+    )
+    static readonly COURIER = PdfFont.fromStandardFont(
+        'Courier',
+        Array(95).fill(600),
+    )
+    static readonly COURIER_BOLD = PdfFont.fromStandardFont(
+        'Courier-Bold',
+        Array(95).fill(600),
+    )
+    static readonly COURIER_OBLIQUE = PdfFont.fromStandardFont(
+        'Courier-Oblique',
+        Array(95).fill(600),
+    )
+    static readonly COURIER_BOLD_OBLIQUE = PdfFont.fromStandardFont(
+        'Courier-BoldOblique',
+        Array(95).fill(600),
+    )
+    static readonly SYMBOL = PdfFont.fromStandardFont('Symbol')
+    static readonly ZAPF_DINGBATS = PdfFont.fromStandardFont('ZapfDingbats')
+
+    private static readonly BY_BASE_FONT: ReadonlyMap<string, PdfFont> =
+        new Map([
+            ['Helvetica', PdfFont.HELVETICA],
+            ['Helv', PdfFont.HELVETICA], // Alias for backward compatibility with old code using 'Helv'
+            ['Helvetica-Bold', PdfFont.HELVETICA_BOLD],
+            ['Helv-Bold', PdfFont.HELVETICA_BOLD], // Alias for backward compatibility with old code using 'Helv-Bold'
+            ['Helvetica-Oblique', PdfFont.HELVETICA_OBLIQUE],
+            ['Helv-Oblique', PdfFont.HELVETICA_OBLIQUE], // Alias for backward compatibility with old code using 'Helv-Oblique'
+            ['Helvetica-BoldOblique', PdfFont.HELVETICA_BOLD_OBLIQUE],
+            ['Helv-BoldOblique', PdfFont.HELVETICA_BOLD_OBLIQUE], // Alias for backward compatibility with old code using 'Helv-BoldOblique'
+            ['Times-Roman', PdfFont.TIMES_ROMAN],
+            ['TiRo', PdfFont.TIMES_ROMAN],
+            ['Times-Bold', PdfFont.TIMES_BOLD],
+            ['TiBo', PdfFont.TIMES_BOLD],
+            ['Times-Italic', PdfFont.TIMES_ITALIC],
+            ['TiIt', PdfFont.TIMES_ITALIC],
+            ['Times-BoldItalic', PdfFont.TIMES_BOLD_ITALIC],
+            ['TiBI', PdfFont.TIMES_BOLD_ITALIC],
+            ['Courier', PdfFont.COURIER],
+            ['Cour', PdfFont.COURIER], // Alias for backward compatibility with old code using 'Cour'
+            ['Courier-Bold', PdfFont.COURIER_BOLD],
+            ['Cour-Bold', PdfFont.COURIER_BOLD], // Alias for backward compatibility with old code using 'Cour-Bold'
+            ['Courier-Oblique', PdfFont.COURIER_OBLIQUE],
+            ['Cour-Oblique', PdfFont.COURIER_OBLIQUE], // Alias for backward compatibility with old code using 'Cour-Oblique'
+            ['Courier-BoldOblique', PdfFont.COURIER_BOLD_OBLIQUE],
+            ['Cour-BoldOblique', PdfFont.COURIER_BOLD_OBLIQUE], // Alias for backward compatibility with old code using 'Cour-BoldOblique'
+            ['Symbol', PdfFont.SYMBOL],
+            ['ZapfDingbats', PdfFont.ZAPF_DINGBATS],
+            ['ZaDb', PdfFont.ZAPF_DINGBATS],
+        ])
+
+    /**
+     * Returns the static PdfFont instance for a standard font name, or null if not found.
+     */
+    static getStandardFont(fontName: string): PdfFont | null {
+        const font = PdfFont.BY_BASE_FONT.get(fontName)
+        return font ?? null
     }
 
     /**

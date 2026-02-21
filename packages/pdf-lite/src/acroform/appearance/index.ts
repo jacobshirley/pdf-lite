@@ -1,4 +1,4 @@
-export { PdfAppearanceStream } from './PdfAppearanceStream.js'
-export { PdfTextAppearanceStream } from './PdfTextAppearanceStream.js'
-export { PdfButtonAppearanceStream } from './PdfButtonAppearanceStream.js'
-export { PdfChoiceAppearanceStream } from './PdfChoiceAppearanceStream.js'
+export { PdfAppearanceStream } from './pdf-appearance-stream.js'
+export { PdfTextAppearanceStream } from './pdf-text-appearance-stream.js'
+export { PdfButtonAppearanceStream } from './pdf-button-appearance-stream.js'
+export { PdfChoiceAppearanceStream } from './pdf-choice-appearance-stream.js'

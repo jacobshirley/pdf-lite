@@ -29,7 +29,7 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         const isCombo = (ctx.flags & 131072) !== 0
 
         const g = new PdfGraphics()
-        g.raw('/Tx BMC')
+        g.beginMarkedContent()
         g.save()
         g.beginText()
         g.setDefaultAppearance(ctx.da)
@@ -59,7 +59,7 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         }
 
         g.restore()
-        g.raw('EMC')
+        g.endMarkedContent()
 
         super({
             width,

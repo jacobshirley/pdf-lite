@@ -38,7 +38,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             resolvedFonts: ctx.resolvedFonts,
         })
 
-        g.raw('/Tx BMC')
+        g.beginMarkedContent()
         g.save()
 
         // Set initial font to enable measurement
@@ -151,7 +151,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         }
 
         g.restore()
-        g.raw('EMC')
+        g.endMarkedContent()
 
         super({
             width,

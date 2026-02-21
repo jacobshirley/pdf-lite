@@ -86,7 +86,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
             g.beginText()
             g.setFont('ZaDb', checkSize)
             g.moveTo(offset, offset)
-            g.raw('(4) Tj')
+            g.showLiteralText('4') // Checkmark character in Zapf Dingbats
             g.endText()
             g.restore()
         }

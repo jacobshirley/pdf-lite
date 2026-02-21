@@ -63,6 +63,21 @@ export class PdfGraphics {
         return this
     }
 
+    showLiteralText(text: string): this {
+        this.lines.push(`(${text}) Tj`)
+        return this
+    }
+
+    beginMarkedContent(): this {
+        this.lines.push('/Tx BMC')
+        return this
+    }
+
+    endMarkedContent(): this {
+        this.lines.push('EMC')
+        return this
+    }
+
     raw(op: string): this {
         this.lines.push(op)
         return this

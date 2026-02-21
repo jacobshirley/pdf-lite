@@ -1,6 +1,6 @@
 import { encodePdfText } from '../../utils/encodePdfText.js'
 import type { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
-import type { PdfFont } from '../../fonts/pdf-font.js'
+import { PdfFont } from '../../fonts/pdf-font.js'
 
 /**
  * Lightweight builder for PDF content streams.
@@ -164,25 +164,41 @@ export class PdfGraphics {
 
         const { fontObject, size: currentSize } = this.currentFont
         const size = fontSize ?? currentSize
+        const fontName = this.defaultAppearance!.fontName
 
-        // If we have font object with width data, use it
-        if (fontObject?.widths && fontObject.firstChar !== undefined) {
+        const effectiveFontObject =
+            fontObject ?? PdfFont.getStandardFont(fontName)
+
+        if (
+            effectiveFontObject?.widths &&
+            effectiveFontObject.firstChar !== undefined
+        ) {
             let width = 0
             for (const char of text) {
                 const charCode = char.charCodeAt(0)
-                const charWidth = fontObject.getCharacterWidth(charCode, size)
+                const charWidth = effectiveFontObject.getCharacterWidth(
+                    charCode,
+                    size,
+                )
                 if (charWidth !== null) {
                     width += charWidth
                 } else {
-                    // Fallback to approximate width for missing characters
                     width += size * 0.6
                 }
             }
             return width
         }
 
-        // Fallback: estimate width for standard fonts
-        return this.estimateTextWidth(text, size)
+        // Unknown font — use Helvetica as best-effort approximation
+        let width = 0
+        for (const char of text) {
+            const charWidth = PdfFont.HELVETICA.getCharacterWidth(
+                char.charCodeAt(0),
+                size,
+            )
+            width += charWidth !== null ? charWidth : size * 0.6
+        }
+        return width
     }
 
     /**
@@ -278,27 +294,6 @@ export class PdfGraphics {
             else hi = mid
         }
         return lo
-    }
-
-    private estimateTextWidth(text: string, fontSize: number): number {
-        // Rough estimation for standard fonts (Helvetica-like)
-        let width = 0
-        for (const char of text) {
-            width += this.estimateCharWidth(char, fontSize)
-        }
-        return width
-    }
-
-    private estimateCharWidth(char: string, fontSize: number): number {
-        // Basic character width estimation for standard fonts
-        const charCode = char.charCodeAt(0)
-
-        if (charCode === 32) return fontSize * 0.25 // space
-        if (charCode >= 65 && charCode <= 90) return fontSize * 0.7 // A-Z
-        if (charCode >= 97 && charCode <= 122) return fontSize * 0.55 // a-z
-        if (charCode >= 48 && charCode <= 57) return fontSize * 0.6 // 0-9
-
-        return fontSize * 0.6 // default
     }
 
     private breakLongWord(

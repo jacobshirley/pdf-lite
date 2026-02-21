@@ -1,7 +1,7 @@
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
-import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfAppearanceStream } from './pdf-appearance-stream.js'
 import { PdfGraphics } from './pdf-graphics.js'
+import { PdfFont } from '../../fonts/pdf-font.js'
 
 /**
  * Appearance stream for button fields (checkboxes, radio buttons).
@@ -10,11 +10,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
     constructor(ctx: { width: number; height: number; contentStream: string }) {
         const resources = new PdfDictionary()
         const fonts = new PdfDictionary()
-        const zapfFont = new PdfDictionary()
-        zapfFont.set('Type', new PdfName('Font'))
-        zapfFont.set('Subtype', new PdfName('Type1'))
-        zapfFont.set('BaseFont', new PdfName('ZapfDingbats'))
-        fonts.set('ZaDb', zapfFont)
+        fonts.set('ZaDb', PdfFont.ZAPF_DINGBATS)
         resources.set('Font', fonts)
 
         super({

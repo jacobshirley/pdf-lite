@@ -1617,6 +1617,160 @@ describe('AcroForm Field DA Inheritance from Form Level', () => {
     })
 })
 
+describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
+    it('should write a PDF demonstrating word wrap and font scaling', async () => {
+        const document = new PdfDocument()
+
+        // Font object
+        const font = new PdfIndirectObject({
+            content: (() => {
+                const d = new PdfDictionary()
+                d.set('Type', new PdfName('Font'))
+                d.set('Subtype', new PdfName('Type1'))
+                d.set('BaseFont', new PdfName('Helvetica'))
+                return d
+            })(),
+        })
+        document.add(font)
+
+        const contentStream = new PdfIndirectObject({
+            content: new PdfStream({
+                header: new PdfDictionary(),
+                original: '',
+            }),
+        })
+        document.add(contentStream)
+
+        const pageDict = new PdfDictionary()
+        pageDict.set('Type', new PdfName('Page'))
+        pageDict.set(
+            'MediaBox',
+            new PdfArray([
+                new PdfNumber(0),
+                new PdfNumber(0),
+                new PdfNumber(612),
+                new PdfNumber(792),
+            ]),
+        )
+        pageDict.set('Contents', contentStream.reference)
+        const resourcesDict = new PdfDictionary()
+        const fontDict = new PdfDictionary()
+        fontDict.set('Helv', font.reference)
+        resourcesDict.set('Font', fontDict)
+        pageDict.set('Resources', resourcesDict)
+        const page = new PdfIndirectObject({ content: pageDict })
+        document.add(page)
+
+        const pagesDict = new PdfDictionary()
+        pagesDict.set('Type', new PdfName('Pages'))
+        pagesDict.set('Kids', new PdfArray([page.reference]))
+        pagesDict.set('Count', new PdfNumber(1))
+        const pages = new PdfIndirectObject({ content: pagesDict })
+        page.content.set('Parent', pages.reference)
+        document.add(pages)
+
+        const catalogDict = new PdfDictionary()
+        catalogDict.set('Type', new PdfName('Catalog'))
+        catalogDict.set('Pages', pages.reference)
+        const catalog = new PdfIndirectObject({ content: catalogDict })
+
+        const acroFormDict = new PdfDictionary()
+        acroFormDict.set('Fields', new PdfArray([]))
+        const formFontDict = new PdfDictionary()
+        formFontDict.set('Helv', font.reference)
+        const formResources = new PdfDictionary()
+        formResources.set('Font', formFontDict)
+        acroFormDict.set('DR', formResources)
+        acroFormDict.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+        const acroFormObj = new PdfIndirectObject({ content: acroFormDict })
+        document.add(acroFormObj)
+        catalogDict.set('AcroForm', acroFormObj.reference)
+
+        document.add(catalog)
+        document.trailerDict.set('Root', catalog.reference)
+
+        await document.commit()
+
+        const acroform = await document.acroForm.read()
+        if (!acroform) throw new Error('No AcroForm found')
+
+        const pageRef = page.reference
+
+        // 1. Baseline: short text, wide field — no scaling, no wrap
+        const baseline = new PdfTextFormField({ form: acroform })
+        baseline.fieldType = 'Text'
+        baseline.name = 'Baseline'
+        baseline.rect = [50, 720, 400, 740]
+        baseline.defaultAppearance = '/Helv 12 Tf 0 g'
+        baseline.isWidget = true
+        baseline.parentRef = pageRef
+        baseline.value = 'Short text - no scaling needed'
+        acroform.fields.push(baseline)
+
+        // 2. Font scaling: long text crammed into a narrow single-line field
+        const scaled = new PdfTextFormField({ form: acroform })
+        scaled.fieldType = 'Text'
+        scaled.name = 'FontScaling'
+        scaled.rect = [50, 670, 200, 690]
+        scaled.defaultAppearance = '/Helv 12 Tf 0 g'
+        scaled.isWidget = true
+        scaled.parentRef = pageRef
+        scaled.value = 'This text is far too long for the narrow field'
+        acroform.fields.push(scaled)
+
+        // 3. Word wrap: multiline field with explicit newlines
+        const explicitWrap = new PdfTextFormField({ form: acroform })
+        explicitWrap.fieldType = 'Text'
+        explicitWrap.name = 'ExplicitLineBreaks'
+        explicitWrap.rect = [50, 580, 400, 650]
+        explicitWrap.defaultAppearance = '/Helv 12 Tf 0 g'
+        explicitWrap.multiline = true
+        explicitWrap.isWidget = true
+        explicitWrap.parentRef = pageRef
+        explicitWrap.value = 'Line one\nLine two\nLine three'
+        acroform.fields.push(explicitWrap)
+
+        // 4. Word wrap: long paragraph auto-wrapped
+        const autoWrap = new PdfTextFormField({ form: acroform })
+        autoWrap.fieldType = 'Text'
+        autoWrap.name = 'AutoWrap'
+        autoWrap.rect = [50, 470, 400, 560]
+        autoWrap.defaultAppearance = '/Helv 12 Tf 0 g'
+        autoWrap.multiline = true
+        autoWrap.isWidget = true
+        autoWrap.parentRef = pageRef
+        autoWrap.value =
+            'This is a long paragraph of text that should automatically wrap across multiple lines because the field is not wide enough to fit it all on one line.'
+        acroform.fields.push(autoWrap)
+
+        // 5. Word wrap + font scaling: too much text for a small box
+        const wrapAndScale = new PdfTextFormField({ form: acroform })
+        wrapAndScale.fieldType = 'Text'
+        wrapAndScale.name = 'WrapAndScale'
+        wrapAndScale.rect = [50, 340, 250, 450]
+        wrapAndScale.defaultAppearance = '/Helv 12 Tf 0 g'
+        wrapAndScale.multiline = true
+        wrapAndScale.isWidget = true
+        wrapAndScale.parentRef = pageRef
+        wrapAndScale.value =
+            'Lots of text crammed into a small box. It wraps and the font shrinks to make everything fit within the constrained height of the field. More text to force scaling down.'
+        acroform.fields.push(wrapAndScale)
+
+        for (const field of acroform.fields) {
+            expect(field.generateAppearance()).toBe(true)
+        }
+
+        acroform.needAppearances = false
+        await document.acroForm.write(acroform)
+
+        await server.commands.writeFile(
+            './test/unit/tmp/word-wrap-and-scaling.pdf',
+            bytesToBase64(document.toBytes()),
+            { encoding: 'base64' },
+        )
+    })
+})
+
 describe('AcroForm Appearance Stream Font Resources', () => {
     function makeDrFontDict(): PdfDictionary {
         const helvFont = new PdfDictionary()

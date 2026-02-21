@@ -32,7 +32,7 @@ import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { PdfAcroFormManager } from '../acroform/manager.js'
-import { PdfFontManager } from '../fonts/font-manager.js'
+import { PdfFontManager } from '../fonts/manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfArray } from '../index.js'
 

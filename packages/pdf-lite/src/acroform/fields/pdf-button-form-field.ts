@@ -102,10 +102,14 @@ export class PdfButtonFormField extends PdfFormField {
             contentStream: '',
         })
 
+        // Merge own flags with parent flags so inherited bits (e.g. Radio) are
+        // not lost when a child widget has its own Ff entry (even Ff: 0).
+        const effectiveFlags =
+            this.flags.flags | (this.parent?.flags?.flags ?? 0)
         const yesContent = PdfButtonAppearanceStream.buildYesContent(
             width,
             height,
-            this.flags,
+            effectiveFlags,
         )
         this._appearanceStreamYes = new PdfButtonAppearanceStream({
             width,

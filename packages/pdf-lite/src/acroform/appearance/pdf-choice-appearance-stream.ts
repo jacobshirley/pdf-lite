@@ -18,6 +18,8 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         resolvedFonts?: Map<string, PdfFont>
         isUnicode?: boolean
         reverseEncodingMap?: Map<string, number>
+        displayOptions?: string[]
+        selectedIndex?: number
     }) {
         const [x1, y1, x2, y2] = ctx.rect
         const width = x2 - x1
@@ -33,38 +35,69 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         const reverseEncodingMap = ctx.reverseEncodingMap
 
         const padding = 2
-        const textY = (height - ctx.da.fontSize) / 2 + ctx.da.fontSize * 0.2
-
         const isCombo = new PdfFormFieldFlags(ctx.flags).combo
 
         const g = new PdfGraphics({ resolvedFonts: ctx.resolvedFonts })
         g.beginMarkedContent()
         g.save()
-        g.beginText()
-        g.setDefaultAppearance(ctx.da)
-        g.moveTo(padding, textY)
-        g.showText(ctx.value, isUnicode, reverseEncodingMap)
-        g.endText()
 
-        if (isCombo) {
-            const arrowWidth = height * 0.8
-            const arrowX = width - arrowWidth - 2
-            const arrowY = height / 2
-            const arrowSize = height * 0.3
+        if (!isCombo && ctx.displayOptions && ctx.displayOptions.length > 0) {
+            // Listbox: render all items, highlight the selected one
+            const lineHeight = ctx.da.fontSize + 4
+            const selectedIndex = ctx.selectedIndex ?? -1
 
-            g.save()
-            g.setFillGray(0.5)
-            g.movePath(arrowX + arrowWidth / 2, arrowY - arrowSize / 3)
-            g.lineTo(
-                arrowX + arrowWidth / 2 - arrowSize / 2,
-                arrowY + arrowSize / 3,
-            )
-            g.lineTo(
-                arrowX + arrowWidth / 2 + arrowSize / 2,
-                arrowY + arrowSize / 3,
-            )
-            g.fill()
-            g.restore()
+            for (let i = 0; i < ctx.displayOptions.length; i++) {
+                const itemY = height - (i + 1) * lineHeight
+
+                // Stop rendering if we've gone below the visible area
+                if (itemY + lineHeight < 0) break
+
+                if (i === selectedIndex) {
+                    // Draw highlight background using the PDF re (rectangle) operator
+                    g.save()
+                    g.setFillRGB(0.376, 0.62, 0.671)
+                    g.raw(`0 ${itemY} ${width} ${lineHeight} re`)
+                    g.fill()
+                    g.restore()
+                }
+
+                const textY = itemY + lineHeight * 0.25
+                g.beginText()
+                g.setDefaultAppearance(ctx.da)
+                g.moveTo(padding, textY)
+                g.showText(ctx.displayOptions[i], isUnicode, reverseEncodingMap)
+                g.endText()
+            }
+        } else {
+            // Combo (dropdown) or no options: show selected value only
+            const textY = (height - ctx.da.fontSize) / 2 + ctx.da.fontSize * 0.2
+
+            g.beginText()
+            g.setDefaultAppearance(ctx.da)
+            g.moveTo(padding, textY)
+            g.showText(ctx.value, isUnicode, reverseEncodingMap)
+            g.endText()
+
+            if (isCombo) {
+                const arrowWidth = height * 0.8
+                const arrowX = width - arrowWidth - 2
+                const arrowY = height / 2
+                const arrowSize = height * 0.3
+
+                g.save()
+                g.setFillGray(0.5)
+                g.movePath(arrowX + arrowWidth / 2, arrowY - arrowSize / 3)
+                g.lineTo(
+                    arrowX + arrowWidth / 2 - arrowSize / 2,
+                    arrowY + arrowSize / 3,
+                )
+                g.lineTo(
+                    arrowX + arrowWidth / 2 + arrowSize / 2,
+                    arrowY + arrowSize / 3,
+                )
+                g.fill()
+                g.restore()
+            }
         }
 
         g.restore()

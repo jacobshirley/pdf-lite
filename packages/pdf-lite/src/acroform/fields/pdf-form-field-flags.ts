@@ -6,8 +6,11 @@ import { PdfNumber } from '../../core/objects/pdf-number.js'
  * Extends PdfNumber so it can be stored directly in a PDF dictionary.
  */
 export class PdfFormFieldFlags extends PdfNumber {
-    constructor(value: number | PdfFormFieldFlags = 0) {
+    constructor(value: number | PdfNumber | PdfFormFieldFlags = 0) {
         super(value)
+        this.preTokens = typeof value === 'number' ? undefined : value.preTokens
+        this.postTokens =
+            typeof value === 'number' ? undefined : value.postTokens
     }
 
     get flags(): number {

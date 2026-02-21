@@ -4,6 +4,8 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfAnnotationFlags } from './pdf-annotation-flags.js'
+import { PdfName } from '../core/objects/pdf-name.js'
+import { PdfString } from '../core/objects/pdf-string.js'
 
 export type PdfAppearanceStreamDictionary = PdfDictionary<{
     N: PdfObjectReference | PdfDictionary
@@ -13,9 +15,28 @@ export type PdfAppearanceStreamDictionary = PdfDictionary<{
 
 /**
  * Base class for all PDF annotations.
- * Owns: Rect, annotation flags (F), AP (appearance streams), P (page reference).
  */
-export class PdfAnnotation extends PdfIndirectObject<PdfDictionary> {
+export class PdfAnnotation extends PdfIndirectObject<
+    PdfDictionary<{
+        Type: PdfName
+        Subtype: PdfName
+        AS: PdfName
+        Ff: PdfNumber
+        FT: PdfName
+        T: PdfString
+        DV: PdfString | PdfName
+        V: PdfString | PdfName
+        DA: PdfString
+        Opt: PdfArray<PdfString | PdfArray<PdfString>>
+        MaxLen: PdfNumber
+        Q: PdfNumber
+        Kids: PdfArray<PdfObjectReference>
+        Rect: PdfArray<PdfNumber>
+        F: PdfNumber
+        AP?: PdfAppearanceStreamDictionary
+        P?: PdfObjectReference
+    }>
+> {
     private _annotationFlags: PdfAnnotationFlags
 
     constructor(options?: { other?: PdfIndirectObject }) {

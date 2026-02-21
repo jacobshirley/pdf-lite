@@ -22,7 +22,7 @@ import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
  * Subclasses must implement generateAppearance().
  */
 export abstract class PdfFormField extends PdfWidgetAnnotation {
-    private _fieldFlags?: PdfFormFieldFlags
+    flags: PdfFormFieldFlags
     private _parent?: PdfFormField
     defaultGenerateAppearance: boolean = true
     protected _appearanceStream?: PdfAppearanceStream
@@ -39,11 +39,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         if (options?.parent) {
             this._parent = options.parent
         }
-        const existingFf = this.content.get('Ff')?.as(PdfNumber)?.value
-        if (existingFf !== undefined) {
-            this._fieldFlags = new PdfFormFieldFlags(existingFf)
-            this.content.set('Ff', this._fieldFlags)
-        }
+        this.flags = new PdfFormFieldFlags(this.content.get('Ff'))
+        this.flags.onChange(() => {
+            this.content.set('Ff', this.flags)
+        })
     }
 
     get parent(): PdfFormField | undefined {
@@ -287,26 +286,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
     }
 
-    // Field flags (Ff) - with parent inheritance
-    get flags(): PdfFormFieldFlags {
-        if (!this._fieldFlags && this.parent?.flags) {
-            return this.parent.flags
-        }
-
-        this._fieldFlags ??= new PdfFormFieldFlags(0)
-        return this._fieldFlags
-    }
-
-    set flags(v: number | PdfFormFieldFlags) {
-        this._fieldFlags ??= new PdfFormFieldFlags(0)
-        this._fieldFlags.flags = v
-
-        this.content.set('Ff', this._fieldFlags)
-    }
-
     get readOnly(): boolean {
         return this.flags.readOnly
     }
+
     set readOnly(v: boolean) {
         this.flags.readOnly = v
     }
@@ -431,25 +414,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
 
     set quadding(q: number) {
         this.content.set('Q', new PdfNumber(q))
-    }
-
-    get options(): string[] {
-        const opt =
-            this.content.get('Opt')?.as(PdfArray<PdfString>) ??
-            this.parent?.content.get('Opt')?.as(PdfArray<PdfString>)
-        if (!opt) return []
-        return opt.items.map((item) => item.value)
-    }
-
-    set options(options: string[]) {
-        if (options.length === 0) {
-            this.content.delete('Opt')
-            return
-        }
-        const optArray = new PdfArray<PdfString>(
-            options.map((opt) => new PdfString(opt)),
-        )
-        this.content.set('Opt', optArray)
     }
 
     get defaultAppearance(): string | null {

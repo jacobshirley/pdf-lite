@@ -298,13 +298,8 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     set flags(v: number | PdfFormFieldFlags) {
-        if (!this._fieldFlags) {
-            this._fieldFlags =
-                v instanceof PdfFormFieldFlags ? v : new PdfFormFieldFlags(v)
-        } else {
-            this._fieldFlags.value =
-                v instanceof PdfFormFieldFlags ? v.value : v
-        }
+        this._fieldFlags ??= new PdfFormFieldFlags(0)
+        this._fieldFlags.flags = v
 
         this.content.set('Ff', this._fieldFlags)
     }
@@ -421,6 +416,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     get commitOnSelChange(): boolean {
         return this.flags.commitOnSelChange
     }
+
     set commitOnSelChange(v: boolean) {
         this.flags.commitOnSelChange = v
     }

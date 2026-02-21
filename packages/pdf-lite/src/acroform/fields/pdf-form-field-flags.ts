@@ -14,8 +14,8 @@ export class PdfFormFieldFlags extends PdfNumber {
         return this.value
     }
 
-    set flags(v: number) {
-        this.value = v
+    set flags(v: number | PdfFormFieldFlags) {
+        this.value = v instanceof PdfFormFieldFlags ? v.value : v
     }
 
     private getFlag(bit: number): boolean {

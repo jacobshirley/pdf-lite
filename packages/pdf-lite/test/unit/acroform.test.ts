@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { PdfDocument } from '../../src/pdf/pdf-document'
 import { server } from 'vitest/browser'
 import { ByteArray } from '../../src/types'
@@ -16,6 +16,12 @@ import {
     PdfStream,
 } from '../../src'
 import { PdfName } from '../../src/core/objects/pdf-name'
+import type {
+    PdfJsEngine,
+    PdfJsEvent,
+} from '../../src/acroform/js/pdf-js-engine'
+import { PdfJavaScriptAction } from '../../src/acroform/js/pdf-javascript-action'
+import { PdfFieldActions } from '../../src/acroform/js/pdf-field-actions'
 import {
     buildEncodingMap,
     decodeWithFontEncoding,
@@ -1867,5 +1873,190 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         const fontDict = resources!.get('Font')?.as(PdfDictionary)
         expect(fontDict).toBeDefined()
         expect(fontDict!.get('ZaDb')).toBeDefined()
+    })
+})
+
+// ---------------------------------------------------------------------------
+// AcroForm JavaScript Action Execution (using template.pdf)
+//
+// The template PDF stores these /AA validate actions (resolved from indirect
+// object references during fromDocument):
+//   - "Client Name"    → /AA/V: event.value = event.value.toUpperCase()
+//   - "Onboarding Name"→ /AA/V: event.value = event.value.toUpperCase()
+//   - "N"              → /AA/V: event.value = event.value.toUpperCase()
+//   - "date 1/2"       → /AA/K: AFDate_KeystrokeEx("ddmmyyyy")
+//                         /AA/F: AFDate_FormatEx("ddmmyyyy")
+// ---------------------------------------------------------------------------
+
+describe('AcroForm JavaScript Actions — template.pdf', () => {
+    it('resolves and reads the validate (uppercase) action on Client Name', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = (await document.acroForm.read())!
+
+        const clientNameField = acroform.fields.find(
+            (f) => f.name === 'Client Name',
+        )!
+        expect(clientNameField).toBeDefined()
+
+        // /AA was stored as an indirect reference in the PDF; fromDocument
+        // resolves it so field.actions is available synchronously.
+        const actions = clientNameField.actions
+        expect(actions).not.toBeNull()
+
+        const validateAction = actions!.validate
+        expect(validateAction).not.toBeNull()
+        expect(validateAction!.code).toBe(
+            'event.value = event.value.toUpperCase()',
+        )
+    })
+
+    it('resolves date field keystroke and format actions', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = (await document.acroForm.read())!
+
+        const date1 = acroform.fields.find((f) => f.name === 'date 1')!
+        expect(date1).toBeDefined()
+
+        const actions = date1.actions
+        expect(actions).not.toBeNull()
+        expect(actions!.keystroke).not.toBeNull()
+        expect(actions!.keystroke!.code).toBe('AFDate_KeystrokeEx("ddmmyyyy");')
+        expect(actions!.format).not.toBeNull()
+        expect(actions!.format!.code).toBe('AFDate_FormatEx("ddmmyyyy");')
+        // No validate or calculate on the date field
+        expect(actions!.validate).toBeNull()
+        expect(actions!.calculate).toBeNull()
+    })
+
+    it('executes the uppercase validate action via a mock JS engine on importData', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = (await document.acroForm.read())!
+
+        // Engine that actually evaluates the JS string against the event
+        const capturedEvents: { code: string; event: PdfJsEvent }[] = []
+        const engine: PdfJsEngine = {
+            execute(code, event) {
+                capturedEvents.push({ code, event: { ...event } })
+                // Run the PDF JS code in the context of `event`
+                // eslint-disable-next-line no-new-func
+                new Function('event', code)(event)
+            },
+        }
+        acroform.jsEngine = engine
+
+        acroform.importData({ 'Client Name': 'john smith' } as any)
+
+        // Find the validate call for Client Name
+        const validateCall = capturedEvents.find(
+            (c) =>
+                c.event.fieldName === 'Client Name' &&
+                c.code.includes('toUpperCase'),
+        )
+        expect(validateCall).toBeDefined()
+        expect(validateCall!.event.value).toBe('john smith')
+        expect(validateCall!.event.willCommit).toBe(true)
+        expect(validateCall!.event.rc).toBe(true)
+
+        // Confirm the JS itself works: running the code uppercases the value
+        const fakeEvent = { value: 'john smith', rc: true }
+        // eslint-disable-next-line no-new-func
+        new Function('event', validateCall!.code)(fakeEvent)
+        expect(fakeEvent.value).toBe('JOHN SMITH')
+    })
+
+    it('fires validate (per-field) before calculate (post-sweep)', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = (await document.acroForm.read())!
+
+        // The template has validate on "Client Name" and "N".
+        // Programmatically add a calculate action to "N" so we can observe ordering.
+        const nField = acroform.fields.find((f) => f.name === 'N')!
+        expect(nField).toBeDefined()
+        // "N" already has /AA (validate). Add /C (calculate) to the resolved dict.
+        const nAA = nField.actions // already an inline PdfFieldActions after resolution
+        expect(nAA).not.toBeNull()
+        // Patch the underlying dict directly since we need an inline C entry
+        const calcActionDict = new PdfDictionary()
+        calcActionDict.set('S', new PdfName('JavaScript'))
+        calcActionDict.set('JS', new PdfString('/* calculate N */'))
+        ;(nField.content.get('AA') as PdfDictionary).set('C', calcActionDict)
+
+        const callOrder: string[] = []
+        const engine: PdfJsEngine = {
+            execute(code) {
+                callOrder.push(code)
+            },
+        }
+        acroform.jsEngine = engine
+
+        acroform.importData({ 'Client Name': 'alice', N: '42' } as any)
+
+        const validateIdx = callOrder.findIndex((c) =>
+            c.includes('toUpperCase'),
+        )
+        const calcIdx = callOrder.findIndex((c) => c.includes('calculate N'))
+        expect(validateIdx).toBeGreaterThanOrEqual(0)
+        expect(calcIdx).toBeGreaterThanOrEqual(0)
+        // validate (per-field, during import loop) fires before calculate (post-sweep)
+        expect(validateIdx).toBeLessThan(calcIdx)
+    })
+
+    it('engine is called for all fields with validate actions', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = (await document.acroForm.read())!
+
+        const fieldsWithValidate = acroform.fields.filter(
+            (f) => f.actions?.validate !== null,
+        )
+        // Template has validate on: Client Name, N, Onboarding Name,
+        // "as my Intermediary...", undefined_2
+        expect(fieldsWithValidate.length).toBeGreaterThanOrEqual(3)
+
+        const calledFieldNames = new Set<string>()
+        const engine: PdfJsEngine = {
+            execute(_code, event) {
+                calledFieldNames.add(event.fieldName)
+            },
+        }
+        acroform.jsEngine = engine
+
+        // importData only fires validate for fields that are in the import map
+        acroform.importData({
+            'Client Name': 'test',
+            'Onboarding Name': 'test2',
+        } as any)
+
+        expect(calledFieldNames.has('Client Name')).toBe(true)
+        expect(calledFieldNames.has('Onboarding Name')).toBe(true)
     })
 })

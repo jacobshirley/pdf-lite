@@ -1,7 +1,7 @@
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 import { PdfStream } from '../../core/objects/pdf-stream.js'
 
-export interface XfaFieldData {
+export interface PdfXfaFieldData {
     name: string
     value: string
 }
@@ -30,7 +30,7 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
         this.writeXml(xml)
     }
 
-    updateFields(fields: XfaFieldData[]): void {
+    updateFields(fields: PdfXfaFieldData[]): void {
         if (fields.length === 0) return
 
         let xml = this.readXml()

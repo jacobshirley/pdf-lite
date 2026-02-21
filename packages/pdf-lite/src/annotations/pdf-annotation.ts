@@ -35,6 +35,10 @@ export class PdfAnnotation extends PdfIndirectObject<
         F: PdfNumber
         AP?: PdfAppearanceStreamDictionary
         P?: PdfObjectReference
+        /** Additional Actions dictionary (field trigger events). */
+        AA?: PdfDictionary
+        /** Primary activation action (e.g. push-button click). */
+        A?: PdfDictionary
     }>
 > {
     private _annotationFlags: PdfAnnotationFlags

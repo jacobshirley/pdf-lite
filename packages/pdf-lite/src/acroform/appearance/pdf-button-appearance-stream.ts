@@ -2,6 +2,7 @@ import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfAppearanceStream } from './pdf-appearance-stream.js'
 import { PdfGraphics } from './pdf-graphics.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
+import { PdfFormFieldFlags } from '../fields/pdf-form-field-flags.js'
 
 /**
  * Appearance stream for button fields (checkboxes, radio buttons).
@@ -24,10 +25,10 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
     static buildYesContent(
         width: number,
         height: number,
-        flags: number,
+        flags: number | PdfFormFieldFlags,
     ): string {
         const size = Math.min(width, height)
-        const isRadio = (flags & 32768) !== 0
+        const isRadio = new PdfFormFieldFlags(flags).radio
 
         const g = new PdfGraphics()
 

@@ -1,41 +1,29 @@
 import { PdfNumber } from '../../core/objects/pdf-number.js'
-import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 
 /**
  * Field-specific Ff flag accessors for form fields.
  * These are separate from annotation flags (F field).
+ * Extends PdfNumber so it can be stored directly in a PDF dictionary.
  */
-export class PdfFormFieldFlags {
-    dict: PdfDictionary
-    parentDict?: PdfDictionary
-
-    constructor(dict: PdfDictionary, parentDict?: PdfDictionary) {
-        this.dict = dict
-        this.parentDict = parentDict
+export class PdfFormFieldFlags extends PdfNumber {
+    constructor(value: number | PdfFormFieldFlags = 0) {
+        super(value)
     }
 
     get flags(): number {
-        return (
-            this.dict.get('Ff')?.as(PdfNumber)?.value ??
-            this.parentDict?.get('Ff')?.as(PdfNumber)?.value ??
-            0
-        )
+        return this.value
     }
 
-    set flags(flags: number) {
-        this.dict.set('Ff', new PdfNumber(flags))
+    set flags(v: number) {
+        this.value = v
     }
 
     private getFlag(bit: number): boolean {
         return (this.flags & bit) !== 0
     }
 
-    private setFlag(bit: number, value: boolean): void {
-        if (value) {
-            this.flags = this.flags | bit
-        } else {
-            this.flags = this.flags & ~bit
-        }
+    private setFlag(bit: number, val: boolean): void {
+        this.flags = val ? this.flags | bit : this.flags & ~bit
     }
 
     get readOnly(): boolean {

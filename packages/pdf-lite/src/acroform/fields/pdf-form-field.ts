@@ -14,6 +14,7 @@ import type { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js
 import type { FormContext, PdfFieldType } from './types.js'
 import { PdfFieldType as PdfFieldTypeConst } from './types.js'
 import { PdfFontEncodingError } from '../../errors.js'
+import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -21,6 +22,7 @@ import { PdfFontEncodingError } from '../../errors.js'
  * Subclasses must implement generateAppearance().
  */
 export abstract class PdfFormField extends PdfWidgetAnnotation {
+    private _fieldFlags?: PdfFormFieldFlags
     private _parent?: PdfFormField
     defaultGenerateAppearance: boolean = true
     protected _appearanceStream?: PdfAppearanceStream
@@ -36,6 +38,11 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         this.form = options?.form
         if (options?.parent) {
             this._parent = options.parent
+        }
+        const existingFf = this.content.get('Ff')?.as(PdfNumber)?.value
+        if (existingFf !== undefined) {
+            this._fieldFlags = new PdfFormFieldFlags(existingFf)
+            this.content.set('Ff', this._fieldFlags)
         }
     }
 
@@ -146,11 +153,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     set defaultValue(val: string) {
-        if (this.fieldType === 'Button') {
-            this.content.set('DV', new PdfName(val))
-        } else {
-            this.content.set('DV', new PdfString(val))
-        }
+        this.content.set('DV', new PdfString(val))
     }
 
     get value(): string {
@@ -173,25 +176,8 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const fieldParent = this.parent?.content.get('FT')
             ? this.parent
             : undefined
-        const fieldType = this.fieldType
-        if (fieldType === 'Button') {
-            val = val instanceof PdfString ? val.value : val
-            if (val.trim() === '') {
-                this.content.delete('V')
-                fieldParent?.content.delete('V')
-                this.content.delete('AS')
-                return
-            }
-            this.content.set('V', new PdfName(val))
-            fieldParent?.content.set('V', new PdfName(val))
-            this.content.set('AS', new PdfName(val))
-        } else {
-            const pdfVal = val instanceof PdfString ? val : new PdfString(val)
-            this.content.set('V', pdfVal)
-            fieldParent?.content.set('V', pdfVal)
-        }
-
-        if (this.defaultGenerateAppearance) {
+        const generateAppearance = this._storeValue(val, fieldParent)
+        if (generateAppearance && this.defaultGenerateAppearance) {
             this.tryGenerateAppearance(this)
             for (const sibling of this.siblings) {
                 if (
@@ -205,7 +191,22 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
     }
 
-    private tryGenerateAppearance(field: PdfFormField): void {
+    /**
+     * Writes the value to the dictionary. Returns true if appearance generation
+     * should proceed, false to skip it (e.g. when value was cleared).
+     * Override in subclasses to change the stored representation.
+     */
+    protected _storeValue(
+        val: string | PdfString,
+        fieldParent: PdfFormField | undefined,
+    ): boolean {
+        const pdfVal = val instanceof PdfString ? val : new PdfString(val)
+        this.content.set('V', pdfVal)
+        fieldParent?.content.set('V', pdfVal)
+        return true
+    }
+
+    protected tryGenerateAppearance(field: PdfFormField): void {
         try {
             field.generateAppearance()
         } catch (e) {
@@ -216,24 +217,11 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     get checked(): boolean {
-        if (this.fieldType === 'Button') {
-            const v = this.content.get('V') ?? this.parent?.content.get('V')
-            return v instanceof PdfName && v.value === 'Yes'
-        }
         return false
     }
 
-    set checked(isChecked: boolean) {
-        if (this.fieldType === 'Button') {
-            const target = this.parent ?? this
-            if (isChecked) {
-                target.content.set('V', new PdfName('Yes'))
-                this.content.set('AS', new PdfName('Yes'))
-            } else {
-                target.content.set('V', new PdfName('Off'))
-                this.content.set('AS', new PdfName('Off'))
-            }
-        }
+    set checked(_isChecked: boolean) {
+        // no-op for non-button fields; overridden in PdfButtonFormField
     }
 
     get fontSize(): number | null {
@@ -300,141 +288,141 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     // Field flags (Ff) - with parent inheritance
-    get flags(): number {
-        const own = this.content.get('Ff')?.as(PdfNumber)?.value
-        if (own !== undefined) return own
-        return this.parent?.flags ?? 0
-    }
-    set flags(flags: number) {
-        this.content.set('Ff', new PdfNumber(flags))
-    }
-
-    private getFlag(bit: number): boolean {
-        return (this.flags & bit) !== 0
-    }
-
-    private setFlag(bit: number, value: boolean): void {
-        if (value) {
-            this.flags = this.flags | bit
-        } else {
-            this.flags = this.flags & ~bit
+    get flags(): PdfFormFieldFlags {
+        if (!this._fieldFlags && this.parent?.flags) {
+            return this.parent.flags
         }
+
+        this._fieldFlags ??= new PdfFormFieldFlags(0)
+        return this._fieldFlags
+    }
+
+    set flags(v: number | PdfFormFieldFlags) {
+        if (!this._fieldFlags) {
+            this._fieldFlags =
+                v instanceof PdfFormFieldFlags ? v : new PdfFormFieldFlags(v)
+        } else {
+            this._fieldFlags.value =
+                v instanceof PdfFormFieldFlags ? v.value : v
+        }
+
+        this.content.set('Ff', this._fieldFlags)
     }
 
     get readOnly(): boolean {
-        return this.getFlag(1)
+        return this.flags.readOnly
     }
     set readOnly(v: boolean) {
-        this.setFlag(1, v)
+        this.flags.readOnly = v
     }
 
     get required(): boolean {
-        return this.getFlag(2)
+        return this.flags.required
     }
     set required(v: boolean) {
-        this.setFlag(2, v)
+        this.flags.required = v
     }
 
     get multiline(): boolean {
-        return this.getFlag(4096)
+        return this.flags.multiline
     }
     set multiline(v: boolean) {
-        this.setFlag(4096, v)
+        this.flags.multiline = v
     }
 
     get password(): boolean {
-        return this.getFlag(8192)
+        return this.flags.password
     }
     set password(v: boolean) {
-        this.setFlag(8192, v)
+        this.flags.password = v
     }
 
     get comb(): boolean {
-        return this.getFlag(16777216)
+        return this.flags.comb
     }
 
     get combField(): boolean {
-        return this.getFlag(16777216)
+        return this.flags.comb
     }
     set combField(v: boolean) {
-        this.setFlag(16777216, v)
+        this.flags.comb = v
     }
 
     get combo(): boolean {
-        return this.getFlag(131072)
+        return this.flags.combo
     }
     set combo(v: boolean) {
-        this.setFlag(131072, v)
+        this.flags.combo = v
     }
 
     get radio(): boolean {
-        return this.getFlag(32768)
+        return this.flags.radio
     }
     set radio(v: boolean) {
-        this.setFlag(32768, v)
+        this.flags.radio = v
     }
 
     get noToggleToOff(): boolean {
-        return this.getFlag(16384)
+        return this.flags.noToggleToOff
     }
     set noToggleToOff(v: boolean) {
-        this.setFlag(16384, v)
+        this.flags.noToggleToOff = v
     }
 
     get noExport(): boolean {
-        return this.getFlag(4)
+        return this.flags.noExport
     }
     set noExport(v: boolean) {
-        this.setFlag(4, v)
+        this.flags.noExport = v
     }
 
     get pushButton(): boolean {
-        return this.getFlag(65536)
+        return this.flags.pushButton
     }
     set pushButton(v: boolean) {
-        this.setFlag(65536, v)
+        this.flags.pushButton = v
     }
 
     get edit(): boolean {
-        return this.getFlag(262144)
+        return this.flags.edit
     }
     set edit(v: boolean) {
-        this.setFlag(262144, v)
+        this.flags.edit = v
     }
 
     get sort(): boolean {
-        return this.getFlag(524288)
+        return this.flags.sort
     }
     set sort(v: boolean) {
-        this.setFlag(524288, v)
+        this.flags.sort = v
     }
 
     get multiSelect(): boolean {
-        return this.getFlag(2097152)
+        return this.flags.multiSelect
     }
     set multiSelect(v: boolean) {
-        this.setFlag(2097152, v)
+        this.flags.multiSelect = v
     }
 
     get doNotSpellCheck(): boolean {
-        return this.getFlag(4194304)
+        return this.flags.doNotSpellCheck
     }
     set doNotSpellCheck(v: boolean) {
-        this.setFlag(4194304, v)
+        this.flags.doNotSpellCheck = v
     }
 
     get doNotScroll(): boolean {
-        return this.getFlag(8388608)
+        return this.flags.doNotScroll
     }
     set doNotScroll(v: boolean) {
-        this.setFlag(8388608, v)
+        this.flags.doNotScroll = v
     }
 
     get commitOnSelChange(): boolean {
-        return this.getFlag(67108864)
+        return this.flags.commitOnSelChange
     }
     set commitOnSelChange(v: boolean) {
-        this.setFlag(67108864, v)
+        this.flags.commitOnSelChange = v
     }
 
     get quadding(): number {
@@ -516,12 +504,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }): boolean
 
     getAppearanceStream(): PdfStream | undefined {
-        if (this.fieldType === 'Button') {
-            if (this.checked && this._appearanceStreamYes) {
-                return this._appearanceStreamYes?.content
-            }
-            return this._appearanceStream?.content
-        }
         return this._appearanceStream?.content
     }
 
@@ -529,32 +511,19 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         | { primary: PdfAppearanceStream; secondary?: PdfAppearanceStream }
         | undefined {
         if (!this._appearanceStream) return undefined
-        return {
-            primary: this._appearanceStream,
-            secondary:
-                this.fieldType === 'Button'
-                    ? this._appearanceStreamYes
-                    : undefined,
-        }
+        return { primary: this._appearanceStream }
     }
 
     setAppearanceReference(
         appearanceStreamRef: PdfObjectReference,
-        appearanceStreamYesRef?: PdfObjectReference,
+        _appearanceStreamYesRef?: PdfObjectReference,
     ): void {
         let apDict = this.appearanceStreamDict
         if (!apDict) {
             apDict = new PdfDictionary()
             this.appearanceStreamDict = apDict
         }
-        if (appearanceStreamYesRef && this.fieldType === 'Button') {
-            const stateDict = new PdfDictionary()
-            stateDict.set('Off', appearanceStreamRef)
-            stateDict.set('Yes', appearanceStreamYesRef)
-            apDict.set('N', stateDict)
-        } else {
-            apDict.set('N', appearanceStreamRef)
-        }
+        apDict.set('N', appearanceStreamRef)
     }
 
     private static _fallbackCtor?: new (options?: {
@@ -564,7 +533,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }) => PdfFormField
 
     private static _registry = new Map<
-        string,
+        'Sig' | 'Btn' | 'Tx' | 'Ch',
         new (options?: {
             other?: PdfIndirectObject
             form?: FormContext<PdfFormField>
@@ -573,7 +542,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     >()
 
     static registerFieldType(
-        ft: string,
+        ft: 'Sig' | 'Btn' | 'Tx' | 'Ch',
         ctor: new (options?: {
             other?: PdfIndirectObject
             form?: FormContext<PdfFormField>
@@ -592,7 +561,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         form: FormContext<PdfFormField>
         parent?: PdfFormField
     }): PdfFormField {
-        let ft: string | undefined
+        let ft: 'Sig' | 'Btn' | 'Tx' | 'Ch' | undefined
         try {
             const dict = options.other.content.as(PdfDictionary)
             ft = dict.get('FT')?.as(PdfName)?.value

@@ -14,9 +14,9 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
     constructor(options: {
         x?: number
         y?: number
-        width: number
-        height: number
-        contentStream: string
+        width?: number
+        height?: number
+        contentStream?: string
         resources?: PdfDictionary
     }) {
         const appearanceDict = new PdfDictionary()
@@ -28,8 +28,8 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
             new PdfArray([
                 new PdfNumber(options.x ?? 0),
                 new PdfNumber(options.y ?? 0),
-                new PdfNumber(options.width),
-                new PdfNumber(options.height),
+                new PdfNumber(options.width ?? 100),
+                new PdfNumber(options.height ?? 100),
             ]),
         )
 
@@ -39,17 +39,21 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
 
         const stream = new PdfStream({
             header: appearanceDict,
-            original: options.contentStream,
+            original: options.contentStream ?? '',
         })
 
         super({ content: stream })
     }
 
-    get raw() {
+    get contentStream(): string {
         return this.content.rawAsString
     }
 
-    get rawAsString(): string {
-        return this.content.rawAsString
+    set contentStream(newContent: string) {
+        this.content.rawAsString = newContent
+    }
+
+    set graphics(g: PdfGraphics) {
+        this.contentStream = g.build()
     }
 }

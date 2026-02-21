@@ -497,22 +497,18 @@ export class PdfFont extends PdfDictionary<{
     static readonly HELVETICA = PdfFont.fromStandardFont('Helvetica', [
         ...PdfFont._HELVETICA_WIDTHS,
     ])
-    static readonly HELV = PdfFont.HELVETICA // Alias for backward compatibility with old code using PdfFont.HELV
     static readonly HELVETICA_BOLD = PdfFont.fromStandardFont(
         'Helvetica-Bold',
         [...PdfFont._HELVETICA_BOLD_WIDTHS],
     )
-    static readonly HELV_BOLD = PdfFont.HELVETICA_BOLD // Alias for backward compatibility with old code using PdfFont.HELV_BOLD
     static readonly HELVETICA_OBLIQUE = PdfFont.fromStandardFont(
         'Helvetica-Oblique',
         [...PdfFont._HELVETICA_WIDTHS],
     )
-    static readonly HELV_OBLIQUE = PdfFont.HELVETICA_OBLIQUE // Alias for backward compatibility with old code using PdfFont.HELV_OBLIQUE
     static readonly HELVETICA_BOLD_OBLIQUE = PdfFont.fromStandardFont(
         'Helvetica-BoldOblique',
         [...PdfFont._HELVETICA_BOLD_WIDTHS],
     )
-    static readonly HELV_BOLD_OBLIQUE = PdfFont.HELVETICA_BOLD_OBLIQUE // Alias for backward compatibility with old code using PdfFont.HELV_BOLD_OBLIQUE
     static readonly TIMES_ROMAN = PdfFont.fromStandardFont('Times-Roman', [
         ...PdfFont._TIMES_ROMAN_WIDTHS,
     ])
@@ -530,22 +526,18 @@ export class PdfFont extends PdfDictionary<{
         'Courier',
         Array(95).fill(600),
     )
-    static readonly COUR = PdfFont.COURIER // Alias for backward compatibility with old code using PdfFont.COUR
     static readonly COURIER_BOLD = PdfFont.fromStandardFont(
         'Courier-Bold',
         Array(95).fill(600),
     )
-    static readonly COUR_BOLD = PdfFont.COURIER_BOLD // Alias for backward compatibility with old code using PdfFont.COUR_BOLD
     static readonly COURIER_OBLIQUE = PdfFont.fromStandardFont(
         'Courier-Oblique',
         Array(95).fill(600),
     )
-    static readonly COUR_OBLIQUE = PdfFont.COURIER_OBLIQUE // Alias for backward compatibility with old code using PdfFont.COUR_OBLIQUE
     static readonly COURIER_BOLD_OBLIQUE = PdfFont.fromStandardFont(
         'Courier-BoldOblique',
         Array(95).fill(600),
     )
-    static readonly COUR_BOLD_OBLIQUE = PdfFont.COURIER_BOLD_OBLIQUE // Alias for backward compatibility with old code using PdfFont.COUR_BOLD_OBLIQUE
     static readonly SYMBOL = PdfFont.fromStandardFont('Symbol')
     static readonly ZAPF_DINGBATS = PdfFont.fromStandardFont('ZapfDingbats')
 
@@ -560,9 +552,13 @@ export class PdfFont extends PdfDictionary<{
             ['Helvetica-BoldOblique', PdfFont.HELVETICA_BOLD_OBLIQUE],
             ['Helv-BoldOblique', PdfFont.HELVETICA_BOLD_OBLIQUE], // Alias for backward compatibility with old code using 'Helv-BoldOblique'
             ['Times-Roman', PdfFont.TIMES_ROMAN],
+            ['TiRo', PdfFont.TIMES_ROMAN],
             ['Times-Bold', PdfFont.TIMES_BOLD],
+            ['TiBo', PdfFont.TIMES_BOLD],
             ['Times-Italic', PdfFont.TIMES_ITALIC],
+            ['TiIt', PdfFont.TIMES_ITALIC],
             ['Times-BoldItalic', PdfFont.TIMES_BOLD_ITALIC],
+            ['TiBI', PdfFont.TIMES_BOLD_ITALIC],
             ['Courier', PdfFont.COURIER],
             ['Cour', PdfFont.COURIER], // Alias for backward compatibility with old code using 'Cour'
             ['Courier-Bold', PdfFont.COURIER_BOLD],
@@ -571,6 +567,9 @@ export class PdfFont extends PdfDictionary<{
             ['Cour-Oblique', PdfFont.COURIER_OBLIQUE], // Alias for backward compatibility with old code using 'Cour-Oblique'
             ['Courier-BoldOblique', PdfFont.COURIER_BOLD_OBLIQUE],
             ['Cour-BoldOblique', PdfFont.COURIER_BOLD_OBLIQUE], // Alias for backward compatibility with old code using 'Cour-BoldOblique'
+            ['Symbol', PdfFont.SYMBOL],
+            ['ZapfDingbats', PdfFont.ZAPF_DINGBATS],
+            ['ZaDb', PdfFont.ZAPF_DINGBATS],
         ])
 
     /**

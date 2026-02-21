@@ -1,3 +1,6 @@
 export { PdfXfaForm } from './pdf-xfa-form.js'
 export { PdfXfaData } from './pdf-xfa-data.js'
 export type { XfaFieldData } from './pdf-xfa-data.js'
+export { PdfXfaTemplate } from './pdf-xfa-template.js'
+export type { PdfXfaFieldLayout } from './pdf-xfa-template.js'
+export { PdfXfaAppearance } from './pdf-xfa-appearance.js'

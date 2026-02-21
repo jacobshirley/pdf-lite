@@ -35,6 +35,7 @@ import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfArray } from '../index.js'
+import type { PdfFormField } from '../acroform/fields/pdf-form-field.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -1024,5 +1025,377 @@ export class PdfDocument extends PdfObject {
      */
     async verifySignatures(): Promise<PdfDocumentVerificationResult> {
         return await this.signer.verify(this)
+    }
+
+    // -----------------------------------------------------------------------
+    // Flattening
+    // -----------------------------------------------------------------------
+
+    /**
+     * Flattens all AcroForm / XFA widget annotations into the page content
+     * streams, producing a static (non-interactive) PDF.
+     *
+     * Steps performed:
+     *  1. Generates any missing AP streams (honours NeedAppearances).
+     *  2. Per page: emits `q cm Do Q` sequences for every widget, merges
+     *     AP-stream resources (fonts, XObjects) into the page resources, and
+     *     removes the widgets from the page's Annots array.
+     *  3. Removes the /AcroForm entry from the document catalog.
+     *
+     * Call {@link toBytes} after this method to serialize the result.
+     *
+     * @example
+     * ```ts
+     * const doc = await PdfDocument.fromBytes(input)
+     * await doc.flatten()
+     * const flatBytes = doc.toBytes()
+     * ```
+     */
+    async flatten(): Promise<void> {
+        const acroForm = await this.acroForm.read()
+        if (!acroForm) return
+
+        const wasIncremental = this.isIncremental()
+        this.setIncremental(true)
+
+        // ------------------------------------------------------------------ //
+        // Step 1 – Ensure every widget has an AP stream                       //
+        // ------------------------------------------------------------------ //
+
+        // Map: field objectNumber → { field, effectiveStream }
+        // effectiveStream is the PdfAppearanceStream to bake (or undefined if
+        // the AP stream is empty / not available, e.g. unchecked checkbox Off).
+        type EffectiveEntry = {
+            field: PdfFormField
+            stream: PdfIndirectObject<PdfStream>
+        }
+        const pageFieldMap = new Map<
+            string,
+            { pageRef: PdfObjectReference; entries: EffectiveEntry[] }
+        >()
+
+        for (const field of acroForm.fields) {
+            const rect = field.rect
+            const pageRef = field.parentRef
+            if (!rect || !pageRef) continue
+
+            // Generate appearance when required
+            if (
+                acroForm.needAppearances ||
+                !field.appearanceStreamDict?.get('N')
+            ) {
+                field.generateAppearance()
+            }
+
+            // Determine effective appearance stream
+            let effectiveStream: PdfIndirectObject<PdfStream> | undefined
+
+            const generatedStreams = field.getAppearanceStreamsForWriting()
+            if (generatedStreams) {
+                // Add streams to document so they get valid object numbers
+                this.add(generatedStreams.primary)
+                if (generatedStreams.secondary) {
+                    this.add(generatedStreams.secondary)
+                }
+
+                if (generatedStreams.secondary) {
+                    // Button field: secondary = Yes/checked state
+                    const asState = field.appearanceState ?? 'Off'
+                    if (asState !== 'Off') {
+                        effectiveStream = generatedStreams.secondary
+                    }
+                    // Off state primary stream is intentionally empty — skip
+                } else {
+                    effectiveStream = generatedStreams.primary
+                }
+            } else {
+                // Field already has AP in its dict — resolve via readObject
+                effectiveStream = await this.resolveFieldAppearance(field)
+            }
+
+            if (!effectiveStream) continue
+
+            // Verify the stream is non-empty (skip blank Off-state buttons)
+            try {
+                const decoded = effectiveStream.content.decode()
+                const txt = new TextDecoder().decode(decoded).trim()
+                if (!txt) continue
+            } catch {
+                continue
+            }
+
+            const pageKey = `${pageRef.objectNumber}_${pageRef.generationNumber}`
+            if (!pageFieldMap.has(pageKey)) {
+                pageFieldMap.set(pageKey, { pageRef, entries: [] })
+            }
+            pageFieldMap
+                .get(pageKey)!
+                .entries.push({ field, stream: effectiveStream })
+        }
+
+        // ------------------------------------------------------------------ //
+        // Step 2 – Per-page: bake appearances, update Resources, clear Annots  //
+        // ------------------------------------------------------------------ //
+
+        for (const { pageRef, entries } of pageFieldMap.values()) {
+            await this.flattenPageEntries(pageRef, entries)
+        }
+
+        // ------------------------------------------------------------------ //
+        // Step 3 – Remove /AcroForm from the catalog                          //
+        // ------------------------------------------------------------------ //
+
+        let catalog = this.root
+        if (catalog.isImmutable()) {
+            catalog = catalog.clone()
+            this.add(catalog)
+        }
+        catalog.content.delete('AcroForm')
+
+        await this.commit()
+        this.setIncremental(wasIncremental)
+    }
+
+    /**
+     * Resolves the effective AP stream for a field that already has an AP dict
+     * (i.e. from an existing PDF, not freshly generated).
+     */
+    private async resolveFieldAppearance(
+        field: PdfFormField,
+    ): Promise<PdfIndirectObject<PdfStream> | undefined> {
+        const apDict = field.appearanceStreamDict
+        const nEntry = apDict?.get('N')
+        if (!nEntry) return undefined
+
+        let streamRef: PdfObjectReference | undefined
+
+        if (nEntry instanceof PdfObjectReference) {
+            streamRef = nEntry
+        } else if (nEntry instanceof PdfDictionary) {
+            // Button sub-state dict: pick appearance state
+            const asState = field.appearanceState ?? 'Off'
+            const stateEntry = (nEntry as PdfDictionary).get(asState as never)
+            if (stateEntry instanceof PdfObjectReference) {
+                streamRef = stateEntry
+            }
+        }
+
+        if (!streamRef) return undefined
+
+        try {
+            const obj = await this.readObject({
+                objectNumber: streamRef.objectNumber,
+                generationNumber: streamRef.generationNumber,
+                allowUnindexed: true,
+            })
+            if (!obj) return undefined
+            // Treat as a stream indirect object
+            return obj as PdfIndirectObject<PdfStream>
+        } catch {
+            return undefined
+        }
+    }
+
+    /**
+     * Bakes appearance streams for `entries` into the page identified by
+     * `pageRef`, updates the page Resources, and removes widget annotations
+     * from the page Annots array.
+     */
+    private async flattenPageEntries(
+        pageRef: PdfObjectReference,
+        entries: Array<{
+            field: PdfFormField
+            stream: PdfIndirectObject<PdfStream>
+        }>,
+    ): Promise<void> {
+        const pageObj = await this.readObject({
+            objectNumber: pageRef.objectNumber,
+            generationNumber: pageRef.generationNumber,
+        })
+        if (!pageObj) return
+
+        // Clone so we can modify without touching the original parsed object
+        const pageDict = pageObj.content.as(PdfDictionary).clone()
+
+        // ---- Resolve page Resources (inline or indirect) ------------------
+        let pageResources: PdfDictionary
+        const rawResources = pageDict.get('Resources')
+        if (rawResources instanceof PdfDictionary) {
+            pageResources = rawResources
+        } else if (rawResources instanceof PdfObjectReference) {
+            const resObj = await this.readObject({
+                objectNumber: rawResources.objectNumber,
+                generationNumber: rawResources.generationNumber,
+            })
+            pageResources =
+                resObj?.content instanceof PdfDictionary
+                    ? resObj.content.clone()
+                    : new PdfDictionary()
+            pageDict.set('Resources', pageResources)
+        } else {
+            pageResources = new PdfDictionary()
+            pageDict.set('Resources', pageResources)
+        }
+
+        // ---- Sub-resource dicts -------------------------------------------
+        let xObjectDict =
+            pageResources.get('XObject') instanceof PdfDictionary
+                ? (pageResources.get('XObject') as PdfDictionary)
+                : new PdfDictionary()
+        let fontDict =
+            pageResources.get('Font') instanceof PdfDictionary
+                ? (pageResources.get('Font') as PdfDictionary)
+                : new PdfDictionary()
+
+        // ---- Build content operators and merge resources ------------------
+        const contentParts: string[] = []
+        let xobjCounter = 1
+        const flattenedFieldNums = new Set<number>()
+
+        for (const { field, stream } of entries) {
+            const rect = field.rect!
+            const [x1, y1, x2, y2] = rect
+            const w = x2 - x1
+            const h = y2 - y1
+
+            // Unique XObject name for this field on this page
+            const xobjName = `FltAP${xobjCounter++}`
+
+            // Register the AP stream as an XObject in the page resources
+            xObjectDict.set(
+                xobjName as never,
+                new PdfObjectReference(
+                    stream.objectNumber,
+                    stream.generationNumber,
+                ) as never,
+            )
+
+            // Merge font resources from the AP stream into the page
+            try {
+                const apResources = stream.content.header
+                    .get('Resources')
+                    ?.as(PdfDictionary)
+                const apFonts = apResources?.get('Font')?.as(PdfDictionary)
+                if (apFonts) {
+                    for (const [key, val] of apFonts.entries()) {
+                        if (val && !fontDict.has(key as never)) {
+                            fontDict.set(key as never, val as never)
+                        }
+                    }
+                }
+            } catch {
+                // AP stream may not have Resources — that is fine
+            }
+
+            // Emit placement operators:
+            //   q                       save state
+            //   x y w h re W n         clip to rect
+            //   1 0 0 1 x y cm         translate to field origin
+            //   /Name Do               invoke form XObject
+            //   Q                      restore state
+            contentParts.push(
+                `q\n${x1} ${y1} ${w} ${h} re W n\n1 0 0 1 ${x1} ${y1} cm\n/${xobjName} Do\nQ`,
+            )
+
+            if (field.objectNumber >= 0) {
+                flattenedFieldNums.add(field.objectNumber)
+            }
+        }
+
+        if (contentParts.length === 0) return
+
+        // ---- Persist updated sub-resource dicts back ----------------------
+        pageResources.set('XObject', xObjectDict as never)
+        pageResources.set('Font', fontDict as never)
+
+        // ---- Create new content stream ------------------------------------
+        const flatContent = contentParts.join('\n')
+        const flatStream = new PdfStream({
+            header: new PdfDictionary(),
+            original: flatContent,
+        })
+        const flatStreamObj = new PdfIndirectObject({ content: flatStream })
+        this.add(flatStreamObj)
+
+        // ---- Append to Contents ------------------------------------------
+        const existingContents = pageDict.get('Contents')
+        const existingRefs: PdfObjectReference[] = []
+
+        if (existingContents instanceof PdfObjectReference) {
+            existingRefs.push(existingContents)
+        } else if (existingContents instanceof PdfArray) {
+            for (const item of existingContents.items) {
+                if (item instanceof PdfObjectReference) {
+                    existingRefs.push(item)
+                }
+            }
+        }
+
+        pageDict.set(
+            'Contents',
+            new PdfArray<PdfObjectReference>([
+                ...existingRefs,
+                new PdfObjectReference(
+                    flatStreamObj.objectNumber,
+                    flatStreamObj.generationNumber,
+                ),
+            ]) as never,
+        )
+
+        // ---- Remove flattened widgets from Annots ------------------------
+        await this.removeWidgetsFromAnnots(pageDict, flattenedFieldNums)
+
+        // ---- Write updated page dict -------------------------------------
+        this.add(
+            new PdfIndirectObject({
+                objectNumber: pageRef.objectNumber,
+                generationNumber: pageRef.generationNumber,
+                content: pageDict,
+            }),
+        )
+    }
+
+    /**
+     * Removes widget annotation references from the page's Annots array.
+     * Handles both inline arrays and indirect references.
+     */
+    private async removeWidgetsFromAnnots(
+        pageDict: PdfDictionary,
+        fieldObjectNums: Set<number>,
+    ): Promise<void> {
+        const annotsRaw = pageDict.get('Annots')
+
+        const filterRefs = (items: PdfObject[]): PdfObjectReference[] =>
+            items.filter(
+                (ref): ref is PdfObjectReference =>
+                    !(
+                        ref instanceof PdfObjectReference &&
+                        fieldObjectNums.has(ref.objectNumber)
+                    ) && ref instanceof PdfObjectReference,
+            )
+
+        if (annotsRaw instanceof PdfArray) {
+            const remaining = filterRefs(annotsRaw.items)
+            if (remaining.length > 0) {
+                pageDict.set('Annots', new PdfArray(remaining) as never)
+            } else {
+                pageDict.delete('Annots')
+            }
+        } else if (annotsRaw instanceof PdfObjectReference) {
+            const annotsObj = await this.readObject({
+                objectNumber: annotsRaw.objectNumber,
+                generationNumber: annotsRaw.generationNumber,
+            })
+            if (annotsObj?.content instanceof PdfArray) {
+                const remaining = filterRefs(annotsObj.content.items)
+                if (remaining.length > 0) {
+                    pageDict.set('Annots', new PdfArray(remaining) as never)
+                } else {
+                    pageDict.delete('Annots')
+                }
+            } else {
+                pageDict.delete('Annots')
+            }
+        }
     }
 }

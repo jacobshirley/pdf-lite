@@ -14,6 +14,7 @@ import {
 } from './xfa-template.js'
 import { PdfAnnotationWriter } from '../../annotations/pdf-annotation-writer.js'
 import { PdfStream } from '../../core/objects/pdf-stream.js'
+import { executeXfaScripts } from './xfa-script-engine.js'
 
 export interface XfaToAcroFormOptions {
     /** Use NeedAppearances=true instead of generating appearance streams. Default: true */
@@ -26,6 +27,8 @@ export interface XfaToAcroFormOptions {
     mergeDatasets?: boolean
     /** Remove the XFA entry from the AcroForm dict after conversion. Default: true */
     stripXfa?: boolean
+    /** Execute XFA initialization scripts to populate dynamic content (dropdowns, computed values). Default: true */
+    executeScripts?: boolean
 }
 
 /**
@@ -50,6 +53,7 @@ export class XfaToAcroFormConverter {
             fontName: options?.fontName ?? 'Helv',
             mergeDatasets: options?.mergeDatasets ?? true,
             stripXfa: options?.stripXfa ?? true,
+            executeScripts: options?.executeScripts ?? true,
             ...options,
         }
 
@@ -77,6 +81,45 @@ export class XfaToAcroFormConverter {
                 if (value != null) {
                     datasetValues.set(field.fullPath, value)
                 }
+            }
+        }
+
+        // 3.5 Execute XFA initialization scripts (populates dropdowns, computed values)
+        if (opts.executeScripts && xfaForm.template) {
+            try {
+                const scriptResults = executeXfaScripts(
+                    xfaForm.template,
+                    datasetValues,
+                )
+                for (const field of template.allFields) {
+                    const result = scriptResults.get(field.fullPath)
+                    if (!result) continue
+
+                    // Apply dropdown options from addItem() calls
+                    if (result.addedItems && result.addedItems.length > 0) {
+                        field.options = result.addedItems.map(
+                            (i) => i.displayText,
+                        )
+                        field.exportValues = result.addedItems.map(
+                            (i) => i.exportValue,
+                        )
+                    }
+
+                    // Apply computed raw value
+                    if (result.rawValue != null) {
+                        datasetValues.set(field.fullPath, result.rawValue)
+                    }
+
+                    // Apply visibility changes
+                    if (
+                        result.presence === 'hidden' ||
+                        result.presence === 'inactive'
+                    ) {
+                        field.hidden = true
+                    }
+                }
+            } catch {
+                // Script execution failed — continue without script results
             }
         }
 
@@ -180,6 +223,9 @@ export class XfaToAcroFormConverter {
             const pageKey = `${pageInfo.ref.objectNumber}_${pageInfo.ref.generationNumber}`
 
             for (const fieldDef of page.fields) {
+                // Skip fields hidden by script execution
+                if (fieldDef.hidden) continue
+
                 const fieldObj = createFieldWidget(
                     fieldDef,
                     pageInfo.ref,
@@ -439,9 +485,23 @@ function createFieldWidget(
 
     // Choice field options
     if (fieldDef.type === 'Ch' && fieldDef.options.length > 0) {
-        const optArray = new PdfArray<PdfString>(
-            fieldDef.options.map((o) => new PdfString(o)),
-        )
+        let optArray: PdfArray
+        if (fieldDef.exportValues && fieldDef.exportValues.length > 0) {
+            // Export value pairs: each entry is [exportValue, displayText]
+            optArray = new PdfArray(
+                fieldDef.options.map((display, i) => {
+                    const exportVal = fieldDef.exportValues![i] ?? display
+                    return new PdfArray<PdfString>([
+                        new PdfString(exportVal),
+                        new PdfString(display),
+                    ])
+                }),
+            )
+        } else {
+            optArray = new PdfArray<PdfString>(
+                fieldDef.options.map((o) => new PdfString(o)),
+            )
+        }
         dict.set('Opt', optArray)
     }
 

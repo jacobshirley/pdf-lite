@@ -1,12 +1,14 @@
 import { XMLParser } from 'fast-xml-parser'
 
 /** Unit conversion factors to PDF points */
-const UNIT_TO_PT: Record<string, number> = {
+const UNIT_TO_PT = {
     pt: 1,
     in: 72,
     mm: 72 / 25.4,
     cm: 72 / 2.54,
-}
+} as const
+
+type Unit = keyof typeof UNIT_TO_PT
 
 /** Parse a measurement string like "10mm" or "2.5in" into PDF points */
 function parseMeasurement(value: string | undefined | null): number {
@@ -15,7 +17,7 @@ function parseMeasurement(value: string | undefined | null): number {
     const match = str.match(/^(-?\d+(?:\.\d+)?)\s*(mm|cm|in|pt)?$/)
     if (!match) return 0
     const num = parseFloat(match[1])
-    const unit = match[2] || 'pt'
+    const unit = (match[2] || 'pt') as Unit
     return num * (UNIT_TO_PT[unit] ?? 1)
 }
 
@@ -39,6 +41,10 @@ export interface XfaFieldDef {
     bgColor: [number, number, number] | null
     /** Border color as [r, g, b] 0-1, or null */
     borderColor: [number, number, number] | null
+    /** Export values parallel to options (from script addItem calls) */
+    exportValues?: string[]
+    /** Whether the field is hidden (set by script execution) */
+    hidden?: boolean
 }
 
 /** Static draw element (text label, rectangle, line) */
@@ -416,16 +422,28 @@ function getFieldType(fieldNode: any): {
     return { type: 'Tx', combo: false }
 }
 
-/** Check if a text field is multiline */
-function isMultiline(fieldNode: any): boolean {
+/** 
+ * Check if a text field should be multiline.
+ * Returns true if:
+ * 1. XFA explicitly sets multiLine="1", OR
+ * 2. Field height suggests multiple lines (> 20pt, roughly 1.5 lines)
+ */
+function isMultiline(fieldNode: any, height: number): boolean {
     const ui = fieldNode?.ui
-    if (!ui) return false
+    if (!ui) return height > 20
     const uiNode = Array.isArray(ui) ? ui[0] : ui
-    if (!hasChild(uiNode, 'textEdit')) return false
+    if (!hasChild(uiNode, 'textEdit')) return height > 20
     const textEdit = uiNode.textEdit
-    if (typeof textEdit !== 'object' || textEdit === null) return false
+    if (typeof textEdit !== 'object' || textEdit === null) return height > 20
     const te = Array.isArray(textEdit) ? textEdit[0] : textEdit
-    return te?.['@_multiLine'] === '1' || te?.['@_multiLine'] === 'true'
+    
+    // Explicit multiLine attribute takes precedence
+    if (te?.['@_multiLine'] === '1' || te?.['@_multiLine'] === 'true') {
+        return true
+    }
+    
+    // Otherwise, infer from field height (> 20pt suggests multiline intent)
+    return height > 20
 }
 
 /** Extract options from items elements for choice fields */
@@ -1003,7 +1021,7 @@ function makeFieldDef(
 
     const { type, combo } = getFieldType(field)
     const value = extractValue(field)
-    const multiline = isMultiline(field)
+    const multiline = isMultiline(field, h)
     const options = extractOptions(field)
 
     const bgColor = extractBgColor(field)

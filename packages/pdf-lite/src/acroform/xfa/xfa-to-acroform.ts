@@ -515,21 +515,32 @@ function buildDrawContentStream(
             ops.push('0 0 0 rg') // black text
 
             const fontSize = draw.fontSize || 7
-            if (draw.fontWeight === 'bold') {
+            const isBold = draw.fontWeight === 'bold'
+            if (isBold) {
                 ops.push(`/${fontName}-Bold ${n(fontSize)} Tf`)
             } else {
                 ops.push(`/${fontName} ${n(fontSize)} Tf`)
             }
 
-            // Position text: left-aligned, vertically centered in the box
-            const textX = dx + 1 // small left padding
-            const textY = dy + (draw.h - fontSize) / 2 + fontSize * 0.15
+            const padding = 1
+            const maxWidth = draw.w - padding * 2
+            const leading = fontSize * 1.2
 
-            ops.push(`${n(textX)} ${n(textY)} Td`)
+            // Word-wrap text into lines that fit the box width
+            const lines = wrapText(draw.text, fontSize, maxWidth, isBold)
 
-            // Encode text as hex string in WinAnsiEncoding
-            const hexText = encodeWinAnsiHex(draw.text)
-            ops.push(`<${hexText}> Tj`)
+            // Position first line: top of box, descending
+            const textX = dx + padding
+            const topY = dy + draw.h - fontSize - padding
+            ops.push(`${n(textX)} ${n(topY)} Td`)
+
+            for (let li = 0; li < lines.length; li++) {
+                if (li > 0) {
+                    ops.push(`0 ${n(-leading)} Td`)
+                }
+                const hexText = encodeWinAnsiHex(lines[li])
+                ops.push(`<${hexText}> Tj`)
+            }
 
             ops.push('ET')
         }
@@ -544,6 +555,152 @@ function buildDrawContentStream(
 /** Format number for PDF content stream (fixed precision, no trailing zeros) */
 function n(value: number): string {
     return value.toFixed(2).replace(/\.?0+$/, '') || '0'
+}
+
+/**
+ * Approximate glyph width for Helvetica in units of 1/1000 of the font size.
+ * Based on standard Helvetica metrics (AFM). Returns width in points.
+ */
+function measureTextWidth(
+    text: string,
+    fontSize: number,
+    bold: boolean,
+): number {
+    let width = 0
+    for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i)
+        width += getCharWidth(code, bold)
+    }
+    return (width / 1000) * fontSize
+}
+
+/** Get approximate character width in 1/1000 units for Helvetica */
+function getCharWidth(code: number, bold: boolean): number {
+    // Simplified Helvetica widths for common characters
+    // Bold is ~5-10% wider on average
+    const boldFactor = bold ? 1.08 : 1
+
+    if (code >= 0x80) return 600 * boldFactor // approximate for extended chars
+
+    // Space
+    if (code === 0x20) return 278 * boldFactor
+    // Digits 0-9
+    if (code >= 0x30 && code <= 0x39) return 556 * boldFactor
+    // Uppercase A-Z (approximate average ~680)
+    if (code >= 0x41 && code <= 0x5a) {
+        const upper: Record<number, number> = {
+            0x41: 667,
+            0x42: 667,
+            0x43: 722,
+            0x44: 722,
+            0x45: 611,
+            0x46: 556,
+            0x47: 778,
+            0x48: 722,
+            0x49: 278,
+            0x4a: 500,
+            0x4b: 667,
+            0x4c: 556,
+            0x4d: 833,
+            0x4e: 722,
+            0x4f: 778,
+            0x50: 667,
+            0x51: 778,
+            0x52: 722,
+            0x53: 667,
+            0x54: 611,
+            0x55: 722,
+            0x56: 667,
+            0x57: 944,
+            0x58: 667,
+            0x59: 667,
+            0x5a: 611,
+        }
+        return (upper[code] ?? 667) * boldFactor
+    }
+    // Lowercase a-z (approximate average ~500)
+    if (code >= 0x61 && code <= 0x7a) {
+        const lower: Record<number, number> = {
+            0x61: 556,
+            0x62: 556,
+            0x63: 500,
+            0x64: 556,
+            0x65: 556,
+            0x66: 278,
+            0x67: 556,
+            0x68: 556,
+            0x69: 222,
+            0x6a: 222,
+            0x6b: 500,
+            0x6c: 222,
+            0x6d: 833,
+            0x6e: 556,
+            0x6f: 556,
+            0x70: 556,
+            0x71: 556,
+            0x72: 333,
+            0x73: 500,
+            0x74: 278,
+            0x75: 556,
+            0x76: 500,
+            0x77: 722,
+            0x78: 500,
+            0x79: 500,
+            0x7a: 500,
+        }
+        return (lower[code] ?? 500) * boldFactor
+    }
+    // Punctuation
+    if (code === 0x2e || code === 0x2c) return 278 * boldFactor // . ,
+    if (code === 0x28 || code === 0x29) return 333 * boldFactor // ( )
+    if (code === 0x2d) return 333 * boldFactor // -
+    if (code === 0x2f) return 278 * boldFactor // /
+
+    return 556 * boldFactor // default
+}
+
+/**
+ * Word-wrap text to fit within a given width.
+ * Breaks on spaces. If a single word exceeds maxWidth, it's placed on its own line.
+ */
+function wrapText(
+    text: string,
+    fontSize: number,
+    maxWidth: number,
+    bold: boolean,
+): string[] {
+    if (maxWidth <= 0) return [text]
+
+    // Check if the entire text fits on one line
+    if (measureTextWidth(text, fontSize, bold) <= maxWidth) {
+        return [text]
+    }
+
+    const words = text.split(/\s+/)
+    const lines: string[] = []
+    let currentLine = ''
+
+    for (const word of words) {
+        if (!word) continue
+
+        if (currentLine === '') {
+            currentLine = word
+        } else {
+            const testLine = currentLine + ' ' + word
+            if (measureTextWidth(testLine, fontSize, bold) <= maxWidth) {
+                currentLine = testLine
+            } else {
+                lines.push(currentLine)
+                currentLine = word
+            }
+        }
+    }
+
+    if (currentLine) {
+        lines.push(currentLine)
+    }
+
+    return lines.length > 0 ? lines : [text]
 }
 
 /**

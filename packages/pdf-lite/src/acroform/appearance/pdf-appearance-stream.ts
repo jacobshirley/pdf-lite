@@ -2,7 +2,7 @@ import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfArray } from '../../core/objects/pdf-array.js'
 import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfNumber } from '../../core/objects/pdf-number.js'
-import { PdfContentStream } from './pdf-content-stream.js'
+import { PdfContentStream } from '../../content/pdf-content-stream.js'
 import type { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
 import type { PdfFont } from '../../fonts/pdf-font.js'
 

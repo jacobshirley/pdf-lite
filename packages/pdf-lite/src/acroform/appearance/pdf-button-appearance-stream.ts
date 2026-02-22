@@ -1,6 +1,6 @@
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfAppearanceStream } from './pdf-appearance-stream.js'
-import { PdfContentStream } from './pdf-content-stream.js'
+import { PdfContentStream } from '../../content/pdf-content-stream.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
 import { PdfFormFieldFlags } from '../fields/pdf-form-field-flags.js'
 

@@ -1,199 +1,25 @@
-import { PdfStream } from '../../core/objects/pdf-stream.js'
-import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
-import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
-import { encodePdfText } from '../../utils/encodePdfText.js'
-import type { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
-import { PdfFont } from '../../fonts/pdf-font.js'
+import type { PdfDefaultAppearance } from '../acroform/fields/pdf-default-appearance.js'
+import { PdfFont } from '../fonts/pdf-font.js'
 
 /**
- * A content stream that extends PdfIndirectObject<PdfStream> with a fluent API
- * for building PDF graphics operators.
- *
- * Can be used for:
- * - Page content streams
- * - Form XObject streams (via PdfAppearanceStream subclass)
- * - Any PDF content stream that contains graphics operators
- *
- * The builder methods accumulate operators, and build() writes them to the stream.
+ * Pure text layout calculator for PDF content streams.
+ * Handles text measurement, wrapping, and font size fitting without generating PDF operators.
  */
-export class PdfContentStream extends PdfIndirectObject<PdfStream> {
-    private lines: string[] = []
+export class PdfTextLayout {
     private resolvedFonts?: Map<string, PdfFont>
-    private defaultAppearance?: PdfDefaultAppearance
+    private defaultAppearance: PdfDefaultAppearance
 
-    constructor(options?: {
-        header?: PdfDictionary
-        contentStream?: string
+    constructor(options: {
+        defaultAppearance: PdfDefaultAppearance
         resolvedFonts?: Map<string, PdfFont>
-        defaultAppearance?: PdfDefaultAppearance
     }) {
-        const stream = new PdfStream({
-            header: options?.header ?? new PdfDictionary(),
-            original: options?.contentStream ?? '',
-        })
-        super({ content: stream })
-
-        this.resolvedFonts = options?.resolvedFonts
-        this.defaultAppearance = options?.defaultAppearance
+        this.defaultAppearance = options.defaultAppearance
+        this.resolvedFonts = options.resolvedFonts
     }
 
     /**
-     * Gets the content stream as a string.
+     * Get the current font object and size.
      */
-    get contentStream(): string {
-        return this.content.rawAsString
-    }
-
-    /**
-     * Sets the content stream from a string, replacing any pending operations.
-     */
-    set contentStream(newContent: string) {
-        this.content.rawAsString = newContent
-        this.lines = []
-    }
-
-    // ==================== Graphics State Operators ====================
-
-    save(): this {
-        this.lines.push('q')
-        return this
-    }
-
-    restore(): this {
-        this.lines.push('Q')
-        return this
-    }
-
-    // ==================== Text Operators ====================
-
-    beginText(): this {
-        this.lines.push('BT')
-        return this
-    }
-
-    endText(): this {
-        this.lines.push('ET')
-        return this
-    }
-
-    setDefaultAppearance(da: PdfDefaultAppearance): this {
-        this.lines.push(da.toString())
-        this.defaultAppearance = da
-        return this
-    }
-
-    moveTo(x: number, y: number): this {
-        this.lines.push(`${x} ${y} Td`)
-        return this
-    }
-
-    showText(
-        text: string,
-        isUnicode: boolean,
-        reverseEncodingMap?: Map<string, number>,
-    ): this {
-        this.lines.push(
-            `${encodePdfText(text, isUnicode, reverseEncodingMap)} Tj`,
-        )
-        return this
-    }
-
-    showLiteralText(text: string): this {
-        this.lines.push(`(${text}) Tj`)
-        return this
-    }
-
-    setFont(name: string, size: number): this {
-        this.lines.push(`/${name} ${size} Tf`)
-        return this
-    }
-
-    // ==================== Marked Content Operators ====================
-
-    beginMarkedContent(): this {
-        this.lines.push('/Tx BMC')
-        return this
-    }
-
-    endMarkedContent(): this {
-        this.lines.push('EMC')
-        return this
-    }
-
-    // ==================== Path Operators ====================
-
-    movePath(x: number, y: number): this {
-        this.lines.push(`${x} ${y} m`)
-        return this
-    }
-
-    lineTo(x: number, y: number): this {
-        this.lines.push(`${x} ${y} l`)
-        return this
-    }
-
-    curveTo(
-        x1: number,
-        y1: number,
-        x2: number,
-        y2: number,
-        x3: number,
-        y3: number,
-    ): this {
-        this.lines.push(`${x1} ${y1} ${x2} ${y2} ${x3} ${y3} c`)
-        return this
-    }
-
-    closePath(): this {
-        this.lines.push('h')
-        return this
-    }
-
-    fill(): this {
-        this.lines.push('f')
-        return this
-    }
-
-    stroke(): this {
-        this.lines.push('S')
-        return this
-    }
-
-    // ==================== Color Operators ====================
-
-    setFillRGB(r: number, g: number, b: number): this {
-        this.lines.push(`${r} ${g} ${b} rg`)
-        return this
-    }
-
-    setFillGray(v: number): this {
-        this.lines.push(`${v} g`)
-        return this
-    }
-
-    // ==================== Raw Operator ====================
-
-    raw(op: string): this {
-        this.lines.push(op)
-        return this
-    }
-
-    // ==================== Build Method ====================
-
-    /**
-     * Finalizes the pending operations and writes them to the content stream.
-     * Returns this for chaining.
-     */
-    build(): this {
-        if (this.lines.length > 0) {
-            this.content.rawAsString = this.lines.join('\n') + '\n'
-            this.lines = []
-        }
-        return this
-    }
-
-    // ==================== Text Measurement Methods ====================
-
     private get currentFont(): {
         fontObject: PdfFont | undefined
         size: number
@@ -214,12 +40,12 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
      */
     measureTextWidth(text: string, fontSize?: number): number {
         if (!this.currentFont) {
-            throw new Error('No font set - call setDefaultAppearance() first')
+            throw new Error('No font set')
         }
 
         const { fontObject, size: currentSize } = this.currentFont
         const size = fontSize ?? currentSize
-        const fontName = this.defaultAppearance!.fontName
+        const fontName = this.defaultAppearance.fontName
 
         const effectiveFontObject =
             fontObject ?? PdfFont.getStandardFont(fontName)
@@ -265,7 +91,7 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
         fontSize?: number,
     ): string[] {
         if (!this.currentFont) {
-            throw new Error('No font set - call setDefaultAppearance() first')
+            throw new Error('No font set')
         }
 
         // Handle explicit line breaks first
@@ -322,7 +148,7 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
         lineHeight: number = 1.2,
     ): number {
         if (!this.currentFont) {
-            throw new Error('No font set - call setDefaultAppearance() first')
+            throw new Error('No font set')
         }
 
         const startSize = this.currentFont.size
@@ -351,6 +177,9 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
         return lo
     }
 
+    /**
+     * Break a long word that doesn't fit on one line into multiple lines.
+     */
     private breakLongWord(
         word: string,
         maxWidth: number,

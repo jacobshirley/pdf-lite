@@ -1,5 +1,6 @@
-export { PdfContentStream } from './pdf-content-stream.js'
+export { PdfContentStream } from '../../content/pdf-content-stream.js'
 export { PdfAppearanceStream } from './pdf-appearance-stream.js'
 export { PdfTextAppearanceStream } from './pdf-text-appearance-stream.js'
 export { PdfButtonAppearanceStream } from './pdf-button-appearance-stream.js'
 export { PdfChoiceAppearanceStream } from './pdf-choice-appearance-stream.js'
+export { PdfTextLayout } from '../../content/pdf-text-layout.js'

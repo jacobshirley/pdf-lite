@@ -13,6 +13,7 @@ import { PdfXfaData } from './pdf-xfa-data.js'
  */
 export class PdfXfaForm extends PdfArray {
     datasets: PdfXfaData | null = null
+    template: string | null = null
 
     static async fromDocument(
         document: PdfDocument,
@@ -38,17 +39,19 @@ export class PdfXfaForm extends PdfArray {
 
         const form = new PdfXfaForm(xfaArray.items.slice())
 
-        // Find the datasets reference in the name/ref pairs
+        // Find component streams in the name/ref pairs
         const items = xfaArray.items
         for (let i = 0; i < items.length - 1; i += 2) {
             const name = items[i]
             const ref = items[i + 1]
 
             if (
-                name instanceof PdfString &&
-                name.value === 'datasets' &&
-                ref instanceof PdfObjectReference
-            ) {
+                !(name instanceof PdfString) ||
+                !(ref instanceof PdfObjectReference)
+            )
+                continue
+
+            if (name.value === 'datasets') {
                 const datasetObject = (
                     await document.readObject({
                         objectNumber: ref.objectNumber,
@@ -60,7 +63,19 @@ export class PdfXfaForm extends PdfArray {
                 if (datasetObject) {
                     form.datasets = new PdfXfaData(datasetObject)
                 }
-                break
+            } else if (name.value === 'template') {
+                const templateObject = (
+                    await document.readObject({
+                        objectNumber: ref.objectNumber,
+                        generationNumber: ref.generationNumber,
+                        allowUnindexed: true,
+                    })
+                )?.as(PdfIndirectObject<PdfStream>)
+
+                if (templateObject) {
+                    const decoded = templateObject.content.decode()
+                    form.template = new TextDecoder().decode(decoded)
+                }
             }
         }
 

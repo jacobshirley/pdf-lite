@@ -39,7 +39,7 @@ export class PdfAcroForm<
             DR?: PdfDefaultResourcesDictionary
             DA?: PdfString
             Q?: PdfNumber
-            XFA?: PdfDictionary
+            XFA?: PdfArray | PdfObjectReference
         }>
     >
     implements FormContext<PdfFormField>

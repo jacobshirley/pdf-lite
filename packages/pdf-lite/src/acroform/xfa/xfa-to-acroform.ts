@@ -80,8 +80,8 @@ export class XfaToAcroFormConverter {
             }
         }
 
-        // 4. Walk PDF page tree to collect page refs by index
-        const pageRefs = await getPageRefs(document)
+        // 4. Walk PDF page tree to collect page refs and actual dimensions
+        const pageInfos = await getPageInfos(document)
 
         // 5. Start incremental update
         const isIncremental = document.isIncremental()
@@ -170,24 +170,32 @@ export class XfaToAcroFormConverter {
 
         for (let pageIdx = 0; pageIdx < template.pages.length; pageIdx++) {
             const page = template.pages[pageIdx]
-            const pageRef = pageRefs[pageIdx]
-            if (!pageRef) continue
+            const pageInfo = pageInfos[pageIdx]
+            if (!pageInfo) continue
 
-            const pageKey = `${pageRef.objectNumber}_${pageRef.generationNumber}`
+            // Compute Y offset: template coords assume template page height,
+            // but actual PDF page may be different (e.g. A4 template on Letter page)
+            const yOffset = pageInfo.height - page.height
+
+            const pageKey = `${pageInfo.ref.objectNumber}_${pageInfo.ref.generationNumber}`
 
             for (const fieldDef of page.fields) {
                 const fieldObj = createFieldWidget(
                     fieldDef,
-                    pageRef,
+                    pageInfo.ref,
                     datasetValues,
                     opts,
+                    yOffset,
                 )
 
                 document.add(fieldObj)
                 fieldsArray.push(fieldObj.reference)
 
                 if (!fieldsByPage.has(pageKey)) {
-                    fieldsByPage.set(pageKey, { pageRef, fieldRefs: [] })
+                    fieldsByPage.set(pageKey, {
+                        pageRef: pageInfo.ref,
+                        fieldRefs: [],
+                    })
                 }
                 fieldsByPage.get(pageKey)!.fieldRefs.push(fieldObj.reference)
 
@@ -220,25 +228,28 @@ export class XfaToAcroFormConverter {
         // 11. Render draw elements as page content streams
         for (let pageIdx = 0; pageIdx < template.pages.length; pageIdx++) {
             const page = template.pages[pageIdx]
-            const pageRef = pageRefs[pageIdx]
-            if (!pageRef || page.draws.length === 0) continue
+            const pageInfo = pageInfos[pageIdx]
+            if (!pageInfo || page.draws.length === 0) continue
+
+            const yOffset = pageInfo.height - page.height
 
             const drawStream = buildDrawContentStream(
                 page.draws,
                 opts.fontName,
-                page.width,
-                page.height,
+                pageInfo.width,
+                pageInfo.height,
+                yOffset,
             )
             if (!drawStream) continue
 
-            // Create a Form XObject for the draw content
+            // Create content stream object
             const drawStreamObj = new PdfIndirectObject({ content: drawStream })
             document.add(drawStreamObj)
 
-            // Read the page dict and prepend our draw stream
+            // Read the page dict to update it
             const pageObj = await document.readObject({
-                objectNumber: pageRef.objectNumber,
-                generationNumber: pageRef.generationNumber,
+                objectNumber: pageInfo.ref.objectNumber,
+                generationNumber: pageInfo.ref.generationNumber,
             })
             if (!pageObj) continue
 
@@ -272,8 +283,8 @@ export class XfaToAcroFormConverter {
             pageDict.set('Contents', drawStreamObj.reference)
 
             const updatedPage = new PdfIndirectObject({
-                objectNumber: pageRef.objectNumber,
-                generationNumber: pageRef.generationNumber,
+                objectNumber: pageInfo.ref.objectNumber,
+                generationNumber: pageInfo.ref.generationNumber,
                 content: pageDict,
             })
             document.add(updatedPage)
@@ -290,23 +301,28 @@ export class XfaToAcroFormConverter {
     }
 }
 
-/** Walk the PDF page tree and collect page PdfObjectReferences in order */
-async function getPageRefs(
-    document: PdfDocument,
-): Promise<PdfObjectReference[]> {
+interface PageInfo {
+    ref: PdfObjectReference
+    width: number
+    height: number
+}
+
+/** Walk the PDF page tree and collect page refs + actual dimensions */
+async function getPageInfos(document: PdfDocument): Promise<PageInfo[]> {
     const catalog = document.root
     const pagesRef = catalog.content.get('Pages')?.as(PdfObjectReference)
     if (!pagesRef) return []
 
-    const refs: PdfObjectReference[] = []
-    await walkPageTree(document, pagesRef, refs)
-    return refs
+    const infos: PageInfo[] = []
+    await walkPageTree(document, pagesRef, infos, null)
+    return infos
 }
 
 async function walkPageTree(
     document: PdfDocument,
     nodeRef: PdfObjectReference,
-    refs: PdfObjectReference[],
+    infos: PageInfo[],
+    inheritedMediaBox: PdfArray | null,
 ): Promise<void> {
     const nodeObj = await document.readObject({
         objectNumber: nodeRef.objectNumber,
@@ -317,13 +333,30 @@ async function walkPageTree(
     const dict = nodeObj.content.as(PdfDictionary)
     const type = dict.get('Type')?.as(PdfName)?.value
 
+    // MediaBox can be inherited from parent Pages node
+    const localMediaBox =
+        (dict.get('MediaBox')?.as(PdfArray) as PdfArray<PdfNumber>) ?? null
+    const mediaBox = localMediaBox ?? inheritedMediaBox
+
     if (type === 'Page') {
-        refs.push(
-            new PdfObjectReference(
+        let width = 612
+        let height = 792
+        if (mediaBox && mediaBox.items.length >= 4) {
+            const vals = mediaBox.items.map((n) =>
+                n instanceof PdfNumber ? n.value : 0,
+            )
+            // MediaBox is [llx lly urx ury] — handle inverted Y
+            width = Math.abs(vals[2] - vals[0])
+            height = Math.abs(vals[3] - vals[1])
+        }
+        infos.push({
+            ref: new PdfObjectReference(
                 nodeRef.objectNumber,
                 nodeRef.generationNumber,
             ),
-        )
+            width,
+            height,
+        })
     } else if (type === 'Pages') {
         const kids = dict.get('Kids')?.as(PdfArray)
         if (kids) {
@@ -335,7 +368,8 @@ async function walkPageTree(
                             kid.objectNumber,
                             kid.generationNumber,
                         ),
-                        refs,
+                        infos,
+                        mediaBox,
                     )
                 }
             }
@@ -349,6 +383,7 @@ function createFieldWidget(
     pageRef: PdfObjectReference,
     datasetValues: Map<string, string>,
     opts: Required<XfaToAcroFormOptions>,
+    yOffset: number = 0,
 ): PdfIndirectObject {
     const dict = new PdfDictionary()
 
@@ -362,12 +397,13 @@ function createFieldWidget(
     // Field name
     dict.set('T', new PdfString(fieldDef.name))
 
-    // Rect: [x1, y1, x2, y2] in PDF coordinates
+    // Rect: [x1, y1, x2, y2] in PDF coordinates (with Y adjustment for actual page size)
+    const adjustedY = fieldDef.y + yOffset
     const rect = new PdfArray<PdfNumber>([
         new PdfNumber(fieldDef.x),
-        new PdfNumber(fieldDef.y),
+        new PdfNumber(adjustedY),
         new PdfNumber(fieldDef.x + fieldDef.w),
-        new PdfNumber(fieldDef.y + fieldDef.h),
+        new PdfNumber(adjustedY + fieldDef.h),
     ])
     dict.set('Rect', rect)
 
@@ -441,6 +477,7 @@ function buildDrawContentStream(
     fontName: string,
     pageWidth: number,
     pageHeight: number,
+    yOffset: number = 0,
 ): PdfStream | null {
     if (draws.length === 0) return null
 
@@ -455,18 +492,21 @@ function buildDrawContentStream(
     for (const draw of draws) {
         ops.push('q')
 
+        const dy = draw.y + yOffset
+        const dx = draw.x
+
         // Background fill
         if (draw.bgColor) {
             const [r, g, b] = draw.bgColor
             ops.push(`${n(r)} ${n(g)} ${n(b)} rg`)
-            ops.push(`${n(draw.x)} ${n(draw.y)} ${n(draw.w)} ${n(draw.h)} re f`)
+            ops.push(`${n(dx)} ${n(dy)} ${n(draw.w)} ${n(draw.h)} re f`)
         }
 
         // Border stroke
         if (draw.hasBorder) {
             ops.push('0 0 0 RG') // black stroke
             ops.push('0.5 w') // thin line
-            ops.push(`${n(draw.x)} ${n(draw.y)} ${n(draw.w)} ${n(draw.h)} re S`)
+            ops.push(`${n(dx)} ${n(dy)} ${n(draw.w)} ${n(draw.h)} re S`)
         }
 
         // Text
@@ -482,8 +522,8 @@ function buildDrawContentStream(
             }
 
             // Position text: left-aligned, vertically centered in the box
-            const textX = draw.x + 1 // small left padding
-            const textY = draw.y + (draw.h - fontSize) / 2 + fontSize * 0.15 // approximate baseline
+            const textX = dx + 1 // small left padding
+            const textY = dy + (draw.h - fontSize) / 2 + fontSize * 0.15
 
             ops.push(`${n(textX)} ${n(textY)} Td`)
 

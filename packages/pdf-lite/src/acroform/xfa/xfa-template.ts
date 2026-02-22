@@ -153,12 +153,21 @@ export class PdfXfaTemplate {
             })
         }
 
+        // Extract master page draws from pageArea (header/footer elements)
+        const masterDraws: XfaDrawDef[] = []
+        for (const ps of allPageSets) {
+            for (const pa of ensureArray(ps?.pageArea)) {
+                const geo = extractPageGeometry(pa)
+                extractMasterPageDraws(pa, 0, 0, geo, masterDraws)
+            }
+        }
+
         // Create initial page defs — more may be added during walk if needed
         const pages: XfaPageDef[] = geometries.map((g) => ({
             width: g.pageWidth,
             height: g.pageHeight,
             fields: [],
-            draws: [],
+            draws: [...masterDraws], // Master draws appear on every page
         }))
 
         // Walk subform tree
@@ -167,6 +176,7 @@ export class PdfXfaTemplate {
                 pages,
                 geometries,
                 currentPageIndex: 0,
+                masterDraws,
             }
             walkNode(topSubform, '', 0, 0, ctx)
         }
@@ -182,6 +192,7 @@ export class PdfXfaTemplate {
                 pages,
                 geometries,
                 currentPageIndex: 0,
+                masterDraws,
             }
             walkNode(templateRoot, '', 0, 0, ctx)
         }
@@ -204,6 +215,132 @@ interface WalkContext {
     pages: XfaPageDef[]
     geometries: PageGeometry[]
     currentPageIndex: number
+    masterDraws: XfaDrawDef[]
+}
+
+/**
+ * Extract draw elements from a pageArea (master page content).
+ * These use page-absolute coordinates, NOT content-area-relative.
+ */
+function extractMasterPageDraws(
+    pageArea: any,
+    parentX: number,
+    parentY: number,
+    geo: PageGeometry,
+    out: XfaDrawDef[],
+): void {
+    // Process draws directly on pageArea
+    for (const draw of ensureArray(pageArea?.draw)) {
+        if (isHidden(draw)) continue
+        const def = makeMasterDrawDef(draw, parentX, parentY, geo)
+        if (def) out.push(def)
+    }
+
+    // Process areas (recurse — the recursive call handles draws at each level)
+    for (const area of ensureArray(pageArea?.area)) {
+        if (isHidden(area)) continue
+        const areaX = parentX + parseMeasurement(area['@_x'])
+        const areaY = parentY + parseMeasurement(area['@_y'])
+        extractMasterPageDraws(area, areaX, areaY, geo, out)
+    }
+
+    // Process subforms within pageArea
+    for (const sf of ensureArray(pageArea?.subform)) {
+        if (isHidden(sf)) continue
+        extractMasterPageDraws(
+            sf,
+            parentX + parseMeasurement(sf['@_x']),
+            parentY + parseMeasurement(sf['@_y']),
+            geo,
+            out,
+        )
+    }
+}
+
+/** Create a draw def for a master page element (page-absolute coordinates) */
+function makeMasterDrawDef(
+    draw: any,
+    parentX: number,
+    parentY: number,
+    geo: PageGeometry,
+): XfaDrawDef | null {
+    if (!draw) return null
+
+    const xfaX = parentX + parseMeasurement(draw['@_x'])
+    const xfaY = parentY + parseMeasurement(draw['@_y'])
+    const w = parseMeasurement(draw['@_w'])
+    const h = parseMeasurement(draw['@_h']) || parseMeasurement(draw['@_minH'])
+
+    if (w <= 0 && h <= 0) return null
+
+    // Page-absolute: no content area offset needed, just flip Y
+    const pdfX = xfaX
+    const pdfY = geo.pageHeight - xfaY - h
+
+    // Extract content (reuse same logic as body draws)
+    let text = ''
+    let rectBgColor: [number, number, number] | null = null
+    let rectHasBorder = false
+
+    const valueNode = draw?.value
+    if (valueNode) {
+        const v = Array.isArray(valueNode) ? valueNode[0] : valueNode
+        const rect = v?.rectangle
+        if (rect) {
+            const r = Array.isArray(rect) ? rect[0] : rect
+            const fill = r?.fill
+            if (fill && typeof fill === 'object') {
+                const color = fill?.color
+                if (color) {
+                    const c = Array.isArray(color) ? color[0] : color
+                    rectBgColor = parseXfaColor(c?.['@_value'])
+                }
+            }
+            const edge = r?.edge
+            if (edge) {
+                const e = Array.isArray(edge) ? edge[0] : edge
+                if (e?.['@_presence'] !== 'hidden') rectHasBorder = true
+            }
+        }
+
+        const textChild = v?.text
+        if (textChild != null) {
+            const t = Array.isArray(textChild) ? textChild[0] : textChild
+            if (typeof t === 'string') text = t
+            else if (t?.['#text'] !== undefined) text = String(t['#text'])
+        }
+        if (!text) {
+            const exData = v?.exData
+            if (exData != null) {
+                const ex = Array.isArray(exData) ? exData[0] : exData
+                text = extractExDataText(ex)
+            }
+        }
+    }
+
+    let fontSize = 7
+    let fontWeight = 'normal'
+    const fontNode = draw?.font
+    if (fontNode) {
+        const f = Array.isArray(fontNode) ? fontNode[0] : fontNode
+        if (f?.['@_size']) fontSize = parseMeasurement(f['@_size'])
+        if (f?.['@_weight'] === 'bold') fontWeight = 'bold'
+    }
+
+    const bgColor = rectBgColor ?? extractBgColor(draw)
+    const hasBorder = rectHasBorder || extractHasBorder(draw)
+
+    return {
+        x: pdfX,
+        y: pdfY,
+        w,
+        h,
+        text,
+        fontSize,
+        fontWeight,
+        bgColor,
+        hasBorder,
+    }
 }
 
 function extractPageGeometry(pageArea: any): PageGeometry {
@@ -428,7 +565,7 @@ function advancePage(ctx: WalkContext): void {
             width: g.pageWidth,
             height: g.pageHeight,
             fields: [],
-            draws: [],
+            draws: [...ctx.masterDraws],
         })
     }
 }

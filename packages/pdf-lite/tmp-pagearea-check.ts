@@ -40,42 +40,20 @@ async function main() {
         ? parsed.template[0]
         : parsed.template
 
-    // Search for POLTAX or "POLA JASNE" or "Nr dokumentu" or "Status" in ALL draws
-    function search(node: any, path: string) {
-        if (!node || typeof node !== 'object') return
-        for (const d of ensureArray(node.draw)) {
-            const str = JSON.stringify(d)
-            if (
-                str.includes('POLTAX') ||
-                str.includes('POLA JASNE') ||
-                str.includes('Nr dokumentu') ||
-                str.includes('Status') ||
-                str.includes('Skladanie')
-            ) {
-                const name = d['@_name'] || '?'
-                console.log(`${path} draw "${name}": ${str.substring(0, 200)}`)
+    // Dump the ENTIRE pageArea structure
+    const topSubforms = ensureArray(root.subform)
+    for (const sf of topSubforms) {
+        for (const ps of ensureArray(sf.pageSet)) {
+            for (const pa of ensureArray(ps.pageArea)) {
+                console.log('=== pageArea keys:', Object.keys(pa).join(', '))
+                // Dump full JSON (truncated)
+                const json = JSON.stringify(pa, null, 2)
+                console.log(json.substring(0, 5000))
+                if (json.length > 5000)
+                    console.log(`\n... (${json.length} total chars)`)
             }
         }
-        // Also check fields
-        for (const f of ensureArray(node.field)) {
-            const str = JSON.stringify(f)
-            if (
-                str.includes('POLTAX') ||
-                str.includes('POLA JASNE') ||
-                str.includes('Nr dokumentu') ||
-                str.includes('Skladanie')
-            ) {
-                const name = f['@_name'] || '?'
-                console.log(`${path} FIELD "${name}": ${str.substring(0, 200)}`)
-            }
-        }
-        for (const sf of ensureArray(node.subform))
-            search(sf, path + '/' + (sf['@_name'] || '?'))
-        for (const ar of ensureArray(node.area))
-            search(ar, path + '/area:' + (ar['@_name'] || '?'))
     }
-
-    search(root, 'root')
 }
 
 main().catch(console.error)

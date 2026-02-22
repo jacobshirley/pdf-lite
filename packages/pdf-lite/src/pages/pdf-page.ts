@@ -4,7 +4,6 @@ import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
-import { PdfObject } from '../core/objects/pdf-object.js'
 
 export interface PdfPageOptions {
     width: number
@@ -21,10 +20,10 @@ export type PdfPageDictionary = PdfDictionary<{
     BleedBox?: PdfArray
     ArtBox?: PdfArray
     Rotate?: PdfNumber
-    Contents?: PdfObjectReference | PdfArray
+    Contents?: PdfObjectReference | PdfArray<PdfObjectReference>
     Resources?: PdfDictionary
     Parent?: PdfObjectReference
-    Annots?: PdfArray<PdfObjectReference> | PdfObjectReference
+    Annots?: PdfObjectReference | PdfArray<PdfObjectReference>
 }>
 
 /**
@@ -103,6 +102,8 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         if (box) {
             this._validateBox(box)
             this.content.set('CropBox', box)
+        } else {
+            this.content.delete('CropBox')
         }
     }
 
@@ -133,6 +134,8 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         if (box) {
             this._validateBox(box)
             this.content.set('BleedBox', box)
+        } else {
+            this.content.delete('BleedBox')
         }
     }
 
@@ -148,6 +151,8 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         if (box) {
             this._validateBox(box)
             this.content.set('ArtBox', box)
+        } else {
+            this.content.delete('ArtBox')
         }
     }
 
@@ -156,7 +161,7 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
      * Rotation is clockwise from the default orientation.
      */
     get rotate(): number | undefined {
-        const rotateObj = this.content.get('Rotate') as PdfNumber | undefined
+        const rotateObj = this.content.get('Rotate')
         return rotateObj?.value
     }
 
@@ -164,6 +169,8 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         if (degrees !== undefined) {
             this._validateRotation(degrees)
             this.content.set('Rotate', new PdfNumber(degrees))
+        } else {
+            this.content.delete('Rotate')
         }
     }
 
@@ -182,9 +189,11 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         return undefined
     }
 
-    set contents(contents: PdfObjectReference | PdfArray | undefined) {
+    set contents(contents: PdfObjectReference | PdfArray<PdfObjectReference> | undefined) {
         if (contents) {
             this.content.set('Contents', contents)
+        } else {
+            this.content.delete('Contents')
         }
     }
 
@@ -218,6 +227,8 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
     set parent(parent: PdfObjectReference | undefined) {
         if (parent) {
             this.content.set('Parent', parent)
+        } else {   
+            this.content.delete('Parent')
         }
     }
 

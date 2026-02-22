@@ -14,11 +14,11 @@ export interface PdfPageOptions {
 
 export type PdfPageDictionary = PdfDictionary<{
     Type: PdfName
-    MediaBox: PdfArray
-    CropBox?: PdfArray
-    TrimBox?: PdfArray
-    BleedBox?: PdfArray
-    ArtBox?: PdfArray
+    MediaBox: PdfArray<PdfNumber>
+    CropBox?: PdfArray<PdfNumber>
+    TrimBox?: PdfArray<PdfNumber>
+    BleedBox?: PdfArray<PdfNumber>
+    ArtBox?: PdfArray<PdfNumber>
     Rotate?: PdfNumber
     Contents?: PdfObjectReference | PdfArray<PdfObjectReference>
     Resources?: PdfDictionary
@@ -77,11 +77,11 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
      * Gets the MediaBox (visible page area).
      * Required for all pages, defines the boundaries of the physical or digital medium.
      */
-    get mediaBox(): PdfArray | undefined {
-        return this.content.get('MediaBox') as PdfArray | undefined
+    get mediaBox(): PdfArray<PdfNumber> | undefined {
+        return this.content.get('MediaBox')
     }
 
-    set mediaBox(box: PdfArray) {
+    set mediaBox(box: PdfArray<PdfNumber>) {
         this._validateBox(box)
         this.content.set('MediaBox', box)
     }
@@ -90,11 +90,11 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
      * Gets the CropBox (visible region for display/printing).
      * Optional - defaults to MediaBox if not specified.
      */
-    get cropBox(): PdfArray | undefined {
-        return this.content.get('CropBox') as PdfArray | undefined
+    get cropBox(): PdfArray<PdfNumber> | undefined {
+        return this.content.get('CropBox')
     }
 
-    set cropBox(box: PdfArray | undefined) {
+    set cropBox(box: PdfArray<PdfNumber> | undefined) {
         if (box) {
             this._validateBox(box)
             this.content.set('CropBox', box)
@@ -107,14 +107,16 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
      * Gets the TrimBox (finished page size after trimming).
      * Optional - used in printing workflows.
      */
-    get trimBox(): PdfArray | undefined {
-        return this.content.get('TrimBox') as PdfArray | undefined
+    get trimBox(): PdfArray<PdfNumber> | undefined {
+        return this.content.get('TrimBox')
     }
 
-    set trimBox(box: PdfArray | undefined) {
+    set trimBox(box: PdfArray<PdfNumber> | undefined) {
         if (box) {
             this._validateBox(box)
             this.content.set('TrimBox', box)
+        } else {
+            this.content.delete('TrimBox')
         }
     }
 
@@ -122,11 +124,11 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
      * Gets the BleedBox (clipping region for artwork in production).
      * Optional - used in printing workflows.
      */
-    get bleedBox(): PdfArray | undefined {
-        return this.content.get('BleedBox') as PdfArray | undefined
+    get bleedBox(): PdfArray<PdfNumber> | undefined {
+        return this.content.get('BleedBox')
     }
 
-    set bleedBox(box: PdfArray | undefined) {
+    set bleedBox(box: PdfArray<PdfNumber> | undefined) {
         if (box) {
             this._validateBox(box)
             this.content.set('BleedBox', box)
@@ -139,11 +141,11 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
      * Gets the ArtBox (meaningful content region).
      * Optional - used by PDF processors.
      */
-    get artBox(): PdfArray | undefined {
-        return this.content.get('ArtBox') as PdfArray | undefined
+    get artBox(): PdfArray<PdfNumber> | undefined {
+        return this.content.get('ArtBox')
     }
 
-    set artBox(box: PdfArray | undefined) {
+    set artBox(box: PdfArray<PdfNumber> | undefined) {
         if (box) {
             this._validateBox(box)
             this.content.set('ArtBox', box)
@@ -174,7 +176,7 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
      * Gets the content stream(s) for this page.
      * Can be a single stream reference or an array of stream references.
      */
-    get contents(): PdfObjectReference | PdfArray | undefined {
+    get contents(): PdfObjectReference | PdfArray<PdfObjectReference> | undefined {
         const contents = this.content.get('Contents')
         if (contents instanceof PdfObjectReference) {
             return contents

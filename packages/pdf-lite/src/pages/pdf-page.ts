@@ -357,7 +357,7 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         }
     }
 
-    private _validateBox(box: PdfArray): void {
+    private _validateBox(box: PdfArray<PdfNumber>): void {
         if (box.length !== 4) {
             throw new Error(
                 `Invalid box: must have exactly 4 numbers, got ${box.length}`,
@@ -377,12 +377,12 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
     }
 
     private _extractBoxValues(
-        box: PdfArray,
+        box: PdfArray<PdfNumber>
     ): { llx: number; lly: number; urx: number; ury: number } | undefined {
-        const llx = box.items[0] as PdfNumber | undefined
-        const lly = box.items[1] as PdfNumber | undefined
-        const urx = box.items[2] as PdfNumber | undefined
-        const ury = box.items[3] as PdfNumber | undefined
+        const llx = box.items[0] 
+        const lly = box.items[1] 
+        const urx = box.items[2]
+        const ury = box.items[3]
 
         if (
             !llx ||

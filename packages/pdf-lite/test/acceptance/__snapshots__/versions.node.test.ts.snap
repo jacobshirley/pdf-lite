@@ -13,6 +13,9 @@ PdfDocument {
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -12315,6 +12318,9 @@ PdfDocument {
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -19435,6 +19441,9 @@ PdfDocument {
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -22384,6 +22393,9 @@ PdfDocument {
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -25541,6 +25553,9 @@ PdfDocument {
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -28490,6 +28505,9 @@ PdfDocument {
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -31439,6 +31457,9 @@ PdfDocument {
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -38695,6 +38716,9 @@ PdfDocument {
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -45951,6 +45975,9 @@ PdfDocument {
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -53207,6 +53234,9 @@ PdfDocument {
   "hasEncryptionDictionary": false,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -55038,6 +55068,9 @@ PdfDocument {
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -57275,6 +57308,9 @@ PdfDocument {
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -59677,6 +59713,9 @@ PdfDocument {
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [
@@ -61914,6 +61953,9 @@ PdfDocument {
   "hasEncryptionDictionary": true,
   "immutable": false,
   "modified": true,
+  "pages": PdfPageManager {
+    "_document": [Circular],
+  },
   "postTokens": undefined,
   "preTokens": undefined,
   "revisions": [

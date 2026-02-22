@@ -2,15 +2,15 @@ import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfArray } from '../../core/objects/pdf-array.js'
 import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfNumber } from '../../core/objects/pdf-number.js'
-import { PdfStream } from '../../core/objects/pdf-stream.js'
-import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
-import { PdfGraphics } from './pdf-graphics.js'
+import { PdfContentStream } from './pdf-content-stream.js'
+import type { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
+import type { PdfFont } from '../../fonts/pdf-font.js'
 
 /**
  * Base class for PDF appearance streams (Form XObjects).
- * Wraps a PdfStream as a PdfIndirectObject so it can be added directly to a document.
+ * Extends PdfContentStream with Form XObject metadata (BBox, Resources).
  */
-export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
+export class PdfAppearanceStream extends PdfContentStream {
     constructor(options: {
         x?: number
         y?: number
@@ -18,6 +18,8 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
         height?: number
         contentStream?: string
         resources?: PdfDictionary
+        resolvedFonts?: Map<string, PdfFont>
+        defaultAppearance?: PdfDefaultAppearance
     }) {
         const appearanceDict = new PdfDictionary()
         appearanceDict.set('Type', new PdfName('XObject'))
@@ -37,23 +39,11 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
             appearanceDict.set('Resources', options.resources)
         }
 
-        const stream = new PdfStream({
+        super({
             header: appearanceDict,
-            original: options.contentStream ?? '',
+            contentStream: options.contentStream,
+            resolvedFonts: options.resolvedFonts,
+            defaultAppearance: options.defaultAppearance,
         })
-
-        super({ content: stream })
-    }
-
-    get contentStream(): string {
-        return this.content.rawAsString
-    }
-
-    set contentStream(newContent: string) {
-        this.content.rawAsString = newContent
-    }
-
-    set graphics(g: PdfGraphics) {
-        this.contentStream = g.build()
     }
 }

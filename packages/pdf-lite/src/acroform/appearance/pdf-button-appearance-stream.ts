@@ -1,6 +1,6 @@
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfAppearanceStream } from './pdf-appearance-stream.js'
-import { PdfGraphics } from './pdf-graphics.js'
+import { PdfContentStream } from './pdf-content-stream.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
 import { PdfFormFieldFlags } from '../fields/pdf-form-field-flags.js'
 
@@ -30,7 +30,8 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
         const size = Math.min(width, height)
         const isRadio = new PdfFormFieldFlags(flags).radio
 
-        const g = new PdfGraphics()
+        // Use a temporary content stream for building
+        const builder = new PdfContentStream()
 
         if (isRadio) {
             const center = size / 2
@@ -38,10 +39,10 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
             const k = 0.5522847498
             const kRadius = k * radius
 
-            g.save()
-            g.setFillRGB(0, 0, 0)
-            g.movePath(center, center + radius)
-            g.curveTo(
+            builder.save()
+            builder.setFillRGB(0, 0, 0)
+            builder.movePath(center, center + radius)
+            builder.curveTo(
                 center + kRadius,
                 center + radius,
                 center + radius,
@@ -49,7 +50,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
                 center + radius,
                 center,
             )
-            g.curveTo(
+            builder.curveTo(
                 center + radius,
                 center - kRadius,
                 center + kRadius,
@@ -57,7 +58,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
                 center,
                 center - radius,
             )
-            g.curveTo(
+            builder.curveTo(
                 center - kRadius,
                 center - radius,
                 center - radius,
@@ -65,7 +66,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
                 center - radius,
                 center,
             )
-            g.curveTo(
+            builder.curveTo(
                 center - radius,
                 center + kRadius,
                 center - kRadius,
@@ -73,21 +74,22 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
                 center,
                 center + radius,
             )
-            g.fill()
-            g.restore()
+            builder.fill()
+            builder.restore()
         } else {
             const checkSize = size * 0.8
             const offset = (size - checkSize) / 2
 
-            g.save()
-            g.beginText()
-            g.setFont('ZaDb', checkSize)
-            g.moveTo(offset, offset)
-            g.showLiteralText('4') // Checkmark character in Zapf Dingbats
-            g.endText()
-            g.restore()
+            builder.save()
+            builder.beginText()
+            builder.setFont('ZaDb', checkSize)
+            builder.moveTo(offset, offset)
+            builder.showLiteralText('4') // Checkmark character in Zapf Dingbats
+            builder.endText()
+            builder.restore()
         }
 
-        return g.build()
+        builder.build()
+        return builder.contentStream
     }
 }

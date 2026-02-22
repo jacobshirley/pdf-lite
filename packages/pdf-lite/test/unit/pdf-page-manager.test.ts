@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { PdfDocument } from '../../../src/pdf/pdf-document.js'
-import { PdfPageManager } from '../../../src/pages/pdf-page-manager.js'
-import { PdfPage } from '../../../src/pages/pdf-page.js'
-import { PdfStream } from '../../../src/core/objects/pdf-stream.js'
-import { PdfIndirectObject } from '../../../src/core/objects/pdf-indirect-object.js'
-import { PdfContentStream } from '../../../src/acroform/appearance/pdf-content-stream.js'
-import { PdfDictionary } from '../../../src/core/objects/pdf-dictionary.js'
+import { PdfDocument } from '../../src/pdf/pdf-document.js'
+import { PdfPageManager } from '../../src/pages/pdf-page-manager.js'
+import { PdfPage } from '../../src/pages/pdf-page.js'
+import { PdfStream } from '../../src/core/objects/pdf-stream.js'
+import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object.js'
+import { PdfContentStream } from '../../src/acroform/appearance/pdf-content-stream.js'
+import { PdfDictionary } from '../../src/core/objects/pdf-dictionary.js'
 
 describe('PdfPageManager', () => {
     let document: PdfDocument

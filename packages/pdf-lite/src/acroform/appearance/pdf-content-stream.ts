@@ -1,24 +1,58 @@
+import { PdfStream } from '../../core/objects/pdf-stream.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { encodePdfText } from '../../utils/encodePdfText.js'
 import type { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
 
 /**
- * Lightweight builder for PDF content streams.
- * Chains PDF operators via a fluent API and emits the final stream with build().
- * Enhanced with text measurement capabilities for layout calculations.
+ * A content stream that extends PdfIndirectObject<PdfStream> with a fluent API
+ * for building PDF graphics operators.
+ *
+ * Can be used for:
+ * - Page content streams
+ * - Form XObject streams (via PdfAppearanceStream subclass)
+ * - Any PDF content stream that contains graphics operators
+ *
+ * The builder methods accumulate operators, and build() writes them to the stream.
  */
-export class PdfGraphics {
+export class PdfContentStream extends PdfIndirectObject<PdfStream> {
     private lines: string[] = []
     private resolvedFonts?: Map<string, PdfFont>
     private defaultAppearance?: PdfDefaultAppearance
 
     constructor(options?: {
+        header?: PdfDictionary
+        contentStream?: string
         resolvedFonts?: Map<string, PdfFont>
         defaultAppearance?: PdfDefaultAppearance
     }) {
+        const stream = new PdfStream({
+            header: options?.header ?? new PdfDictionary(),
+            original: options?.contentStream ?? '',
+        })
+        super({ content: stream })
+
         this.resolvedFonts = options?.resolvedFonts
         this.defaultAppearance = options?.defaultAppearance
     }
+
+    /**
+     * Gets the content stream as a string.
+     */
+    get contentStream(): string {
+        return this.content.rawAsString
+    }
+
+    /**
+     * Sets the content stream from a string, replacing any pending operations.
+     */
+    set contentStream(newContent: string) {
+        this.content.rawAsString = newContent
+        this.lines = []
+    }
+
+    // ==================== Graphics State Operators ====================
 
     save(): this {
         this.lines.push('q')
@@ -29,6 +63,8 @@ export class PdfGraphics {
         this.lines.push('Q')
         return this
     }
+
+    // ==================== Text Operators ====================
 
     beginText(): this {
         this.lines.push('BT')
@@ -43,7 +79,6 @@ export class PdfGraphics {
     setDefaultAppearance(da: PdfDefaultAppearance): this {
         this.lines.push(da.toString())
         this.defaultAppearance = da
-
         return this
     }
 
@@ -68,6 +103,13 @@ export class PdfGraphics {
         return this
     }
 
+    setFont(name: string, size: number): this {
+        this.lines.push(`/${name} ${size} Tf`)
+        return this
+    }
+
+    // ==================== Marked Content Operators ====================
+
     beginMarkedContent(): this {
         this.lines.push('/Tx BMC')
         return this
@@ -78,25 +120,7 @@ export class PdfGraphics {
         return this
     }
 
-    raw(op: string): this {
-        this.lines.push(op)
-        return this
-    }
-
-    setFillRGB(r: number, g: number, b: number): this {
-        this.lines.push(`${r} ${g} ${b} rg`)
-        return this
-    }
-
-    setFillGray(v: number): this {
-        this.lines.push(`${v} g`)
-        return this
-    }
-
-    setFont(name: string, size: number): this {
-        this.lines.push(`/${name} ${size} Tf`)
-        return this
-    }
+    // ==================== Path Operators ====================
 
     movePath(x: number, y: number): this {
         this.lines.push(`${x} ${y} m`)
@@ -120,6 +144,11 @@ export class PdfGraphics {
         return this
     }
 
+    closePath(): this {
+        this.lines.push('h')
+        return this
+    }
+
     fill(): this {
         this.lines.push('f')
         return this
@@ -130,14 +159,40 @@ export class PdfGraphics {
         return this
     }
 
-    closePath(): this {
-        this.lines.push('h')
+    // ==================== Color Operators ====================
+
+    setFillRGB(r: number, g: number, b: number): this {
+        this.lines.push(`${r} ${g} ${b} rg`)
         return this
     }
 
-    build(): string {
-        return this.lines.join('\n') + '\n'
+    setFillGray(v: number): this {
+        this.lines.push(`${v} g`)
+        return this
     }
+
+    // ==================== Raw Operator ====================
+
+    raw(op: string): this {
+        this.lines.push(op)
+        return this
+    }
+
+    // ==================== Build Method ====================
+
+    /**
+     * Finalizes the pending operations and writes them to the content stream.
+     * Returns this for chaining.
+     */
+    build(): this {
+        if (this.lines.length > 0) {
+            this.content.rawAsString = this.lines.join('\n') + '\n'
+            this.lines = []
+        }
+        return this
+    }
+
+    // ==================== Text Measurement Methods ====================
 
     private get currentFont(): {
         fontObject: PdfFont | undefined

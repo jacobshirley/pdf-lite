@@ -2,7 +2,6 @@ import { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
 import { PdfAppearanceStream } from './pdf-appearance-stream.js'
 import type { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import type { PdfFont } from '../../fonts/pdf-font.js'
-import { PdfGraphics } from './pdf-graphics.js'
 
 /**
  * Appearance stream for text fields (single-line, multiline, comb).
@@ -33,27 +32,31 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         const availableWidth = width - 2 * padding
         const availableHeight = height - 2 * padding
 
-        // Create graphics with font context for text measurement
-        const g = new PdfGraphics({
+        // Initialize super with font context for text measurement
+        super({
+            width,
+            height,
+            resources: ctx.fontResources,
             resolvedFonts: ctx.resolvedFonts,
+            defaultAppearance: ctx.da,
         })
 
-        g.beginMarkedContent()
-        g.save()
+        this.beginMarkedContent()
+        this.save()
 
         // Set initial font to enable measurement
-        g.setDefaultAppearance(ctx.da)
+        this.setDefaultAppearance(ctx.da)
 
         let finalFontSize = ctx.da.fontSize
         let lines: string[] = []
 
         if (ctx.multiline) {
-            const testLines = g.wrapTextToLines(value, availableWidth)
+            const testLines = this.wrapTextToLines(value, availableWidth)
             const lineHeight = finalFontSize * 1.2
 
             if (testLines.length * lineHeight > availableHeight) {
                 // Scale font down to fit
-                finalFontSize = g.calculateFittingFontSize(
+                finalFontSize = this.calculateFittingFontSize(
                     value,
                     availableWidth,
                     availableHeight,
@@ -65,8 +68,8 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     finalFontSize,
                     ctx.da.colorOp,
                 )
-                g.setDefaultAppearance(adjustedDA)
-                lines = g.wrapTextToLines(value, availableWidth)
+                this.setDefaultAppearance(adjustedDA)
+                lines = this.wrapTextToLines(value, availableWidth)
             } else {
                 lines = testLines
             }
@@ -74,18 +77,18 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             const renderLineHeight = finalFontSize * 1.2
             const startY = height - padding - finalFontSize
 
-            g.beginText()
-            g.moveTo(padding, startY)
+            this.beginText()
+            this.moveTo(padding, startY)
 
             for (let i = 0; i < lines.length; i++) {
-                if (i > 0) g.moveTo(0, -renderLineHeight)
-                g.showText(
+                if (i > 0) this.moveTo(0, -renderLineHeight)
+                this.showText(
                     lines[i].replace(/\r/g, ''),
                     isUnicode,
                     reverseEncodingMap,
                 )
             }
-            g.endText()
+            this.endText()
         } else if (ctx.comb && ctx.maxLen) {
             const cellWidth = width / ctx.maxLen
             const chars = [...value]
@@ -94,7 +97,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             let maxCharWidth = 0
             let widestChar = chars[0] ?? ''
             for (const char of chars) {
-                const charWidth = g.measureTextWidth(char)
+                const charWidth = this.measureTextWidth(char)
                 if (charWidth > maxCharWidth) {
                     maxCharWidth = charWidth
                     widestChar = char
@@ -102,7 +105,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             }
 
             if (maxCharWidth > cellWidth) {
-                finalFontSize = g.calculateFittingFontSize(
+                finalFontSize = this.calculateFittingFontSize(
                     widestChar,
                     cellWidth,
                 )
@@ -111,26 +114,26 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     finalFontSize,
                     ctx.da.colorOp,
                 )
-                g.setDefaultAppearance(adjustedDA)
+                this.setDefaultAppearance(adjustedDA)
             }
 
             const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
 
-            g.beginText()
+            this.beginText()
             for (let i = 0; i < chars.length && i < ctx.maxLen; i++) {
                 const cellX =
                     cellWidth * i + cellWidth / 2 - finalFontSize * 0.3
-                g.moveTo(cellX, textY)
-                g.showText(chars[i], isUnicode, reverseEncodingMap)
-                g.moveTo(-cellX, -textY)
+                this.moveTo(cellX, textY)
+                this.showText(chars[i], isUnicode, reverseEncodingMap)
+                this.moveTo(-cellX, -textY)
             }
-            g.endText()
+            this.endText()
         } else {
             // Single line text
-            const textWidth = g.measureTextWidth(value)
+            const textWidth = this.measureTextWidth(value)
 
             if (textWidth > availableWidth) {
-                finalFontSize = g.calculateFittingFontSize(
+                finalFontSize = this.calculateFittingFontSize(
                     value,
                     availableWidth,
                 )
@@ -139,25 +142,21 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     finalFontSize,
                     ctx.da.colorOp,
                 )
-                g.setDefaultAppearance(adjustedDA)
+                this.setDefaultAppearance(adjustedDA)
             }
 
             const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
 
-            g.beginText()
-            g.moveTo(padding, textY)
-            g.showText(value, isUnicode, reverseEncodingMap)
-            g.endText()
+            this.beginText()
+            this.moveTo(padding, textY)
+            this.showText(value, isUnicode, reverseEncodingMap)
+            this.endText()
         }
 
-        g.restore()
-        g.endMarkedContent()
+        this.restore()
+        this.endMarkedContent()
 
-        super({
-            width,
-            height,
-            contentStream: g.build(),
-            resources: ctx.fontResources,
-        })
+        // Build the content stream
+        this.build()
     }
 }

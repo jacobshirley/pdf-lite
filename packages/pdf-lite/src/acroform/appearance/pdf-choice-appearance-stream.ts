@@ -2,7 +2,6 @@ import { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
 import { PdfAppearanceStream } from './pdf-appearance-stream.js'
 import type { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import type { PdfFont } from '../../fonts/pdf-font.js'
-import { PdfGraphics } from './pdf-graphics.js'
 import { PdfFormFieldFlags } from '../fields/pdf-form-field-flags.js'
 
 /**
@@ -29,6 +28,8 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
             width,
             height,
             resources: ctx.fontResources,
+            resolvedFonts: ctx.resolvedFonts,
+            defaultAppearance: ctx.da,
         })
 
         const isUnicode = ctx.isUnicode ?? false
@@ -37,9 +38,8 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         const padding = 2
         const isCombo = new PdfFormFieldFlags(ctx.flags).combo
 
-        const g = new PdfGraphics({ resolvedFonts: ctx.resolvedFonts })
-        g.beginMarkedContent()
-        g.save()
+        this.beginMarkedContent()
+        this.save()
 
         if (!isCombo && ctx.displayOptions && ctx.displayOptions.length > 0) {
             // Listbox: render all items, highlight the selected one
@@ -53,30 +53,33 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
                 if (itemY + lineHeight < 0) break
 
                 if (i === selectedIndex) {
-                    // Draw highlight background using the PDF re (rectangle) operator
-                    g.save()
-                    g.setFillRGB(0.376, 0.62, 0.671)
-                    g.raw(`0 ${itemY} ${width} ${lineHeight} re`)
-                    g.fill()
-                    g.restore()
+                    this.save()
+                    this.setFillRGB(0.376, 0.62, 0.671)
+                    this.raw(`0 ${itemY} ${width} ${lineHeight} re`)
+                    this.fill()
+                    this.restore()
                 }
 
                 const textY = itemY + lineHeight * 0.25
-                g.beginText()
-                g.setDefaultAppearance(ctx.da)
-                g.moveTo(padding, textY)
-                g.showText(ctx.displayOptions[i], isUnicode, reverseEncodingMap)
-                g.endText()
+                this.beginText()
+                this.setDefaultAppearance(ctx.da)
+                this.moveTo(padding, textY)
+                this.showText(
+                    ctx.displayOptions[i],
+                    isUnicode,
+                    reverseEncodingMap,
+                )
+                this.endText()
             }
         } else {
             // Combo (dropdown) or no options: show selected value only
             const textY = (height - ctx.da.fontSize) / 2 + ctx.da.fontSize * 0.2
+            this.beginText()
 
-            g.beginText()
-            g.setDefaultAppearance(ctx.da)
-            g.moveTo(padding, textY)
-            g.showText(ctx.value, isUnicode, reverseEncodingMap)
-            g.endText()
+            this.setDefaultAppearance(ctx.da)
+            this.moveTo(padding, textY)
+            this.showText(ctx.value, isUnicode, reverseEncodingMap)
+            this.endText()
 
             if (isCombo) {
                 const arrowWidth = height * 0.8
@@ -84,25 +87,26 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
                 const arrowY = height / 2
                 const arrowSize = height * 0.3
 
-                g.save()
-                g.setFillGray(0.5)
-                g.movePath(arrowX + arrowWidth / 2, arrowY - arrowSize / 3)
-                g.lineTo(
+                this.save()
+                this.setFillGray(0.5)
+                this.movePath(arrowX + arrowWidth / 2, arrowY - arrowSize / 3)
+                this.lineTo(
                     arrowX + arrowWidth / 2 - arrowSize / 2,
                     arrowY + arrowSize / 3,
                 )
-                g.lineTo(
+                this.lineTo(
                     arrowX + arrowWidth / 2 + arrowSize / 2,
                     arrowY + arrowSize / 3,
                 )
-                g.fill()
-                g.restore()
+                this.fill()
+                this.restore()
             }
         }
 
-        g.restore()
-        g.endMarkedContent()
+        this.restore()
+        this.endMarkedContent()
 
-        this.graphics = g
+        // Build the content stream
+        this.build()
     }
 }

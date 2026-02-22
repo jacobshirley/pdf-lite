@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { PdfPage } from '../../../src/pages/pdf-page.js'
-import { PdfArray } from '../../../src/core/objects/pdf-array.js'
-import { PdfNumber } from '../../../src/core/objects/pdf-number.js'
-import { PdfDictionary } from '../../../src/core/objects/pdf-dictionary.js'
-import { PdfName } from '../../../src/core/objects/pdf-name.js'
-import { PdfIndirectObject } from '../../../src/core/objects/pdf-indirect-object.js'
-import { PdfObjectReference } from '../../../src/core/objects/pdf-object-reference.js'
+import { PdfPage } from '../../src/pages/pdf-page.js'
+import { PdfArray } from '../../src/core/objects/pdf-array.js'
+import { PdfNumber } from '../../src/core/objects/pdf-number.js'
+import { PdfDictionary } from '../../src/core/objects/pdf-dictionary.js'
+import { PdfName } from '../../src/core/objects/pdf-name.js'
+import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object.js'
+import { PdfObjectReference } from '../../src/core/objects/pdf-object-reference.js'
 
 describe('PdfPage', () => {
     describe('constructor', () => {

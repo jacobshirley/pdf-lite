@@ -458,10 +458,7 @@ export class PdfAcroForm<
         const isIncremental = document.isIncremental()
         document.setIncremental(true)
 
-        const xfaForm =
-            this._xfa !== undefined
-                ? this._xfa
-                : await PdfXfaForm.fromDocument(document)
+        const xfaForm = await this.getXfa(document)
         if (xfaForm) {
             // Only send fields whose value was explicitly changed (field.isModified())
             const xfaFields = this.fields

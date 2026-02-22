@@ -14,6 +14,7 @@ import {
     PdfXRefStreamCompressedEntry,
 } from '../core/objects/pdf-stream.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
+import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfXrefLookup } from './pdf-xref-lookup.js'
 import { PdfTokenSerializer } from '../core/serializer.js'
@@ -35,6 +36,8 @@ import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfArray } from '../index.js'
+import { PdfString } from '../core/objects/pdf-string.js'
+import { PdfNumber } from '../core/objects/pdf-number.js'
 import type { PdfFormField } from '../acroform/fields/pdf-form-field.js'
 import { PdfXfaTemplate } from '../acroform/xfa/pdf-xfa-template.js'
 import { PdfXfaAppearance } from '../acroform/xfa/pdf-xfa-appearance.js'
@@ -1076,11 +1079,142 @@ export class PdfDocument extends PdfObject {
             { pageRef: PdfObjectReference; entries: EffectiveEntry[] }
         >()
 
-        // Apply XFA template appearances when the document has an XFA template
-        // and some fields still lack AP streams (common in LiveCycle documents).
+        // Detect XFA: check for /XFA key in AcroForm (reliable indicator even
+        // when the XFA array only has a 'datasets' component and no 'template').
+        // Also accept NeedsRendering in the catalog as a secondary indicator.
+        const acroFormHasXfa = acroForm.content.get('XFA') != null
+        const catalogHasNeedsRendering = this.root.content.has('NeedsRendering')
+
+        let isXfaDocument = acroFormHasXfa || catalogHasNeedsRendering
+        type XfaDrawEntry = {
+            x: number
+            y: number
+            text: string
+            fontSize: number
+        }
+        const drawsByPage = new Map<string, XfaDrawEntry[]>()
+        let xfaPages: Awaited<ReturnType<typeof this.getOrderedPages>> = []
+
+        if (isXfaDocument) {
+            xfaPages = await this.getOrderedPages()
+        }
+
+        // If a 'template' XFA component exists, use it to assign field positions,
+        // collect draw (static label) text, and extract any field values from
+        // the datasets component.  Works for both pure-XFA (LiveCycle) documents
+        // (acroForm.fields is empty) and hybrid AcroForm+XFA documents.
         const xfaTemplate = await PdfXfaTemplate.fromDocument(this)
-        if (xfaTemplate && acroForm.fields.length > 0) {
+        if (xfaTemplate) {
             const layouts = xfaTemplate.extractFieldLayouts()
+
+            // Pure-XFA documents have a placeholder MediaBox of [0,0,0,0].
+            // Use the actual page dimensions from the XFA template's pageSet.
+            const pageAreas = xfaTemplate.extractPageAreas()
+            if (pageAreas.length > 0) {
+                xfaPages = xfaPages.map((page, i) => {
+                    if (page.pageHeight > 0 && page.pageWidth > 0) return page
+                    const area = pageAreas[Math.min(i, pageAreas.length - 1)]
+                    return {
+                        ...page,
+                        pageWidth:
+                            page.pageWidth > 0 ? page.pageWidth : area.width,
+                        pageHeight:
+                            page.pageHeight > 0 ? page.pageHeight : area.height,
+                    }
+                })
+            }
+
+            const pages = xfaPages
+
+            // Load field values from the XFA datasets component (may be empty
+            // if the form has no user data).
+            const fieldValues = await this.loadXfaFieldValues()
+
+            // Build fast name→field lookup (for hybrid AcroForm+XFA docs)
+            const byName = new Map<string, PdfFormField>()
+            for (const field of acroForm.fields) {
+                const n = field.name
+                if (n) byName.set(n, field)
+            }
+
+            for (const layout of layouts) {
+                const pageEntry = pages[layout.pageIndex]
+                if (!pageEntry) continue
+                const { pageRef, pageHeight } = pageEntry
+                const pageKey = `${pageRef.objectNumber}_${pageRef.generationNumber}`
+
+                if (layout.type !== 'Draw') {
+                    // ---- Hybrid: try to match an existing AcroForm widget ----
+                    let field = byName.get(layout.name)
+                    if (!field) {
+                        const leaf = layout.name.split('.').pop() ?? layout.name
+                        field = Array.from(byName.values()).find((f) => {
+                            const fname = f.name
+                            return fname === leaf || fname.endsWith('.' + leaf)
+                        })
+                    }
+                    if (
+                        field &&
+                        !field.rect &&
+                        layout.x != null &&
+                        layout.y != null &&
+                        layout.w != null &&
+                        layout.h != null
+                    ) {
+                        // XFA: y from top-left → PDF: y from bottom-left
+                        const pdfY = pageHeight - layout.y - layout.h
+                        field.rect = [
+                            layout.x,
+                            pdfY,
+                            layout.x + layout.w,
+                            pdfY + layout.h,
+                        ]
+                        field.parentRef = pageRef
+                    }
+
+                    // ---- Pure XFA: render field value from datasets as text --
+                    const leaf = layout.name.split('.').pop() ?? ''
+                    const value =
+                        fieldValues.get(layout.name) ??
+                        fieldValues.get(leaf) ??
+                        ''
+                    if (
+                        value &&
+                        layout.x != null &&
+                        layout.y != null &&
+                        layout.h != null
+                    ) {
+                        const pdfY = pageHeight - layout.y - layout.h
+                        if (!drawsByPage.has(pageKey))
+                            drawsByPage.set(pageKey, [])
+                        drawsByPage.get(pageKey)!.push({
+                            x: layout.x,
+                            y: pdfY,
+                            text: value,
+                            fontSize: layout.fontSize ?? 10,
+                        })
+                    }
+                } else if (layout.captionText) {
+                    // ---- Static draw element (label / heading) ----
+                    if (
+                        layout.x != null &&
+                        layout.y != null &&
+                        layout.h != null
+                    ) {
+                        const pdfY = pageHeight - layout.y - layout.h
+                        if (!drawsByPage.has(pageKey))
+                            drawsByPage.set(pageKey, [])
+                        drawsByPage.get(pageKey)!.push({
+                            x: layout.x,
+                            y: pdfY,
+                            text: layout.captionText,
+                            fontSize: layout.fontSize ?? 10,
+                        })
+                    }
+                }
+            }
+
+            // Generate AP streams for any matched AcroForm widgets (hybrid docs)
             PdfXfaAppearance.apply(layouts, acroForm)
         }
 
@@ -1147,8 +1281,23 @@ export class PdfDocument extends PdfObject {
         // Step 2 – Per-page: bake appearances, update Resources, clear Annots  //
         // ------------------------------------------------------------------ //
 
-        for (const { pageRef, entries } of pageFieldMap.values()) {
-            await this.flattenPageEntries(pageRef, entries)
+        if (isXfaDocument) {
+            // For XFA: iterate ALL pages so the "Please wait…" placeholder
+            // content is replaced on every page, even pages with no matched fields.
+            for (const { pageRef, pageWidth, pageHeight } of xfaPages) {
+                const pageKey = `${pageRef.objectNumber}_${pageRef.generationNumber}`
+                const entry = pageFieldMap.get(pageKey)
+                await this.flattenPageEntries(pageRef, entry?.entries ?? [], {
+                    isXfa: true,
+                    draws: drawsByPage.get(pageKey),
+                    pageWidth,
+                    pageHeight,
+                })
+            }
+        } else {
+            for (const { pageRef, entries } of pageFieldMap.values()) {
+                await this.flattenPageEntries(pageRef, entries)
+            }
         }
 
         // ------------------------------------------------------------------ //
@@ -1161,6 +1310,7 @@ export class PdfDocument extends PdfObject {
             this.add(catalog)
         }
         catalog.content.delete('AcroForm')
+        catalog.content.delete('NeedsRendering')
 
         await this.commit()
         this.setIncremental(wasIncremental)
@@ -1207,6 +1357,193 @@ export class PdfDocument extends PdfObject {
     }
 
     /**
+     * Walks the catalog Pages tree depth-first and returns leaf pages in
+     * document order, each with its reference and MediaBox dimensions.
+     * MediaBox is inherited from ancestor Pages nodes when not present on
+     * the leaf page dict itself.
+     */
+    private async getOrderedPages(): Promise<
+        Array<{
+            pageRef: PdfObjectReference
+            pageWidth: number
+            pageHeight: number
+        }>
+    > {
+        const pagesRef = this.root.content.get('Pages')?.as(PdfObjectReference)
+        if (!pagesRef) return []
+
+        const result: Array<{
+            pageRef: PdfObjectReference
+            pageWidth: number
+            pageHeight: number
+        }> = []
+
+        const readMediaBox = (
+            dict: PdfDictionary,
+        ): [number, number, number, number] | undefined => {
+            const raw = dict.get('MediaBox')
+            if (!(raw instanceof PdfArray) || raw.items.length < 4)
+                return undefined
+            const nums = raw.items.map((it) => (it as any)?.value as number)
+            if (nums.some((n) => typeof n !== 'number')) return undefined
+            return [nums[0], nums[1], nums[2], nums[3]]
+        }
+
+        const walkNode = async (
+            ref: PdfObjectReference,
+            inherited?: [number, number, number, number],
+        ): Promise<void> => {
+            const obj = await this.readObject({
+                objectNumber: ref.objectNumber,
+                generationNumber: ref.generationNumber,
+            })
+            if (!obj) return
+            const dict = obj.content.as(PdfDictionary)
+            const typeName = (dict.get('Type') as any)?.value
+
+            // Prefer own MediaBox, fall back to ancestor's
+            const mediaBox = readMediaBox(dict) ?? inherited
+
+            if (typeName === 'Page') {
+                // Use absolute differences so XFA docs with inverted MediaBox
+                // [0, 792, 612, 0] yield the same dimensions as [0, 0, 612, 792].
+                const pageWidth = mediaBox
+                    ? Math.abs(mediaBox[2] - mediaBox[0])
+                    : 612
+                const pageHeight = mediaBox
+                    ? Math.abs(mediaBox[3] - mediaBox[1])
+                    : 792
+                result.push({ pageRef: ref, pageWidth, pageHeight })
+            } else {
+                // Pages node — recurse into Kids, passing our MediaBox down
+                const kids = dict.get('Kids') as PdfArray | undefined
+                if (kids) {
+                    for (const kid of kids.items) {
+                        if (kid instanceof PdfObjectReference) {
+                            await walkNode(kid, mediaBox)
+                        }
+                    }
+                }
+            }
+        }
+
+        await walkNode(pagesRef)
+        return result
+    }
+
+    /**
+     * Reads the XFA `datasets` component stream and returns a map of
+     * fully-qualified field name → string value.  The map also contains
+     * shorter suffix-only versions of each key for fuzzy matching.
+     * Returns an empty map when no datasets component is present.
+     */
+    private async loadXfaFieldValues(): Promise<Map<string, string>> {
+        const result = new Map<string, string>()
+
+        const acroFormRaw = this.root.content.get('AcroForm')
+        if (!acroFormRaw) return result
+
+        let xfaArray: PdfArray | undefined
+        if (acroFormRaw instanceof PdfObjectReference) {
+            const obj = await this.readObject(acroFormRaw)
+            if (!obj) return result
+            const dict = obj.content.as(PdfDictionary)
+            const xfa = dict.get('XFA')
+            if (xfa instanceof PdfArray) xfaArray = xfa
+        } else if (acroFormRaw instanceof PdfDictionary) {
+            const xfa = acroFormRaw.get('XFA')
+            if (xfa instanceof PdfArray) xfaArray = xfa
+        }
+        if (!xfaArray) return result
+
+        const items = xfaArray.items
+        for (let i = 0; i < items.length - 1; i += 2) {
+            const namePdf = items[i]
+            const ref = items[i + 1]
+            if (
+                namePdf instanceof PdfString &&
+                namePdf.value === 'datasets' &&
+                ref instanceof PdfObjectReference
+            ) {
+                const obj = await this.readObject({
+                    objectNumber: ref.objectNumber,
+                    generationNumber: ref.generationNumber,
+                    allowUnindexed: true,
+                })
+                if (!obj) break
+                try {
+                    const stream = obj.content.as(PdfStream)
+                    const xml = new TextDecoder().decode(stream.decode())
+                    this.extractDatasetsValues(xml, result)
+                } catch {
+                    // datasets stream unreadable — ignore
+                }
+                break
+            }
+        }
+
+        return result
+    }
+
+    /**
+     * Parses an XFA datasets XML string and populates `result` with
+     * dotted-path → value entries for every leaf element under `xfa:data`.
+     */
+    private extractDatasetsValues(
+        xml: string,
+        result: Map<string, string>,
+    ): void {
+        if (typeof DOMParser === 'undefined') return
+        try {
+            const doc = new DOMParser().parseFromString(xml, 'application/xml')
+            const root = doc.documentElement
+            if (!root || root.localName === 'parsererror') return
+
+            // Locate <xfa:data> (localName === 'data')
+            let dataEl: Element | null = null
+            for (let i = 0; i < root.children.length; i++) {
+                if (root.children[i].localName === 'data') {
+                    dataEl = root.children[i]
+                    break
+                }
+            }
+            if (!dataEl) return
+
+            const walk = (el: Element, path: string): void => {
+                if (el.children.length === 0) {
+                    const text = (el.textContent ?? '').trim()
+                    if (text) {
+                        result.set(path, text)
+                        // Store suffix versions so leaf-name lookup also works
+                        const parts = path.split('.')
+                        for (let i = 1; i < parts.length; i++) {
+                            const suffix = parts.slice(i).join('.')
+                            if (!result.has(suffix)) result.set(suffix, text)
+                        }
+                    }
+                } else {
+                    for (let i = 0; i < el.children.length; i++) {
+                        const child = el.children[i]
+                        walk(
+                            child,
+                            path
+                                ? `${path}.${child.localName}`
+                                : child.localName,
+                        )
+                    }
+                }
+            }
+
+            for (let i = 0; i < dataEl.children.length; i++) {
+                const child = dataEl.children[i]
+                walk(child, child.localName)
+            }
+        } catch {
+            // ignore parse errors
+        }
+    }
+
+    /**
      * Bakes appearance streams for `entries` into the page identified by
      * `pageRef`, updates the page Resources, and removes widget annotations
      * from the page Annots array.
@@ -1217,6 +1554,17 @@ export class PdfDocument extends PdfObject {
             field: PdfFormField
             stream: PdfIndirectObject<PdfStream>
         }>,
+        options: {
+            isXfa?: boolean
+            draws?: Array<{
+                x: number
+                y: number
+                text: string
+                fontSize: number
+            }>
+            pageWidth?: number
+            pageHeight?: number
+        } = {},
     ): Promise<void> {
         const pageObj = await this.readObject({
             objectNumber: pageRef.objectNumber,
@@ -1226,6 +1574,19 @@ export class PdfDocument extends PdfObject {
 
         // Clone so we can modify without touching the original parsed object
         const pageDict = pageObj.content.as(PdfDictionary).clone()
+
+        // For XFA: fix the placeholder MediaBox [0,0,0,0] with actual dimensions
+        if (options.isXfa && options.pageWidth && options.pageHeight) {
+            pageDict.set(
+                'MediaBox',
+                new PdfArray([
+                    new PdfNumber(0),
+                    new PdfNumber(0),
+                    new PdfNumber(options.pageWidth),
+                    new PdfNumber(options.pageHeight),
+                ]) as never,
+            )
+        }
 
         // ---- Resolve page Resources (inline or indirect) ------------------
         let pageResources: PdfDictionary
@@ -1256,6 +1617,28 @@ export class PdfDocument extends PdfObject {
             pageResources.get('Font') instanceof PdfDictionary
                 ? (pageResources.get('Font') as PdfDictionary)
                 : new PdfDictionary()
+
+        // ---- Build draw-element text (static XFA labels) ------------------
+        const drawParts: string[] = []
+        const drawEntries = options.draws ?? []
+        if (drawEntries.length > 0) {
+            // Register Helvetica as XfaDrFnt for draw-element text rendering
+            const hvDict = new PdfDictionary()
+            hvDict.set('Type', new PdfName('Font'))
+            hvDict.set('Subtype', new PdfName('Type1'))
+            hvDict.set('BaseFont', new PdfName('Helvetica'))
+            fontDict.set('XfaDrFnt', hvDict as never)
+
+            for (const draw of drawEntries) {
+                const escaped = draw.text
+                    .replace(/\\/g, '\\\\')
+                    .replace(/\(/g, '\\(')
+                    .replace(/\)/g, '\\)')
+                drawParts.push(
+                    `BT\n/XfaDrFnt ${draw.fontSize} Tf\n0 g\n${draw.x} ${draw.y} Td\n(${escaped}) Tj\nET`,
+                )
+            }
+        }
 
         // ---- Build content operators and merge resources ------------------
         const contentParts: string[] = []
@@ -1314,14 +1697,23 @@ export class PdfDocument extends PdfObject {
             }
         }
 
-        if (contentParts.length === 0) return
+        // For XFA always proceed (even with no content) to overwrite the
+        // "Please wait…" placeholder stream. For normal AcroForm skip if empty.
+        if (
+            !options.isXfa &&
+            drawParts.length === 0 &&
+            contentParts.length === 0
+        )
+            return
 
         // ---- Persist updated sub-resource dicts back ----------------------
         pageResources.set('XObject', xObjectDict as never)
         pageResources.set('Font', fontDict as never)
 
         // ---- Create new content stream ------------------------------------
-        const flatContent = contentParts.join('\n')
+        // For XFA documents, replace the existing "Please wait..." placeholder
+        // content entirely; for normal AcroForm documents, append.
+        const flatContent = [...drawParts, ...contentParts].join('\n')
         const flatStream = new PdfStream({
             header: new PdfDictionary(),
             original: flatContent,
@@ -1329,16 +1721,17 @@ export class PdfDocument extends PdfObject {
         const flatStreamObj = new PdfIndirectObject({ content: flatStream })
         this.add(flatStreamObj)
 
-        // ---- Append to Contents ------------------------------------------
-        const existingContents = pageDict.get('Contents')
+        // ---- Collect existing content refs (skipped for XFA) -------------
         const existingRefs: PdfObjectReference[] = []
-
-        if (existingContents instanceof PdfObjectReference) {
-            existingRefs.push(existingContents)
-        } else if (existingContents instanceof PdfArray) {
-            for (const item of existingContents.items) {
-                if (item instanceof PdfObjectReference) {
-                    existingRefs.push(item)
+        if (!options.isXfa) {
+            const existingContents = pageDict.get('Contents')
+            if (existingContents instanceof PdfObjectReference) {
+                existingRefs.push(existingContents)
+            } else if (existingContents instanceof PdfArray) {
+                for (const item of existingContents.items) {
+                    if (item instanceof PdfObjectReference) {
+                        existingRefs.push(item)
+                    }
                 }
             }
         }

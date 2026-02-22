@@ -26,6 +26,8 @@ export interface PdfXfaFieldLayout {
     w?: number
     /** Height in PDF points */
     h?: number
+    /** 0-based PDF page index this element belongs to */
+    pageIndex: number
 }
 
 // ---------------------------------------------------------------------------
@@ -180,6 +182,49 @@ function parseXml(xml: string): XmlElement {
 }
 
 // ---------------------------------------------------------------------------
+// DOMParser-based parsing (handles complex real-world XFA with large CDATA/script blocks)
+// Falls back to the custom parser for synthetic/namespace-prefixed-only XML.
+// ---------------------------------------------------------------------------
+
+function domToXmlElement(el: Element): XmlElement {
+    const children: XmlElement[] = []
+    for (let i = 0; i < el.children.length; i++) {
+        children.push(domToXmlElement(el.children[i]))
+    }
+    const attrs: Record<string, string> = {}
+    for (let i = 0; i < el.attributes.length; i++) {
+        const attr = el.attributes[i]
+        attrs[attr.name] = attr.value
+    }
+    return {
+        localName: el.localName,
+        attrs,
+        children,
+        text: el.children.length === 0 ? (el.textContent ?? '').trim() : '',
+    }
+}
+
+function parseXmlSafe(xml: string): XmlElement {
+    // Only use DOMParser when the XML has explicit namespace declarations —
+    // which all real XFA documents from PDFs will have. Test fixtures that use
+    // bare namespace prefixes (no xmlns: attributes) continue to use the custom
+    // parser so their behaviour is unchanged.
+    const hasNsDeclarations = /xmlns(?::\w+)?=/.test(xml.slice(0, 2000))
+    if (hasNsDeclarations && typeof DOMParser !== 'undefined') {
+        try {
+            const doc = new DOMParser().parseFromString(xml, 'application/xml')
+            const root = doc.documentElement
+            if (root && root.localName !== 'parsererror') {
+                return domToXmlElement(root)
+            }
+        } catch {
+            // fall through to custom parser
+        }
+    }
+    return parseXml(xml)
+}
+
+// ---------------------------------------------------------------------------
 // XFA template tree walking
 // ---------------------------------------------------------------------------
 
@@ -247,6 +292,13 @@ function extractCaptionText(el: XmlElement): string | undefined {
     return text?.text || undefined
 }
 
+function extractDrawText(el: XmlElement): string | undefined {
+    const value = findChild(el, 'value')
+    if (!value) return undefined
+    const text = findChild(value, 'text')
+    return text?.text || undefined
+}
+
 function extractOptions(el: XmlElement): string[] {
     const options: string[] = []
     for (const items of findChildren(el, 'items')) {
@@ -261,6 +313,11 @@ function walkSubform(
     el: XmlElement,
     results: PdfXfaFieldLayout[],
     namePrefix: string,
+    depth: number = 0,
+    pageCounter: { value: number } = { value: 0 },
+    pageIndex: number = 0,
+    offsetX: number = 0,
+    offsetY: number = 0,
 ): void {
     for (const child of el.children) {
         if (child.localName === 'subform') {
@@ -270,7 +327,38 @@ function walkSubform(
                     ? `${namePrefix}.${subName}`
                     : subName
                 : namePrefix
-            walkSubform(child, results, prefix)
+
+            if (depth === 1) {
+                // Each subform at depth 1 is an XFA page → assign incrementing pageIndex.
+                // Use the page subform's own x/y as the initial content offset.
+                const pIdx = pageCounter.value++
+                const pX = parseUnit(child.attrs['x']) ?? 0
+                const pY = parseUnit(child.attrs['y']) ?? 0
+                walkSubform(
+                    child,
+                    results,
+                    prefix,
+                    depth + 1,
+                    pageCounter,
+                    pIdx,
+                    pX,
+                    pY,
+                )
+            } else {
+                // Accumulate this subform's position into the running offset.
+                const subX = offsetX + (parseUnit(child.attrs['x']) ?? 0)
+                const subY = offsetY + (parseUnit(child.attrs['y']) ?? 0)
+                walkSubform(
+                    child,
+                    results,
+                    prefix,
+                    depth + 1,
+                    pageCounter,
+                    pageIndex,
+                    subX,
+                    subY,
+                )
+            }
         } else if (child.localName === 'field' || child.localName === 'draw') {
             const fieldName = child.attrs['name']
             if (!fieldName) continue
@@ -281,7 +369,9 @@ function walkSubform(
             const isDraw = child.localName === 'draw'
             const type = isDraw ? 'Draw' : detectFieldType(child)
             const { fontName, fontSize } = extractFontInfo(child)
-            const captionText = extractCaptionText(child)
+            const captionText = isDraw
+                ? (extractDrawText(child) ?? extractCaptionText(child))
+                : extractCaptionText(child)
             const options =
                 type === 'Choice' ? extractOptions(child) : undefined
 
@@ -292,10 +382,11 @@ function walkSubform(
                 fontSize,
                 captionText,
                 options: options?.length ? options : undefined,
-                x: parseUnit(child.attrs['x']),
-                y: parseUnit(child.attrs['y']),
+                x: offsetX + (parseUnit(child.attrs['x']) ?? 0),
+                y: offsetY + (parseUnit(child.attrs['y']) ?? 0),
                 w: parseUnit(child.attrs['w']),
                 h: parseUnit(child.attrs['h']),
+                pageIndex,
             })
         }
     }
@@ -325,7 +416,7 @@ export class PdfXfaTemplate {
      * info, and caption text.
      */
     extractFieldLayouts(): PdfXfaFieldLayout[] {
-        const root = parseXml(this.xml)
+        const root = parseXmlSafe(this.xml)
         const results: PdfXfaFieldLayout[] = []
 
         // Locate the <template> element (may be root or nested under <xdp>)
@@ -338,8 +429,33 @@ export class PdfXfaTemplate {
 
         if (!templateEl) return results
 
-        walkSubform(templateEl, results, '')
+        walkSubform(templateEl, results, '', 0, { value: 0 }, 0)
         return results
+    }
+
+    /**
+     * Returns page dimensions (in PDF points) declared in the XFA template's
+     * `pageSet > pageArea` elements, in document order.
+     */
+    extractPageAreas(): Array<{ width: number; height: number }> {
+        const root = parseXmlSafe(this.xml)
+        let templateEl: XmlElement | undefined
+        if (root.localName === 'template') {
+            templateEl = root
+        } else {
+            templateEl = findDescendant(root, 'template')
+        }
+        if (!templateEl) return []
+
+        const pageSet = findDescendant(templateEl, 'pageSet')
+        if (!pageSet) return []
+
+        return findChildren(pageSet, 'pageArea')
+            .map((area) => ({
+                width: parseUnit(area.attrs['w']) ?? 0,
+                height: parseUnit(area.attrs['h']) ?? 0,
+            }))
+            .filter((a) => a.width > 0 && a.height > 0)
     }
 
     /**

@@ -12,7 +12,7 @@
 
 ## Extended by
 
-- [`PdfDefaultAppearance`](../../../../acroform/fields/PdfDefaultAppearance/classes/PdfDefaultAppearance.md)
+- [`PdfDefaultAppearance`](../../../../acroform/fields/pdf-default-appearance/classes/PdfDefaultAppearance.md)
 - [`PdfDate`](../../pdf-date/classes/PdfDate.md)
 
 ## Constructors

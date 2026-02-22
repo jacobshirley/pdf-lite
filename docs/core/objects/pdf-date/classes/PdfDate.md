@@ -155,7 +155,7 @@ The type of this PDF object
 
 #### Inherited from
 
-[`PdfDefaultAppearance`](../../../../acroform/fields/PdfDefaultAppearance/classes/PdfDefaultAppearance.md).[`raw`](../../../../acroform/fields/PdfDefaultAppearance/classes/PdfDefaultAppearance.md#raw)
+[`PdfDefaultAppearance`](../../../../acroform/fields/pdf-default-appearance/classes/PdfDefaultAppearance.md).[`raw`](../../../../acroform/fields/pdf-default-appearance/classes/PdfDefaultAppearance.md#raw)
 
 ---
 

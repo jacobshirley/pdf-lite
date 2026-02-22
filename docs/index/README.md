@@ -298,7 +298,7 @@ Re-exports [encodeAsUTF16BE](../utils/encodeAsUTF16BE/functions/encodeAsUTF16BE.
 
 ### EofReachedError
 
-Re-exports [EofReachedError](../core/parser/incremental-parser/classes/EofReachedError.md)
+Re-exports [EofReachedError](../errors/classes/EofReachedError.md)
 
 ---
 
@@ -346,7 +346,7 @@ Re-exports [FontParser](../fonts/types/interfaces/FontParser.md)
 
 ### FoundCompressedObjectError
 
-Re-exports [FoundCompressedObjectError](../pdf/errors/classes/FoundCompressedObjectError.md)
+Re-exports [FoundCompressedObjectError](../errors/classes/FoundCompressedObjectError.md)
 
 ---
 
@@ -442,7 +442,7 @@ Re-exports [isSupportedFontFormat](../fonts/parsers/font-parser/functions/isSupp
 
 ### IterableReadableStream
 
-Re-exports [IterableReadableStream](../utils/IterableReadableStream/classes/IterableReadableStream.md)
+Re-exports [IterableReadableStream](../utils/iterable-readable-stream/classes/IterableReadableStream.md)
 
 ---
 
@@ -466,7 +466,7 @@ Re-exports [needsUnicodeEncoding](../utils/needsUnicodeEncoding/functions/needsU
 
 ### NoMoreTokensError
 
-Re-exports [NoMoreTokensError](../core/parser/incremental-parser/classes/NoMoreTokensError.md)
+Re-exports [NoMoreTokensError](../errors/classes/NoMoreTokensError.md)
 
 ---
 
@@ -538,25 +538,25 @@ Re-exports [PdfAdbePkcsX509RsaSha1SignatureObject](../signing/signatures/adbe-x5
 
 ### PdfAnnotation
 
-Re-exports [PdfAnnotation](../annotations/PdfAnnotation/classes/PdfAnnotation.md)
+Re-exports [PdfAnnotation](../annotations/pdf-annotation/classes/PdfAnnotation.md)
 
 ---
 
 ### PdfAnnotationFlags
 
-Re-exports [PdfAnnotationFlags](../annotations/PdfAnnotationFlags/classes/PdfAnnotationFlags.md)
+Re-exports [PdfAnnotationFlags](../annotations/pdf-annotation-flags/classes/PdfAnnotationFlags.md)
 
 ---
 
 ### PdfAnnotationWriter
 
-Re-exports [PdfAnnotationWriter](../annotations/PdfAnnotationWriter/classes/PdfAnnotationWriter.md)
+Re-exports [PdfAnnotationWriter](../annotations/pdf-annotation-writer/classes/PdfAnnotationWriter.md)
 
 ---
 
 ### PdfAppearanceStreamDictionary
 
-Re-exports [PdfAppearanceStreamDictionary](../annotations/PdfAnnotation/type-aliases/PdfAppearanceStreamDictionary.md)
+Re-exports [PdfAppearanceStreamDictionary](../annotations/pdf-annotation/type-aliases/PdfAppearanceStreamDictionary.md)
 
 ---
 
@@ -796,7 +796,7 @@ Re-exports [PdfFont](../fonts/pdf-font/classes/PdfFont.md)
 
 ### PdfFontManager
 
-Re-exports [PdfFontManager](../fonts/font-manager/classes/PdfFontManager.md)
+Re-exports [PdfFontManager](../fonts/manager/classes/PdfFontManager.md)
 
 ---
 
@@ -1162,7 +1162,7 @@ Re-exports [PdfWhitespaceToken](../core/tokens/whitespace-token/classes/PdfWhite
 
 ### PdfWidgetAnnotation
 
-Re-exports [PdfWidgetAnnotation](../annotations/PdfWidgetAnnotation/classes/PdfWidgetAnnotation.md)
+Re-exports [PdfWidgetAnnotation](../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md)
 
 ---
 
@@ -1360,7 +1360,7 @@ Re-exports [unescapeString](../utils/unescapeString/functions/unescapeString.md)
 
 ### UnexpectedTokenError
 
-Re-exports [UnexpectedTokenError](../core/parser/incremental-parser/classes/UnexpectedTokenError.md)
+Re-exports [UnexpectedTokenError](../errors/classes/UnexpectedTokenError.md)
 
 ---
 

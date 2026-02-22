@@ -10,28 +10,28 @@
 
 ### PdfAnnotation
 
-Re-exports [PdfAnnotation](PdfAnnotation/classes/PdfAnnotation.md)
+Re-exports [PdfAnnotation](pdf-annotation/classes/PdfAnnotation.md)
 
 ---
 
 ### PdfAnnotationFlags
 
-Re-exports [PdfAnnotationFlags](PdfAnnotationFlags/classes/PdfAnnotationFlags.md)
+Re-exports [PdfAnnotationFlags](pdf-annotation-flags/classes/PdfAnnotationFlags.md)
 
 ---
 
 ### PdfAnnotationWriter
 
-Re-exports [PdfAnnotationWriter](PdfAnnotationWriter/classes/PdfAnnotationWriter.md)
+Re-exports [PdfAnnotationWriter](pdf-annotation-writer/classes/PdfAnnotationWriter.md)
 
 ---
 
 ### PdfAppearanceStreamDictionary
 
-Re-exports [PdfAppearanceStreamDictionary](PdfAnnotation/type-aliases/PdfAppearanceStreamDictionary.md)
+Re-exports [PdfAppearanceStreamDictionary](pdf-annotation/type-aliases/PdfAppearanceStreamDictionary.md)
 
 ---
 
 ### PdfWidgetAnnotation
 
-Re-exports [PdfWidgetAnnotation](PdfWidgetAnnotation/classes/PdfWidgetAnnotation.md)
+Re-exports [PdfWidgetAnnotation](pdf-widget-annotation/classes/PdfWidgetAnnotation.md)

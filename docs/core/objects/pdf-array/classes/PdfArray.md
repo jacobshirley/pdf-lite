@@ -12,7 +12,7 @@
 
 ## Extended by
 
-- [`PdfXfaForm`](../../../../acroform/xfa/PdfXfaForm/classes/PdfXfaForm.md)
+- [`PdfXfaForm`](../../../../acroform/xfa/pdf-xfa-form/classes/PdfXfaForm.md)
 
 ## Type Parameters
 

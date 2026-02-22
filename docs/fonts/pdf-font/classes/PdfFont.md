@@ -17,6 +17,24 @@ Extends PdfDictionary to provide both font metadata and PDF dictionary structure
 
 ### Constructor
 
+> **new PdfFont**(`fontName`): `PdfFont`
+
+#### Parameters
+
+##### fontName
+
+`string`
+
+#### Returns
+
+`PdfFont`
+
+#### Overrides
+
+[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`constructor`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#constructor)
+
+### Constructor
+
 > **new PdfFont**(`options`): `PdfFont`
 
 #### Parameters
@@ -49,7 +67,7 @@ Extends PdfDictionary to provide both font metadata and PDF dictionary structure
 
 ###### manager?
 
-[`PdfFontManager`](../../font-manager/classes/PdfFontManager.md)
+[`PdfFontManager`](../../manager/classes/PdfFontManager.md)
 
 ###### resourceName?
 
@@ -61,7 +79,7 @@ Extends PdfDictionary to provide both font metadata and PDF dictionary structure
 
 #### Overrides
 
-[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`constructor`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#constructor)
+PdfDictionary\<\{ Type: PdfName\<'Font'\> Subtype: PdfName\<'Type1' \| 'TrueType' \| 'Type0'\> BaseFont: PdfName FontDescriptor?: PdfObjectReference Encoding?: PdfName FirstChar?: PdfNumber LastChar?: PdfNumber Widths?: PdfArray\<PdfNumber\> DescendantFonts?: PdfArray\<PdfObjectReference\> ToUnicode?: PdfObjectReference \}\>.constructor
 
 ## Properties
 
@@ -147,6 +165,90 @@ Optional tokens to prepend or append during serialization
 
 The PDF resource name used in content streams (e.g., 'F1', 'F2').
 This is the identifier used in PDF operators like `/F1 12 Tf`.
+
+---
+
+### COURIER
+
+> `readonly` `static` **COURIER**: `PdfFont`
+
+---
+
+### COURIER_BOLD
+
+> `readonly` `static` **COURIER_BOLD**: `PdfFont`
+
+---
+
+### COURIER_BOLD_OBLIQUE
+
+> `readonly` `static` **COURIER_BOLD_OBLIQUE**: `PdfFont`
+
+---
+
+### COURIER_OBLIQUE
+
+> `readonly` `static` **COURIER_OBLIQUE**: `PdfFont`
+
+---
+
+### HELVETICA
+
+> `readonly` `static` **HELVETICA**: `PdfFont`
+
+---
+
+### HELVETICA_BOLD
+
+> `readonly` `static` **HELVETICA_BOLD**: `PdfFont`
+
+---
+
+### HELVETICA_BOLD_OBLIQUE
+
+> `readonly` `static` **HELVETICA_BOLD_OBLIQUE**: `PdfFont`
+
+---
+
+### HELVETICA_OBLIQUE
+
+> `readonly` `static` **HELVETICA_OBLIQUE**: `PdfFont`
+
+---
+
+### SYMBOL
+
+> `readonly` `static` **SYMBOL**: `PdfFont`
+
+---
+
+### TIMES_BOLD
+
+> `readonly` `static` **TIMES_BOLD**: `PdfFont`
+
+---
+
+### TIMES_BOLD_ITALIC
+
+> `readonly` `static` **TIMES_BOLD_ITALIC**: `PdfFont`
+
+---
+
+### TIMES_ITALIC
+
+> `readonly` `static` **TIMES_ITALIC**: `PdfFont`
+
+---
+
+### TIMES_ROMAN
+
+> `readonly` `static` **TIMES_ROMAN**: `PdfFont`
+
+---
+
+### ZAPF_DINGBATS
+
+> `readonly` `static` **ZAPF_DINGBATS**: `PdfFont`
 
 ## Accessors
 
@@ -574,6 +676,64 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### getCharacterWidth()
+
+> **getCharacterWidth**(`charCode`, `fontSize`): `number` \| `null`
+
+Gets the character width scaled to the specified font size.
+Returns null if the character is not in the font's width table.
+
+#### Parameters
+
+##### charCode
+
+`number`
+
+The character code to get the width for
+
+##### fontSize
+
+`number`
+
+The font size to scale to
+
+#### Returns
+
+`number` \| `null`
+
+The scaled character width or null if not found
+
+---
+
+### getCharacterWidthsForString()
+
+> **getCharacterWidthsForString**(`text`, `fontSize`): (`number` \| `null`)[]
+
+Gets character widths for all characters in a string.
+Returns null for characters not in the font's width table.
+
+#### Parameters
+
+##### text
+
+`string`
+
+The text to get character widths for
+
+##### fontSize
+
+`number`
+
+The font size to scale to
+
+#### Returns
+
+(`number` \| `null`)[]
+
+Array of character widths (null for missing characters)
+
+---
+
 ### getObjectsToCommit()
 
 > **getObjectsToCommit**(): [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>[]
@@ -584,6 +744,29 @@ Includes auxiliary objects (descriptors, streams) and the container.
 #### Returns
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>[]
+
+---
+
+### getRawCharacterWidth()
+
+> **getRawCharacterWidth**(`charCode`): `number` \| `null`
+
+Gets the raw character width (in 1000-unit em square) for a character code.
+Returns null if the character is not in the font's width table.
+
+#### Parameters
+
+##### charCode
+
+`number`
+
+The character code to get the width for
+
+#### Returns
+
+`number` \| `null`
+
+The raw character width or null if not found
 
 ---
 
@@ -610,6 +793,28 @@ Includes auxiliary objects (descriptors, streams) and the container.
 #### Inherited from
 
 [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`has`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#has)
+
+---
+
+### hasCharacterWidth()
+
+> **hasCharacterWidth**(`charCode`): `boolean`
+
+Checks if the font has width data for a character code.
+
+#### Parameters
+
+##### charCode
+
+`number`
+
+The character code to check
+
+#### Returns
+
+`boolean`
+
+True if width data is available, false otherwise
 
 ---
 
@@ -843,7 +1048,7 @@ A PdfFont instance ready to be written to the PDF
 
 ### fromStandardFont()
 
-> `static` **fromStandardFont**(`fontName`): `PdfFont`
+> `static` **fromStandardFont**(`fontName`, `widths?`): `PdfFont`
 
 Creates a standard PDF Type1 font (one of the 14 built-in fonts).
 These fonts don't require font data as they're built into PDF viewers.
@@ -852,9 +1057,15 @@ These fonts don't require font data as they're built into PDF viewers.
 
 ##### fontName
 
+`PdfStandardFontName`
+
 One of the 14 standard PDF fonts
 
-`"Helvetica"` | `"Helvetica-Bold"` | `"Helvetica-Oblique"` | `"Helvetica-BoldOblique"` | `"Times-Roman"` | `"Times-Bold"` | `"Times-Italic"` | `"Times-BoldItalic"` | `"Courier"` | `"Courier-Bold"` | `"Courier-Oblique"` | `"Courier-BoldOblique"` | `"Symbol"` | `"ZapfDingbats"`
+##### widths?
+
+`number`[]
+
+Optional AFM widths array (1/1000 em units) for chars 32–126
 
 #### Returns
 
@@ -937,3 +1148,21 @@ Optional map of CID to Unicode code point for ToUnicode CMap
 `PdfFont`
 
 A PdfFont instance ready to be written to the PDF
+
+---
+
+### getStandardFont()
+
+> `static` **getStandardFont**(`fontName`): `PdfFont` \| `null`
+
+Returns the static PdfFont instance for a standard font name, or null if not found.
+
+#### Parameters
+
+##### fontName
+
+`string`
+
+#### Returns
+
+`PdfFont` \| `null`

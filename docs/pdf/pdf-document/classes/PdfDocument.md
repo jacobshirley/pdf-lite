@@ -95,7 +95,7 @@ PDF version string (e.g., '1.7', '2.0') or version comment
 
 ### fonts
 
-> `readonly` **fonts**: [`PdfFontManager`](../../../fonts/font-manager/classes/PdfFontManager.md)
+> `readonly` **fonts**: [`PdfFontManager`](../../../fonts/manager/classes/PdfFontManager.md)
 
 ---
 

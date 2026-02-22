@@ -1,6 +1,7 @@
 import { PdfDocument } from '../pdf/pdf-document.js'
 import { PdfAcroForm } from './acroform.js'
 import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
+import type { PdfJsEngine } from './js/pdf-js-engine.js'
 
 /**
  * Manages AcroForm fields in PDF documents.
@@ -9,9 +10,11 @@ import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
 export class PdfAcroFormManager {
     private document: PdfDocument
     private _acroform: PdfAcroForm | null = null
+    private _jsEngine?: PdfJsEngine
 
-    constructor(document: PdfDocument) {
+    constructor(document: PdfDocument, options?: { jsEngine?: PdfJsEngine }) {
         this.document = document
+        this._jsEngine = options?.jsEngine
     }
 
     /**
@@ -42,6 +45,9 @@ export class PdfAcroFormManager {
     async read(): Promise<PdfAcroForm | null> {
         if (this._acroform) return this._acroform
         this._acroform = await PdfAcroForm.fromDocument(this.document)
+        if (this._acroform && this._jsEngine) {
+            this._acroform.jsEngine = this._jsEngine
+        }
         return this._acroform
     }
 

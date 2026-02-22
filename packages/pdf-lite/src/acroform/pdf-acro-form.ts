@@ -10,6 +10,7 @@ import { PdfFontEncodingCache } from './pdf-font-encoding-cache.js'
 import { PdfAnnotationWriter } from '../annotations/pdf-annotation-writer.js'
 import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
 import { PdfFormField } from './fields/pdf-form-field.js'
+import type { PdfJsEngine, PdfJsEvent } from './js/pdf-js-engine.js'
 // Import subclasses to trigger static registration blocks
 import './fields/pdf-text-form-field.js'
 import './fields/pdf-button-form-field.js'
@@ -45,6 +46,8 @@ export class PdfAcroForm<
     implements FormContext<PdfFormField>
 {
     fields: PdfFormField[]
+    /** Optional JavaScript engine used to execute field actions during data import. */
+    jsEngine?: PdfJsEngine
     private _fontEncodingCache?: PdfFontEncodingCache
     private document?: PdfDocument
     private _xfa?: PdfXfaForm | null // undefined = not set; null = explicitly no XFA
@@ -141,8 +144,10 @@ export class PdfAcroForm<
             const name = field.name
             if (name in values && values[name] !== undefined) {
                 field.value = values[name]
+                this._fireValidate(field, values[name] as string)
             }
         }
+        this._fireCalculate()
     }
 
     importData(fields: T): void {
@@ -150,7 +155,53 @@ export class PdfAcroForm<
             const name = field.name
             if (name && name in fields) {
                 field.value = fields[name]
+                this._fireValidate(field, fields[name])
             }
+        }
+        this._fireCalculate()
+    }
+
+    private _fireValidate(field: PdfFormField, value: string): void {
+        if (!this.jsEngine) return
+        const validateAction = field.actions?.validate
+        if (!validateAction) return
+        const event: PdfJsEvent = {
+            fieldName: field.name,
+            value,
+            willCommit: true,
+            rc: true,
+        }
+        this.jsEngine.execute(validateAction.code, event)
+    }
+
+    private _fireCalculate(): void {
+        if (!this.jsEngine) return
+
+        let calcFields: PdfFormField[]
+        const co = this.content.get('CO')?.as(PdfArray<PdfObjectReference>)
+        if (co && co.items.length > 0) {
+            calcFields = []
+            for (const ref of co.items) {
+                const f = this.fields.find(
+                    (field) =>
+                        field.objectNumber === ref.objectNumber &&
+                        field.generationNumber === ref.generationNumber,
+                )
+                if (f) calcFields.push(f)
+            }
+        } else {
+            calcFields = this.fields
+        }
+
+        for (const field of calcFields) {
+            const calcAction = field.actions?.calculate
+            if (!calcAction) continue
+            const event: PdfJsEvent = {
+                fieldName: field.name,
+                value: field.value,
+                rc: true,
+            }
+            this.jsEngine.execute(calcAction.code, event)
         }
     }
 
@@ -262,6 +313,12 @@ export class PdfAcroForm<
 
         await getFields(fieldsArray.items)
 
+        // Resolve indirect /AA and /A action dictionaries so field.actions
+        // works synchronously after loading.
+        for (const field of acroForm.fields) {
+            await PdfAcroForm.resolveFieldActions(field, document)
+        }
+
         // Pre-cache font encoding maps now that this.fields is populated
         await acroForm.cacheAllFontEncodings()
 
@@ -271,6 +328,53 @@ export class PdfAcroForm<
         }
 
         return acroForm
+    }
+
+    /**
+     * Resolves indirect-object references for `/AA` and `/A` on a field,
+     * inlining the action dictionaries so `field.actions` can be read
+     * synchronously without further async document lookups.
+     */
+    private static async resolveFieldActions(
+        field: PdfFormField,
+        document: PdfDocument,
+    ): Promise<void> {
+        const content = field.content
+
+        // Resolve /AA (Additional Actions)
+        const aaRaw = content.get('AA')
+        let aaDict: PdfDictionary | null = null
+        if (aaRaw instanceof PdfObjectReference) {
+            const obj = await document.readObject(aaRaw)
+            if (obj?.content instanceof PdfDictionary) {
+                aaDict = obj.content as PdfDictionary
+                content.set('AA', aaDict)
+            }
+        } else if (aaRaw instanceof PdfDictionary) {
+            aaDict = aaRaw
+        }
+
+        // Resolve indirect entries within /AA (K, V, C, F, E, X, D, U)
+        if (aaDict) {
+            for (const key of ['K', 'V', 'C', 'F', 'E', 'X', 'D', 'U']) {
+                const entryRaw = aaDict.get(key)
+                if (entryRaw instanceof PdfObjectReference) {
+                    const obj = await document.readObject(entryRaw)
+                    if (obj?.content instanceof PdfDictionary) {
+                        aaDict.set(key, obj.content as PdfDictionary)
+                    }
+                }
+            }
+        }
+
+        // Resolve /A (primary action)
+        const aRaw = content.get('A')
+        if (aRaw instanceof PdfObjectReference) {
+            const obj = await document.readObject(aRaw)
+            if (obj?.content instanceof PdfDictionary) {
+                content.set('A', obj.content as PdfDictionary)
+            }
+        }
     }
 
     private async cacheAllFontEncodings(): Promise<void> {

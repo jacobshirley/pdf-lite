@@ -13,8 +13,9 @@ import { PdfDefaultAppearance } from './pdf-default-appearance.js'
 import type { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js'
 import type { FormContext, PdfFieldType } from './types.js'
 import { PdfFieldType as PdfFieldTypeConst } from './types.js'
-
 import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
+import { PdfFieldActions } from '../js/pdf-field-actions.js'
+import { PdfJavaScriptAction } from '../js/pdf-javascript-action.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -459,6 +460,31 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
         const kidsArray = new PdfArray<PdfObjectReference>(kids)
         this.content.set('Kids', kidsArray)
+    }
+
+    /**
+     * Returns the field's Additional Actions (`/AA`) wrapped in a
+     * `PdfFieldActions` helper, or `null` if no `/AA` dictionary is present.
+     * Also includes the field's primary action (`/A`) on the `activate` getter.
+     */
+    get actions(): PdfFieldActions | null {
+        const aaRaw = this.content.get('AA')
+        // Only handle inline dicts; indirect-object AA refs require async resolution
+        if (!(aaRaw instanceof PdfDictionary)) return null
+        const aRaw = this.content.get('A')
+        const a = aRaw instanceof PdfDictionary ? aRaw : null
+        return new PdfFieldActions(aaRaw, a)
+    }
+
+    /**
+     * Returns the field's primary activation action (`/A`) as a
+     * `PdfJavaScriptAction`, or `null` if none is present.
+     * Used by push-button fields for click actions.
+     */
+    get activateAction(): PdfJavaScriptAction | null {
+        const aRaw = this.content.get('A')
+        if (!(aRaw instanceof PdfDictionary)) return null
+        return new PdfJavaScriptAction(aRaw)
     }
 
     abstract generateAppearance(options?: {

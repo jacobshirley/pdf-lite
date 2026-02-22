@@ -487,9 +487,9 @@ function buildDrawContentStream(
 
             ops.push(`${n(textX)} ${n(textY)} Td`)
 
-            // Escape text for PDF string
-            const escapedText = escapePdfString(draw.text)
-            ops.push(`(${escapedText}) Tj`)
+            // Encode text as hex string in WinAnsiEncoding
+            const hexText = encodeWinAnsiHex(draw.text)
+            ops.push(`<${hexText}> Tj`)
 
             ops.push('ET')
         }
@@ -506,13 +506,101 @@ function n(value: number): string {
     return value.toFixed(2).replace(/\.?0+$/, '') || '0'
 }
 
-/** Escape a string for use in a PDF literal string (parentheses) */
-function escapePdfString(text: string): string {
-    return text
-        .replace(/\\/g, '\\\\')
-        .replace(/\(/g, '\\(')
-        .replace(/\)/g, '\\)')
-        .replace(/\r\n/g, '\\n')
-        .replace(/\r/g, '\\n')
-        .replace(/\n/g, '\\n')
+/**
+ * Encode a string to WinAnsiEncoding hex string for PDF content streams.
+ * Characters in Windows-1252 are mapped to their byte values.
+ * Characters outside WinAnsiEncoding (e.g. Polish ł, ą, ę) use closest fallbacks.
+ */
+function encodeWinAnsiHex(text: string): string {
+    const bytes: number[] = []
+    for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i)
+        if (code < 0x80) {
+            // ASCII — maps directly
+            bytes.push(code)
+        } else if (code <= 0xff) {
+            // Latin-1 Supplement (0x80-0xFF) maps directly in WinAnsiEncoding
+            bytes.push(code)
+        } else {
+            // Outside WinAnsiEncoding — use fallback
+            const fallback = UNICODE_TO_WINANSI.get(code)
+            if (fallback !== undefined) {
+                bytes.push(fallback)
+            } else {
+                bytes.push(0x3f) // '?' for unmappable
+            }
+        }
+    }
+    return bytes.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
+
+/** Mapping of Unicode code points outside Latin-1 to WinAnsiEncoding bytes */
+const UNICODE_TO_WINANSI = new Map<number, number>([
+    // Windows-1252 special range (0x80-0x9F differ from Unicode)
+    [0x20ac, 0x80], // €
+    [0x201a, 0x82], // ‚
+    [0x0192, 0x83], // ƒ
+    [0x201e, 0x84], // „
+    [0x2026, 0x85], // …
+    [0x2020, 0x86], // †
+    [0x2021, 0x87], // ‡
+    [0x02c6, 0x88], // ˆ
+    [0x2030, 0x89], // ‰
+    [0x0160, 0x8a], // Š
+    [0x2039, 0x8b], // ‹
+    [0x0152, 0x8c], // Œ
+    [0x017d, 0x8e], // Ž
+    [0x2018, 0x91], // '
+    [0x2019, 0x92], // '
+    [0x201c, 0x93], // "
+    [0x201d, 0x94], // "
+    [0x2022, 0x95], // •
+    [0x2013, 0x96], // –
+    [0x2014, 0x97], // —
+    [0x02dc, 0x98], // ˜
+    [0x2122, 0x99], // ™
+    [0x0161, 0x9a], // š
+    [0x203a, 0x9b], // ›
+    [0x0153, 0x9c], // œ
+    [0x017e, 0x9e], // ž
+    [0x0178, 0x9f], // Ÿ
+    // Polish characters — fallback to closest ASCII equivalents
+    // (Helvetica doesn't have these glyphs in WinAnsiEncoding)
+    [0x0104, 0x41], // Ą → A
+    [0x0105, 0x61], // ą → a
+    [0x0106, 0x43], // Ć → C
+    [0x0107, 0x63], // ć → c
+    [0x0118, 0x45], // Ę → E
+    [0x0119, 0x65], // ę → e
+    [0x0141, 0x4c], // Ł → L
+    [0x0142, 0x6c], // ł → l
+    [0x0143, 0x4e], // Ń → N
+    [0x0144, 0x6e], // ń → n
+    [0x015a, 0x53], // Ś → S
+    [0x015b, 0x73], // ś → s
+    [0x0179, 0x5a], // Ź → Z
+    [0x017a, 0x7a], // ź → z
+    [0x017b, 0x5a], // Ż → Z
+    [0x017c, 0x7a], // ż → z
+    // Czech/Slovak/other Central European fallbacks
+    [0x010c, 0x43], // Č → C
+    [0x010d, 0x63], // č → c
+    [0x010e, 0x44], // Ď → D
+    [0x010f, 0x64], // ď → d
+    [0x011a, 0x45], // Ě → E
+    [0x011b, 0x65], // ě → e
+    [0x0139, 0x4c], // Ĺ → L
+    [0x013a, 0x6c], // ĺ → l
+    [0x013d, 0x4c], // Ľ → L
+    [0x013e, 0x6c], // ľ → l
+    [0x0147, 0x4e], // Ň → N
+    [0x0148, 0x6e], // ň → n
+    [0x0154, 0x52], // Ŕ → R
+    [0x0155, 0x72], // ŕ → r
+    [0x0158, 0x52], // Ř → R
+    [0x0159, 0x72], // ř → r
+    [0x0164, 0x54], // Ť → T
+    [0x0165, 0x74], // ť → t
+    [0x016e, 0x55], // Ů → U
+    [0x016f, 0x75], // ů → u
+])

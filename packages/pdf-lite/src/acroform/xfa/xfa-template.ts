@@ -405,7 +405,13 @@ function extractValue(fieldNode: any): string {
 
 /** Get the height of a node, used for tb layout stacking */
 function getNodeHeight(node: any): number {
-    return parseMeasurement(node?.['@_h'])
+    return parseMeasurement(node?.['@_h']) || parseMeasurement(node?.['@_minH'])
+}
+
+/** Check if a node is hidden (presence="hidden" or presence="inactive") */
+function isHidden(node: any): boolean {
+    const p = node?.['@_presence']
+    return p === 'hidden' || p === 'inactive'
 }
 
 /**
@@ -428,6 +434,51 @@ function advancePage(ctx: WalkContext): void {
 }
 
 /**
+ * Process area elements recursively. Areas can contain fields, draws,
+ * exclGroups, subforms, and nested areas.
+ */
+function processAreas(
+    areas: any[],
+    pathPrefix: string,
+    parentX: number,
+    parentY: number,
+    ctx: WalkContext,
+): void {
+    for (const area of areas) {
+        const areaX = parentX + parseMeasurement(area['@_x'])
+        const areaY = parentY + parseMeasurement(area['@_y'])
+
+        emitFields(ensureArray(area.field), pathPrefix, areaX, areaY, ctx)
+        emitDraws(ensureArray(area.draw), areaX, areaY, ctx)
+
+        for (const group of ensureArray(area.exclGroup)) {
+            const groupName = group['@_name'] ?? ''
+            const groupPath = pathPrefix
+                ? groupName
+                    ? `${pathPrefix}.${groupName}`
+                    : pathPrefix
+                : groupName
+            const gx = areaX + parseMeasurement(group['@_x'])
+            const gy = areaY + parseMeasurement(group['@_y'])
+            for (const field of ensureArray(group.field)) {
+                const fieldDef = makeFieldDef(field, groupPath, gx, gy, ctx)
+                if (fieldDef) {
+                    fieldDef.type = 'Btn'
+                    addFieldToPage(fieldDef, ctx)
+                }
+            }
+        }
+
+        for (const child of ensureArray(area.subform)) {
+            walkNode(child, pathPrefix, areaX, areaY, ctx)
+        }
+
+        // Recurse into nested areas
+        processAreas(ensureArray(area.area), pathPrefix, areaX, areaY, ctx)
+    }
+}
+
+/**
  * Recursively walk XFA nodes, handling flow layout and coordinate accumulation.
  *
  * @param node - Current XFA node
@@ -444,6 +495,7 @@ function walkNode(
     ctx: WalkContext,
 ): void {
     if (!node) return
+    if (isHidden(node)) return
 
     const nodeName = node['@_name'] ?? ''
     const currentPath = pathPrefix
@@ -486,36 +538,7 @@ function walkNode(
     }
 
     // Process areas (positioned grouping containers)
-    for (const area of ensureArray(node.area)) {
-        const areaX = localX + parseMeasurement(area['@_x'])
-        const areaY = localY + parseMeasurement(area['@_y'])
-
-        // Areas can contain fields, exclGroups, draws, and subforms
-        emitFields(ensureArray(area.field), currentPath, areaX, areaY, ctx)
-        emitDraws(ensureArray(area.draw), areaX, areaY, ctx)
-
-        for (const group of ensureArray(area.exclGroup)) {
-            const groupName = group['@_name'] ?? ''
-            const groupPath = currentPath
-                ? groupName
-                    ? `${currentPath}.${groupName}`
-                    : currentPath
-                : groupName
-            const gx = areaX + parseMeasurement(group['@_x'])
-            const gy = areaY + parseMeasurement(group['@_y'])
-            for (const field of ensureArray(group.field)) {
-                const fieldDef = makeFieldDef(field, groupPath, gx, gy, ctx)
-                if (fieldDef) {
-                    fieldDef.type = 'Btn'
-                    addFieldToPage(fieldDef, ctx)
-                }
-            }
-        }
-
-        for (const child of ensureArray(area.subform)) {
-            walkNode(child, currentPath, areaX, areaY, ctx)
-        }
-    }
+    processAreas(ensureArray(node.area), currentPath, localX, localY, ctx)
 
     // Recurse into child subforms
     const subforms = ensureArray(node.subform)
@@ -525,6 +548,9 @@ function walkNode(
         let flowY = localY
 
         for (const child of subforms) {
+            // Skip hidden subforms entirely
+            if (isHidden(child)) continue
+
             // Check for page break before
             if (hasPageBreakBefore(child)) {
                 advancePage(ctx)
@@ -642,6 +668,7 @@ function emitDraws(
     ctx: WalkContext,
 ): void {
     for (const draw of draws) {
+        if (isHidden(draw)) continue
         const drawDef = makeDrawDef(draw, parentX, parentY, ctx)
         if (drawDef) {
             addDrawToPage(drawDef, ctx)

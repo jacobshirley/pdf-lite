@@ -1048,9 +1048,9 @@ describe('Font Parsers with Minimal Test Data', () => {
             const font = PdfFont.fromBytes(ttfData)
 
             // Check that the font has the required PDF dictionary entries
-            expect(font.get('Type')?.toString()).toBe('/Font')
-            expect(font.get('Subtype')?.toString()).toBe('/TrueType')
-            expect(font.get('BaseFont')).toBeDefined()
+            expect(font.content.get('Type')?.toString()).toBe('/Font')
+            expect(font.content.get('Subtype')?.toString()).toBe('/TrueType')
+            expect(font.content.get('BaseFont')).toBeDefined()
         })
 
         it('should have embedded font data', () => {

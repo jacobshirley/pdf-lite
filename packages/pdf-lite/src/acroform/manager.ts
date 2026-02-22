@@ -1,5 +1,5 @@
 import { PdfDocument } from '../pdf/pdf-document.js'
-import { PdfAcroForm } from './acroform.js'
+import { PdfAcroForm } from './pdf-acro-form.js'
 import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
 
 /**

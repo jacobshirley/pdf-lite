@@ -855,7 +855,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         field.value = '\xA050' // Byte 160 (0xA0) should map to Euro symbol
 
         acroForm.fields.push(field)
-        await acroForm.getFontEncodingMap('Helv')
+        await acroForm.getFontByName('Helv')?.getEncodingMap(mockDocument)
 
         expect(field.value).toBe('€50')
     })
@@ -916,8 +916,6 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
 
         const acroForm = new PdfAcroForm()
 
-        await acroForm.getFontEncodingMap('Helv')
-
         const field = new PdfTextFormField({ form: acroForm })
         field.defaultAppearance = '/Helv 12 Tf'
         field.value = new PdfString(
@@ -965,15 +963,15 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         })
         acroForm.defaultResources = drDict
 
-        await acroForm.getFontEncodingMap('Helv')
+        await acroForm.getFontByName('Helv')?.getEncodingMap(mockDocument)
         const firstCallCount = readObjectCalls.length
 
-        await acroForm.getFontEncodingMap('Helv')
+        await acroForm.getFontByName('Helv')?.getEncodingMap(mockDocument)
         const secondCallCount = readObjectCalls.length
 
         expect(secondCallCount).toBe(firstCallCount)
-        expect(acroForm.fontEncodingMaps.has('Helv')).toBe(true)
-        expect(acroForm.fontEncodingMaps.get('Helv')?.get(160)).toBe('\u20AC')
+        expect(acroForm.getFontByName('Helv')).toBeDefined()
+        expect(acroForm.getFontByName('Helv')?.cachedEncodingMap?.get(160)).toBe('\u20AC')
     })
 })
 

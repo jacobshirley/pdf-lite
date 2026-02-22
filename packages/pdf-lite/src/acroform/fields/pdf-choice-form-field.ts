@@ -102,8 +102,8 @@ export class PdfChoiceFormField extends PdfFormField {
         const drFontValue = this.form?.defaultResources?.get('Font')
         const drFonts =
             drFontValue instanceof PdfDictionary ? drFontValue : undefined
-        const daFontRef = this.form?.fontRefs?.get(parsed.fontName)
-        if (drFonts || daFontRef) {
+        const font = this.form?.getFontByName(parsed.fontName)
+        if (drFonts || font) {
             // Build a fresh font dict using clean PdfObjectReferences (no
             // pre/postTokens inherited from the original parse context).
             const fontDict = new PdfDictionary()
@@ -122,21 +122,18 @@ export class PdfChoiceFormField extends PdfFormField {
                     }
                 }
             }
-            if (daFontRef && !fontDict.has(parsed.fontName)) {
+            if (font && !fontDict.has(parsed.fontName)) {
                 fontDict.set(
                     parsed.fontName,
-                    new PdfObjectReference(
-                        daFontRef.objectNumber,
-                        daFontRef.generationNumber,
-                    ),
+                    font.reference
                 )
             }
             fontResources = new PdfDictionary()
             fontResources.set('Font', fontDict)
         }
 
-        const isUnicode = this.form?.isFontUnicode(parsed.fontName) ?? false
-        const encodingMap = this.form?.fontEncodingMaps?.get(parsed.fontName)
+        const isUnicode = font?.isUnicode()
+        const encodingMap = font?.cachedEncodingMap
         const reverseEncodingMap: Map<string, number> | undefined = encodingMap
             ? new Map(Array.from(encodingMap, ([code, char]) => [char, code]))
             : undefined

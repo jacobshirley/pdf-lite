@@ -217,7 +217,6 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
         const availableHeight = height - 2 * padding
 
         const stream = new PdfContentStream({})
-
         const layout = new PdfTextLayout({ defaultAppearance, resolvedFonts })
 
         // Calculate if we need to scale down

@@ -7,6 +7,7 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { ByteArray } from '../types.js'
 import { FontDescriptor, UnicodeFontDescriptor } from './types.js'
 import { PdfFont } from './pdf-font.js'
+import { PdfFontEncoding } from './pdf-font-encoding.js'
 import { parseFont } from './parsers/font-parser.js'
 
 /**
@@ -16,13 +17,10 @@ import { parseFont } from './parsers/font-parser.js'
 export class PdfFontManager {
     private document: PdfDocument
     private fontResourceCounter: number = 0
+    private _fontsCache?: Map<string, PdfFont>
 
     constructor(document: PdfDocument) {
         this.document = document
-    }
-
-    async findFontByName(fontName: string): Promise<PdfFont | undefined> {
-        return await this.searchFontInPdf(fontName)
     }
 
     /**
@@ -143,8 +141,8 @@ export class PdfFontManager {
     /**
      * Gets the font reference by font name or resource name.
      */
-    async getFont(fontName: string): Promise<PdfFont | undefined> {
-        return await this.searchFontInPdf(fontName)
+    getFont(fontName: string): PdfFont | undefined {
+        return this._fontsCache?.get(fontName)
     }
 
     /**
@@ -163,30 +161,61 @@ export class PdfFontManager {
         const resourceName = `F${this.fontResourceCounter}`
         font.resourceName = resourceName
 
-        // Create container that wraps the font dictionary
-        const fontObject = new PdfIndirectObject({
-            content: font,
-        })
-        font.container = fontObject
-
         // Get all objects to commit (auxiliary objects + container)
         const objectsToCommit = font.getObjectsToCommit()
         if (objectsToCommit.length > 0) {
             await this.document.commit(...objectsToCommit)
         }
 
-        // Register in page resources
-        await this.addFontToPageResources(resourceName, fontObject)
+        // Add to cache
+        if (this._fontsCache) {
+            this._fontsCache.set(resourceName, font)
+            if (font.fontName) {
+                this._fontsCache.set(font.fontName, font)
+            }
+        }
 
         return font
     }
 
     /**
-     * Gets all embedded fonts.
-     * Searches the PDF structure to find all fonts.
+     * Gets the font encoding object for a font.
+     * Parses the /Encoding dictionary's /Differences array if present.
+     * Returns null if no custom encoding dictionary is defined (e.g., standard encoding names).
+     *
+     * @param font - The font to get the encoding for
+     * @returns The PdfFontEncoding object, or null if no custom encoding
      */
-    async getAllFonts(): Promise<Map<string, PdfFont>> {
-        return await this.collectAllFontsFromPdf()
+    async getEncoding(
+        font: PdfFont,
+    ): Promise<PdfFontEncoding | null> {
+        // Get the Encoding entry from the font dictionary
+        const encoding = font.content.get('Encoding')
+        if (!encoding) {
+            return null
+        }
+
+        // Resolve encoding dictionary (may be indirect reference)
+        let encodingDict: PdfDictionary | null = null
+        if (encoding instanceof PdfObjectReference) {
+            const encodingObj = await this.document.readObject(encoding)
+            encodingDict =
+                encodingObj?.content instanceof PdfDictionary
+                    ? encodingObj.content
+                    : null
+        } else if (encoding instanceof PdfDictionary) {
+            encodingDict = encoding
+        } else if (encoding instanceof PdfName) {
+            // Standard encoding name (e.g., WinAnsiEncoding) - no Differences
+            return null
+        }
+
+        if (!encodingDict) {
+            return null
+        }
+
+        // Parse the encoding dictionary using PdfFontEncoding
+        return PdfFontEncoding.fromDictionary(encodingDict)
     }
 
     /**
@@ -218,13 +247,11 @@ export class PdfFontManager {
     }
 
     /**
-     * Loads existing fonts from the PDF document.
-     * Traverses the page tree and extracts font information from page resources.
-     *
-     * @returns Map of font names to their PdfFont objects
+     * Clears the internal fonts cache.
+     * Call this if the PDF structure has been modified externally.
      */
-    async loadExistingFonts(): Promise<Map<string, PdfFont>> {
-        return await this.collectAllFontsFromPdf()
+    clearFontsCache(): void {
+        this._fontsCache = undefined
     }
 
     /**
@@ -331,7 +358,6 @@ export class PdfFontManager {
                     resourceName: resourceName,
                     encoding: encoding,
                     manager: this,
-                    container: fontIndirectObj as PdfIndirectObject,
                 })
                 fonts.set(resourceName, pdfFont)
 
@@ -344,140 +370,35 @@ export class PdfFontManager {
     }
 
     /**
-     * Searches the PDF structure for a font by name.
-     * @internal
-     */
-    private async searchFontInPdf(
-        fontName: string,
-    ): Promise<PdfFont | undefined> {
-        const fonts = await this.collectAllFontsFromPdf()
-        return fonts?.get(fontName)
-    }
-
-    /**
      * Collects all fonts from the PDF structure.
+     * Uses cached fonts if available.
      * @internal
      */
-    private async collectAllFontsFromPdf(): Promise<Map<string, PdfFont>> {
+    async cacheFonts(): Promise<void> {
         const fonts = new Map<string, PdfFont>()
 
         const catalog = this.document.root
-        if (!catalog) return fonts
+        if (!catalog) {
+            this._fontsCache = fonts
+            return
+        }
 
         const pagesRef = catalog.content.get('Pages')
-        if (!pagesRef) return fonts
+        if (!pagesRef) {
+            this._fontsCache = fonts
+            return
+        }
 
         const pagesObjRef = pagesRef.as(PdfObjectReference)
-        if (!pagesObjRef) return fonts
+        if (!pagesObjRef) {
+            this._fontsCache = fonts
+            return 
+        }
 
         await this.traversePageTreeForFonts(pagesObjRef, fonts)
-        return fonts
-    }
-
-    /**
-     * Adds a font to the AcroForm default resources (DR) dictionary.
-     * This ensures fonts are available to form fields.
-     */
-    private async addFontToAcroFormResources(
-        resourceName: string,
-        fontObject: PdfIndirectObject<PdfDictionary>,
-    ): Promise<void> {
-        const catalog = this.document.root
-        if (!catalog) return
-
-        // Get AcroForm dictionary
-        const acroFormRef = catalog.content.get('AcroForm')
-        if (!acroFormRef) return
-
-        let acroFormDict: PdfDictionary | undefined
-        let acroFormContainer: PdfIndirectObject | undefined
-
-        if (acroFormRef instanceof PdfObjectReference) {
-            const acroFormObject = await this.document.readObject({
-                objectNumber: acroFormRef.objectNumber,
-                generationNumber: acroFormRef.generationNumber,
-            })
-            if (acroFormObject) {
-                acroFormDict = acroFormObject.content.as(PdfDictionary)
-                acroFormContainer = acroFormObject
-            }
-        } else {
-            acroFormDict = acroFormRef.as(PdfDictionary)
-        }
-
-        if (!acroFormDict) return
-
-        // Get or create DR (Default Resources) dictionary
-        let dr = acroFormDict.get('DR')?.as(PdfDictionary)
-        if (!dr) {
-            dr = new PdfDictionary()
-            acroFormDict.set('DR', dr)
-        }
-
-        // Get or create Font dictionary within DR
-        let fontDict = dr.get('Font')?.as(PdfDictionary)
-        if (!fontDict) {
-            fontDict = new PdfDictionary()
-            dr.set('Font', fontDict)
-        }
-
-        // Add the font reference
-        fontDict.set(resourceName, fontObject.reference)
-
-        // Commit the modified AcroForm object if it's an indirect object
-        if (acroFormContainer) {
-            await this.document.commit(acroFormContainer)
-        }
-    }
-
-    /**
-     * Adds a font to the global /Pages node Resources dictionary.
-     * All child pages will inherit these fonts automatically.
-     * This is more efficient than adding to each individual page.
-     */
-    private async addFontToPageResources(
-        resourceName: string,
-        fontObject: PdfIndirectObject<PdfDictionary>,
-    ): Promise<void> {
-        const catalog = this.document.root
-        const pagesRef = catalog.content.get('Pages')
-        if (!pagesRef) return
-
-        const pagesObjRef = pagesRef.as(PdfObjectReference)
-        if (!pagesObjRef) return
-
-        // Read the root /Pages object
-        const pagesObject = await this.document.readObject({
-            objectNumber: pagesObjRef.objectNumber,
-            generationNumber: pagesObjRef.generationNumber,
-        })
-
-        if (!pagesObject) return
-
-        const pagesDict = pagesObject.content.as(PdfDictionary)
-        if (!pagesDict) return
-
-        // Get or create Resources dictionary on the /Pages node
-        let resources = pagesDict.get('Resources')?.as(PdfDictionary)
-        if (!resources) {
-            resources = new PdfDictionary()
-            pagesDict.set('Resources', resources)
-        }
-
-        // Get or create Font dictionary within Resources
-        let fontDict = resources.get('Font')?.as(PdfDictionary)
-        if (!fontDict) {
-            fontDict = new PdfDictionary()
-            resources.set('Font', fontDict)
-        }
-
-        // Add the font reference to the global dictionary
-        fontDict.set(resourceName, fontObject.reference)
-
-        // Commit the modified /Pages object
-        await this.document.commit(pagesObject)
-
-        // Also add to AcroForm DR if AcroForm exists
-        await this.addFontToAcroFormResources(resourceName, fontObject)
+        
+        // Cache the collected fonts
+        this._fontsCache = fonts
+        return
     }
 }

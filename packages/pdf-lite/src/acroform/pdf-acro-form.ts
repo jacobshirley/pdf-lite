@@ -166,28 +166,6 @@ export class PdfAcroForm<
         return null
     }
 
-    get fontEncodingMaps(): Map<string, Map<number, string>> {
-        const maps = new Map<string, Map<number, string>>()
-        for (const [name, font] of this.fonts) {
-            const encodingMap = font.cachedEncodingMap
-            // Only add if encoding was loaded (not undefined) and is a map (not null)
-            if (encodingMap !== undefined && encodingMap !== null) {
-                maps.set(name, encodingMap)
-            }
-        }
-        return maps
-    }
-
-    get fontRefs(): Map<string, PdfObjectReference> {
-        const refs = new Map<string, PdfObjectReference>()
-        for (const [name, font] of this.fonts) {
-            if (font.container) {
-                refs.set(name, font.container.reference)
-            }
-        }
-        return refs
-    }
-
     setXfa(xfa: PdfXfaForm | null): void {
         this._xfa = xfa
     }
@@ -271,17 +249,8 @@ export class PdfAcroForm<
         return result
     }
 
-    async getFontEncodingMap(
-        fontName: string,
-    ): Promise<Map<number, string> | null> {
-        const font = await this.loadFont(fontName)
-        if (!font || !this.document) return null
-        return font.getEncodingMap(this.document)
-    }
-
-    isFontUnicode(fontName: string): boolean {
-        const font = this.fonts.get(fontName)
-        return font?.isUnicode() ?? false
+    getFontByName(name: string): PdfFont | undefined {
+        return this.fonts.get(name)
     }
 
     static async fromDocument(
@@ -411,10 +380,6 @@ export class PdfAcroForm<
             // If the font was not in the AcroForm DR, try the field's page resources
             if (!font && pageRef) {
                 font = await this.resolveFontFromPage(fontName, pageRef)
-            }
-            // Trigger encoding map loading
-            if (font) {
-                await font.getEncodingMap(this.document)
             }
         }
     }

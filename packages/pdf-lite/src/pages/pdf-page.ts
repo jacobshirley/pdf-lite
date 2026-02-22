@@ -348,6 +348,35 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         }
     }
 
+    /**
+     * Adds a font to this page's Resources dictionary.
+     * Creates the Resources and Font dictionaries if they don't exist.
+     *
+     * @param resourceName - The font resource name (e.g., 'F1', 'F2')
+     * @param fontRef - Reference to the font object
+     */
+    addFont(
+        resourceName: string,
+        fontRef: PdfObjectReference,
+    ): void {
+        // Get or create Resources dictionary
+        let resources = this.resources
+        if (!resources) {
+            resources = new PdfDictionary()
+            this.resources = resources
+        }
+
+        // Get or create Font dictionary within Resources
+        let fontDict = resources.get('Font') as PdfDictionary | undefined
+        if (!fontDict) {
+            fontDict = new PdfDictionary()
+            resources.set('Font', fontDict)
+        }
+
+        // Add the font reference
+        fontDict.set(resourceName, fontRef)
+    }
+
     private _validatePageDictionary(): void {
         const type = this.content.get('Type') as PdfName | undefined
         if (type && type.value !== 'Page') {

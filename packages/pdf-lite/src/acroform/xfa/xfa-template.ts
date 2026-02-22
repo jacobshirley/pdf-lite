@@ -41,10 +41,29 @@ export interface XfaFieldDef {
     borderColor: [number, number, number] | null
 }
 
+/** Static draw element (text label, rectangle, line) */
+export interface XfaDrawDef {
+    x: number
+    y: number
+    w: number
+    h: number
+    /** Text content, if any */
+    text: string
+    /** Font size in points */
+    fontSize: number
+    /** Font weight: 'bold' or 'normal' */
+    fontWeight: string
+    /** Fill/background color as [r,g,b] 0-1, or null */
+    bgColor: [number, number, number] | null
+    /** Border present and visible */
+    hasBorder: boolean
+}
+
 export interface XfaPageDef {
     width: number
     height: number
     fields: XfaFieldDef[]
+    draws: XfaDrawDef[]
 }
 
 /** Info extracted from pageArea for coordinate mapping */
@@ -139,6 +158,7 @@ export class PdfXfaTemplate {
             width: g.pageWidth,
             height: g.pageHeight,
             fields: [],
+            draws: [],
         }))
 
         // Walk subform tree
@@ -149,6 +169,11 @@ export class PdfXfaTemplate {
                 currentPageIndex: 0,
             }
             walkNode(topSubform, '', 0, 0, ctx)
+        }
+
+        // Ensure all pages have draws array
+        for (const page of pages) {
+            if (!page.draws) page.draws = []
         }
 
         // Fallback: try fields on template root
@@ -167,6 +192,11 @@ export class PdfXfaTemplate {
     /** Get all field definitions across all pages */
     get allFields(): XfaFieldDef[] {
         return this.pages.flatMap((p) => p.fields)
+    }
+
+    /** Get all draw definitions across all pages */
+    get allDraws(): XfaDrawDef[] {
+        return this.pages.flatMap((p) => p.draws)
     }
 }
 
@@ -300,17 +330,36 @@ function parseXfaColor(
     return [parts[0] / 255, parts[1] / 255, parts[2] / 255]
 }
 
-/** Extract background fill color from field border/fill */
-function extractBgColor(fieldNode: any): [number, number, number] | null {
-    const border = fieldNode?.border
-    if (!border) return null
-    const b = Array.isArray(border) ? border[0] : border
-    const fill = b?.fill
-    if (!fill || typeof fill !== 'object') return null
-    const color = fill?.color
-    if (!color) return null
-    const c = Array.isArray(color) ? color[0] : color
-    return parseXfaColor(c?.['@_value'])
+/** Extract background fill color from node's border/fill or direct fill */
+function extractBgColor(node: any): [number, number, number] | null {
+    // Check border > fill > color (most common)
+    const border = node?.border
+    if (border) {
+        const b = Array.isArray(border) ? border[0] : border
+        const fill = b?.fill
+        if (fill && typeof fill === 'object') {
+            const color = fill?.color
+            if (color) {
+                const c = Array.isArray(color) ? color[0] : color
+                const result = parseXfaColor(c?.['@_value'])
+                if (result) return result
+            }
+        }
+    }
+
+    // Check direct fill > color on the node itself
+    const directFill = node?.fill
+    if (directFill && typeof directFill === 'object') {
+        const df = Array.isArray(directFill) ? directFill[0] : directFill
+        const color = df?.color
+        if (color) {
+            const c = Array.isArray(color) ? color[0] : color
+            const result = parseXfaColor(c?.['@_value'])
+            if (result) return result
+        }
+    }
+
+    return null
 }
 
 /** Extract border edge color */
@@ -373,6 +422,7 @@ function advancePage(ctx: WalkContext): void {
             width: g.pageWidth,
             height: g.pageHeight,
             fields: [],
+            draws: [],
         })
     }
 }
@@ -411,6 +461,9 @@ function walkNode(
     // Process fields at this level
     emitFields(ensureArray(node.field), currentPath, localX, localY, ctx)
 
+    // Process draw elements (static text, rectangles)
+    emitDraws(ensureArray(node.draw), localX, localY, ctx)
+
     // Process exclusion groups
     for (const group of ensureArray(node.exclGroup)) {
         const groupName = group['@_name'] ?? ''
@@ -437,8 +490,9 @@ function walkNode(
         const areaX = localX + parseMeasurement(area['@_x'])
         const areaY = localY + parseMeasurement(area['@_y'])
 
-        // Areas can contain fields, exclGroups, and subforms
+        // Areas can contain fields, exclGroups, draws, and subforms
         emitFields(ensureArray(area.field), currentPath, areaX, areaY, ctx)
+        emitDraws(ensureArray(area.draw), areaX, areaY, ctx)
 
         for (const group of ensureArray(area.exclGroup)) {
             const groupName = group['@_name'] ?? ''
@@ -579,6 +633,175 @@ function addFieldToPage(fieldDef: XfaFieldDef, ctx: WalkContext): void {
     if (pageIdx >= 0 && ctx.pages[pageIdx]) {
         ctx.pages[pageIdx].fields.push(fieldDef)
     }
+}
+
+function emitDraws(
+    draws: any[],
+    parentX: number,
+    parentY: number,
+    ctx: WalkContext,
+): void {
+    for (const draw of draws) {
+        const drawDef = makeDrawDef(draw, parentX, parentY, ctx)
+        if (drawDef) {
+            addDrawToPage(drawDef, ctx)
+        }
+    }
+}
+
+function addDrawToPage(drawDef: XfaDrawDef, ctx: WalkContext): void {
+    const pageIdx = Math.min(ctx.currentPageIndex, ctx.pages.length - 1)
+    if (pageIdx >= 0 && ctx.pages[pageIdx]) {
+        ctx.pages[pageIdx].draws.push(drawDef)
+    }
+}
+
+function makeDrawDef(
+    draw: any,
+    parentX: number,
+    parentY: number,
+    ctx: WalkContext,
+): XfaDrawDef | null {
+    if (!draw) return null
+
+    const xfaX = parentX + parseMeasurement(draw['@_x'])
+    const xfaY = parentY + parseMeasurement(draw['@_y'])
+    const w = parseMeasurement(draw['@_w'])
+    // Use @_h, fall back to @_minH (common for text draws)
+    const h = parseMeasurement(draw['@_h']) || parseMeasurement(draw['@_minH'])
+
+    // Skip draws with no dimensions at all
+    if (w <= 0 && h <= 0) return null
+
+    // Get page geometry for coordinate conversion
+    const pageIdx = Math.min(ctx.currentPageIndex, ctx.pages.length - 1)
+    const geoIdx = Math.min(pageIdx, ctx.geometries.length - 1)
+    const geo = ctx.geometries[geoIdx]
+
+    // Convert to PDF coordinates (same as fields)
+    const pdfX = geo.contentX + xfaX
+    const pdfY = geo.pageHeight - (geo.contentY + xfaY) - h
+
+    // Extract content from value element
+    let text = ''
+    let rectBgColor: [number, number, number] | null = null
+    let rectHasBorder = false
+
+    const valueNode = draw?.value
+    if (valueNode) {
+        const v = Array.isArray(valueNode) ? valueNode[0] : valueNode
+
+        // Check for rectangle element (colored background shapes)
+        const rect = v?.rectangle
+        if (rect) {
+            const r = Array.isArray(rect) ? rect[0] : rect
+            // Extract fill color from rectangle > fill > color
+            const fill = r?.fill
+            if (fill && typeof fill === 'object') {
+                const color = fill?.color
+                if (color) {
+                    const c = Array.isArray(color) ? color[0] : color
+                    rectBgColor = parseXfaColor(c?.['@_value'])
+                }
+            }
+            // Rectangle edge = border
+            const edge = r?.edge
+            if (edge) {
+                const e = Array.isArray(edge) ? edge[0] : edge
+                if (e?.['@_presence'] !== 'hidden') rectHasBorder = true
+            }
+        }
+
+        // Try text child
+        const textChild = v?.text
+        if (textChild != null) {
+            const t = Array.isArray(textChild) ? textChild[0] : textChild
+            if (typeof t === 'string') text = t
+            else if (t?.['#text'] !== undefined) text = String(t['#text'])
+        }
+        // Try exData child (often contains XHTML body text)
+        if (!text) {
+            const exData = v?.exData
+            if (exData != null) {
+                const ex = Array.isArray(exData) ? exData[0] : exData
+                text = extractExDataText(ex)
+            }
+        }
+    }
+
+    // Font info from font element
+    let fontSize = 7
+    let fontWeight = 'normal'
+    const fontNode = draw?.font
+    if (fontNode) {
+        const f = Array.isArray(fontNode) ? fontNode[0] : fontNode
+        if (f?.['@_size']) fontSize = parseMeasurement(f['@_size'])
+        if (f?.['@_weight'] === 'bold') fontWeight = 'bold'
+    }
+
+    // Background: prefer rectangle fill, then border/fill, then direct fill
+    const bgColor = rectBgColor ?? extractBgColor(draw)
+    // Border: from rectangle edge, or from draw's border element
+    const hasBorder = rectHasBorder || extractHasBorder(draw)
+
+    return {
+        x: pdfX,
+        y: pdfY,
+        w,
+        h,
+        text,
+        fontSize,
+        fontWeight,
+        bgColor,
+        hasBorder,
+    }
+}
+
+/** Extract plain text from exData element (may contain XHTML body) */
+function extractExDataText(exData: any): string {
+    if (typeof exData === 'string') return exData
+    if (exData?.['#text'] !== undefined) return String(exData['#text'])
+
+    // XHTML body: look for body > p or just body text
+    const body = exData?.body
+    if (body) {
+        const b = Array.isArray(body) ? body[0] : body
+        if (typeof b === 'string') return b
+        if (b?.['#text'] !== undefined) return String(b['#text'])
+
+        // Check for <p> elements
+        const paragraphs = ensureArray(b?.p)
+        const parts: string[] = []
+        for (const p of paragraphs) {
+            if (typeof p === 'string') parts.push(p)
+            else if (p?.['#text'] !== undefined) parts.push(String(p['#text']))
+            else if (p?.span) {
+                const spans = ensureArray(p.span)
+                for (const s of spans) {
+                    if (typeof s === 'string') parts.push(s)
+                    else if (s?.['#text'] !== undefined)
+                        parts.push(String(s['#text']))
+                }
+            }
+        }
+        if (parts.length > 0) return parts.join(' ')
+    }
+
+    return ''
+}
+
+/** Check if a node has a visible border */
+function extractHasBorder(node: any): boolean {
+    const border = node?.border
+    if (!border) return false
+    const b = Array.isArray(border) ? border[0] : border
+    if (b?.['@_presence'] === 'hidden' || b?.['@_presence'] === 'inactive')
+        return false
+    const edge = b?.edge
+    if (!edge) return false
+    const e = Array.isArray(edge) ? edge[0] : edge
+    if (e?.['@_presence'] === 'hidden') return false
+    return true
 }
 
 function makeFieldDef(

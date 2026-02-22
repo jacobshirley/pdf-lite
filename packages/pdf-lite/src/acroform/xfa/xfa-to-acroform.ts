@@ -7,8 +7,13 @@ import { PdfNumber } from '../../core/objects/pdf-number.js'
 import { PdfBoolean } from '../../core/objects/pdf-boolean.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
-import { PdfXfaTemplate, type XfaFieldDef } from './xfa-template.js'
+import {
+    PdfXfaTemplate,
+    type XfaFieldDef,
+    type XfaDrawDef,
+} from './xfa-template.js'
 import { PdfAnnotationWriter } from '../../annotations/pdf-annotation-writer.js'
+import { PdfStream } from '../../core/objects/pdf-stream.js'
 
 export interface XfaToAcroFormOptions {
     /** Use NeedAppearances=true instead of generating appearance streams. Default: true */
@@ -82,7 +87,7 @@ export class XfaToAcroFormConverter {
         const isIncremental = document.isIncremental()
         document.setIncremental(true)
 
-        // 6. Build Helvetica font dictionary for default resources
+        // 6. Build Helvetica font dictionaries for default resources
         const helveticaDict = new PdfDictionary()
         helveticaDict.set('Type', new PdfName('Font'))
         helveticaDict.set('Subtype', new PdfName('Type1'))
@@ -91,6 +96,17 @@ export class XfaToAcroFormConverter {
 
         const helveticaObj = new PdfIndirectObject({ content: helveticaDict })
         document.add(helveticaObj)
+
+        const helveticaBoldDict = new PdfDictionary()
+        helveticaBoldDict.set('Type', new PdfName('Font'))
+        helveticaBoldDict.set('Subtype', new PdfName('Type1'))
+        helveticaBoldDict.set('BaseFont', new PdfName('Helvetica-Bold'))
+        helveticaBoldDict.set('Encoding', new PdfName('WinAnsiEncoding'))
+
+        const helveticaBoldObj = new PdfIndirectObject({
+            content: helveticaBoldDict,
+        })
+        document.add(helveticaBoldObj)
 
         // 7. Build AcroForm dict
         const catalog = document.root
@@ -201,10 +217,72 @@ export class XfaToAcroFormConverter {
             )
         }
 
-        // 11. Update page annotations
+        // 11. Render draw elements as page content streams
+        for (let pageIdx = 0; pageIdx < template.pages.length; pageIdx++) {
+            const page = template.pages[pageIdx]
+            const pageRef = pageRefs[pageIdx]
+            if (!pageRef || page.draws.length === 0) continue
+
+            const drawStream = buildDrawContentStream(
+                page.draws,
+                opts.fontName,
+                page.width,
+                page.height,
+            )
+            if (!drawStream) continue
+
+            // Create a Form XObject for the draw content
+            const drawStreamObj = new PdfIndirectObject({ content: drawStream })
+            document.add(drawStreamObj)
+
+            // Read the page dict and prepend our draw stream
+            const pageObj = await document.readObject({
+                objectNumber: pageRef.objectNumber,
+                generationNumber: pageRef.generationNumber,
+            })
+            if (!pageObj) continue
+
+            const pageDict = pageObj.content.as(PdfDictionary).clone()
+
+            // Add font resource to page
+            let resources = pageDict.get('Resources')?.as(PdfDictionary)
+            if (!resources) {
+                resources = new PdfDictionary()
+                pageDict.set('Resources', resources)
+            } else {
+                resources = resources.clone()
+                pageDict.set('Resources', resources)
+            }
+            let pageFontDict = resources.get('Font')?.as(PdfDictionary)
+            if (!pageFontDict) {
+                pageFontDict = new PdfDictionary()
+                resources.set('Font', pageFontDict)
+            } else {
+                pageFontDict = pageFontDict.clone()
+                resources.set('Font', pageFontDict)
+            }
+            pageFontDict.set(opts.fontName, helveticaObj.reference)
+            pageFontDict.set(
+                `${opts.fontName}-Bold`,
+                helveticaBoldObj.reference,
+            )
+
+            // Replace page contents: our draw stream replaces the original
+            // "Please wait..." content entirely so draws are visible
+            pageDict.set('Contents', drawStreamObj.reference)
+
+            const updatedPage = new PdfIndirectObject({
+                objectNumber: pageRef.objectNumber,
+                generationNumber: pageRef.generationNumber,
+                content: pageDict,
+            })
+            document.add(updatedPage)
+        }
+
+        // 12. Update page annotations
         await PdfAnnotationWriter.updatePageAnnotations(document, fieldsByPage)
 
-        // 12. Commit
+        // 13. Commit
         await document.commit()
         document.setIncremental(isIncremental)
 
@@ -355,4 +433,86 @@ function createFieldWidget(
     dict.set('F', new PdfNumber(4)) // Print flag
 
     return new PdfIndirectObject({ content: dict })
+}
+
+/** Build a PDF content stream that renders draw elements (rectangles and text) */
+function buildDrawContentStream(
+    draws: XfaDrawDef[],
+    fontName: string,
+    pageWidth: number,
+    pageHeight: number,
+): PdfStream | null {
+    if (draws.length === 0) return null
+
+    const ops: string[] = []
+
+    // Paint white background over entire page to cover "Please wait..." content
+    ops.push('q')
+    ops.push('1 1 1 rg')
+    ops.push(`0 0 ${n(pageWidth)} ${n(pageHeight)} re f`)
+    ops.push('Q')
+
+    for (const draw of draws) {
+        ops.push('q')
+
+        // Background fill
+        if (draw.bgColor) {
+            const [r, g, b] = draw.bgColor
+            ops.push(`${n(r)} ${n(g)} ${n(b)} rg`)
+            ops.push(`${n(draw.x)} ${n(draw.y)} ${n(draw.w)} ${n(draw.h)} re f`)
+        }
+
+        // Border stroke
+        if (draw.hasBorder) {
+            ops.push('0 0 0 RG') // black stroke
+            ops.push('0.5 w') // thin line
+            ops.push(`${n(draw.x)} ${n(draw.y)} ${n(draw.w)} ${n(draw.h)} re S`)
+        }
+
+        // Text
+        if (draw.text && draw.w > 0 && draw.h > 0) {
+            ops.push('BT')
+            ops.push('0 0 0 rg') // black text
+
+            const fontSize = draw.fontSize || 7
+            if (draw.fontWeight === 'bold') {
+                ops.push(`/${fontName}-Bold ${n(fontSize)} Tf`)
+            } else {
+                ops.push(`/${fontName} ${n(fontSize)} Tf`)
+            }
+
+            // Position text: left-aligned, vertically centered in the box
+            const textX = draw.x + 1 // small left padding
+            const textY = draw.y + (draw.h - fontSize) / 2 + fontSize * 0.15 // approximate baseline
+
+            ops.push(`${n(textX)} ${n(textY)} Td`)
+
+            // Escape text for PDF string
+            const escapedText = escapePdfString(draw.text)
+            ops.push(`(${escapedText}) Tj`)
+
+            ops.push('ET')
+        }
+
+        ops.push('Q')
+    }
+
+    const streamContent = ops.join('\n')
+    return new PdfStream(streamContent)
+}
+
+/** Format number for PDF content stream (fixed precision, no trailing zeros) */
+function n(value: number): string {
+    return value.toFixed(2).replace(/\.?0+$/, '') || '0'
+}
+
+/** Escape a string for use in a PDF literal string (parentheses) */
+function escapePdfString(text: string): string {
+    return text
+        .replace(/\\/g, '\\\\')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)')
+        .replace(/\r\n/g, '\\n')
+        .replace(/\r/g, '\\n')
+        .replace(/\n/g, '\\n')
 }

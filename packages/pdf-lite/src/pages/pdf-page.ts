@@ -24,6 +24,7 @@ export type PdfPageDictionary = PdfDictionary<{
     Contents?: PdfObjectReference | PdfArray
     Resources?: PdfDictionary
     Parent?: PdfObjectReference
+    Annots?: PdfArray<PdfObjectReference> | PdfObjectReference
 }>
 
 /**
@@ -221,6 +222,31 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
     }
 
     /**
+     * Gets the annotations array for this page.
+     * Annotations include form fields, links, comments, etc.
+     */
+    get annots(): PdfArray<PdfObjectReference> | undefined {
+        const annots = this.content.get('Annots')
+        if (annots instanceof PdfArray) {
+            return annots as PdfArray<PdfObjectReference>
+        }
+        if (annots instanceof PdfObjectReference) {
+            // Note: This is an indirect reference to an array
+            // Caller should resolve it using document.readObject()
+            return undefined
+        }
+        return undefined
+    }
+
+    set annots(annots: PdfArray<PdfObjectReference> | undefined) {
+        if (annots) {
+            this.content.set('Annots', annots)
+        } else {
+            this.content.delete('Annots')
+        }
+    }
+
+    /**
      * Gets the page dimensions from the MediaBox.
      * @returns Object with width and height, or undefined if MediaBox is not set
      */
@@ -281,6 +307,35 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
             }
         } else {
             this.contents = streamRefs
+        }
+    }
+
+    /**
+     * Adds an annotation reference to this page.
+     * Annotations can be form fields, links, comments, etc.
+     * Creates the Annots array if it doesn't exist.
+     * Does not add duplicates (checks by object number and generation).
+     *
+     * @param annotRef - Reference to an annotation object
+     */
+    addAnnotation(annotRef: PdfObjectReference): void {
+        let currentAnnots = this.annots
+
+        if (!currentAnnots) {
+            // No existing annots, create new array
+            currentAnnots = new PdfArray<PdfObjectReference>()
+            this.annots = currentAnnots
+        }
+
+        // Check if annotation already exists (prevent duplicates)
+        const exists = currentAnnots.items.some(
+            (ref) =>
+                ref.objectNumber === annotRef.objectNumber &&
+                ref.generationNumber === annotRef.generationNumber,
+        )
+
+        if (!exists) {
+            currentAnnots.push(annotRef)
         }
     }
 

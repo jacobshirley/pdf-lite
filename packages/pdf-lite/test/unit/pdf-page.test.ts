@@ -346,4 +346,89 @@ describe('PdfPage', () => {
             expect(page.contents).toBeUndefined()
         })
     })
+
+    describe('annots', () => {
+        it('should get and set annots array', () => {
+            const page = new PdfPage({ width: 612, height: 792 })
+
+            const annotsArray = new PdfArray<PdfObjectReference>([
+                new PdfObjectReference(10, 0),
+                new PdfObjectReference(11, 0),
+            ])
+            page.annots = annotsArray
+
+            expect(page.annots).toBe(annotsArray)
+            expect(page.annots?.length).toBe(2)
+        })
+
+        it('should return undefined for empty annots', () => {
+            const page = new PdfPage({ width: 612, height: 792 })
+
+            expect(page.annots).toBeUndefined()
+        })
+
+        it('should delete annots when set to undefined', () => {
+            const page = new PdfPage({ width: 612, height: 792 })
+
+            const annotsArray = new PdfArray<PdfObjectReference>([
+                new PdfObjectReference(10, 0),
+            ])
+            page.annots = annotsArray
+            expect(page.annots).toBe(annotsArray)
+
+            page.annots = undefined
+            expect(page.annots).toBeUndefined()
+        })
+    })
+
+    describe('addAnnotation', () => {
+        it('should add annotation to new page', () => {
+            const page = new PdfPage({ width: 612, height: 792 })
+
+            const annotRef = new PdfObjectReference(10, 0)
+            page.addAnnotation(annotRef)
+
+            expect(page.annots).toBeInstanceOf(PdfArray)
+            expect(page.annots?.length).toBe(1)
+            expect(page.annots?.items[0]).toBe(annotRef)
+        })
+
+        it('should add multiple annotations', () => {
+            const page = new PdfPage({ width: 612, height: 792 })
+
+            const annotRef1 = new PdfObjectReference(10, 0)
+            const annotRef2 = new PdfObjectReference(11, 0)
+            
+            page.addAnnotation(annotRef1)
+            page.addAnnotation(annotRef2)
+
+            expect(page.annots?.length).toBe(2)
+            expect(page.annots?.items[0]).toBe(annotRef1)
+            expect(page.annots?.items[1]).toBe(annotRef2)
+        })
+
+        it('should not add duplicate annotations', () => {
+            const page = new PdfPage({ width: 612, height: 792 })
+
+            const annotRef = new PdfObjectReference(10, 0)
+            
+            page.addAnnotation(annotRef)
+            page.addAnnotation(annotRef)
+            page.addAnnotation(annotRef)
+
+            expect(page.annots?.length).toBe(1)
+        })
+
+        it('should not add duplicate based on object number and generation', () => {
+            const page = new PdfPage({ width: 612, height: 792 })
+
+            const annotRef1 = new PdfObjectReference(10, 0)
+            const annotRef2 = new PdfObjectReference(10, 0) // Same obj/gen as ref1
+            
+            page.addAnnotation(annotRef1)
+            page.addAnnotation(annotRef2)
+
+            expect(page.annots?.length).toBe(1)
+        })
+    })
 })

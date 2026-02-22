@@ -18,8 +18,6 @@ export class PdfAppearanceStream extends PdfContentStream {
         height?: number
         contentStream?: string
         resources?: PdfDictionary
-        resolvedFonts?: Map<string, PdfFont>
-        defaultAppearance?: PdfDefaultAppearance
     }) {
         const appearanceDict = new PdfDictionary()
         appearanceDict.set('Type', new PdfName('XObject'))
@@ -42,8 +40,6 @@ export class PdfAppearanceStream extends PdfContentStream {
         super({
             header: appearanceDict,
             contentStream: options.contentStream,
-            resolvedFonts: options.resolvedFonts,
-            defaultAppearance: options.defaultAppearance,
         })
     }
 }

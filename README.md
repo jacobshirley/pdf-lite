@@ -121,6 +121,11 @@ document.pages.insert(0, newPage) // Insert at beginning
 page1.cropBox = createBox(10, 10, 602, 782)
 page1.trimBox = createBox(10, 10, 602, 782)
 page1.bleedBox = createBox(5, 5, 607, 787)
+
+// Work with page annotations (form fields, links, etc.)
+const annotRef = new PdfObjectReference(20, 0)
+page1.addAnnotation(annotRef) // Adds to page's Annots array
+console.log(page1.annots?.length) // Number of annotations on page
 ```
 
 ### Working with Encryption

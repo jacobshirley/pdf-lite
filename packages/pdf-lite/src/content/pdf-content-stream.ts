@@ -19,23 +19,16 @@ import { PdfTextLayout } from './pdf-text-layout.js'
  */
 export class PdfContentStream extends PdfIndirectObject<PdfStream> {
     private lines: string[] = []
-    private resolvedFonts?: Map<string, PdfFont>
-    private defaultAppearance?: PdfDefaultAppearance
 
     constructor(options?: {
         header?: PdfDictionary
         contentStream?: string
-        resolvedFonts?: Map<string, PdfFont>
-        defaultAppearance?: PdfDefaultAppearance
     }) {
         const stream = new PdfStream({
             header: options?.header ?? new PdfDictionary(),
             original: options?.contentStream ?? '',
         })
         super({ content: stream })
-
-        this.resolvedFonts = options?.resolvedFonts
-        this.defaultAppearance = options?.defaultAppearance
     }
 
     /**
@@ -79,7 +72,6 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
 
     setDefaultAppearance(da: PdfDefaultAppearance): this {
         this.lines.push(da.toString())
-        this.defaultAppearance = da
         return this
     }
 
@@ -224,10 +216,7 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
         const availableWidth = width - 2 * padding
         const availableHeight = height - 2 * padding
 
-        const stream = new PdfContentStream({
-            resolvedFonts,
-            defaultAppearance,
-        })
+        const stream = new PdfContentStream({})
 
         const layout = new PdfTextLayout({ defaultAppearance, resolvedFonts })
 
@@ -309,8 +298,6 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
         const availableWidth = width - 2 * padding
 
         const stream = new PdfContentStream({
-            resolvedFonts,
-            defaultAppearance,
         })
 
         const layout = new PdfTextLayout({ defaultAppearance, resolvedFonts })

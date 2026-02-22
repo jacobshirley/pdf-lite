@@ -30,8 +30,6 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             width,
             height,
             resources: ctx.fontResources,
-            resolvedFonts: ctx.resolvedFonts,
-            defaultAppearance: ctx.da,
         })
 
         this.beginMarkedContent()

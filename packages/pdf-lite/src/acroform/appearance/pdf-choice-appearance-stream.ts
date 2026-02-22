@@ -14,7 +14,6 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         da: PdfDefaultAppearance
         flags: number | PdfFormFieldFlags
         fontResources?: PdfDictionary
-        resolvedFonts?: Map<string, PdfFont>
         isUnicode?: boolean
         reverseEncodingMap?: Map<string, number>
         displayOptions?: string[]
@@ -28,8 +27,6 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
             width,
             height,
             resources: ctx.fontResources,
-            resolvedFonts: ctx.resolvedFonts,
-            defaultAppearance: ctx.da,
         })
 
         const isUnicode = ctx.isUnicode ?? false

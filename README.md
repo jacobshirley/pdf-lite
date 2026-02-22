@@ -48,11 +48,25 @@ import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
 import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfName } from 'pdf-lite/core/objects/pdf-name'
-import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
-import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 
 // Create the document
 const document = new PdfDocument()
+
+// Create a page using the high-level API
+const page = document.pages.create({ width: 612, height: 792 })
+
+// Create a font
+const fontDict = new PdfDictionary()
+fontDict.set('Type', new PdfName('Font'))
+fontDict.set('Subtype', new PdfName('Type1'))
+fontDict.set('BaseFont', new PdfName('Helvetica'))
+const font = new PdfIndirectObject({ content: fontDict })
+document.add(font)
+
+// Add font to page resources
+const fontResources = new PdfDictionary()
+fontResources.set('F1', font.reference)
+page.resources.set('Font', fontResources)
 
 // Create content stream
 const contentStream = new PdfIndirectObject({
@@ -61,13 +75,52 @@ const contentStream = new PdfIndirectObject({
         original: 'BT /F1 24 Tf 100 700 Td (Hello, PDF-Lite!) Tj ET',
     }),
 })
+document.add(contentStream)
 
-// Create and commit objects
-document.commit(contentStream)
-// ... create pages, catalog, etc.
+// Add content to page
+page.addContentStream(contentStream.reference)
 
-// Output the PDF
-console.log(document.toString())
+// Commit and output
+await document.commit()
+console.log('Pages in document:', document.pages.count())
+console.log('Page dimensions:', page.getDimensions())
+```
+
+### Working with Pages
+
+The `PdfPage` API provides a type-safe, high-level abstraction for working with pages:
+
+```typescript
+import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
+
+const document = new PdfDocument()
+
+// Create pages with different dimensions
+const page1 = document.pages.create({ width: 612, height: 792 }) // US Letter
+const page2 = document.pages.create({ width: 792, height: 612, rotate: 90 }) // Landscape
+
+// Access page properties
+console.log(page1.getDimensions()) // { width: 612, height: 792 }
+console.log(page2.rotate) // 90
+
+// Iterate over pages
+for (const page of document.pages) {
+    console.log('Page dimensions:', page.getDimensions())
+}
+
+// Get specific pages
+const firstPage = document.pages.get(0)
+const allPages = document.pages.getAll()
+console.log('Total pages:', document.pages.count())
+
+// Insert and remove pages
+document.pages.remove(1) // Remove second page
+document.pages.insert(0, newPage) // Insert at beginning
+
+// Set page boxes (for printing workflows)
+page1.cropBox = createBox(10, 10, 602, 782)
+page1.trimBox = createBox(10, 10, 602, 782)
+page1.bleedBox = createBox(5, 5, 607, 787)
 ```
 
 ### Working with Encryption

@@ -25,7 +25,7 @@ import { PdfNumberToken } from '../core/tokens/number-token.js'
 import { PdfXRefTableEntryToken } from '../core/tokens/xref-table-entry-token.js'
 import { Ref } from '../core/ref.js'
 import { PdfStartXRef } from '../core/objects/pdf-start-xref.js'
-import { PdfTrailer, PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
+import { PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
 import { FoundCompressedObjectError } from '../errors.js'
 import { PdfDocumentSecurityStoreObject } from '../signing/document-security-store.js'
 import { ByteArray } from '../types.js'
@@ -33,6 +33,7 @@ import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/manager.js'
+import { PdfPageManager } from '../pages/pdf-page-manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfArray } from '../index.js'
 
@@ -64,6 +65,7 @@ export class PdfDocument extends PdfObject {
     /**  */
     readonly acroForm: PdfAcroFormManager
     readonly fonts: PdfFontManager
+    readonly pages: PdfPageManager
 
     private hasEncryptionDictionary?: boolean = false
     private toBeCommitted: PdfObject[] = []
@@ -114,6 +116,7 @@ export class PdfDocument extends PdfObject {
 
         this.acroForm = new PdfAcroFormManager(this)
         this.fonts = new PdfFontManager(this)
+        this.pages = new PdfPageManager(this)
     }
 
     get header(): PdfComment | undefined {

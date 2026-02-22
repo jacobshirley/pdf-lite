@@ -30,10 +30,6 @@ export type PdfPageDictionary = PdfDictionary<{
  * Represents a PDF Page object with type-safe property accessors.
  * Wraps a PdfIndirectObject<PdfDictionary> and provides convenient methods
  * for accessing and manipulating page properties.
- *
- * Inspired by iText's PdfPage concept, this class provides a high-level
- * abstraction over the raw page dictionary while maintaining pdf-lite's
- * low-level philosophy for content streams.
  */
 export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
     /**

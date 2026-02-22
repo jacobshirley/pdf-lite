@@ -12,7 +12,7 @@ import { PdfTextLayout } from './pdf-text-layout.js'
  *
  * Can be used for:
  * - Page content streams
- * - Form XObject streams (via PdfAppearanceStream subclass)
+ * - Form XObject streams (via PdfFormXObject subclass)
  * - Any PDF content stream that contains graphics operators
  *
  * The builder methods accumulate operators, and build() writes them to the stream.

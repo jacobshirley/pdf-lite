@@ -10,7 +10,7 @@ import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { decodeWithFontEncoding } from '../../utils/decodeWithFontEncoding.js'
 import { PdfWidgetAnnotation } from '../../annotations/pdf-widget-annotation.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
-import type { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js'
+import type { PdfFormXObject } from './pdf-form-xobject.js'
 import type { FormContext, PdfFieldType } from './types.js'
 import { PdfFieldType as PdfFieldTypeConst } from './types.js'
 
@@ -24,8 +24,8 @@ import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
 export abstract class PdfFormField extends PdfWidgetAnnotation {
     private _parent?: PdfFormField
     defaultGenerateAppearance: boolean = true
-    protected _appearanceStream?: PdfAppearanceStream
-    protected _appearanceStreamYes?: PdfAppearanceStream
+    protected _appearanceStream?: PdfFormXObject
+    protected _appearanceStreamYes?: PdfFormXObject
     form?: FormContext<PdfFormField>
 
     constructor(options?: {
@@ -471,7 +471,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     getAppearanceStreamsForWriting():
-        | { primary: PdfAppearanceStream; secondary?: PdfAppearanceStream }
+        | { primary: PdfFormXObject; secondary?: PdfFormXObject }
         | undefined {
         if (!this._appearanceStream) return undefined
         return { primary: this._appearanceStream }

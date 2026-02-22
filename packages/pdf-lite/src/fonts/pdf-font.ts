@@ -16,6 +16,8 @@ import type {
 import type { ByteArray } from '../types.js'
 import { parseFont } from './parsers/font-parser.js'
 import { OtfParser } from './parsers/otf-parser.js'
+import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
+import type { PdfDocument } from '../pdf/pdf-document.js'
 
 type PdfStandardFontName =
     | 'Helvetica'
@@ -79,6 +81,19 @@ export class PdfFont extends PdfDictionary<{
      */
     private _fontData?: ByteArray
 
+    /**
+     * @internal
+     * Cached encoding map (code point → Unicode character).
+     * undefined = not yet loaded, null = attempted but no encoding found
+     */
+    private _encodingMap?: Map<number, string> | null
+
+    /**
+     * @internal
+     * Cached font subtype for loaded fonts.
+     */
+    private _resolvedFontType?: string
+
     constructor(fontName: string)
     constructor(options: {
         dict?: PdfDictionary
@@ -119,7 +134,10 @@ export class PdfFont extends PdfDictionary<{
         }
         this.fontName = options.fontName
         this.resourceName = options.resourceName ?? ''
-        this.encoding = options.encoding
+        // Only set encoding if explicitly provided (don't overwrite dict's Encoding)
+        if (options.encoding !== undefined) {
+            this.encoding = options.encoding
+        }
         this.container = options.container
         this._descriptor = options.descriptor
         this._fontData = options.fontData
@@ -204,6 +222,83 @@ export class PdfFont extends PdfDictionary<{
         } else {
             this.delete('Subtype')
         }
+    }
+
+    /**
+     * Checks if this font uses Unicode encoding (Type0 composite font).
+     */
+    isUnicode(): boolean {
+        // Check resolved type first (from loaded fonts)
+        if (this._resolvedFontType) {
+            return this._resolvedFontType === 'Type0'
+        }
+        // Fall back to fontType getter
+        return this.fontType === 'Type0'
+    }
+
+    /**
+     * Gets the cached encoding map if already loaded.
+     * Returns undefined if not yet loaded, null if no encoding exists.
+     * Use getEncodingMap() to load the encoding map.
+     */
+    get cachedEncodingMap(): Map<number, string> | null | undefined {
+        return this._encodingMap
+    }
+
+    /**
+     * Gets the encoding map for this font (code point → Unicode character).
+     * Parses the /Encoding dictionary's /Differences array if present.
+     * Returns null if no custom encoding is defined.
+     *
+     * @param document - PdfDocument to resolve indirect references
+     * @returns The encoding map, or null if no custom encoding
+     */
+    async getEncodingMap(
+        document: PdfDocument,
+    ): Promise<Map<number, string> | null> {
+        // Return cached result if already loaded
+        if (this._encodingMap !== undefined) {
+            return this._encodingMap
+        }
+
+        // Get the Encoding entry from the font dictionary
+        const encoding = this.get('Encoding')
+        if (!encoding) {
+            this._encodingMap = null
+            return null
+        }
+
+        // Resolve encoding dictionary (may be indirect reference)
+        let encodingDict: PdfDictionary | null = null
+        if (encoding instanceof PdfObjectReference) {
+            const encodingObj = await document.readObject(encoding)
+            encodingDict =
+                encodingObj?.content instanceof PdfDictionary
+                    ? encodingObj.content
+                    : null
+        } else if (encoding instanceof PdfDictionary) {
+            encodingDict = encoding
+        } else if (encoding instanceof PdfName) {
+            // Standard encoding name (e.g., WinAnsiEncoding) - no Differences
+            this._encodingMap = null
+            return null
+        }
+
+        if (!encodingDict) {
+            this._encodingMap = null
+            return null
+        }
+
+        // Get and parse the Differences array
+        const differencesEntry = encodingDict.get('Differences')
+        if (!(differencesEntry instanceof PdfArray)) {
+            this._encodingMap = null
+            return null
+        }
+
+        const encodingMap = buildEncodingMap(differencesEntry)
+        this._encodingMap = encodingMap
+        return encodingMap
     }
 
     /**
@@ -365,6 +460,54 @@ export class PdfFont extends PdfDictionary<{
             throw new Error('Font has not been written to PDF yet')
         }
         return this.container.reference
+    }
+
+    /**
+     * Loads a PdfFont from an existing PDF font reference.
+     * Reads the font dictionary and extracts key properties.
+     *
+     * @param document - PdfDocument to read the font object
+     * @param ref - Reference to the font object
+     * @param resourceName - The resource name (e.g., 'F1') used in content streams
+     * @returns A PdfFont instance representing the existing font
+     */
+    static async fromReference(
+        document: PdfDocument,
+        ref: PdfObjectReference,
+        resourceName: string,
+    ): Promise<PdfFont | null> {
+        const fontObj = await document.readObject(ref)
+        if (!fontObj) return null
+
+        const fontDict =
+            fontObj.content instanceof PdfDictionary ? fontObj.content : null
+        if (!fontDict) return null
+
+        // Extract font properties
+        const baseFontEntry = fontDict.get('BaseFont')
+        const fontName =
+            baseFontEntry instanceof PdfName ? baseFontEntry.value : undefined
+
+        const subtypeEntry = fontDict.get('Subtype')
+        const subtype =
+            subtypeEntry instanceof PdfName ? subtypeEntry.value : undefined
+
+        // Don't extract encoding value - preserve original Encoding entry (could be reference or dict)
+        // Create PdfFont with the loaded dictionary (copyFrom will preserve all entries)
+        const font = new PdfFont({
+            dict: fontDict,
+            fontName,
+            resourceName,
+            // Don't set encoding here - it's already in the dict
+            container: fontObj,
+        })
+
+        // Cache the resolved subtype for Unicode detection
+        if (subtype) {
+            font._resolvedFontType = subtype
+        }
+
+        return font
     }
 
     /**

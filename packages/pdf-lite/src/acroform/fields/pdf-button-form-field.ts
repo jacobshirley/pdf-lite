@@ -1,10 +1,9 @@
 import { PdfFormField } from './pdf-form-field.js'
-import { PdfButtonAppearanceStream } from '../appearance/pdf-button-appearance-stream.js'
+import { PdfFormXObject } from './pdf-form-xobject.js'
 import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
-import type { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js'
 import type { PdfStream } from '../../core/objects/pdf-stream.js'
 
 /**
@@ -60,7 +59,7 @@ export class PdfButtonFormField extends PdfFormField {
     }
 
     override getAppearanceStreamsForWriting():
-        | { primary: PdfAppearanceStream; secondary?: PdfAppearanceStream }
+        | { primary: PdfFormXObject; secondary?: PdfFormXObject }
         | undefined {
         if (!this._appearanceStream) return undefined
         return {
@@ -96,7 +95,7 @@ export class PdfButtonFormField extends PdfFormField {
         const width = x2 - x1
         const height = y2 - y1
 
-        this._appearanceStream = new PdfButtonAppearanceStream({
+        this._appearanceStream = PdfFormXObject.createForButton({
             width,
             height,
             contentStream: '',
@@ -106,12 +105,12 @@ export class PdfButtonFormField extends PdfFormField {
         // not lost when a child widget has its own Ff entry (even Ff: 0).
         const effectiveFlags =
             this.flags.flags | (this.parent?.flags?.flags ?? 0)
-        const yesContent = PdfButtonAppearanceStream.buildYesContent(
+        const yesContent = PdfFormXObject.createButtonContent(
             width,
             height,
             effectiveFlags,
         )
-        this._appearanceStreamYes = new PdfButtonAppearanceStream({
+        this._appearanceStreamYes = PdfFormXObject.createForButton({
             width,
             height,
             contentStream: yesContent,

@@ -25,5 +25,4 @@ export interface FormContext<TField = any> {
     fontRefs: Map<string, PdfObjectReference>
     fields: TField[]
     isFontUnicode: (fontName: string) => boolean
-    needAppearances: boolean
 }

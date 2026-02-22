@@ -1,6 +1,6 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
-import { PdfChoiceAppearanceStream } from '../appearance/pdf-choice-appearance-stream.js'
+import { PdfFormXObject } from './pdf-form-xobject.js'
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfArray } from '../../core/objects/pdf-array.js'
@@ -141,7 +141,7 @@ export class PdfChoiceFormField extends PdfFormField {
             ? new Map(Array.from(encodingMap, ([code, char]) => [char, code]))
             : undefined
 
-        this._appearanceStream = new PdfChoiceAppearanceStream({
+        this._appearanceStream = PdfFormXObject.createForChoice({
             rect: rect as [number, number, number, number],
             value,
             da: parsed,

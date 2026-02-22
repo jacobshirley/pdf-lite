@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { PdfTextAppearanceStream } from '../../src/acroform/appearance/pdf-text-appearance-stream'
+import { PdfFormXObject } from '../../src/acroform/fields/pdf-form-xobject'
 import { PdfDefaultAppearance } from '../../src/acroform/fields/pdf-default-appearance'
 import { PdfDictionary } from '../../src/core/objects/pdf-dictionary'
 import { PdfFont } from '../../src/fonts/pdf-font'
 
 describe('PdfAppearanceStream', () => {
-    describe('PdfTextAppearanceStream', () => {
+    describe('PdfFormXObject.createForTextField', () => {
         describe('Text Fitting', () => {
             let mockFont: PdfFont
             let fontResources: PdfDictionary
@@ -50,7 +50,7 @@ describe('PdfAppearanceStream', () => {
 
             describe('Single-line Text Fitting', () => {
                 it('should create appearance stream for short text without scaling', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'Hi',
                         }),
@@ -67,7 +67,7 @@ describe('PdfAppearanceStream', () => {
                     // Create text that's too wide for field
                     const longText =
                         'This is a very long text that should not fit in 200 units width'
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: longText,
                             rect: [0, 0, 100, 50], // narrow field
@@ -83,7 +83,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should handle empty text', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: '',
                         }),
@@ -97,7 +97,7 @@ describe('PdfAppearanceStream', () => {
 
             describe('Multiline Text with Word Wrapping', () => {
                 it('should wrap long text across multiple lines', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'This is a long paragraph that should be wrapped across multiple lines when displayed in the text field',
                             multiline: true,
@@ -115,7 +115,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should preserve explicit line breaks in multiline text', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'Line 1\nLine 2\nLine 3',
                             multiline: true,
@@ -129,7 +129,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should scale font down when wrapped text exceeds field height', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'Very long text '.repeat(20), // Lots of text
                             multiline: true,
@@ -144,7 +144,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should handle multiline text with mixed content', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'Short line\nThis is a much longer line that will need wrapping\nAnother short line',
                             multiline: true,
@@ -160,7 +160,7 @@ describe('PdfAppearanceStream', () => {
 
             describe('Comb Field Text Fitting', () => {
                 it('should position characters in comb cells', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'ABCD',
                             comb: true,
@@ -181,7 +181,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should scale font down for wide characters in comb cells', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'WWWWW', // Wide characters
                             comb: true,
@@ -199,7 +199,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should truncate text exceeding maxLen', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'TOOLONG',
                             comb: true,
@@ -217,7 +217,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should handle unicode characters in comb fields', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'àßç',
                             comb: true,
@@ -234,7 +234,7 @@ describe('PdfAppearanceStream', () => {
 
             describe('Edge Cases and Error Handling', () => {
                 it('should handle zero-width fields gracefully', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             rect: [0, 0, 0, 50], // Zero width
                         }),
@@ -246,7 +246,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should handle zero-height fields gracefully', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             rect: [0, 0, 100, 0], // Zero height
                         }),
@@ -258,7 +258,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should handle special characters in text', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'Text with (parentheses) and \\backslashes',
                         }),
@@ -271,7 +271,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should handle very small font sizes', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: 'Tiny text',
                             da: PdfDefaultAppearance.parse(
@@ -285,7 +285,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should handle text with only spaces', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: '   ', // Only spaces
                         }),
@@ -299,7 +299,7 @@ describe('PdfAppearanceStream', () => {
 
             describe('Font Resource Integration', () => {
                 it('should work without resolved fonts (fallback to estimation)', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             resolvedFonts: undefined,
                             value: 'Test without font data',
@@ -312,7 +312,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should work without font resources', () => {
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             fontResources: undefined,
                             resolvedFonts: undefined,
@@ -328,7 +328,7 @@ describe('PdfAppearanceStream', () => {
 
             describe('PDF Content validation', () => {
                 it('should generate properly structured PDF content', () => {
-                    const stream = new PdfTextAppearanceStream(createContext())
+                    const stream = PdfFormXObject.createForTextField(createContext())
 
                     const content = stream.content.rawAsString
 
@@ -345,7 +345,7 @@ describe('PdfAppearanceStream', () => {
                 })
 
                 it('should maintain proper operator order', () => {
-                    const stream = new PdfTextAppearanceStream(createContext())
+                    const stream = PdfFormXObject.createForTextField(createContext())
                     const content = stream.content.rawAsString
                     const lines = content
                         .split('\n')
@@ -364,7 +364,7 @@ describe('PdfAppearanceStream', () => {
                     const largeText = 'This is a large text block. '.repeat(100)
 
                     const start = Date.now()
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: largeText,
                             multiline: true,
@@ -380,7 +380,7 @@ describe('PdfAppearanceStream', () => {
                     const manyChars = 'A'.repeat(50)
 
                     const start = Date.now()
-                    const stream = new PdfTextAppearanceStream(
+                    const stream = PdfFormXObject.createForTextField(
                         createContext({
                             value: manyChars,
                             comb: true,

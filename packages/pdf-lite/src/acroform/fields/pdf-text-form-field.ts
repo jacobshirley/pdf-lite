@@ -1,6 +1,6 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
-import { PdfTextAppearanceStream } from '../appearance/pdf-text-appearance-stream.js'
+import { PdfFormXObject } from './pdf-form-xobject.js'
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 
@@ -71,7 +71,7 @@ export class PdfTextFormField extends PdfFormField {
             ? new Map(Array.from(encodingMap, ([code, char]) => [char, code]))
             : undefined
 
-        this._appearanceStream = new PdfTextAppearanceStream({
+        this._appearanceStream = PdfFormXObject.createForTextField({
             rect: rect,
             value: this.value,
             da: parsed,

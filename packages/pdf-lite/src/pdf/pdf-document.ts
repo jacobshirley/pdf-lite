@@ -13,8 +13,12 @@ import {
     PdfStream,
     PdfXRefStreamCompressedEntry,
 } from '../core/objects/pdf-stream.js'
+import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
-import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
+import {
+    IPdfObjectResolver,
+    PdfObjectReference,
+} from '../core/objects/pdf-object-reference.js'
 import { PdfXrefLookup } from './pdf-xref-lookup.js'
 import { PdfTokenSerializer } from '../core/serializer.js'
 import { PdfRevision } from './pdf-revision.js'
@@ -52,7 +56,7 @@ import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
  * await document.commit()
  * ```
  */
-export class PdfDocument extends PdfObject {
+export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     /** List of document revisions for incremental updates */
     revisions: PdfRevision[]
     /** Signer instance for digital signature operations */
@@ -110,6 +114,10 @@ export class PdfDocument extends PdfObject {
         this.signer = options?.signer ?? new PdfSigner()
 
         this.linkRevisions()
+        this.wireResolvers(
+            ...this.objects.filter((x) => x instanceof PdfIndirectObject),
+            ...this.revisions.map((rev) => rev.xref.trailerDict),
+        )
         this.calculateOffsets()
 
         this.originalSecurityHandler = options?.securityHandler
@@ -117,6 +125,16 @@ export class PdfDocument extends PdfObject {
 
         this.acroForm = new PdfAcroFormManager(this)
         this.fonts = new PdfFontManager(this)
+    }
+
+    resolve(objectNumber: number, generationNumber: number): PdfIndirectObject {
+        const found = this.readObject({ objectNumber, generationNumber })
+        if (!found) {
+            throw new Error(
+                `Object ${objectNumber} ${generationNumber} not found`,
+            )
+        }
+        return found
     }
 
     get header(): PdfComment | undefined {
@@ -195,6 +213,7 @@ export class PdfDocument extends PdfObject {
             if (obj.isImmutable()) {
                 throw new Error('Risky adding a immutable obj')
             }
+            this.wireResolvers(obj)
             this.toBeCommitted.push(obj)
             this.latestRevision.addObject(obj)
         }
@@ -791,10 +810,6 @@ export class PdfDocument extends PdfObject {
         for (const revision of this.revisions) {
             revision.locked = value
         }
-
-        if (value) {
-            this.startNewRevision()
-        }
     }
 
     /**
@@ -900,6 +915,34 @@ export class PdfDocument extends PdfObject {
 
     protected tokenize(): PdfToken[] {
         return this.tokensWithObjects().map(({ token }) => token)
+    }
+
+    private wireResolvers(...objects: PdfObject[]): void {
+        const seen = new Set<PdfObject>()
+        const walk = (obj: PdfObject) => {
+            if (seen.has(obj)) return
+            seen.add(obj)
+
+            if (
+                obj instanceof PdfObjectReference &&
+                !(obj instanceof PdfIndirectObject)
+            ) {
+                obj.resolver = this
+            } else if (obj instanceof PdfDictionary) {
+                for (const [, value] of obj.entries()) {
+                    if (value) walk(value)
+                }
+            } else if (obj instanceof PdfArray) {
+                for (const item of obj.items) {
+                    walk(item)
+                }
+            } else if (obj instanceof PdfIndirectObject) {
+                walk(obj.content)
+            }
+        }
+        for (const obj of objects) {
+            walk(obj)
+        }
     }
 
     private linkRevisions(): void {

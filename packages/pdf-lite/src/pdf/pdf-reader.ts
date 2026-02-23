@@ -50,8 +50,39 @@ export class PdfReader {
      */
     static async fromBytes(
         input: AsyncIterable<ByteArray> | Iterable<ByteArray>,
+        options?: {
+            password?: string
+            ownerPassword?: string
+            incremental?: boolean
+        },
     ): Promise<PdfDocument> {
         const reader = new PdfReader(new PdfObjectStream(input))
-        return reader.read()
+        const document = await reader.read()
+
+        if (options?.incremental) {
+            document.setIncremental(true)
+        }
+
+        let shouldDecrypt = Boolean(document.encryptionDictionary)
+
+        if (typeof options?.password === 'string') {
+            document.setPassword(options.password)
+            shouldDecrypt = true
+        }
+
+        if (typeof options?.ownerPassword === 'string') {
+            document.setOwnerPassword(options.ownerPassword)
+            shouldDecrypt = true
+        }
+
+        if (shouldDecrypt) {
+            try {
+                await document.decrypt()
+            } catch (e) {
+                document.resetSecurityHandler()
+            }
+        }
+
+        return document
     }
 }

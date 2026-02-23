@@ -47,6 +47,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     ],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -138,6 +139,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -780,6 +782,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -934,6 +937,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -975,6 +979,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -1016,6 +1021,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -1057,6 +1063,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -1098,6 +1105,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -1139,6 +1147,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -1725,6 +1734,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -1879,6 +1889,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -2225,6 +2236,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -2459,6 +2471,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -4949,6 +4962,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -57919,6 +57933,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -58793,6 +58808,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -59747,6 +59763,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -60077,6 +60094,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -61287,6 +61305,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -61377,6 +61396,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -62555,6 +62575,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -63269,6 +63290,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -63631,6 +63653,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -64121,6 +64144,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -69765,6 +69789,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -70015,6 +70040,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -70211,6 +70237,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     ],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -70252,6 +70279,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -70293,6 +70321,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -70607,6 +70636,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -70750,6 +70780,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     ],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -76080,6 +76111,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76121,6 +76153,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76162,6 +76195,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76203,6 +76237,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76244,6 +76279,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76285,6 +76321,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76326,6 +76363,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76367,6 +76405,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfArray {
       "immutable": false,
       "innerTokens": [],
@@ -76418,6 +76457,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76459,6 +76499,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76500,6 +76541,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -76541,6 +76583,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -77581,6 +77624,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -77622,6 +77666,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -77862,6 +77907,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -79190,6 +79236,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -85750,6 +85797,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -85862,6 +85910,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -85903,6 +85952,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -85944,6 +85994,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -85985,6 +86036,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -86026,6 +86078,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -86067,6 +86120,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -86108,6 +86162,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -86149,6 +86204,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfDictionary {
       "immutable": false,
       "innerTokens": [],
@@ -86190,6 +86246,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -86558,6 +86615,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,
@@ -86926,6 +86984,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "compressed": undefined,
     "content": PdfStream {
       "header": PdfDictionary {
         "immutable": false,

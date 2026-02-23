@@ -165,9 +165,7 @@ export class PdfAcroForm<
         return result
     }
 
-    async getFontEncodingMap(
-        fontName: string,
-    ): Promise<Map<number, string> | null> {
+    getFontEncodingMap(fontName: string): Map<number, string> | null {
         return this.fontEncodingCache.getFontEncodingMap(fontName)
     }
 
@@ -175,9 +173,7 @@ export class PdfAcroForm<
         return this.fontEncodingCache.isFontUnicode(fontName)
     }
 
-    static async fromDocument(
-        document: PdfDocument,
-    ): Promise<PdfAcroForm | null> {
+    static fromDocument(document: PdfDocument): PdfAcroForm | null {
         const catalog = document.root
         if (!catalog) return null
 
@@ -188,7 +184,7 @@ export class PdfAcroForm<
         let acroFormContainer: PdfIndirectObject | undefined
 
         if (acroFormRef instanceof PdfObjectReference) {
-            const acroFormObject = await document.readObject(acroFormRef)
+            const acroFormObject = document.readObject(acroFormRef)
 
             if (!acroFormObject) return null
             if (!(acroFormObject.content instanceof PdfDictionary))
@@ -207,10 +203,10 @@ export class PdfAcroForm<
 
         const fields: Map<string, PdfFormField> = new Map()
 
-        const getFields = async (
+        const getFields = (
             fieldRefs: PdfObjectReference[],
             parent?: PdfFormField,
-        ): Promise<void> => {
+        ): void => {
             for (const fieldRef of fieldRefs) {
                 const refKey = fieldRef.toString().trim()
                 if (fields.has(refKey)) {
@@ -218,7 +214,7 @@ export class PdfAcroForm<
                     continue
                 }
 
-                const fieldObject = await document.readObject(fieldRef)
+                const fieldObject = document.readObject(fieldRef)
 
                 if (!fieldObject) continue
                 if (!(fieldObject.content instanceof PdfDictionary)) continue
@@ -231,7 +227,7 @@ export class PdfAcroForm<
 
                 const kids = field.kids
                 if (kids.length > 0) {
-                    await getFields(kids, field)
+                    getFields(kids, field)
                 }
 
                 acroForm.fields.push(field)
@@ -249,7 +245,7 @@ export class PdfAcroForm<
         } else if (
             acroForm.content.get('Fields') instanceof PdfObjectReference
         ) {
-            const fieldsObj = await document.readObject(
+            const fieldsObj = document.readObject(
                 acroForm.content.get('Fields')!.as(PdfObjectReference),
             )
 
@@ -260,10 +256,10 @@ export class PdfAcroForm<
             }
         }
 
-        await getFields(fieldsArray.items)
+        getFields(fieldsArray.items)
 
         // Pre-cache font encoding maps now that this.fields is populated
-        await acroForm.cacheAllFontEncodings()
+        acroForm.cacheAllFontEncodings()
 
         // Reset field-level modified flag so only explicitly changed fields are detected
         for (const field of acroForm.fields) {
@@ -273,11 +269,11 @@ export class PdfAcroForm<
         return acroForm
     }
 
-    private async cacheAllFontEncodings(): Promise<void> {
-        await this.fontEncodingCache.cacheAllFontEncodings(this.fields)
+    private cacheAllFontEncodings(): void {
+        this.fontEncodingCache.cacheAllFontEncodings(this.fields)
     }
 
-    private async updatePageAnnotations(
+    private updatePageAnnotations(
         document: PdfDocument,
         fieldsByPage: Map<
             string,
@@ -286,11 +282,11 @@ export class PdfAcroForm<
                 fieldRefs: PdfObjectReference[]
             }
         >,
-    ): Promise<void> {
-        await PdfAnnotationWriter.updatePageAnnotations(document, fieldsByPage)
+    ): void {
+        PdfAnnotationWriter.updatePageAnnotations(document, fieldsByPage)
     }
 
-    async getXfa(document?: PdfDocument): Promise<PdfXfaForm | null> {
+    getXfa(document?: PdfDocument): PdfXfaForm | null {
         if (this._xfa) {
             return this._xfa
         }
@@ -301,11 +297,11 @@ export class PdfAcroForm<
                 'No document available to load XFA form. Provide a document or ensure this AcroForm is associated with a document.',
             )
         }
-        this._xfa = await PdfXfaForm.fromDocument(doc)
+        this._xfa = PdfXfaForm.fromDocument(doc)
         return this._xfa
     }
 
-    async write(document?: PdfDocument) {
+    write(document?: PdfDocument) {
         document ||= this.document
         if (!document) {
             throw new Error('No document associated with this AcroForm')
@@ -319,7 +315,7 @@ export class PdfAcroForm<
         const xfaForm =
             this._xfa !== undefined
                 ? this._xfa
-                : await PdfXfaForm.fromDocument(document)
+                : PdfXfaForm.fromDocument(document)
         if (xfaForm) {
             // Only send fields whose value was explicitly changed (field.isModified())
             const xfaFields = this.fields
@@ -404,7 +400,7 @@ export class PdfAcroForm<
             fieldsArray.push(fieldReference)
         }
 
-        await this.updatePageAnnotations(document, fieldsByPage)
+        this.updatePageAnnotations(document, fieldsByPage)
 
         // Phase 4: pack AcroForm dict into ObjStm AFTER fieldsArray is populated,
         // so the dict is serialized with the correct Fields array.
@@ -426,7 +422,7 @@ export class PdfAcroForm<
             document.add(xfaForm.datasets)
         }
 
-        await document.commit()
+        document.commit()
         document.setIncremental(isIncremental)
     }
 }

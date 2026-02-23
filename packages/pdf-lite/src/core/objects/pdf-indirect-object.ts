@@ -16,6 +16,7 @@ export class PdfIndirectObject<
     content: T
     offset: Ref<number>
     encryptable?: boolean
+    compressed?: boolean
     orderIndex?: number
 
     constructor(
@@ -26,6 +27,7 @@ export class PdfIndirectObject<
                   content?: T
                   offset?: number | Ref<number>
                   encryptable?: boolean
+                  compressed?: boolean
               }
             | T
             | PdfIndirectObject,
@@ -34,6 +36,7 @@ export class PdfIndirectObject<
             super(options.objectNumber, options.generationNumber)
             this.content = options.content.clone() as T
             this.offset = options.offset.clone()
+            this.compressed = options.compressed
             return
         }
 
@@ -51,6 +54,7 @@ export class PdfIndirectObject<
                 ? options.offset
                 : new Ref(options?.offset ?? 0)
         this.encryptable = options?.encryptable
+        this.compressed = options?.compressed
     }
 
     get reference(): PdfObjectReference {
@@ -136,6 +140,8 @@ export class PdfIndirectObject<
             generationNumber: this.generationNumber,
             content: this.content.clone(),
             offset: this.offset.resolve(),
+            encryptable: this.encryptable,
+            compressed: this.compressed,
         }) as this
     }
 

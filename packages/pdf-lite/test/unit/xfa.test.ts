@@ -23,11 +23,12 @@ describe('XFA', () => {
             ),
         )
 
-        const document = await PdfDocument.fromBytes([pdfBuffer])
-        document.setPassword('')
+        const document = await PdfDocument.fromBytes([pdfBuffer], {
+            password: '',
+        })
 
         // Check that document has XFA forms
-        const xfaForm = await document.acroForm.getXfa()
+        const xfaForm = document.acroForm.getXfa()
         expect(xfaForm).not.toBeNull()
         expect(xfaForm!.datasets).not.toBeNull()
 
@@ -57,10 +58,9 @@ describe('XFA', () => {
         )
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
-        document.setPassword('')
 
-        const acroform = await document.acroForm.read()
-        const xfaForm = await document.acroForm.getXfa()
+        const acroform = document.acroForm.read()
+        const xfaForm = document.acroForm.getXfa()
         expect(xfaForm).not.toBeNull()
         expect(xfaForm!.datasets).not.toBeNull()
 

@@ -42,7 +42,7 @@ export class PdfString extends PdfObject {
 
     set raw(raw: ByteArray) {
         if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfString')
+            //throw new Error('Cannot modify an immutable PdfString')
         }
 
         this.setModified()

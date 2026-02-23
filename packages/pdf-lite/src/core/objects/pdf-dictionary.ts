@@ -149,6 +149,7 @@ export class PdfDictionary<
                     : [PdfWhitespaceToken.SPACE]
 
                 index++
+                console.log(value)
                 return [
                     ...preTokens,
                     ...key.toTokens(),

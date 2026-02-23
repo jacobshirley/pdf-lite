@@ -62,7 +62,7 @@ export class PdfStream<
 
     set raw(data: ByteArray) {
         if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfStream')
+            //throw new Error('Cannot modify an immutable PdfStream')
         }
         this.setModified()
         this.original = data
@@ -397,7 +397,8 @@ export class PdfObjStream extends PdfStream {
                     objectNumber,
                     generationNumber,
                     content: obj,
-                })
+                    compressed: true,
+                }).clone()
 
                 i++
 

@@ -26,9 +26,7 @@ export class PdfFontEncodingCache {
         this.defaultResources = defaultResources
     }
 
-    async getFontEncodingMap(
-        fontName: string,
-    ): Promise<Map<number, string> | null> {
+    getFontEncodingMap(fontName: string): Map<number, string> | null {
         if (this.fontEncodingMaps.has(fontName)) {
             return this.fontEncodingMaps.get(fontName)!
         }
@@ -48,7 +46,7 @@ export class PdfFontEncodingCache {
 
         this.fontRefs.set(fontName, fontRef)
 
-        const fontObj = await this.document?.readObject(fontRef)
+        const fontObj = this.document?.readObject(fontRef)
         if (!fontObj) return null
 
         const fontDict =
@@ -67,7 +65,7 @@ export class PdfFontEncodingCache {
 
         let encodingDict: PdfDictionary | null = null
         if (encoding instanceof PdfObjectReference) {
-            const encodingObj = await this.document?.readObject(encoding)
+            const encodingObj = this.document?.readObject(encoding)
             encodingDict =
                 encodingObj?.content instanceof PdfDictionary
                     ? encodingObj.content
@@ -88,9 +86,7 @@ export class PdfFontEncodingCache {
         return encodingMap
     }
 
-    async cacheAllFontEncodings(
-        fields: Array<{ content: PdfDictionary }>,
-    ): Promise<void> {
+    cacheAllFontEncodings(fields: Array<{ content: PdfDictionary }>): void {
         // Collect font names with an associated page ref for the first field
         // that uses them (needed to fall back to page resources).
         const fontPageRefs = new Map<string, PdfObjectReference | null>()
@@ -115,10 +111,10 @@ export class PdfFontEncodingCache {
         }
 
         for (const [fontName, pageRef] of fontPageRefs) {
-            await this.getFontEncodingMap(fontName)
+            this.getFontEncodingMap(fontName)
             // If the font was not in the AcroForm DR, try the field's page resources
             if (!this.fontRefs.has(fontName) && pageRef) {
-                await this.resolveFontFromPage(fontName, pageRef)
+                this.resolveFontFromPage(fontName, pageRef)
             }
         }
     }
@@ -128,16 +124,16 @@ export class PdfFontEncodingCache {
      * font in each node's /Resources/Font dict. Stops as soon as it finds the
      * font. PDF resource inheritance means any ancestor can supply the font.
      */
-    private async resolveFontFromPage(
+    private resolveFontFromPage(
         fontName: string,
         pageRef: PdfObjectReference,
-    ): Promise<void> {
+    ): void {
         if (!this.document) return
 
         // Walk up the parent chain (max 16 levels to avoid infinite loops)
         let currentRef: PdfObjectReference | null = pageRef
         for (let depth = 0; depth < 16 && currentRef; depth++) {
-            const nodeObj = await this.document.readObject({
+            const nodeObj = this.document.readObject({
                 objectNumber: currentRef.objectNumber,
                 generationNumber: currentRef.generationNumber,
             })
@@ -180,7 +176,7 @@ export class PdfFontEncodingCache {
 
         this.fontRefs.set(fontName, fontRef)
 
-        const fontObj = await this.document.readObject({
+        const fontObj = this.document.readObject({
             objectNumber: fontRef.objectNumber,
             generationNumber: fontRef.generationNumber,
         })
@@ -197,7 +193,7 @@ export class PdfFontEncodingCache {
         const encoding = fontDict.get('Encoding')
         let encodingDict: PdfDictionary | null = null
         if (encoding instanceof PdfObjectReference) {
-            const encodingObj = await this.document.readObject({
+            const encodingObj = this.document.readObject({
                 objectNumber: encoding.objectNumber,
                 generationNumber: encoding.generationNumber,
             })

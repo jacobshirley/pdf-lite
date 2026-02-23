@@ -22,13 +22,11 @@ export class PdfChoiceFormField extends PdfFormField {
         label: string
         value: string
     }[] {
-        const opt =
-            this.content
-                .get('Opt')
-                ?.as(PdfArray<PdfString | PdfArray<PdfString>>) ??
-            this.parent?.content
-                .get('Opt')
-                ?.as(PdfArray<PdfString | PdfArray<PdfString>>)
+        const opt = this.content.get('Opt')
+        if (opt instanceof PdfObjectReference) {
+            throw new Error('Indirect Opt entries are not supported')
+        }
+
         if (!opt) return []
 
         return opt.items.map((item) => {
@@ -57,10 +55,16 @@ export class PdfChoiceFormField extends PdfFormField {
                   value: string
               }[]
             | string[]
+            | PdfObjectReference
             | undefined,
     ) {
         if (values === undefined) {
             this.content.delete('Opt')
+            return
+        }
+
+        if (values instanceof PdfObjectReference) {
+            this.content.set('Opt', values)
             return
         }
 

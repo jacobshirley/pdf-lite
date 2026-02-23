@@ -34,7 +34,7 @@ import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
-import { PdfArray } from '../index.js'
+import { PdfArray, PdfName, PdfNumber } from '../index.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -60,6 +60,10 @@ export class PdfDocument extends PdfObject {
     signer: PdfSigner
     /** Security handler for encryption/decryption operations */
     securityHandler?: PdfSecurityHandler
+    /** Whether the document is currently in incremental mode (appending changes as a new revision) */
+    private incremental: boolean = false
+
+    private originalSecurityHandler?: PdfSecurityHandler
 
     /**  */
     readonly acroForm: PdfAcroFormManager
@@ -109,8 +113,8 @@ export class PdfDocument extends PdfObject {
         this.linkRevisions()
         this.calculateOffsets()
 
-        this.securityHandler =
-            options?.securityHandler ?? this.getSecurityHandler()
+        this.originalSecurityHandler = options?.securityHandler
+        this.resetSecurityHandler()
 
         this.acroForm = new PdfAcroFormManager(this)
         this.fonts = new PdfFontManager(this)
@@ -381,6 +385,11 @@ export class PdfDocument extends PdfObject {
         return metadataRef
     }
 
+    resetSecurityHandler(): void {
+        this.securityHandler =
+            this.originalSecurityHandler ?? this.getSecurityHandler()
+    }
+
     private getSecurityHandler(): PdfSecurityHandler | undefined {
         const encryptionDictionaryRef = this.trailerDict
             .get('Encrypt')
@@ -521,14 +530,20 @@ export class PdfDocument extends PdfObject {
             await this.securityHandler.decryptObject(object)
         }
 
-        this.securityHandler = undefined
         this.hasEncryptionDictionary = false
+        this.securityHandler = undefined
 
         const encryptionDict = this.encryptionDictionary
 
+        this.trailerDict.set(new PdfName('Lol'), new PdfNumber(123))
+        console.log(this.trailerDict.get('Encrypt'), encryptionDict?.reference)
+
+        this.trailerDict.delete('Encrypt')
         if (encryptionDict) {
             await this.deleteObject(encryptionDict)
         }
+
+        //this.trailerDict.delete('Encrypt')
 
         await this.update()
     }
@@ -538,6 +553,9 @@ export class PdfDocument extends PdfObject {
      * Creates and adds an encryption dictionary to all revisions.
      */
     async encrypt(): Promise<void> {
+        const isIncremental = this.incremental
+
+        this.setIncremental(false)
         this.initSecurityHandler({})
 
         await this.securityHandler!.write()
@@ -577,6 +595,10 @@ export class PdfDocument extends PdfObject {
         this.hasEncryptionDictionary = true
 
         await this.update()
+
+        if (isIncremental !== undefined) {
+            this.setIncremental(isIncremental)
+        }
     }
 
     /**
@@ -586,14 +608,14 @@ export class PdfDocument extends PdfObject {
      * @returns The found indirect object or undefined if not found
      * @throws Error if the object cannot be found in the expected object stream
      */
-    async findCompressedObject(
+    findCompressedObject(
         options:
             | {
                   objectNumber: number
                   generationNumber?: number
               }
             | PdfObjectReference,
-    ): Promise<PdfIndirectObject | undefined> {
+    ): PdfIndirectObject | undefined {
         const xrefEntry = this.xrefLookup.getObject(options.objectNumber)
 
         if (!(xrefEntry instanceof PdfXRefStreamCompressedEntry)) {
@@ -610,13 +632,6 @@ export class PdfDocument extends PdfObject {
             throw new Error(
                 `Cannot find object stream ${xrefEntry.objectStreamNumber.value} for object ${options.objectNumber}`,
             )
-        }
-
-        if (
-            this.securityHandler &&
-            this.isObjectEncryptable(objectStreamIndirect)
-        ) {
-            await this.securityHandler.decryptObject(objectStreamIndirect)
         }
 
         const objectStream = objectStreamIndirect.content
@@ -683,18 +698,19 @@ export class PdfDocument extends PdfObject {
      * @param options.allowUnindexed - If true, searches unindexed objects as fallback
      * @returns A cloned and decrypted copy of the object, or undefined if not found
      */
-    async readObject(options: {
+    readObject(options: {
         objectNumber: number
         generationNumber?: number
         allowUnindexed?: boolean
-    }): Promise<PdfIndirectObject | undefined> {
+        cloned?: boolean
+    }): PdfIndirectObject | undefined {
         let foundObject: PdfIndirectObject | undefined
 
         try {
             foundObject = this.findUncompressedObject(options)
         } catch (e) {
             if (e instanceof FoundCompressedObjectError) {
-                foundObject = await this.findCompressedObject(options)
+                foundObject = this.findCompressedObject(options)
             } else {
                 throw e
             }
@@ -714,9 +730,8 @@ export class PdfDocument extends PdfObject {
             return undefined
         }
 
-        if (this.securityHandler && this.isObjectEncryptable(foundObject)) {
+        if (options.cloned) {
             foundObject = foundObject.clone()
-            await this.securityHandler.decryptObject(foundObject)
         }
 
         return foundObject
@@ -763,11 +778,15 @@ export class PdfDocument extends PdfObject {
             return
         }
 
+        this.incremental = value
+
         for (const revision of this.revisions) {
             revision.locked = value
         }
 
-        this.startNewRevision()
+        if (value) {
+            this.startNewRevision()
+        }
     }
 
     /**
@@ -776,7 +795,7 @@ export class PdfDocument extends PdfObject {
      * @returns True if all revisions are locked for incremental updates
      */
     isIncremental(): boolean {
-        return this.latestRevision.locked
+        return this.incremental
     }
 
     /**
@@ -1007,8 +1026,13 @@ export class PdfDocument extends PdfObject {
      */
     static fromBytes(
         input: AsyncIterable<ByteArray> | Iterable<ByteArray>,
+        options?: {
+            password?: string
+            ownerPassword?: string
+            incremental?: boolean
+        },
     ): Promise<PdfDocument> {
-        return PdfReader.fromBytes(input)
+        return PdfReader.fromBytes(input, options)
     }
 
     isModified(): boolean {

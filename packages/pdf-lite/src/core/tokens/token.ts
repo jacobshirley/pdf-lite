@@ -1,7 +1,7 @@
 import { ByteArray } from '../../types.js'
 import { bytesToString } from '../../utils/bytesToString.js'
 
-export abstract class PdfToken {
+export class PdfToken {
     protected rawBytes: ByteArray
 
     constructor(bytes?: ByteArray) {
@@ -39,5 +39,9 @@ export abstract class PdfToken {
         }
 
         return true
+    }
+
+    clone(): PdfToken {
+        return new PdfToken(this.toBytes())
     }
 }

@@ -14,9 +14,7 @@ import { PdfXfaData } from './pdf-xfa-data.js'
 export class PdfXfaForm extends PdfArray {
     datasets: PdfXfaData | null = null
 
-    static async fromDocument(
-        document: PdfDocument,
-    ): Promise<PdfXfaForm | null> {
+    static fromDocument(document: PdfDocument): PdfXfaForm | null {
         const catalog = document.root
         const acroFormRef = catalog.content.get('AcroForm')
         if (!acroFormRef) return null
@@ -24,7 +22,7 @@ export class PdfXfaForm extends PdfArray {
         let acroFormDict: PdfDictionary
 
         if (acroFormRef instanceof PdfObjectReference) {
-            const acroFormObject = await document.readObject(acroFormRef)
+            const acroFormObject = document.readObject(acroFormRef)
             if (!acroFormObject) return null
             acroFormDict = acroFormObject.content.as(PdfDictionary)
         } else if (acroFormRef instanceof PdfDictionary) {
@@ -49,13 +47,13 @@ export class PdfXfaForm extends PdfArray {
                 name.value === 'datasets' &&
                 ref instanceof PdfObjectReference
             ) {
-                const datasetObject = (
-                    await document.readObject({
+                const datasetObject = document
+                    .readObject({
                         objectNumber: ref.objectNumber,
                         generationNumber: ref.generationNumber,
                         allowUnindexed: true,
                     })
-                )?.as(PdfIndirectObject<PdfStream>)
+                    ?.as(PdfIndirectObject<PdfStream>)
 
                 if (datasetObject) {
                     form.datasets = new PdfXfaData(datasetObject)

@@ -969,17 +969,18 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         })
         acroForm.defaultResources = drDict
 
-        await acroForm.getFontByName('Helv')?.getEncodingMap(mockDocument)
+        const font1 = await acroForm.getFontByName('Helv')
+        await font1?.getEncodingMap(mockDocument)
         const firstCallCount = readObjectCalls.length
 
-        await acroForm.getFontByName('Helv')?.getEncodingMap(mockDocument)
+        const font2 = await acroForm.getFontByName('Helv')
+        await font2?.getEncodingMap(mockDocument)
         const secondCallCount = readObjectCalls.length
 
         expect(secondCallCount).toBe(firstCallCount)
-        expect(acroForm.getFontByName('Helv')).toBeDefined()
-        expect(
-            acroForm.getFontByName('Helv')?.cachedEncodingMap?.get(160),
-        ).toBe('\u20AC')
+        const font3 = await acroForm.getFontByName('Helv')
+        expect(font3).toBeDefined()
+        expect(font3?.cachedEncodingMap?.get(160)).toBe('\u20AC')
     })
 })
 

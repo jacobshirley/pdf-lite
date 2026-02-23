@@ -95,6 +95,8 @@ export class PdfAcroForm<
                         fontName,
                     )
                     if (font) {
+                        // Load and cache the encoding map
+                        await font.getEncodingMap(this.document)
                         this.fonts.set(fontName, font)
                         return font
                     }
@@ -149,6 +151,8 @@ export class PdfAcroForm<
                             fontName,
                         )
                         if (font) {
+                            // Load and cache the encoding map
+                            await font.getEncodingMap(this.document)
                             this.fonts.set(fontName, font)
                             return font
                         }

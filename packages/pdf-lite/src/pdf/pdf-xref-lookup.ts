@@ -176,7 +176,8 @@ export class PdfXrefLookup {
 
         const initialLookup = lookup
         while (lookup) {
-            const prevEntry: PdfNumber | undefined = lookup.trailerDict.get('Prev')
+            const prevEntry: PdfNumber | undefined =
+                lookup.trailerDict.get('Prev')
             const prevLookup: PdfXrefLookup | undefined = lookups.find((x) =>
                 x.offset.equals(prevEntry?.value),
             )

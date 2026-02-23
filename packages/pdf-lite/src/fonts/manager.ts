@@ -347,9 +347,7 @@ export class PdfFontManager {
      * Searches the PDF structure for a font by name.
      * @internal
      */
-    private searchFontInPdf(
-        fontName: string,
-    ): PdfFont | undefined {
+    private searchFontInPdf(fontName: string): PdfFont | undefined {
         const fonts = this.collectAllFontsFromPdf()
         return fonts?.get(fontName)
     }

@@ -31,7 +31,7 @@ export class PdfTextFormField extends PdfFormField {
         const drFontValue = this.form?.defaultResources?.get('Font')
         const drFonts =
             drFontValue instanceof PdfDictionary ? drFontValue : undefined
-        const font = this.form?.getFontByName(parsed.fontName)
+        const font = this.form?.getCachedFont(parsed.fontName)
 
         if (drFonts || font) {
             // Build a fresh font dict using clean PdfObjectReferences (no

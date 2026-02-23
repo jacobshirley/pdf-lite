@@ -814,27 +814,33 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
 describe('AcroForm Field Value Decoding with Custom Encoding', () => {
     it('should decode field values with custom Euro encoding', async () => {
         // Create a mock document with font encoding
-        const mockDocument = {
-            async readObject({ objectNumber }: { objectNumber: number }) {
-                if (objectNumber === 1) {
-                    const fontDict = new PdfDictionary()
-                    fontDict.set('Type', new PdfName('Font'))
-                    fontDict.set('BaseFont', new PdfName('Helvetica'))
-                    fontDict.set('Encoding', new PdfObjectReference(2, 0))
-                    return { content: fontDict } as any
-                } else if (objectNumber === 2) {
-                    const encodingDict = new PdfDictionary()
-                    encodingDict.set('Type', new PdfName('Encoding'))
-                    const differences = new PdfArray([
+        const mockDocument = new PdfDocument()
+        mockDocument.add(
+            new PdfIndirectObject({
+                objectNumber: 1,
+                generationNumber: 0,
+                content: new PdfDictionary({
+                    Type: new PdfName('Font'),
+                    BaseFont: new PdfName('Helvetica'),
+                    Encoding: new PdfObjectReference(2, 0),
+                }),
+            }),
+        )
+        mockDocument.add(
+            new PdfIndirectObject({
+                objectNumber: 2,
+                generationNumber: 0,
+                content: new PdfDictionary({
+                    Type: new PdfName('Encoding'),
+                    Differences: new PdfArray([
                         new PdfNumber(160),
                         new PdfName('Euro'),
-                    ])
-                    encodingDict.set('Differences', differences)
-                    return { content: encodingDict } as any
-                }
-                return null
-            },
-        } as any
+                    ]),
+                }),
+            }),
+        )
+        await mockDocument.fonts.cacheFonts()
+        await mockDocument.commit()
 
         const drDict = new PdfDictionary()
         const fontDict = new PdfDictionary()
@@ -855,7 +861,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         field.value = '\xA050' // Byte 160 (0xA0) should map to Euro symbol
 
         acroForm.fields.push(field)
-        await acroForm.getFontByName('Helv')?.getEncodingMap(mockDocument)
+        expect(await acroForm.getFontByName('Helv')).toBeDefined()
 
         expect(field.value).toBe('€50')
     })
@@ -971,7 +977,9 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
 
         expect(secondCallCount).toBe(firstCallCount)
         expect(acroForm.getFontByName('Helv')).toBeDefined()
-        expect(acroForm.getFontByName('Helv')?.cachedEncodingMap?.get(160)).toBe('\u20AC')
+        expect(
+            acroForm.getFontByName('Helv')?.cachedEncodingMap?.get(160),
+        ).toBe('\u20AC')
     })
 })
 

@@ -185,6 +185,47 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     }
 
     /**
+     * Returns the cached encoding map if the encoding has already been resolved.
+     * The map translates byte codes to Unicode characters based on the font's
+     * Differences array.
+     */
+    get cachedEncodingMap(): Map<number, string> | undefined {
+        if (this._encodingObject instanceof PdfFontEncoding) {
+            return this._encodingObject.getEncodingMap()
+        }
+        return undefined
+    }
+
+    /**
+     * Resolves the font encoding from the document (if it's an indirect reference)
+     * and returns the encoding map. Caches the resolved encoding object on the font
+     * for subsequent calls.
+     *
+     * @param document - The PDF document to resolve encoding references from
+     * @returns The encoding map, or undefined if no custom encoding
+     */
+    async getEncodingMap(document: PdfDocument): Promise<Map<number, string> | undefined> {
+        // If we already have a resolved PdfFontEncoding, return its map
+        if (this._encodingObject instanceof PdfFontEncoding) {
+            return this._encodingObject.getEncodingMap()
+        }
+
+        // Try to resolve encoding from the font dictionary
+        const encodingEntry = this.content.get('Encoding')
+        if (!encodingEntry) return undefined
+
+        if (encodingEntry instanceof PdfObjectReference || encodingEntry instanceof PdfDictionary) {
+            const resolved = await PdfFontEncoding.fromDocument(document, encodingEntry)
+            if (resolved) {
+                this._encodingObject = resolved
+                return resolved.getEncodingMap()
+            }
+        }
+
+        return undefined
+    }
+
+    /**
      * Gets the font type (Subtype in PDF).
      */
     get fontType():

@@ -7,6 +7,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -12312,6 +12313,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -19435,6 +19437,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -22387,6 +22390,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -25547,6 +25551,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -28499,6 +28504,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -31451,6 +31457,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -38710,6 +38717,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -45969,6 +45977,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -53228,6 +53237,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -55062,6 +55072,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -57302,6 +57313,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -59707,6 +59719,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },
@@ -61947,6 +61960,7 @@ PdfDocument {
     "document": [Circular],
   },
   "fonts": PdfFontManager {
+    "_fontsCache": undefined,
     "document": [Circular],
     "fontResourceCounter": 0,
   },

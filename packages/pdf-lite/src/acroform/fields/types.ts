@@ -1,5 +1,4 @@
-import type { PdfDefaultResourcesDictionary } from '../acroform.js'
-import type { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
+import type { PdfDefaultResourcesDictionary } from '../pdf-acro-form.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
 
 /**

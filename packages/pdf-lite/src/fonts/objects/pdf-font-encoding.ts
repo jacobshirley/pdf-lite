@@ -1,14 +1,14 @@
-import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
-import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
-import { PdfName } from '../core/objects/pdf-name.js'
-import { PdfNumber } from '../core/objects/pdf-number.js'
-import { PdfArray } from '../core/objects/pdf-array.js'
-import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
-import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
-import type { PdfDocument } from '../pdf/pdf-document.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
+import { PdfNumber } from '../../core/objects/pdf-number.js'
+import { PdfArray } from '../../core/objects/pdf-array.js'
+import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
+import { buildEncodingMap } from '../../utils/decodeWithFontEncoding.js'
+import type { PdfDocument } from '../../pdf/pdf-document.js'
 
 /**
- * Represents a PDF font encoding dictionary with custom character mappings.
+ * Represents a PDF font encoding dictionary.
  * 
  * Example structure:
  * ```
@@ -19,7 +19,7 @@ import type { PdfDocument } from '../pdf/pdf-document.js'
  * >>
  * ```
  */
-export class PdfFontEncoding extends PdfIndirectObject<
+export class PdfFontEncodingObject extends PdfIndirectObject<
     PdfDictionary<{
         Type?: PdfName<'Encoding'>
         BaseEncoding?: PdfName
@@ -31,7 +31,7 @@ export class PdfFontEncoding extends PdfIndirectObject<
      * Cached encoding map (code point → Unicode character).
      * undefined = not yet parsed, null = no Differences array
      */
-    private _encodingMap?: Map<number, string> | null
+    private _encodingMap?: Map<number, string> | undefined
 
     constructor(options?: {
         baseEncoding?: string
@@ -42,8 +42,9 @@ export class PdfFontEncoding extends PdfIndirectObject<
             content: new PdfDictionary(),
         })
 
+        this.content.set('Type', new PdfName('Encoding'))
+
         if (options?.baseEncoding) {
-            this.content.set('Type', new PdfName('Encoding'))
             this.content.set('BaseEncoding', new PdfName(options.baseEncoding))
         }
 
@@ -92,7 +93,7 @@ export class PdfFontEncoding extends PdfIndirectObject<
             this._encodingMap = undefined
         } else {
             this.content.delete('Differences')
-            this._encodingMap = null
+            this._encodingMap = undefined
         }
     }
 
@@ -101,7 +102,7 @@ export class PdfFontEncoding extends PdfIndirectObject<
      * Parses the Differences array if not already cached.
      * Returns null if no Differences array exists.
      */
-    getEncodingMap(): Map<number, string> | null {
+    getEncodingMap(): Map<number, string> | undefined {
         // Return cached result if already parsed
         if (this._encodingMap !== undefined) {
             return this._encodingMap
@@ -110,56 +111,56 @@ export class PdfFontEncoding extends PdfIndirectObject<
         // Get the Differences array
         const differencesEntry = this.content.get('Differences')
         if (!(differencesEntry instanceof PdfArray)) {
-            this._encodingMap = null
-            return null
+            this._encodingMap = undefined
+            return undefined
         }
 
         // Parse and cache the encoding map
-        const encodingMap = buildEncodingMap(differencesEntry)
+        const encodingMap = buildEncodingMap(differencesEntry) ?? undefined
         this._encodingMap = encodingMap
         return encodingMap
     }
 
     /**
-     * Creates a PdfFontEncoding from an existing dictionary.
+     * Creates a PdfFontEncodingObject from an existing dictionary.
      * 
      * @param dict - The encoding dictionary
-     * @returns A PdfFontEncoding instance
+     * @returns A PdfFontEncodingObject instance
      */
-    static fromDictionary(dict: PdfDictionary): PdfFontEncoding {
-        const encoding = new PdfFontEncoding()
+    static fromDictionary(dict: PdfDictionary): PdfFontEncodingObject {
+        const encoding = new PdfFontEncodingObject()
         encoding.content.copyFrom(dict)
         return encoding
     }
 
     /**
-     * Creates a PdfFontEncoding with a custom Differences array.
+     * Creates a PdfFontEncodingObject with a custom Differences array.
      * 
      * @param baseEncoding - Base encoding name (e.g., 'WinAnsiEncoding')
      * @param differences - Array in format [code name1 name2 ...]
-     * @returns A PdfFontEncoding instance
+     * @returns A PdfFontEncodingObject instance
      */
     static fromDifferences(
         baseEncoding: string,
         differences: PdfArray,
-    ): PdfFontEncoding {
-        return new PdfFontEncoding({
+    ): PdfFontEncodingObject {
+        return new PdfFontEncodingObject({
             baseEncoding,
             differences,
         })
     }
 
     /**
-     * Creates a PdfFontEncoding from a code point to glyph name mapping.
+     * Creates a PdfFontEncodingObject from a code point to glyph name mapping.
      * 
      * @param baseEncoding - Base encoding name (e.g., 'WinAnsiEncoding')
      * @param mappings - Map of character code to glyph name
-     * @returns A PdfFontEncoding instance
+     * @returns A PdfFontEncodingObject instance
      */
     static fromMappings(
         baseEncoding: string,
         mappings: Map<number, string>,
-    ): PdfFontEncoding {
+    ): PdfFontEncodingObject {
         // Build Differences array from mappings
         const differences: (PdfNumber | PdfName)[] = []
         const sortedCodes = Array.from(mappings.keys()).sort((a, b) => a - b)
@@ -177,7 +178,7 @@ export class PdfFontEncoding extends PdfIndirectObject<
             differences.push(new PdfName(name))
         }
 
-        const encoding = new PdfFontEncoding({
+        const encoding = new PdfFontEncodingObject({
             baseEncoding,
             differences: new PdfArray(differences),
         })
@@ -189,16 +190,16 @@ export class PdfFontEncoding extends PdfIndirectObject<
     }
 
     /**
-     * Loads a PdfFontEncoding from an existing PDF document.
+     * Loads a PdfFontEncodingObject from an existing PDF document.
      * 
      * @param document - The PDF document to load from
      * @param encodingRef - The encoding dictionary or indirect reference
-     * @returns A PdfFontEncoding instance, or null if the encoding is a standard name or invalid
+     * @returns A PdfFontEncodingObject instance, or null if the encoding is a standard name or invalid
      */
     static async fromDocument(
         document: PdfDocument,
         encodingRef: PdfDictionary | PdfObjectReference | PdfName,
-    ): Promise<PdfFontEncoding | undefined> {
+    ): Promise<PdfFontEncodingObject | undefined> {
         let encodingDict: PdfDictionary | null = null
 
         if (encodingRef instanceof PdfObjectReference) {
@@ -218,6 +219,6 @@ export class PdfFontEncoding extends PdfIndirectObject<
             return undefined
         }
 
-        return PdfFontEncoding.fromDictionary(encodingDict)
+        return PdfFontEncodingObject.fromDictionary(encodingDict)
     }
 }

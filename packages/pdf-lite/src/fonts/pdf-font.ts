@@ -17,6 +17,7 @@ import type { ByteArray } from '../types.js'
 import { parseFont } from './parsers/font-parser.js'
 import { OtfParser } from './parsers/otf-parser.js'
 import { PdfFontEncoding } from './pdf-font-encoding.js'
+import { PdfToUnicodeCMapObject } from './objects/pdf-tounicode-cmap.js'
 import type { PdfDocument } from '../pdf/pdf-document.js'
 
 type PdfStandardFontName =
@@ -891,74 +892,12 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
 
         // Create ToUnicode CMap if mappings provided
         if (unicodeMappings && unicodeMappings.size > 0) {
-            const cmapContent = PdfFont.generateToUnicodeCMap(unicodeMappings)
-            const cmapStream = new PdfStream({
-                header: new PdfDictionary(),
-                original: new TextEncoder().encode(cmapContent),
-            })
-            cmapStream.addFilter('FlateDecode')
-
-            const cmapObject = new PdfIndirectObject({
-                content: cmapStream,
-            })
-
+            const cmapObject = new PdfToUnicodeCMapObject(unicodeMappings)
             font.content.set('ToUnicode', cmapObject.reference)
             font.auxiliaryObjects.push(cmapObject)
         }
 
         return font
-    }
-
-    /**
-     * Generates a ToUnicode CMap for mapping CIDs to Unicode code points.
-     */
-    private static generateToUnicodeCMap(
-        mappings: Map<number, number>,
-    ): string {
-        const lines: string[] = []
-
-        lines.push('/CIDInit /ProcSet findresource begin')
-        lines.push('12 dict begin')
-        lines.push('begincmap')
-        lines.push('/CIDSystemInfo')
-        lines.push('<< /Registry (Adobe)')
-        lines.push('/Ordering (UCS)')
-        lines.push('/Supplement 0')
-        lines.push('>> def')
-        lines.push('/CMapName /Adobe-Identity-UCS def')
-        lines.push('/CMapType 2 def')
-        lines.push('1 begincodespacerange')
-        lines.push('<0000> <FFFF>')
-        lines.push('endcodespacerange')
-
-        // Convert mappings to array and sort by CID
-        const sortedMappings = Array.from(mappings.entries()).sort(
-            (a, b) => a[0] - b[0],
-        )
-
-        // Output in chunks of 100 (PDF limit per beginbfchar section)
-        for (let i = 0; i < sortedMappings.length; i += 100) {
-            const chunk = sortedMappings.slice(i, i + 100)
-            lines.push(`${chunk.length} beginbfchar`)
-
-            for (const [cid, unicode] of chunk) {
-                const cidHex = cid.toString(16).padStart(4, '0').toUpperCase()
-                const unicodeHex = unicode
-                    .toString(16)
-                    .padStart(4, '0')
-                    .toUpperCase()
-                lines.push(`<${cidHex}> <${unicodeHex}>`)
-            }
-
-            lines.push('endbfchar')
-        }
-
-        lines.push('endcmap')
-        lines.push('CMapName currentdict /CMap defineresource pop')
-        lines.push('end')
-        lines.push('end')
-
-        return lines.join('\n')
     }
 
     /**

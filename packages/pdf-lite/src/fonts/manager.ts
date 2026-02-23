@@ -146,6 +146,14 @@ export class PdfFontManager {
     }
 
     /**
+     * Loads all existing fonts from the PDF page tree into the cache and returns them.
+     */
+    async loadExistingFonts(): Promise<Map<string, PdfFont>> {
+        await this.cacheFonts()
+        return this._fontsCache ?? new Map()
+    }
+
+    /**
      * Writes a font to the PDF document.
      * Assigns resource name, creates container object, commits all objects,
      * and registers it in page resources.
@@ -350,13 +358,21 @@ export class PdfFontManager {
             if (!fontObjDict || !fontIndirectObj) continue
 
             const baseFont = fontObjDict.get('BaseFont')?.as(PdfName)?.value
-            const encoding = fontObjDict.get('Encoding')?.as(PdfName)?.value
+            const encodingEntry = fontObjDict.get('Encoding')
 
             if (baseFont) {
+                // Resolve encoding — could be a PdfName, PdfObjectReference, or PdfDictionary
+                let resolvedEncoding: PdfFontEncoding | PdfName | string | undefined
+                if (encodingEntry instanceof PdfName) {
+                    resolvedEncoding = encodingEntry.value
+                } else if (encodingEntry instanceof PdfObjectReference || encodingEntry instanceof PdfDictionary) {
+                    resolvedEncoding = await PdfFontEncoding.fromDocument(this.document, encodingEntry)
+                }
+
                 const pdfFont = new PdfFont({
                     fontName: baseFont,
                     resourceName: resourceName,
-                    encoding: encoding,
+                    encoding: resolvedEncoding,
                     manager: this,
                 })
                 fonts.set(resourceName, pdfFont)

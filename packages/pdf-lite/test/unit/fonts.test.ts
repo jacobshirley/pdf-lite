@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, assert } from 'vitest'
 import { server } from 'vitest/browser'
 import { PdfDocument } from '../../src/pdf/pdf-document'
 import {
@@ -18,6 +18,7 @@ import {
 } from '../../src/fonts/parsers/font-parser'
 import { ByteArray } from '../../src/types'
 import { PdfFont } from '../../src/fonts/pdf-font'
+import { PdfName } from '../../src'
 
 // Helper to load font fixtures
 const base64ToBytes = (base64: string): ByteArray => {
@@ -151,7 +152,8 @@ describe('Font Embedding', () => {
 
             expect(font.resourceName).toMatch(/^F\d+$/)
             expect(font.fontName).toBe('CustomFont')
-            expect(font.encoding).toBe('WinAnsiEncoding')
+            assert(font.encoding instanceof PdfName)
+            expect(font.encoding?.value).toBe('WinAnsiEncoding')
         })
 
         it('should allow embedding same TrueType font twice (no deduplication)', async () => {
@@ -318,7 +320,8 @@ describe('Font Embedding', () => {
             )
 
             expect(font.resourceName).toMatch(/^F\d+$/)
-            expect(font.encoding).toBe('Identity-H')
+            assert(font.encoding instanceof PdfName)
+            expect(font.encoding?.value).toBe('Identity-H')
         })
 
         it('should embed Unicode font with CID widths', async () => {

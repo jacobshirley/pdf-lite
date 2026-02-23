@@ -34,7 +34,6 @@ import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { PdfAcroFormManager } from '../acroform/manager.js'
 import { PdfFontManager } from '../fonts/manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
-import { PdfArray, PdfName, PdfNumber } from '../index.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -535,15 +534,10 @@ export class PdfDocument extends PdfObject {
 
         const encryptionDict = this.encryptionDictionary
 
-        this.trailerDict.set(new PdfName('Lol'), new PdfNumber(123))
-        console.log(this.trailerDict.get('Encrypt'), encryptionDict?.reference)
-
         this.trailerDict.delete('Encrypt')
         if (encryptionDict) {
             await this.deleteObject(encryptionDict)
         }
-
-        //this.trailerDict.delete('Encrypt')
 
         await this.update()
     }
@@ -902,7 +896,12 @@ export class PdfDocument extends PdfObject {
 
         for (const revision of this.revisions) {
             revision.xref.linkPrev(xrefLookups)
-            revision.xref.linkIndirectObjects(indirectObjects)
+            // Walk the entire prev chain to link all xref entries
+            let xref: PdfXrefLookup | undefined = revision.xref
+            while (xref) {
+                xref.linkIndirectObjects(indirectObjects)
+                xref = xref.prev
+            }
         }
     }
 
@@ -961,7 +960,7 @@ export class PdfDocument extends PdfObject {
 
     private updateRevisions(): void {
         let modified = false
-        this.revisions.forEach((rev, i) => {
+        this.revisions.forEach((rev) => {
             if (rev.isModified()) {
                 modified = true
             }
@@ -970,11 +969,22 @@ export class PdfDocument extends PdfObject {
                 rev.update()
             }
         })
+
+        // Always rebuild xref binary data to reflect recalculated offsets
+        // This walks the entire prev chain for each revision
+        for (const rev of this.revisions) {
+            let xref: PdfXrefLookup | undefined = rev.xref
+            while (xref) {
+                xref.update()
+                xref = xref.prev
+            }
+        }
     }
 
     private async update(): Promise<void> {
         this.calculateOffsets()
         this.updateRevisions()
+        this.calculateOffsets()
         await this.signer?.sign(this)
     }
 
@@ -986,6 +996,7 @@ export class PdfDocument extends PdfObject {
     toBytes(): ByteArray {
         this.calculateOffsets()
         this.updateRevisions()
+        this.calculateOffsets()
         return concatUint8Arrays(...this.revisions.map((x) => x.toBytes()))
     }
 

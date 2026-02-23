@@ -21,8 +21,8 @@ export class PdfFontManager {
         this.document = document
     }
 
-    async findFontByName(fontName: string): Promise<PdfFont | undefined> {
-        return await this.searchFontInPdf(fontName)
+    findFontByName(fontName: string): PdfFont | undefined {
+        return this.searchFontInPdf(fontName)
     }
 
     /**
@@ -143,8 +143,8 @@ export class PdfFontManager {
     /**
      * Gets the font reference by font name or resource name.
      */
-    async getFont(fontName: string): Promise<PdfFont | undefined> {
-        return await this.searchFontInPdf(fontName)
+    getFont(fontName: string): PdfFont | undefined {
+        return this.searchFontInPdf(fontName)
     }
 
     /**
@@ -185,8 +185,8 @@ export class PdfFontManager {
      * Gets all embedded fonts.
      * Searches the PDF structure to find all fonts.
      */
-    async getAllFonts(): Promise<Map<string, PdfFont>> {
-        return await this.collectAllFontsFromPdf()
+    getAllFonts(): Map<string, PdfFont> {
+        return this.collectAllFontsFromPdf()
     }
 
     /**
@@ -223,18 +223,18 @@ export class PdfFontManager {
      *
      * @returns Map of font names to their PdfFont objects
      */
-    async loadExistingFonts(): Promise<Map<string, PdfFont>> {
-        return await this.collectAllFontsFromPdf()
+    loadExistingFonts(): Map<string, PdfFont> {
+        return this.collectAllFontsFromPdf()
     }
 
     /**
      * Traverses the page tree to find and load existing fonts.
      */
-    private async traversePageTreeForFonts(
+    private traversePageTreeForFonts(
         nodeRef: PdfObjectReference,
         fonts: Map<string, PdfFont>,
-    ): Promise<void> {
-        const nodeObject = await this.document.readObject({
+    ): void {
+        const nodeObject = this.document.readObject({
             objectNumber: nodeRef.objectNumber,
             generationNumber: nodeRef.generationNumber,
         })
@@ -245,13 +245,13 @@ export class PdfFontManager {
         const type = nodeDict.get('Type')?.as(PdfName)
 
         if (type?.value === 'Page') {
-            await this.extractFontsFromPage(nodeObject, nodeDict, fonts)
+            this.extractFontsFromPage(nodeObject, nodeDict, fonts)
         } else if (type?.value === 'Pages') {
             const kids = nodeDict.get('Kids')?.as(PdfArray)
             if (kids) {
                 for (const kidRef of kids.items) {
                     if (kidRef instanceof PdfObjectReference) {
-                        await this.traversePageTreeForFonts(kidRef, fonts)
+                        this.traversePageTreeForFonts(kidRef, fonts)
                     }
                 }
             }
@@ -261,11 +261,11 @@ export class PdfFontManager {
     /**
      * Extracts font information from a page's resources.
      */
-    private async extractFontsFromPage(
+    private extractFontsFromPage(
         _pageObject: PdfIndirectObject,
         pageDict: PdfDictionary,
         fonts: Map<string, PdfFont>,
-    ): Promise<void> {
+    ): void {
         // Get Resources - could be direct dict or reference
         let resources = pageDict.get('Resources')?.as(PdfDictionary)
 
@@ -274,7 +274,7 @@ export class PdfFontManager {
                 .get('Resources')
                 ?.as(PdfObjectReference)
             if (resourcesRef) {
-                const resourcesObj = await this.document.readObject({
+                const resourcesObj = this.document.readObject({
                     objectNumber: resourcesRef.objectNumber,
                     generationNumber: resourcesRef.generationNumber,
                 })
@@ -290,7 +290,7 @@ export class PdfFontManager {
         if (!fontDict) {
             const fontRef = resources.get('Font')?.as(PdfObjectReference)
             if (fontRef) {
-                const fontObj = await this.document.readObject({
+                const fontObj = this.document.readObject({
                     objectNumber: fontRef.objectNumber,
                     generationNumber: fontRef.generationNumber,
                 })
@@ -310,7 +310,7 @@ export class PdfFontManager {
 
             const fontRef = fontValue.as(PdfObjectReference)
             if (fontRef) {
-                const obj = await this.document.readObject({
+                const obj = this.document.readObject({
                     objectNumber: fontRef.objectNumber,
                     generationNumber: fontRef.generationNumber,
                 })
@@ -347,10 +347,10 @@ export class PdfFontManager {
      * Searches the PDF structure for a font by name.
      * @internal
      */
-    private async searchFontInPdf(
+    private searchFontInPdf(
         fontName: string,
-    ): Promise<PdfFont | undefined> {
-        const fonts = await this.collectAllFontsFromPdf()
+    ): PdfFont | undefined {
+        const fonts = this.collectAllFontsFromPdf()
         return fonts?.get(fontName)
     }
 
@@ -358,7 +358,7 @@ export class PdfFontManager {
      * Collects all fonts from the PDF structure.
      * @internal
      */
-    private async collectAllFontsFromPdf(): Promise<Map<string, PdfFont>> {
+    private collectAllFontsFromPdf(): Map<string, PdfFont> {
         const fonts = new Map<string, PdfFont>()
 
         const catalog = this.document.root
@@ -370,7 +370,7 @@ export class PdfFontManager {
         const pagesObjRef = pagesRef.as(PdfObjectReference)
         if (!pagesObjRef) return fonts
 
-        await this.traversePageTreeForFonts(pagesObjRef, fonts)
+        this.traversePageTreeForFonts(pagesObjRef, fonts)
         return fonts
     }
 
@@ -393,7 +393,7 @@ export class PdfFontManager {
         let acroFormContainer: PdfIndirectObject | undefined
 
         if (acroFormRef instanceof PdfObjectReference) {
-            const acroFormObject = await this.document.readObject({
+            const acroFormObject = this.document.readObject({
                 objectNumber: acroFormRef.objectNumber,
                 generationNumber: acroFormRef.generationNumber,
             })
@@ -447,7 +447,7 @@ export class PdfFontManager {
         if (!pagesObjRef) return
 
         // Read the root /Pages object
-        const pagesObject = await this.document.readObject({
+        const pagesObject = this.document.readObject({
             objectNumber: pagesObjRef.objectNumber,
             generationNumber: pagesObjRef.generationNumber,
         })

@@ -61,9 +61,9 @@ export class PdfDocumentSecurityStoreDictionary extends PdfDictionary<{
  * @example
  * ```typescript
  * const dss = new PdfDocumentSecurityStoreObject(document)
- * await dss.addCert(certificateBytes)
- * await dss.addCrl(crlBytes)
- * await dss.addOcsp(ocspBytes)
+ * dss.addCert(certificateBytes)
+ * dss.addCrl(crlBytes)
+ * dss.addOcsp(ocspBytes)
  * ```
  */
 export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumentSecurityStoreDictionary> {
@@ -90,16 +90,13 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
      * @param ocsp - The DER-encoded OCSP response.
      * @returns The created or existing OCSP object.
      */
-    async addOcsp(ocsp: ByteArray): Promise<PdfOcspObject> {
+    addOcsp(ocsp: ByteArray): PdfOcspObject {
         const newOcsp = new PdfStream(ocsp)
         let ocspArray = this.content.get('OCSPs')
 
-        const currentOcsps = (await Promise.all(
-            (ocspArray?.items ?? []).map(async (ref) => {
-                const obj = await this.document.readObject(ref)
-                return obj
-            }),
-        )) as PdfIndirectObject<PdfStream>[]
+        const currentOcsps = (ocspArray?.items ?? []).map((ref) => {
+            return this.document.readObject(ref)
+        }) as PdfIndirectObject<PdfStream>[]
 
         for (const existingOcsp of currentOcsps) {
             if (existingOcsp.content.equals(newOcsp)) {
@@ -126,15 +123,12 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
      * @param crl - The DER-encoded CRL.
      * @returns The created or existing CRL object.
      */
-    async addCrl(crl: ByteArray): Promise<PdfCrlObject> {
+    addCrl(crl: ByteArray): PdfCrlObject {
         let crlArray = this.content.get('CRLs')
 
-        const currentCrls = (await Promise.all(
-            (crlArray?.items ?? []).map(async (ref) => {
-                const obj = await this.document.readObject(ref)
-                return obj
-            }),
-        )) as PdfIndirectObject<PdfStream>[]
+        const currentCrls = (crlArray?.items ?? []).map((ref) => {
+            return this.document.readObject(ref)
+        }) as PdfIndirectObject<PdfStream>[]
 
         for (const existingCrl of currentCrls) {
             if (existingCrl.content.equals(new PdfStream(crl))) {
@@ -161,15 +155,12 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
      * @param cert - The DER-encoded certificate.
      * @returns The created or existing certificate object.
      */
-    async addCert(cert: ByteArray): Promise<PdfCertObject> {
+    addCert(cert: ByteArray): PdfCertObject {
         let certArray = this.content.get('Certs')
 
-        const currentCerts = (await Promise.all(
-            (certArray?.items ?? []).map(async (ref) => {
-                const obj = await this.document.readObject(ref)
-                return obj
-            }),
-        )) as PdfIndirectObject<PdfStream>[]
+        const currentCerts = (certArray?.items ?? []).map((ref) => {
+            return this.document.readObject(ref)
+        }) as PdfIndirectObject<PdfStream>[]
 
         for (const existingCert of currentCerts) {
             if (existingCert.content.equals(new PdfStream(cert))) {
@@ -195,13 +186,13 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
      *
      * @param revocationInfo - The revocation information to add.
      */
-    async addRevocationInfo(revocationInfo: RevocationInfo): Promise<void> {
+    addRevocationInfo(revocationInfo: RevocationInfo): void {
         for (const ocsp of revocationInfo.ocsps ?? []) {
-            await this.addOcsp(ocsp)
+            this.addOcsp(ocsp)
         }
 
         for (const crl of revocationInfo.crls ?? []) {
-            await this.addCrl(crl)
+            this.addCrl(crl)
         }
     }
 

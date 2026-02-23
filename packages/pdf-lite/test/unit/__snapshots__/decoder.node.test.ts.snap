@@ -3,6 +3,7 @@
 exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byte the same 1`] = `
 [
   PdfComment {
+    "cachedTokens": undefined,
     "immutable": false,
     "modified": false,
     "postTokens": [
@@ -24,6 +25,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     ],
   },
   PdfComment {
+    "cachedTokens": undefined,
     "immutable": false,
     "modified": false,
     "postTokens": [
@@ -47,8 +49,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     ],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -139,9 +143,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -782,9 +789,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -937,8 +947,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -979,8 +991,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -1021,8 +1035,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -1063,8 +1079,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -1105,8 +1123,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -1147,9 +1167,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -1734,9 +1757,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -1889,9 +1915,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -2236,9 +2265,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -2471,9 +2503,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -4962,9 +4997,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -57933,9 +57971,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -58808,9 +58849,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -59763,9 +59807,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -60094,9 +60141,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -61305,9 +61355,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -61396,9 +61449,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -62575,9 +62631,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -63290,9 +63349,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -63653,9 +63715,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -64144,9 +64209,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -69789,9 +69857,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -70040,9 +70111,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -70192,9 +70266,11 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfStartXRef {
+    "cachedTokens": undefined,
     "immutable": false,
     "modified": false,
     "offset": PdfNumber {
+      "cachedTokens": undefined,
       "decimalPlaces": 0,
       "immutable": false,
       "isByteOffset": true,
@@ -70219,6 +70295,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfComment {
+    "cachedTokens": undefined,
     "immutable": false,
     "modified": false,
     "postTokens": [
@@ -70237,8 +70314,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     ],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -70279,8 +70358,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -70321,9 +70402,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -70636,9 +70720,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -70735,9 +70822,11 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfStartXRef {
+    "cachedTokens": undefined,
     "immutable": false,
     "modified": false,
     "offset": PdfNumber {
+      "cachedTokens": undefined,
       "decimalPlaces": 0,
       "immutable": false,
       "isByteOffset": true,
@@ -70762,6 +70851,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfComment {
+    "cachedTokens": undefined,
     "immutable": false,
     "modified": false,
     "postTokens": [
@@ -70780,9 +70870,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     ],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -76111,8 +76204,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76153,8 +76248,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76195,8 +76292,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76237,8 +76336,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76279,8 +76380,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76321,8 +76424,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76363,8 +76468,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76405,12 +76512,15 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfArray {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "items": [
         PdfObjectReference {
+          "cachedTokens": undefined,
           "generationNumber": 0,
           "immutable": false,
           "modified": false,
@@ -76457,8 +76567,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76499,8 +76611,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76541,8 +76655,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -76583,9 +76699,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -77624,8 +77743,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -77666,9 +77787,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -77907,9 +78031,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -79236,9 +79363,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -85797,9 +85927,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -85910,8 +86043,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -85952,8 +86087,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -85994,8 +86131,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -86036,8 +86175,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -86078,8 +86219,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -86120,8 +86263,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -86162,8 +86307,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -86204,8 +86351,10 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfDictionary {
+      "cachedTokens": undefined,
       "immutable": false,
       "innerTokens": [],
       "modified": false,
@@ -86246,9 +86395,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -86615,9 +86767,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -86984,9 +87139,12 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfIndirectObject {
+    "cachedTokens": undefined,
     "compressed": undefined,
     "content": PdfStream {
+      "cachedTokens": undefined,
       "header": PdfDictionary {
+        "cachedTokens": undefined,
         "immutable": false,
         "innerTokens": [],
         "modified": false,
@@ -87163,9 +87321,11 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfStartXRef {
+    "cachedTokens": undefined,
     "immutable": false,
     "modified": false,
     "offset": PdfNumber {
+      "cachedTokens": undefined,
       "decimalPlaces": 0,
       "immutable": false,
       "isByteOffset": true,
@@ -87200,6 +87360,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "preTokens": [],
   },
   PdfComment {
+    "cachedTokens": undefined,
     "immutable": false,
     "modified": false,
     "postTokens": [

@@ -435,7 +435,7 @@ describe('Font Embedding', () => {
 
             // Parse the document and load fonts
             const reparsed = await PdfDocument.fromBytes([bytes])
-            const loadedFonts = await reparsed.fonts.loadExistingFonts()
+            const loadedFonts = reparsed.fonts.loadExistingFonts()
 
             // loadExistingFonts should return a valid Map (may be empty if no pages)
             expect(loadedFonts).toBeInstanceOf(Map)
@@ -445,7 +445,7 @@ describe('Font Embedding', () => {
             const document = new PdfDocument()
 
             // No fonts initially
-            const initialFonts = await document.fonts.loadExistingFonts()
+            const initialFonts = document.fonts.loadExistingFonts()
             expect(initialFonts.size).toBe(0)
         })
     })

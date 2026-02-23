@@ -144,7 +144,7 @@ export class PdfSigner {
 
             signature.setSignedBytes(signedBytes)
             if (dss && revocationInfo) {
-                await dss.addRevocationInfo(revocationInfo)
+                dss.addRevocationInfo(revocationInfo)
             }
         }
 

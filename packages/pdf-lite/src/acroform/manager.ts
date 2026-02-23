@@ -57,7 +57,7 @@ export class PdfAcroFormManager {
      * @param acroForm The AcroForm instance to serialize into the document.
      * @throws Error If writing the AcroForm to the document fails.
      */
-    write(acroForm?: PdfAcroForm): void {
-        ;(acroForm ?? this.read())?.write(this.document)
+    async write(acroForm?: PdfAcroForm): Promise<void> {
+        await (acroForm ?? this.read())?.write(this.document)
     }
 }

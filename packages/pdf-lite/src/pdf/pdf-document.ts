@@ -509,10 +509,12 @@ export class PdfDocument extends PdfObject {
     }
 
     /**
-     * Decrypts all encrypted objects in the document.
-     * Removes the security handler and encryption dictionary after decryption.
+     * Decrypts all encrypted object data in-place without removing
+     * the encryption infrastructure. Useful in incremental mode where
+     * the original (encrypted) bytes are preserved via cached tokens
+     * but the live object data needs to be readable.
      */
-    async decrypt(): Promise<void> {
+    async decryptObjects(): Promise<void> {
         if (!this.securityHandler) {
             return
         }
@@ -528,6 +530,18 @@ export class PdfDocument extends PdfObject {
 
             await this.securityHandler.decryptObject(object)
         }
+    }
+
+    /**
+     * Decrypts all encrypted objects in the document.
+     * Removes the security handler and encryption dictionary after decryption.
+     */
+    async decrypt(): Promise<void> {
+        if (!this.securityHandler) {
+            return
+        }
+
+        await this.decryptObjects()
 
         this.hasEncryptionDictionary = false
         this.securityHandler = undefined

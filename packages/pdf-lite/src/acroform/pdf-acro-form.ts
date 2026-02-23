@@ -301,7 +301,7 @@ export class PdfAcroForm<
         return this._xfa
     }
 
-    write(document?: PdfDocument) {
+    async write(document?: PdfDocument) {
         document ||= this.document
         if (!document) {
             throw new Error('No document associated with this AcroForm')
@@ -422,7 +422,7 @@ export class PdfAcroForm<
             document.add(xfaForm.datasets)
         }
 
-        document.commit()
+        await document.commit()
         document.setIncremental(isIncremental)
     }
 }

@@ -59,10 +59,6 @@ export class PdfReader {
         const reader = new PdfReader(new PdfObjectStream(input))
         const document = await reader.read()
 
-        if (options?.incremental) {
-            document.setIncremental(true)
-        }
-
         let shouldDecrypt = Boolean(document.encryptionDictionary)
 
         if (typeof options?.password === 'string') {
@@ -75,11 +71,28 @@ export class PdfReader {
             shouldDecrypt = true
         }
 
-        if (shouldDecrypt) {
-            try {
-                await document.decrypt()
-            } catch (e) {
-                document.resetSecurityHandler()
+        if (options?.incremental) {
+            // Lock revisions first to preserve the original bytes
+            // (including encrypted data) via cached tokens.
+            document.setIncremental(true)
+
+            // Then decrypt the live object data so built-in operations
+            // (AcroForm, fonts, etc.) can read it. The cached tokens
+            // still produce the original encrypted bytes on serialization.
+            if (shouldDecrypt) {
+                try {
+                    await document.decryptObjects()
+                } catch (e) {
+                    document.resetSecurityHandler()
+                }
+            }
+        } else {
+            if (shouldDecrypt) {
+                try {
+                    await document.decrypt()
+                } catch (e) {
+                    document.resetSecurityHandler()
+                }
             }
         }
 

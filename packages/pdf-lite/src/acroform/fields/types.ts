@@ -21,5 +21,6 @@ export interface FormContext<TField = any> {
     defaultResources: PdfDefaultResourcesDictionary | null
     defaultAppearance: string | null
     fields: TField[]
-    getFontByName(name: string): PdfFont | undefined
+    getCachedFont(name: string): PdfFont | undefined
+    getFontByName(name: string): Promise<PdfFont | undefined>
 }

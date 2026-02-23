@@ -97,7 +97,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     get encodingMap(): Map<number, string> | undefined {
         const fontName = this.fontName
         if (!fontName) return undefined
-        return this.form?.getFontByName(fontName)?.cachedEncodingMap ?? undefined
+        return this.form?.getCachedFont(fontName)?.cachedEncodingMap ?? undefined
     }
 
     get fieldType(): PdfFieldType | null {

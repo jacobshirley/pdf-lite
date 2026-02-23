@@ -249,8 +249,19 @@ export class PdfAcroForm<
         return result
     }
 
-    getFontByName(name: string): PdfFont | undefined {
+    getCachedFont(name: string): PdfFont | undefined {
         return this.fonts.get(name)
+    }
+
+    async getFontByName(name: string): Promise<PdfFont | undefined> {
+        // Return cached font if available
+        if (this.fonts.has(name)) {
+            return this.fonts.get(name)
+        }
+        
+        // Try to load the font if not cached
+        const font = await this.loadFont(name)
+        return font ?? undefined
     }
 
     static async fromDocument(

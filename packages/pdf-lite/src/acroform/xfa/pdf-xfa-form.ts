@@ -56,7 +56,8 @@ export class PdfXfaForm extends PdfArray {
                     ?.as(PdfIndirectObject<PdfStream>)
 
                 if (datasetObject) {
-                    form.datasets = new PdfXfaData(datasetObject)
+                    form.datasets = datasetObject.becomes(PdfXfaData)
+                    datasetObject.content.removeAllFilters()
                 }
                 break
             }

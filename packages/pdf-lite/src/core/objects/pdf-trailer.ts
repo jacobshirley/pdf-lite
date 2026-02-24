@@ -50,9 +50,7 @@ export class PdfTrailer extends PdfObject {
 
     isModified(): boolean {
         return (
-            super.isModified() ||
-            this.dict.isModified() ||
-            this.offset.isModified
+            super.isModified() || this.dict.isModified() || this.offset.modified
         )
     }
 }

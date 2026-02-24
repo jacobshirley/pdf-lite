@@ -1,21 +1,21 @@
-import { PdfDocument } from '../pdf/pdf-document.js'
-import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
-import { PdfArray } from '../core/objects/pdf-array.js'
-import { PdfString } from '../core/objects/pdf-string.js'
-import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
-import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
-import { PdfBoolean } from '../core/objects/pdf-boolean.js'
-import { PdfNumber } from '../core/objects/pdf-number.js'
-import { PdfFontEncodingCache } from './pdf-font-encoding-cache.js'
-import { PdfAnnotationWriter } from '../annotations/pdf-annotation-writer.js'
-import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
-import { PdfFormField } from './fields/pdf-form-field.js'
+import { PdfDocument } from '../../pdf/pdf-document.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
+import { PdfArray } from '../../core/objects/pdf-array.js'
+import { PdfString } from '../../core/objects/pdf-string.js'
+import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+import { PdfBoolean } from '../../core/objects/pdf-boolean.js'
+import { PdfNumber } from '../../core/objects/pdf-number.js'
+import { PdfFontEncodingCache } from '../pdf-font-encoding-cache.js'
+import { PdfAnnotationWriter } from '../../annotations/pdf-annotation-writer.js'
+import { PdfXfaForm } from '../xfa/pdf-xfa-form.js'
+import { PdfFormField } from '../fields/pdf-form-field.js'
 // Import subclasses to trigger static registration blocks
-import './fields/pdf-text-form-field.js'
-import './fields/pdf-button-form-field.js'
-import './fields/pdf-choice-form-field.js'
-import './fields/pdf-signature-form-field.js'
-import type { FormContext } from './fields/types.js'
+import '../fields/pdf-text-form-field.js'
+import '../fields/pdf-button-form-field.js'
+import '../fields/pdf-choice-form-field.js'
+import '../fields/pdf-signature-form-field.js'
+import type { FormContext } from '../fields/types.js'
 
 export type PdfDefaultResourcesDictionary = PdfDictionary<{
     Font?: PdfDictionary
@@ -27,7 +27,7 @@ export type PdfDefaultResourcesDictionary = PdfDictionary<{
     XObject?: PdfDictionary
 }>
 
-export class PdfAcroForm<
+export class PdfAcroFormObject<
         T extends Record<string, string> = Record<string, string>,
     >
     extends PdfIndirectObject<
@@ -173,7 +173,7 @@ export class PdfAcroForm<
         return this.fontEncodingCache.isFontUnicode(fontName)
     }
 
-    static fromDocument(document: PdfDocument): PdfAcroForm | null {
+    static fromDocument(document: PdfDocument): PdfAcroFormObject | null {
         const catalog = document.root
         if (!catalog) return null
 
@@ -199,7 +199,10 @@ export class PdfAcroForm<
             return null
         }
 
-        const acroForm = new PdfAcroForm({ other: acroFormContainer, document })
+        const acroForm = new PdfAcroFormObject({
+            other: acroFormContainer,
+            document,
+        })
 
         const fields: Map<string, PdfFormField> = new Map()
 

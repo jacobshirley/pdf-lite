@@ -183,6 +183,13 @@ export class PdfDictionary<
         return cloned
     }
 
+    setModified(modified?: boolean): void {
+        super.setModified(modified)
+        for (const value of this.#entries.values()) {
+            value?.setModified(modified)
+        }
+    }
+
     isModified(): boolean {
         return (
             super.isModified() ||

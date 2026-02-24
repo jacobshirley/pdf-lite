@@ -33,16 +33,16 @@ export class PdfFontManager {
      * @param descriptor - Font metrics and properties
      * @returns A PdfFont object representing the embedded font
      */
-    async embedTrueTypeFont(
+    embedTrueTypeFont(
         fontData: ByteArray,
         fontName: string,
         descriptor: FontDescriptor,
-    ): Promise<PdfFont> {
+    ): PdfFont {
         // Create font using factory
         const font = PdfFont.fromTrueTypeData(fontData, fontName, descriptor)
 
         // Write to PDF
-        return await this.write(font)
+        return this.write(font)
     }
 
     /**
@@ -52,7 +52,7 @@ export class PdfFontManager {
      * @param fontName - One of the 14 standard PDF fonts
      * @returns A PdfFont object representing the embedded font
      */
-    async embedStandardFont(
+    embedStandardFont(
         fontName:
             | 'Helvetica'
             | 'Helvetica-Bold'
@@ -68,12 +68,12 @@ export class PdfFontManager {
             | 'Courier-BoldOblique'
             | 'Symbol'
             | 'ZapfDingbats',
-    ): Promise<PdfFont> {
+    ): PdfFont {
         // Create font using factory
         const font = PdfFont.fromStandardFont(fontName)
 
         // Write to PDF
-        return await this.write(font)
+        return this.write(font)
     }
 
     /**
@@ -90,24 +90,24 @@ export class PdfFontManager {
      * @example
      * ```typescript
      * // Simple embedding with auto-generated name
-     * const font = await document.fonts.embedFromFile(fontData)
+     * const font = document.fonts.embedFromFile(fontData)
      * field.font = font
      *
      * // With custom name and Unicode support
-     * const font = await document.fonts.embedFromFile(fontData, {
+     * const font = document.fonts.embedFromFile(fontData, {
      *     fontName: 'MyCustomFont',
      *     unicode: true
      * })
      * ```
      */
-    async embedFromFile(
+    embedFromFile(
         fontData: ByteArray,
         options?: {
             fontName?: string
             unicode?: boolean
             unicodeMappings?: Map<number, number>
         },
-    ): Promise<PdfFont> {
+    ): PdfFont {
         // Parse the font to extract metadata
         const parser = parseFont(fontData)
         const info = parser.getFontInfo()
@@ -128,7 +128,7 @@ export class PdfFontManager {
                 defaultWidth: 1000,
                 cidToGidMap: 'Identity',
             }
-            return await this.embedTrueTypeFontUnicode(
+            return this.embedTrueTypeFontUnicode(
                 fontData,
                 fontName,
                 unicodeDescriptor,
@@ -136,7 +136,7 @@ export class PdfFontManager {
             )
         } else {
             // Use standard TrueType embedding
-            return await this.embedTrueTypeFont(fontData, fontName, descriptor)
+            return this.embedTrueTypeFont(fontData, fontName, descriptor)
         }
     }
 
@@ -157,7 +157,7 @@ export class PdfFontManager {
      * @returns The font with its resourceName and container set
      * @internal
      */
-    async write(font: PdfFont): Promise<PdfFont> {
+    write(font: PdfFont): PdfFont {
         // Assign resource name
         this.fontResourceCounter++
         const resourceName = `F${this.fontResourceCounter}`
@@ -172,11 +172,11 @@ export class PdfFontManager {
         // Get all objects to commit (auxiliary objects + container)
         const objectsToCommit = font.getObjectsToCommit()
         if (objectsToCommit.length > 0) {
-            await this.document.commit(...objectsToCommit)
+            this.document.add(...objectsToCommit)
         }
 
         // Register in page resources
-        await this.addFontToPageResources(resourceName, fontObject)
+        this.addFontToPageResources(resourceName, fontObject)
 
         return font
     }
@@ -199,12 +199,12 @@ export class PdfFontManager {
      * @param unicodeMappings - Map of CID to Unicode code point for ToUnicode CMap
      * @returns A PdfFont object representing the embedded font
      */
-    async embedTrueTypeFontUnicode(
+    embedTrueTypeFontUnicode(
         fontData: ByteArray,
         fontName: string,
         descriptor: UnicodeFontDescriptor,
         unicodeMappings?: Map<number, number>,
-    ): Promise<PdfFont> {
+    ): PdfFont {
         // Create font using factory
         const font = PdfFont.fromType0Data(
             fontData,
@@ -214,7 +214,7 @@ export class PdfFontManager {
         )
 
         // Write to PDF
-        return await this.write(font)
+        return this.write(font)
     }
 
     /**
@@ -376,10 +376,10 @@ export class PdfFontManager {
      * Adds a font to the AcroForm default resources (DR) dictionary.
      * This ensures fonts are available to form fields.
      */
-    private async addFontToAcroFormResources(
+    private addFontToAcroFormResources(
         resourceName: string,
         fontObject: PdfIndirectObject<PdfDictionary>,
-    ): Promise<void> {
+    ): void {
         const catalog = this.document.root
         if (!catalog) return
 
@@ -424,7 +424,7 @@ export class PdfFontManager {
 
         // Commit the modified AcroForm object if it's an indirect object
         if (acroFormContainer) {
-            await this.document.commit(acroFormContainer)
+            this.document.add(acroFormContainer)
         }
     }
 
@@ -433,10 +433,10 @@ export class PdfFontManager {
      * All child pages will inherit these fonts automatically.
      * This is more efficient than adding to each individual page.
      */
-    private async addFontToPageResources(
+    private addFontToPageResources(
         resourceName: string,
         fontObject: PdfIndirectObject<PdfDictionary>,
-    ): Promise<void> {
+    ): void {
         const catalog = this.document.root
         const pagesRef = catalog.content.get('Pages')
         if (!pagesRef) return
@@ -473,9 +473,9 @@ export class PdfFontManager {
         fontDict.set(resourceName, fontObject.reference)
 
         // Commit the modified /Pages object
-        await this.document.commit(pagesObject)
+        this.document.add(pagesObject)
 
         // Also add to AcroForm DR if AcroForm exists
-        await this.addFontToAcroFormResources(resourceName, fontObject)
+        this.addFontToAcroFormResources(resourceName, fontObject)
     }
 }

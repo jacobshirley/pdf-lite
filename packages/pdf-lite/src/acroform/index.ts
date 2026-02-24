@@ -1,5 +1,5 @@
 export * from './manager.js'
-export * from './pdf-acro-form.js'
+export * from './objects/pdf-acro-form.js'
 export * from './fields/index.js'
 export * from './appearance/index.js'
 export * from './xfa/index.js'

@@ -11,7 +11,7 @@ export interface XfaFieldData {
  * Provides methods to read/write XML and update individual field values.
  */
 export class PdfXfaData extends PdfIndirectObject<PdfStream> {
-    constructor(stream: PdfIndirectObject<PdfStream>) {
+    constructor(stream: PdfIndirectObject) {
         super(stream)
     }
 
@@ -21,7 +21,9 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
     }
 
     writeXml(xml: string): void {
-        this.content = PdfStream.fromString(xml)
+        this.content.removeAllFilters()
+        this.content.rawAsString = xml
+        this.setModified(true)
     }
 
     updateField(name: string, value: string): void {

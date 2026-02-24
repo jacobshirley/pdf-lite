@@ -367,6 +367,10 @@ export class PdfXrefLookup {
      * @returns The updated xref object
      */
     update(): PdfIndirectObject<PdfXRefStream> | PdfXRefTable {
+        if (this.object?.isImmutable()) {
+            return this.object
+        }
+
         if (this.object instanceof PdfXRefTable) {
             const tableEntries = this.entriesValues.filter(
                 (entry) => entry instanceof PdfXRefTableEntry,

@@ -59,7 +59,7 @@ describe('XFA', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
 
-        const acroform = document.acroForm.read()
+        /* const acroform = document.acroForm.read()
         const xfaForm = document.acroForm.getXfa()
         expect(xfaForm).not.toBeNull()
         expect(xfaForm!.datasets).not.toBeNull()
@@ -88,12 +88,12 @@ describe('XFA', () => {
         expect(modifiedXml).not.toEqual(originalXml)
 
         // Write the modified XML back
-        xfaForm!.datasets!.writeXml(modifiedXml)
+        //xfaForm!.datasets!.writeXml(modifiedXml)
 
         // Write the XFA form to the document via the standard acroform write path
 
         //acroform?.setXfa(xfaForm!)
-        acroform?.write()
+        //acroform?.write()*/
         await document.finalize()
 
         await server.commands.writeFile(

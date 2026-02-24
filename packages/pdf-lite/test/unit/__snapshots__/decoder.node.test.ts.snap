@@ -79,7 +79,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 16,
     },
     "orderIndex": undefined,
@@ -241,7 +241,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 103,
     },
     "orderIndex": undefined,
@@ -935,7 +935,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 548,
     },
     "orderIndex": undefined,
@@ -980,7 +980,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 735,
     },
     "orderIndex": undefined,
@@ -1025,7 +1025,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 991,
     },
     "orderIndex": undefined,
@@ -1070,7 +1070,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 1103,
     },
     "orderIndex": undefined,
@@ -1115,7 +1115,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 1617,
     },
     "orderIndex": undefined,
@@ -1160,7 +1160,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 1656,
     },
     "orderIndex": undefined,
@@ -1751,7 +1751,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 1839,
     },
     "orderIndex": undefined,
@@ -1910,7 +1910,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 2440,
     },
     "orderIndex": undefined,
@@ -2261,7 +2261,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 2636,
     },
     "orderIndex": undefined,
@@ -2500,7 +2500,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 3024,
     },
     "orderIndex": undefined,
@@ -4995,7 +4995,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 3272,
     },
     "orderIndex": undefined,
@@ -57970,7 +57970,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 5777,
     },
     "orderIndex": undefined,
@@ -58849,7 +58849,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 58763,
     },
     "orderIndex": undefined,
@@ -59808,7 +59808,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 59651,
     },
     "orderIndex": undefined,
@@ -60143,7 +60143,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 60619,
     },
     "orderIndex": undefined,
@@ -61358,7 +61358,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 60963,
     },
     "orderIndex": undefined,
@@ -61453,7 +61453,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 62188,
     },
     "orderIndex": undefined,
@@ -62636,7 +62636,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 62270,
     },
     "orderIndex": undefined,
@@ -63355,7 +63355,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 63493,
     },
     "orderIndex": undefined,
@@ -63722,7 +63722,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 64224,
     },
     "orderIndex": undefined,
@@ -64217,7 +64217,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 64603,
     },
     "orderIndex": undefined,
@@ -69866,7 +69866,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 65110,
     },
     "orderIndex": undefined,
@@ -70121,7 +70121,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 70785,
     },
     "orderIndex": undefined,
@@ -70277,7 +70277,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 71079,
     },
     "orderIndex": undefined,
@@ -70370,7 +70370,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 71443,
     },
     "orderIndex": undefined,
@@ -70415,7 +70415,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 71568,
     },
     "orderIndex": undefined,
@@ -70734,7 +70734,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 81872,
     },
     "orderIndex": undefined,
@@ -70837,7 +70837,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 82230,
     },
     "orderIndex": undefined,
@@ -76220,7 +76220,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 82588,
     },
     "orderIndex": undefined,
@@ -76265,7 +76265,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 87947,
     },
     "orderIndex": undefined,
@@ -76310,7 +76310,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88182,
     },
     "orderIndex": undefined,
@@ -76355,7 +76355,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88354,
     },
     "orderIndex": undefined,
@@ -76400,7 +76400,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88407,
     },
     "orderIndex": undefined,
@@ -76445,7 +76445,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88510,
     },
     "orderIndex": undefined,
@@ -76490,7 +76490,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88560,
     },
     "orderIndex": undefined,
@@ -76535,7 +76535,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88596,
     },
     "orderIndex": undefined,
@@ -76592,7 +76592,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88659,
     },
     "orderIndex": undefined,
@@ -76637,7 +76637,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88684,
     },
     "orderIndex": undefined,
@@ -76682,7 +76682,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88732,
     },
     "orderIndex": undefined,
@@ -76727,7 +76727,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88777,
     },
     "orderIndex": undefined,
@@ -77772,7 +77772,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 88938,
     },
     "orderIndex": undefined,
@@ -77817,7 +77817,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 89965,
     },
     "orderIndex": undefined,
@@ -78062,7 +78062,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 90056,
     },
     "orderIndex": undefined,
@@ -79395,7 +79395,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 90322,
     },
     "orderIndex": undefined,
@@ -85960,7 +85960,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 91677,
     },
     "orderIndex": undefined,
@@ -86077,7 +86077,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 98264,
     },
     "orderIndex": undefined,
@@ -86122,7 +86122,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 98401,
     },
     "orderIndex": undefined,
@@ -86167,7 +86167,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 99587,
     },
     "orderIndex": undefined,
@@ -86212,7 +86212,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 100767,
     },
     "orderIndex": undefined,
@@ -86257,7 +86257,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 101943,
     },
     "orderIndex": undefined,
@@ -86302,7 +86302,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 103118,
     },
     "orderIndex": undefined,
@@ -86347,7 +86347,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 103368,
     },
     "orderIndex": undefined,
@@ -86392,7 +86392,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 103619,
     },
     "orderIndex": undefined,
@@ -86437,7 +86437,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 103875,
     },
     "orderIndex": undefined,
@@ -86810,7 +86810,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 104139,
     },
     "orderIndex": undefined,
@@ -87183,7 +87183,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 104537,
     },
     "orderIndex": undefined,
@@ -87366,7 +87366,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
     "offset": Ref {
       "callbacks": [],
       "immutable": false,
-      "isModified": false,
+      "modified": false,
       "value": 104935,
     },
     "orderIndex": undefined,

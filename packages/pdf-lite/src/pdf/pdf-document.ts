@@ -73,7 +73,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     readonly fonts: PdfFontManager
 
     private hasEncryptionDictionary?: boolean = false
-    private toBeCommitted: PdfObject[] = []
 
     /**
      * Creates a new PDF document instance.
@@ -198,6 +197,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         return this
     }
 
+    hasObjectInLatestRevision(obj: PdfObject): boolean {
+        return this.latestRevision.objects.includes(obj)
+    }
+
     /**
      * Adds objects to the document's latest revision.
      * Automatically starts a new revision if the current one is locked.
@@ -210,15 +213,19 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
 
         for (const obj of objects) {
-            if (obj.isImmutable()) {
-                throw new Error('Risky adding a immutable obj')
-            }
             this.wireResolvers(obj)
-            this.toBeCommitted.push(obj)
+            if (this.hasObjectInLatestRevision(obj)) {
+                console.trace('added object already in latest revision', obj)
+                continue
+            }
             this.latestRevision.addObject(obj)
         }
 
         this.updateSync()
+
+        for (const obj of objects) {
+            obj.setModified(false)
+        }
     }
 
     /**
@@ -529,6 +536,31 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         return true
     }
 
+    commitIncrementalUpdates(): void {
+        if (!this.incremental) {
+            return
+        }
+
+        let updates = 0
+        for (const obj of this.objects) {
+            if (obj.isModified()) {
+                console.log(
+                    'changed',
+                    obj instanceof PdfIndirectObject
+                        ? `${obj.objectNumber} ${obj.generationNumber}`
+                        : '',
+                    obj.toString(),
+                )
+                this.add(obj.clone())
+                updates++
+            }
+        }
+
+        if (updates > 0) {
+            this.updateSync()
+        }
+    }
+
     /**
      * Decrypts all encrypted object data in-place without removing
      * the encryption infrastructure. Useful in incremental mode where
@@ -558,11 +590,13 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * No-op if the document has no security handler (unencrypted document).
      */
     async finalize(): Promise<void> {
+        this.commitIncrementalUpdates()
+        this.updateSync()
+
         if (this.securityHandler) {
             await this.encrypt()
-        } else {
-            await this.update()
         }
+        await this.update()
     }
 
     /**
@@ -601,6 +635,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
         const addingEncryption = !this.hasEncryptionDictionary
         const wasIncremental = this.incremental
+
+        console.log(
+            'Encrypting document with security handler',
+            addingEncryption,
+        )
 
         if (addingEncryption) {
             this.setIncremental(false)
@@ -1020,9 +1059,13 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         this.calculateOffsets()
     }
 
+    async sign() {
+        await this.signer?.sign(this)
+    }
+
     private async update(): Promise<void> {
         this.updateSync()
-        await this.signer?.sign(this)
+        await this.sign()
     }
 
     /**

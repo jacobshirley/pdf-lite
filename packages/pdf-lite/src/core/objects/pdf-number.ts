@@ -92,8 +92,13 @@ export class PdfNumber extends PdfObject {
         return cloned
     }
 
+    setModified(modified?: boolean): void {
+        super.setModified(modified)
+        this.#value.setModified(modified)
+    }
+
     isModified(): boolean {
-        return super.isModified() || this.#value.isModified
+        return super.isModified() || this.#value.isModified()
     }
 }
 

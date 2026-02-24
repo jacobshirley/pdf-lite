@@ -23,7 +23,7 @@ export class Ref<T> {
     value: T | Ref<T>
     /** Registered callbacks for update notifications */
     callbacks: Array<RefUpdateCallback<T>> = []
-    isModified: boolean = false
+    modified: boolean = true
     protected immutable: boolean = false
 
     /**
@@ -37,6 +37,14 @@ export class Ref<T> {
             throw new Error('Cannot create Ref to itself')
         }
         this.value = value
+    }
+
+    isModified(): boolean {
+        return this.modified
+    }
+
+    setModified(modified = true): void {
+        this.modified = modified
     }
 
     setImmutable(immutable: boolean = true): void {
@@ -69,7 +77,7 @@ export class Ref<T> {
                 )*/
                 return
             }
-            this.isModified = true
+            this.modified = true
         }
 
         this.value = newValue

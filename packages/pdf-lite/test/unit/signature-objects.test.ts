@@ -1628,6 +1628,7 @@ describe('PdfSigner.verify', () => {
             date: new Date('2024-01-01T12:00:00Z'),
         })
         document.add(sig)
+        await document.sign()
 
         // Serialize the document to bytes and reload it to ensure signatures
         // are properly deserialized into the correct signature classes

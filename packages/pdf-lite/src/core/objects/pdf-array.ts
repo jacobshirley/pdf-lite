@@ -47,6 +47,11 @@ export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
         return cloned
     }
 
+    setModified(modified?: boolean): void {
+        super.setModified(modified)
+        this.items.forEach((item) => item.setModified(modified))
+    }
+
     isModified(): boolean {
         return (
             super.isModified() || this.items.some((item) => item.isModified())

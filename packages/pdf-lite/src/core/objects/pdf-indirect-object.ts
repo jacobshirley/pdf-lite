@@ -8,6 +8,19 @@ import { PdfStream } from './pdf-stream.js'
 import { Ref } from '../ref.js'
 import { PdfByteOffsetToken } from '../tokens/byte-offset-token.js'
 
+export type PdfIndirectObjectOptions<T extends PdfObject = PdfObject> =
+    | {
+          objectNumber?: number
+          generationNumber?: number
+          content?: T
+          offset?: number | Ref<number>
+          encryptable?: boolean
+          compressed?: boolean
+      }
+    | T
+    | PdfIndirectObject
+    | undefined
+
 export class PdfIndirectObject<
     T extends PdfObject = PdfObject,
 > extends PdfObjectReference {
@@ -19,19 +32,7 @@ export class PdfIndirectObject<
     compressed?: boolean
     orderIndex?: number
 
-    constructor(
-        options?:
-            | {
-                  objectNumber?: number
-                  generationNumber?: number
-                  content?: T
-                  offset?: number | Ref<number>
-                  encryptable?: boolean
-                  compressed?: boolean
-              }
-            | T
-            | PdfIndirectObject,
-    ) {
+    constructor(options?: PdfIndirectObjectOptions<T>) {
         if (options instanceof PdfIndirectObject) {
             super(options.objectNumber, options.generationNumber)
             this.content = options.content.clone() as T
@@ -149,11 +150,17 @@ export class PdfIndirectObject<
         return this.orderIndex ?? 0
     }
 
+    setModified(modified = true): void {
+        super.setModified(modified)
+        this.content.setModified(modified)
+        this.offset.setModified(modified)
+    }
+
     isModified(): boolean {
         return (
             super.isModified() ||
             this.content.isModified() ||
-            this.offset.isModified
+            this.offset.isModified()
         )
     }
 
@@ -161,5 +168,10 @@ export class PdfIndirectObject<
         super.setImmutable(immutable)
         this.content.setImmutable(immutable)
         this.offset.setImmutable(immutable)
+    }
+
+    becomes<T>(cls: new (options: PdfIndirectObject) => T): T {
+        Object.setPrototypeOf(this, cls.prototype)
+        return this as unknown as T
     }
 }

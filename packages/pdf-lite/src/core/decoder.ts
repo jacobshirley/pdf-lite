@@ -364,7 +364,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
         }
 
         trailer.offset.update(trailerToken.byteOffset)
-        trailer.offset.isModified = false
+        trailer.offset.modified = false
 
         trailer.preTokens = preTokens
         trailer.postTokens = postTokens

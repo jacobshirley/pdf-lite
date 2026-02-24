@@ -1,5 +1,10 @@
 import { PdfObject } from '../core/objects/pdf-object.js'
 import { PdfObjectStream } from '../core/streams/object-stream.js'
+import {
+    PdfDictionary,
+    PdfIndirectObject,
+    PdfIndirectObjectOptions,
+} from '../index.js'
 import { ByteArray } from '../types.js'
 import { PdfDocument } from './pdf-document.js'
 

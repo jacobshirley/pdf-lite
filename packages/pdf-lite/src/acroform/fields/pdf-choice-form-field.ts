@@ -33,7 +33,7 @@ export class PdfChoiceFormField extends PdfFormField {
                     PdfIndirectObject<
                         PdfArray<PdfString | PdfArray<PdfString>>
                     >,
-                )
+                ).content
         }
 
         if (!(opt instanceof PdfArray)) return []
@@ -124,17 +124,19 @@ export class PdfChoiceFormField extends PdfFormField {
         const isUnicode = font?.isUnicode ?? false
         const reverseEncodingMap = font?.reverseEncodingMap
 
-        this._appearanceStream = new PdfChoiceAppearanceStream({
-            rect: rect as [number, number, number, number],
-            value,
-            da: parsed,
-            flags: this.flags,
-            fontResources,
-            isUnicode,
-            reverseEncodingMap,
-            displayOptions: this.options.map((opt) => opt.label),
-            selectedIndex: this.selectedIndex,
-        })
+        this.setAppearanceStream(
+            new PdfChoiceAppearanceStream({
+                rect: rect as [number, number, number, number],
+                value,
+                da: parsed,
+                flags: this.flags,
+                fontResources,
+                isUnicode,
+                reverseEncodingMap,
+                displayOptions: this.options.map((opt) => opt.label),
+                selectedIndex: this.selectedIndex,
+            }),
+        )
 
         if (options?.makeReadOnly) {
             this.readOnly = true

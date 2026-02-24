@@ -52,42 +52,6 @@ export class PdfButtonFormField extends PdfFormField {
         }
     }
 
-    override getAppearanceStream(): PdfStream | undefined {
-        if (this.checked && this._appearanceStreamYes) {
-            return this._appearanceStreamYes.content
-        }
-        return this._appearanceStream?.content
-    }
-
-    override getAppearanceStreamsForWriting():
-        | { primary: PdfAppearanceStream; secondary?: PdfAppearanceStream }
-        | undefined {
-        if (!this._appearanceStream) return undefined
-        return {
-            primary: this._appearanceStream,
-            secondary: this._appearanceStreamYes,
-        }
-    }
-
-    override setAppearanceReference(
-        appearanceStreamRef: PdfObjectReference,
-        appearanceStreamYesRef?: PdfObjectReference,
-    ): void {
-        let apDict = this.appearanceStreamDict
-        if (!apDict) {
-            apDict = new PdfDictionary()
-            this.appearanceStreamDict = apDict
-        }
-        if (appearanceStreamYesRef) {
-            const stateDict = new PdfDictionary()
-            stateDict.set('Off', appearanceStreamRef)
-            stateDict.set('Yes', appearanceStreamYesRef)
-            apDict.set('N', stateDict)
-        } else {
-            apDict.set('N', appearanceStreamRef)
-        }
-    }
-
     generateAppearance(options?: { makeReadOnly?: boolean }): boolean {
         const rect = this.rect
         if (!rect || rect.length !== 4) return false
@@ -95,12 +59,6 @@ export class PdfButtonFormField extends PdfFormField {
         const [x1, y1, x2, y2] = rect
         const width = x2 - x1
         const height = y2 - y1
-
-        this._appearanceStream = new PdfButtonAppearanceStream({
-            width,
-            height,
-            contentStream: '',
-        })
 
         // Merge own flags with parent flags so inherited bits (e.g. Radio) are
         // not lost when a child widget has its own Ff entry (even Ff: 0).
@@ -111,10 +69,22 @@ export class PdfButtonFormField extends PdfFormField {
             height,
             effectiveFlags,
         )
-        this._appearanceStreamYes = new PdfButtonAppearanceStream({
+
+        const noAppearance = new PdfButtonAppearanceStream({
+            width,
+            height,
+            contentStream: '',
+        })
+
+        const yesAppearance = new PdfButtonAppearanceStream({
             width,
             height,
             contentStream: yesContent,
+        })
+
+        this.setAppearanceStream({
+            Yes: yesAppearance,
+            Off: noAppearance,
         })
 
         if (options?.makeReadOnly) {

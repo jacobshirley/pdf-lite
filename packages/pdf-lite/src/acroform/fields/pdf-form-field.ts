@@ -23,9 +23,6 @@ import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-res
  */
 export abstract class PdfFormField extends PdfWidgetAnnotation {
     defaultGenerateAppearance: boolean = true
-    protected _appearanceStream?: PdfAppearanceStream
-    protected _appearanceStreamYes?: PdfAppearanceStream
-
     constructor(other?: PdfIndirectObject) {
         super()
     }
@@ -489,27 +486,23 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         textYOffset?: number
     }): boolean
 
-    getAppearanceStream(): PdfStream | undefined {
-        return this._appearanceStream?.content
-    }
-
-    getAppearanceStreamsForWriting():
-        | { primary: PdfAppearanceStream; secondary?: PdfAppearanceStream }
-        | undefined {
-        if (!this._appearanceStream) return undefined
-        return { primary: this._appearanceStream }
-    }
-
-    setAppearanceReference(
-        appearanceStreamRef: PdfObjectReference,
-        _appearanceStreamYesRef?: PdfObjectReference,
-    ): void {
-        let apDict = this.appearanceStreamDict
-        if (!apDict) {
-            apDict = new PdfDictionary()
-            this.appearanceStreamDict = apDict
+    setAppearanceStream(
+        stream:
+            | PdfIndirectObject
+            | {
+                  [key: string]: PdfIndirectObject
+              },
+    ) {
+        this.appearanceStreamDict ||= new PdfDictionary()
+        if (stream instanceof PdfIndirectObject) {
+            this.appearanceStreamDict.set('N', stream.reference)
+        } else {
+            const dict = new PdfDictionary()
+            for (const key in stream) {
+                dict.set(key, stream[key].reference)
+            }
+            this.appearanceStreamDict.set('N', dict)
         }
-        apDict.set('N', appearanceStreamRef)
     }
 
     private static _fallbackCtor?: new (

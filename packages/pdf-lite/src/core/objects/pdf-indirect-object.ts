@@ -67,14 +67,19 @@ export class PdfIndirectObject<
     }
 
     get reference(): PdfObjectReference {
-        return new Proxy(this as any, {
+        const original = this
+        const initial = new PdfObjectReference(
+            this.objectNumber,
+            this.generationNumber,
+        )
+        return new Proxy(initial, {
             get: (target, prop) => {
                 const value = new PdfObjectReference(
                     target.objectNumber,
                     target.generationNumber,
                 )
                 if (prop === 'resolve') {
-                    return () => target // resolve returns the indirect object itself, not the content, since it's already a reference to the content. This allows for chaining .reference.resolve() to get back to the indirect object when needed.
+                    return () => original // resolve returns the indirect object itself, not the content, since it's already a reference to the content. This allows for chaining .reference.resolve() to get back to the indirect object when needed.
                 } else if (prop === 'objectNumber') {
                     return target.objectNumber
                 } else if (prop === 'generationNumber') {

@@ -749,39 +749,19 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
             generationNumber: 0,
         })
 
-        const mockDocument = {
-            readObject(ref: PdfObjectReference) {
-                if (ref.objectNumber === 42 && ref.generationNumber === 0) {
-                    return optionsObject
-                }
-                return null
-            },
-        } as any
-
-        // Create an acroform with the mock document
-        const acroForm = new PdfAcroForm()
-
         // Create choice field with form reference
-        const choiceField = new PdfChoiceFormField({ form: acroForm })
+        const choiceField = new PdfChoiceFormField()
         choiceField.fieldType = 'Choice'
         choiceField.defaultAppearance = '/Helv 12 Tf 0 g'
 
         // Manually set the Opt property to an object reference
-        const optRef = new PdfObjectReference(42, 0)
-        choiceField.content.set('Opt', optRef)
+        choiceField.content.set('Opt', optionsObject.reference)
 
-        // This should currently throw "Indirect Opt entries are not supported"
-        // but will work once object reference resolution is implemented
-        expect(() => choiceField.options).toThrow(
-            'Indirect Opt entries are not supported',
-        )
-
-        // TODO: Once implemented, this should return the resolved options:
-        // expect(choiceField.options).toEqual([
-        //     { value: 'Option 1', label: 'Option 1' },
-        //     { value: 'Option 2', label: 'Option 2' },
-        //     { value: 'Option 3', label: 'Option 3' },
-        // ])
+        expect(choiceField.options).toEqual([
+            { value: 'Option 1', label: 'Option 1' },
+            { value: 'Option 2', label: 'Option 2' },
+            { value: 'Option 3', label: 'Option 3' },
+        ])
     })
 
     it('should inherit checked state from parent for button fields', () => {
@@ -857,29 +837,6 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
 
 describe('AcroForm Field Value Decoding with Custom Encoding', () => {
     it('should decode field values with custom Euro encoding', async () => {
-        // Create a mock document with font encoding
-        const mockDocument = {
-            async readObject({ objectNumber }: { objectNumber: number }) {
-                if (objectNumber === 1) {
-                    const fontDict = new PdfDictionary()
-                    fontDict.set('Type', new PdfName('Font'))
-                    fontDict.set('BaseFont', new PdfName('Helvetica'))
-                    fontDict.set('Encoding', new PdfObjectReference(2, 0))
-                    return { content: fontDict } as any
-                } else if (objectNumber === 2) {
-                    const encodingDict = new PdfDictionary()
-                    encodingDict.set('Type', new PdfName('Encoding'))
-                    const differences = new PdfArray([
-                        new PdfNumber(160),
-                        new PdfName('Euro'),
-                    ])
-                    encodingDict.set('Differences', differences)
-                    return { content: encodingDict } as any
-                }
-                return null
-            },
-        } as any
-
         const drDict = new PdfDictionary()
         const fontDict = new PdfDictionary()
         fontDict.set('Helv', new PdfObjectReference(1, 0))

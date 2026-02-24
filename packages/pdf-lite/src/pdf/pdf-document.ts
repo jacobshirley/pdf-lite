@@ -68,6 +68,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     private originalSecurityHandler?: PdfSecurityHandler
 
     private hasEncryptionDictionary?: boolean = false
+    private _resolvedCache = new Map<string, PdfIndirectObject>()
 
     /**
      * Creates a new PDF document instance.
@@ -119,6 +120,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     resolve(objectNumber: number, generationNumber: number): PdfIndirectObject {
+        const cacheKey = `${objectNumber} ${generationNumber}`
+        const cached = this._resolvedCache.get(cacheKey)
+        if (cached) return cached
+
         const found = this.readObject({ objectNumber, generationNumber })
         if (!found) {
             throw new Error(
@@ -126,6 +131,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             )
         }
         this.wireResolvers(found)
+        this._resolvedCache.set(cacheKey, found)
+
         return found
     }
 
@@ -554,13 +561,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         let updates = 0
         for (const obj of this.objects) {
             if (obj.isModified()) {
-                console.log(
-                    'changed',
-                    obj instanceof PdfIndirectObject
-                        ? `${obj.objectNumber} ${obj.generationNumber}`
-                        : '',
-                    obj.toString(),
-                )
                 this.add(obj.clone())
                 updates++
             }
@@ -600,7 +600,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * No-op if the document has no security handler (unencrypted document).
      */
     async finalize(): Promise<void> {
-        this.commitIncrementalUpdates()
         this.updateSync()
 
         if (this.securityHandler) {
@@ -1102,9 +1101,19 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     private updateSync(): void {
+        this.commitIncrementalUpdates()
+        this.flushResolvedCache()
         this.calculateOffsets()
         this.updateRevisions()
         this.calculateOffsets()
+    }
+
+    private flushResolvedCache(): void {
+        for (const [, obj] of this._resolvedCache) {
+            if (obj.isModified() && !this.objects.includes(obj)) {
+                this.add(obj)
+            }
+        }
     }
 
     async sign() {
@@ -1122,9 +1131,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns The PDF document as a Uint8Array
      */
     toBytes(): ByteArray {
-        this.calculateOffsets()
-        this.updateRevisions()
-        this.calculateOffsets()
+        this.updateSync()
         return concatUint8Arrays(...this.revisions.map((x) => x.toBytes()))
     }
 

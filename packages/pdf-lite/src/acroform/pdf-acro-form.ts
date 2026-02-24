@@ -84,11 +84,14 @@ export class PdfAcroFormObject<
     }
 
     get fields(): PdfFormField[] {
-        return (
-            this.content
-                .get('Fields')
-                ?.items.map((ref) => PdfFormField.create(ref.resolve())) ?? []
-        )
+        const refs = this.content.get('Fields')?.items ?? []
+        const result: PdfFormField[] = []
+        for (const ref of refs) {
+            const resolved = ref.resolve()
+            if (!(resolved?.content instanceof PdfDictionary)) continue
+            result.push(PdfFormField.create(resolved))
+        }
+        return result
     }
 
     set fields(newFields: PdfFormField[]) {

@@ -53,7 +53,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     get parent(): PdfFormField | undefined {
-        return PdfFormField.create(this.content.get('Parent')?.resolve())
+        const resolved = this.content.get('Parent')?.resolve()
+        if (!resolved || !(resolved.content instanceof PdfDictionary))
+            return undefined
+        return PdfFormField.create(resolved)
     }
 
     set parent(field: PdfFormField | undefined) {

@@ -57,6 +57,11 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      */
     resourceName: string
 
+    private static _resourceCounter = 0
+    private static nextResourceName(): string {
+        return `F${++PdfFont._resourceCounter}`
+    }
+
     /**
      * @internal
      * Font descriptor with metrics and properties.
@@ -105,7 +110,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             this.content.copyFrom(options.dict)
         }
         this.fontName = options.fontName
-        this.resourceName = options.resourceName ?? ''
+        this.resourceName = options.resourceName || PdfFont.nextResourceName()
         this.encoding = options.encoding
         this._descriptor = options.descriptor
         this._fontData = options.fontData

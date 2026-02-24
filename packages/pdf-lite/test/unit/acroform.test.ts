@@ -253,7 +253,7 @@ describe('AcroForm', () => {
         expect(updatedField?.fontSize).toBe(12)
     })
 
-    it.only('should be able to import a font file and use it in an AcroForm', async () => {
+    it('should be able to import a font file and use it in an AcroForm', async () => {
         // Load the PDF with AcroForm
         const pdfBuffer = base64ToBytes(
             await server.commands.readFile(

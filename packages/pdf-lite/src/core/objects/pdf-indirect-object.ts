@@ -68,27 +68,27 @@ export class PdfIndirectObject<
 
     get reference(): PdfObjectReference {
         const original = this
-        const initial = new PdfObjectReference(
-            this.objectNumber,
-            this.generationNumber,
-        )
-        return new Proxy(initial, {
-            get: (target, prop) => {
-                const value = new PdfObjectReference(
-                    target.objectNumber,
-                    target.generationNumber,
-                )
-                if (prop === 'resolve') {
-                    return () => original // resolve returns the indirect object itself, not the content, since it's already a reference to the content. This allows for chaining .reference.resolve() to get back to the indirect object when needed.
-                } else if (prop === 'objectNumber') {
-                    return target.objectNumber
-                } else if (prop === 'generationNumber') {
-                    return target.generationNumber
-                } else {
+        return new Proxy(
+            new PdfObjectReference(this.objectNumber, this.generationNumber),
+            {
+                get: (_target, prop) => {
+                    // Always read from the live indirect object so objectNumber
+                    // stays current even after the object is added to a document.
+                    if (prop === 'resolve') {
+                        return () => original
+                    } else if (prop === 'objectNumber') {
+                        return original.objectNumber
+                    } else if (prop === 'generationNumber') {
+                        return original.generationNumber
+                    }
+                    const value = new PdfObjectReference(
+                        original.objectNumber,
+                        original.generationNumber,
+                    )
                     return value[prop as keyof PdfObjectReference]
-                }
+                },
             },
-        })
+        )
     }
 
     isEncryptable() {

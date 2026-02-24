@@ -1005,7 +1005,7 @@ describe('AcroForm Appearance Generation', () => {
         // Appearance should be created with text in marked content
         let appearance = textField!.getAppearanceStream()
         expect(appearance).toBeDefined()
-        const streamContent = appearance!.rawAsString
+        const streamContent = appearance!.content.rawAsString
         expect(streamContent).toContain('/Tx BMC')
         expect(streamContent).toContain('EMC')
         expect(streamContent).toContain('BT') // Text rendering included

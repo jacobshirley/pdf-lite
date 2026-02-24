@@ -505,6 +505,29 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
     }
 
+    getAppearanceStream(setting?: string): PdfIndirectObject<PdfStream> | null {
+        const n = this.appearanceStreamDict?.get('N')
+        if (!n) return null
+        if (n instanceof PdfObjectReference) {
+            const resolved = n.resolve()
+            if (resolved?.content instanceof PdfStream) {
+                return resolved as PdfIndirectObject<PdfStream>
+            }
+        } else if (n instanceof PdfDictionary) {
+            const dict = n
+            if (setting && dict.get(setting) instanceof PdfObjectReference) {
+                const resolved = dict
+                    .get(setting)
+                    ?.as(PdfObjectReference)
+                    .resolve()
+                if (resolved?.content instanceof PdfStream) {
+                    return resolved as PdfIndirectObject<PdfStream>
+                }
+            }
+        }
+        return null
+    }
+
     private static _fallbackCtor?: new (
         other?: PdfIndirectObject,
     ) => PdfFormField

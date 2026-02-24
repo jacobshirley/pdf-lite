@@ -62,7 +62,7 @@ describe('AcroForm', () => {
         expect(hasAcroForm).toBe(true)
 
         // Read all field values
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         const fieldValues = acroform?.exportData()
         expect(fieldValues).toEqual({
             'Client Name': '',
@@ -89,7 +89,7 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
         // Get original field values
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -104,13 +104,13 @@ describe('AcroForm', () => {
 
         acroform.importData(valuesToSet)
         acroform.needAppearances = true
-        await document.acroForm.write(acroform)
+        acroform.write()
 
-        const newDocumentBytes = await document.toBytes()
+        const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify
-        const updatedAcroform = await newDocument.acroForm.read()
+        const updatedAcroform = newDocument.acroForm.read()
         const updatedValues = updatedAcroform?.exportData()!
         for (const [fieldName, expectedValue] of Object.entries(valuesToSet)) {
             expect(updatedValues[fieldName]).toBe(expectedValue)
@@ -132,19 +132,19 @@ describe('AcroForm', () => {
             'Client Name': 'PROSZĘ',
         }
 
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
         acroform.importData(exoticValues)
         acroform.needAppearances = true
-        await document.acroForm.write(acroform)
+        acroform.write()
 
-        const newDocumentBytes = await document.toBytes()
+        const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify
-        const updatedAcroform = await newDocument.acroForm.read()
+        const updatedAcroform = newDocument.acroForm.read()
         const updatedValues = updatedAcroform?.exportData()!
         for (const [fieldName, expectedValue] of Object.entries(exoticValues)) {
             expect(updatedValues[fieldName]).toBe(expectedValue)
@@ -162,7 +162,7 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
 
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -184,13 +184,13 @@ describe('AcroForm', () => {
 
         // Mark as needing appearance updates
         acroform.needAppearances = true
-        await document.acroForm.write(acroform)
+        acroform.write()
 
-        const newDocumentBytes = await document.toBytes()
+        const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify font size changed
-        const updatedAcroform = await newDocument.acroForm.read()
+        const updatedAcroform = newDocument.acroForm.read()
         const updatedField = updatedAcroform?.fields.find(
             (f) => f.name === 'Client Name',
         )
@@ -210,7 +210,7 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
 
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -239,13 +239,13 @@ describe('AcroForm', () => {
 
         // Mark as needing appearance updates
         acroform.needAppearances = true
-        await document.acroForm.write(acroform)
+        acroform.write()
 
-        const newDocumentBytes = await document.toBytes()
+        const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read them back to verify font name changed
-        const updatedAcroform = await newDocument.acroForm.read()
+        const updatedAcroform = newDocument.acroForm.read()
         const updatedField = updatedAcroform?.fields.find(
             (f) => f.name === 'Client Name',
         )
@@ -273,7 +273,7 @@ describe('AcroForm', () => {
         )
 
         // Embed the custom font using the new embedFromFile API
-        const font = await document.fonts.embedFromFile(fontData, {
+        const font = document.fonts.embedFromFile(fontData, {
             fontName: 'Helvetica-Custom',
         })
 
@@ -284,7 +284,7 @@ describe('AcroForm', () => {
         expect(font.toString()).toBe(font.resourceName)
 
         // Get the AcroForm and modify a field to use the custom font
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -305,14 +305,14 @@ describe('AcroForm', () => {
 
         // Mark as needing appearance updates
         acroform.needAppearances = true
-        await document.acroForm.write(acroform)
+        acroform.write()
 
         // Serialize and reparse the document
-        const newDocumentBytes = await document.toBytes()
+        const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Verify the custom font is still embedded and the field uses it
-        const updatedAcroform = await newDocument.acroForm.read()
+        const updatedAcroform = newDocument.acroForm.read()
         const updatedField = updatedAcroform?.fields.find(
             (f) => f.name === 'Client Name',
         )
@@ -334,7 +334,7 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
 
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -350,7 +350,7 @@ describe('AcroForm', () => {
         const pagesRef = pages instanceof PdfObjectReference ? pages : null
         expect(pagesRef).toBeDefined()
 
-        const pagesObj = await document.readObject({
+        const pagesObj = document.readObject({
             objectNumber: pagesRef!.objectNumber,
             generationNumber: pagesRef!.generationNumber,
         })
@@ -360,7 +360,7 @@ describe('AcroForm', () => {
         let kidsArray: PdfArray<PdfObjectReference>
 
         if (kids instanceof PdfObjectReference) {
-            const kidsObj = await document.readObject({
+            const kidsObj = document.readObject({
                 objectNumber: kids.objectNumber,
                 generationNumber: kids.generationNumber,
             })
@@ -373,7 +373,7 @@ describe('AcroForm', () => {
         expect(kidsArray!.items.length).toBeGreaterThan(0)
 
         const firstPageRef = kidsArray!.items[0]
-        const firstPageObj = await document.readObject({
+        const firstPageObj = document.readObject({
             objectNumber: firstPageRef.objectNumber,
             generationNumber: firstPageRef.generationNumber,
         })
@@ -406,13 +406,13 @@ describe('AcroForm', () => {
 
         // Write the form and save
         acroform.needAppearances = true
-        await document.acroForm.write(acroform)
+        acroform.write()
 
-        const newDocumentBytes = await document.toBytes()
+        const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
         // Read back and verify the new field exists
-        const updatedAcroform = await newDocument.acroForm.read()
+        const updatedAcroform = newDocument.acroForm.read()
         expect(updatedAcroform).toBeDefined()
         expect(updatedAcroform!.fields.length).toBe(initialFieldCount + 1)
 
@@ -647,7 +647,7 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
         )
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -658,12 +658,12 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
             N: '9999',
         })
 
-        await document.acroForm.write(acroform)
+        acroform.write()
 
         // Read back and verify
         const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
-        const updatedAcroform = await newDocument.acroForm.read()
+        const updatedAcroform = newDocument.acroForm.read()
         const exportedData = updatedAcroform?.exportData()!
 
         expect(exportedData['Client Name']).toBe('Test Client')
@@ -764,7 +764,8 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
         } as any
 
         // Create an acroform with the mock document
-        const acroForm = new PdfAcroForm({ document: mockDocument })
+        const acroForm = new PdfAcroForm()
+        acroForm.document = mockDocument
 
         // Create choice field with form reference
         const choiceField = new PdfChoiceFormField({ form: acroForm })
@@ -893,9 +894,8 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         const acroFormDict = new PdfDictionary()
         acroFormDict.set('DR', drDict)
 
-        const acroForm = new PdfAcroForm({
-            document: mockDocument,
-        })
+        const acroForm = new PdfAcroForm()
+        acroForm.document = mockDocument
         acroForm.defaultResources = drDict
 
         const field = new PdfTextFormField({ form: acroForm })
@@ -1009,15 +1009,14 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         const acroFormDict = new PdfDictionary()
         acroFormDict.set('DR', drDict)
 
-        const acroForm = new PdfAcroForm({
-            document: mockDocument,
-        })
+        const acroForm = new PdfAcroForm()
+        acroForm.document = mockDocument
         acroForm.defaultResources = drDict
 
-        await acroForm.getFontEncodingMap('Helv')
+        acroForm.getFontEncodingMap('Helv')
         const firstCallCount = readObjectCalls.length
 
-        await acroForm.getFontEncodingMap('Helv')
+        acroForm.getFontEncodingMap('Helv')
         const secondCallCount = readObjectCalls.length
 
         expect(secondCallCount).toBe(firstCallCount)
@@ -1036,7 +1035,7 @@ describe('AcroForm Appearance Generation', () => {
         )
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -1109,7 +1108,7 @@ describe('AcroForm Appearance Generation', () => {
         )
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -1120,7 +1119,7 @@ describe('AcroForm Appearance Generation', () => {
         })
 
         // Write the form - this should automatically create the appearance indirect object
-        await document.acroForm.write(acroform)
+        acroform.write()
 
         const textField = acroform.fields.find((f) => f.name === 'Client Name')
         expect(textField).toBeDefined()
@@ -1149,7 +1148,7 @@ describe('AcroForm Appearance Generation', () => {
         )
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -1162,7 +1161,7 @@ describe('AcroForm Appearance Generation', () => {
 
         acroform.importData(valuesToSet)
         acroform.needAppearances = false
-        await document.acroForm.write(acroform)
+        acroform.write()
 
         const newDocumentBytes = document.toBytes()
 
@@ -1174,7 +1173,7 @@ describe('AcroForm Appearance Generation', () => {
 
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
-        const updatedAcroform = await newDocument.acroForm.read()
+        const updatedAcroform = newDocument.acroForm.read()
         expect(updatedAcroform).toBeDefined()
         expect(updatedAcroform!.needAppearances).toBe(false)
 
@@ -1199,7 +1198,7 @@ describe('AcroForm Appearance Generation', () => {
         )
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -1232,7 +1231,7 @@ describe('AcroForm Appearance Generation', () => {
         )
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
@@ -1382,7 +1381,7 @@ describe('AcroForm Appearance Generation', () => {
         document.add(catalog)
         document.trailerDict.set('Root', catalog.reference)
 
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found')
         }
@@ -1391,13 +1390,13 @@ describe('AcroForm Appearance Generation', () => {
         const catalogRef = document.trailerDict.get(
             'Root',
         ) as PdfObjectReference
-        const catalogObj = await document.readObject({
+        const catalogObj = document.readObject({
             objectNumber: catalogRef.objectNumber,
             generationNumber: catalogRef.generationNumber,
         })
         const catalogDict = catalogObj!.content.as(PdfDictionary)
         const pagesRef = catalogDict.get('Pages') as PdfObjectReference
-        const pagesObj = await document.readObject({
+        const pagesObj = document.readObject({
             objectNumber: pagesRef.objectNumber,
             generationNumber: pagesRef.generationNumber,
         })
@@ -1574,7 +1573,7 @@ describe('AcroForm Appearance Generation', () => {
         )
 
         acroform.needAppearances = false
-        await document.acroForm.write(acroform)
+        acroform.write()
 
         // Save to file
         await server.commands.writeFile(
@@ -1737,7 +1736,7 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         document.add(catalog)
         document.trailerDict.set('Root', catalog.reference)
 
-        const acroform = await document.acroForm.read()
+        const acroform = document.acroForm.read()
         if (!acroform) throw new Error('No AcroForm found')
 
         const pageRef = page.reference
@@ -1807,7 +1806,7 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         }
 
         acroform.needAppearances = false
-        await document.acroForm.write(acroform)
+        acroform.write()
 
         await server.commands.writeFile(
             './test/unit/tmp/word-wrap-and-scaling.pdf',

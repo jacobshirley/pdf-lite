@@ -46,22 +46,17 @@ export class PdfAcroFormObject<
 {
     fields: PdfFormField[]
     private _fontEncodingCache?: PdfFontEncodingCache
-    private document?: PdfDocument
+    document?: PdfDocument
     private _xfa?: PdfXfaForm | null // undefined = not set; null = explicitly no XFA
 
-    constructor(options?: {
-        other?: PdfIndirectObject
-        fields?: PdfFormField[]
-        document?: PdfDocument
-    }) {
+    constructor(options?: PdfIndirectObject) {
         super(
-            options?.other ??
+            options ??
                 new PdfIndirectObject({
                     content: new PdfDictionary(),
                 }),
         )
-        this.fields = options?.fields ?? []
-        this.document = options?.document
+        this.fields = []
     }
 
     private get fontEncodingCache(): PdfFontEncodingCache {
@@ -199,10 +194,9 @@ export class PdfAcroFormObject<
             return null
         }
 
-        const acroForm = new PdfAcroFormObject({
-            other: acroFormContainer,
-            document,
-        })
+        const acroForm = acroFormContainer.becomes(PdfAcroFormObject)
+        acroForm.document = document
+        acroForm.fields = []
 
         const fields: Map<string, PdfFormField> = new Map()
 
@@ -304,16 +298,13 @@ export class PdfAcroFormObject<
         return this._xfa
     }
 
-    async write(document?: PdfDocument) {
+    write(document?: PdfDocument) {
         document ||= this.document
         if (!document) {
             throw new Error('No document associated with this AcroForm')
         }
 
         const catalog = document.root
-
-        const isIncremental = document.isIncremental()
-        document.setIncremental(true)
 
         const xfaForm =
             this._xfa !== undefined
@@ -420,12 +411,8 @@ export class PdfAcroFormObject<
             }
         }
 
-        // XFA datasets stream — PdfXfaData extends PdfIndirectObject<PdfStream>, must stay standalone
         if (xfaForm?.datasets?.isModified()) {
             document.add(xfaForm.datasets)
         }
-
-        await document.finalize()
-        document.setIncremental(isIncremental)
     }
 }

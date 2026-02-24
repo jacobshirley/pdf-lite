@@ -51,13 +51,4 @@ export class PdfAcroFormManager {
     setXfa(xfa: PdfXfaForm): void {
         this.read()?.setXfa(xfa)
     }
-
-    /**
-     * Writes the provided AcroForm to the associated PDF document.
-     * @param acroForm The AcroForm instance to serialize into the document.
-     * @throws Error If writing the AcroForm to the document fails.
-     */
-    async write(acroForm?: PdfAcroForm): Promise<void> {
-        await (acroForm ?? this.read())?.write(this.document)
-    }
 }

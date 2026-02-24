@@ -35,9 +35,8 @@ import { PdfDocumentSecurityStoreObject } from '../signing/document-security-sto
 import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
-import { PdfAcroFormManager } from '../acroform/manager.js'
-import { PdfFontManager } from '../fonts/manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
+import { PdfAcroForm } from '../acroform/acroform.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -67,10 +66,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     private incremental: boolean = false
 
     private originalSecurityHandler?: PdfSecurityHandler
-
-    /**  */
-    readonly acroForm: PdfAcroFormManager
-    readonly fonts: PdfFontManager
 
     private hasEncryptionDictionary?: boolean = false
 
@@ -121,9 +116,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
         this.originalSecurityHandler = options?.securityHandler
         this.resetSecurityHandler()
-
-        this.acroForm = new PdfAcroFormManager(this)
-        this.fonts = new PdfFontManager(this)
     }
 
     resolve(objectNumber: number, generationNumber: number): PdfIndirectObject {
@@ -133,7 +125,20 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                 `Object ${objectNumber} ${generationNumber} not found`,
             )
         }
+        this.wireResolvers(found)
         return found
+    }
+
+    get acroform(): PdfAcroForm | null {
+        const root = this.root
+        const acroFormRef = root.content
+            .get('AcroForm')
+            ?.as(PdfObjectReference)
+            .resolve()
+        if (!acroFormRef) {
+            return null
+        }
+        return acroFormRef.becomes(PdfAcroForm)
     }
 
     get header(): PdfComment | undefined {
@@ -215,10 +220,15 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         for (const obj of objects) {
             this.wireResolvers(obj)
             if (this.hasObjectInLatestRevision(obj)) {
-                console.trace('added object already in latest revision', obj)
                 continue
             }
             this.latestRevision.addObject(obj)
+        }
+
+        // Auto-add any referenced-but-missing objects
+        const missing = this.collectMissingReferences(...objects)
+        if (missing.length > 0) {
+            this.add(...missing)
         }
 
         this.updateSync()
@@ -958,6 +968,44 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         for (const obj of objects) {
             walk(obj)
         }
+    }
+
+    private collectMissingReferences(
+        ...objects: PdfObject[]
+    ): PdfIndirectObject[] {
+        const seen = new Set<PdfObject>()
+        const missing: PdfIndirectObject[] = []
+        const walk = (obj: PdfObject) => {
+            if (seen.has(obj)) return
+            seen.add(obj)
+
+            if (
+                obj instanceof PdfObjectReference &&
+                !(obj instanceof PdfIndirectObject)
+            ) {
+                if (obj.resolver) {
+                    try {
+                        const resolved = obj.resolve()
+                        if (!this.objects.includes(resolved)) {
+                            missing.push(resolved)
+                            walk(resolved)
+                        }
+                    } catch {
+                        // Skip unresolvable references
+                    }
+                }
+            } else if (obj instanceof PdfDictionary) {
+                for (const [, value] of obj.entries()) {
+                    if (value) walk(value)
+                }
+            } else if (obj instanceof PdfArray) {
+                for (const item of obj.items) walk(item)
+            } else if (obj instanceof PdfIndirectObject) {
+                walk(obj.content)
+            }
+        }
+        for (const obj of objects) walk(obj)
+        return missing
     }
 
     private linkRevisions(): void {

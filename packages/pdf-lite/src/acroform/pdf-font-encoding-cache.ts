@@ -5,7 +5,7 @@ import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfString } from '../core/objects/pdf-string.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
-import type { PdfDefaultResourcesDictionary } from './acroform.js'
+import { PdfDefaultResourcesDictionary } from '../annotations/pdf-default-resources.js'
 
 /**
  * Resolves and caches font encoding maps from the form's default resources.

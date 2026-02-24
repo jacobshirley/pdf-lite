@@ -23,9 +23,11 @@ export type PdfIndirectObjectOptions<T extends PdfObject = PdfObject> =
 
 export class PdfIndirectObject<
     T extends PdfObject = PdfObject,
-> extends PdfObjectReference {
+> extends PdfObject {
     static readonly MAX_ORDER_INDEX = 2147483647
 
+    objectNumber: number
+    generationNumber: number
     content: T
     offset: Ref<number>
     encryptable?: boolean
@@ -34,7 +36,9 @@ export class PdfIndirectObject<
 
     constructor(options?: PdfIndirectObjectOptions<T>) {
         if (options instanceof PdfIndirectObject) {
-            super(options.objectNumber, options.generationNumber)
+            super()
+            this.objectNumber = options.objectNumber
+            this.generationNumber = options.generationNumber
             this.content = options.content.clone() as T
             this.offset = options.offset.clone()
             this.compressed = options.compressed
@@ -42,13 +46,17 @@ export class PdfIndirectObject<
         }
 
         if (options instanceof PdfObject) {
-            super(-1, 0)
+            super()
+            this.objectNumber = -1
+            this.generationNumber = 0
             this.content = options
             this.offset = new Ref(0)
             return
         }
 
-        super(options?.objectNumber ?? -1, options?.generationNumber ?? 0)
+        super()
+        this.objectNumber = options?.objectNumber ?? -1
+        this.generationNumber = options?.generationNumber ?? 0
         this.content = options?.content ?? (new PdfNull() as unknown as T)
         this.offset =
             options?.offset instanceof Ref
@@ -59,13 +67,15 @@ export class PdfIndirectObject<
     }
 
     get reference(): PdfObjectReference {
-        return new Proxy(this, {
+        return new Proxy(this as any, {
             get: (target, prop) => {
                 const value = new PdfObjectReference(
                     target.objectNumber,
                     target.generationNumber,
                 )
-                if (prop === 'objectNumber') {
+                if (prop === 'resolve') {
+                    return () => target // resolve returns the indirect object itself, not the content, since it's already a reference to the content. This allows for chaining .reference.resolve() to get back to the indirect object when needed.
+                } else if (prop === 'objectNumber') {
                     return target.objectNumber
                 } else if (prop === 'generationNumber') {
                     return target.generationNumber
@@ -171,7 +181,14 @@ export class PdfIndirectObject<
     }
 
     becomes<T>(cls: new (options: PdfIndirectObject) => T): T {
+        if (this instanceof cls) {
+            return this as T
+        }
         Object.setPrototypeOf(this, cls.prototype)
         return this as unknown as T
+    }
+
+    resolve() {
+        return this
     }
 }

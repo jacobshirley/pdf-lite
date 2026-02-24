@@ -36,12 +36,12 @@ export class PdfButtonFormField extends PdfFormField {
         return true
     }
 
-    override get checked(): boolean {
+    get checked(): boolean {
         const v = this.content.get('V') ?? this.parent?.content.get('V')
         return v instanceof PdfName && v.value === 'Yes'
     }
 
-    override set checked(isChecked: boolean) {
+    set checked(isChecked: boolean) {
         const target = this.parent ?? this
         if (isChecked) {
             target.content.set('V', new PdfName('Yes'))

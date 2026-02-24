@@ -2,16 +2,13 @@ import { PdfFormField } from './pdf-form-field.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
 import { PdfTextAppearanceStream } from '../appearance/pdf-text-appearance-stream.js'
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
-import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 
 /**
  * Text form field subtype.
  */
 export class PdfTextFormField extends PdfFormField {
     static {
-        PdfFormField.registerFieldType('Tx', PdfTextFormField, {
-            fallback: true,
-        })
+        PdfFormField.registerFieldType('Tx', PdfTextFormField)
     }
 
     generateAppearance(options?: {
@@ -28,48 +25,17 @@ export class PdfTextFormField extends PdfFormField {
         if (!parsed) return false
 
         let fontResources: PdfDictionary | undefined
-        const drFontValue = this.form?.defaultResources?.get('Font')
-        const drFonts =
-            drFontValue instanceof PdfDictionary ? drFontValue : undefined
-        const daFontRef = this.form?.fontRefs?.get(parsed.fontName)
-
-        if (drFonts || daFontRef) {
-            // Build a fresh font dict using clean PdfObjectReferences (no
-            // pre/postTokens inherited from the original parse context).
+        const font = this.font
+        if (font) {
+            const ref = font.reference
             const fontDict = new PdfDictionary()
-            if (drFonts) {
-                for (const [key, val] of drFonts.entries()) {
-                    if (val instanceof PdfObjectReference) {
-                        fontDict.set(
-                            key,
-                            new PdfObjectReference(
-                                val.objectNumber,
-                                val.generationNumber,
-                            ),
-                        )
-                    } else if (val != null) {
-                        fontDict.set(key, val)
-                    }
-                }
-            }
-            if (daFontRef && !fontDict.has(parsed.fontName)) {
-                fontDict.set(
-                    parsed.fontName,
-                    new PdfObjectReference(
-                        daFontRef.objectNumber,
-                        daFontRef.generationNumber,
-                    ),
-                )
-            }
+            fontDict.set(parsed.fontName, ref)
             fontResources = new PdfDictionary()
             fontResources.set('Font', fontDict)
         }
 
-        const isUnicode = this.form?.isFontUnicode(parsed.fontName) ?? false
-        const encodingMap = this.form?.fontEncodingMaps?.get(parsed.fontName)
-        const reverseEncodingMap: Map<string, number> | undefined = encodingMap
-            ? new Map(Array.from(encodingMap, ([code, char]) => [char, code]))
-            : undefined
+        const isUnicode = font?.isUnicode ?? false
+        const reverseEncodingMap = font?.reverseEncodingMap
 
         this._appearanceStream = new PdfTextAppearanceStream({
             rect: rect,

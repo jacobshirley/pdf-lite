@@ -11,10 +11,10 @@ import { decodeWithFontEncoding } from '../../utils/decodeWithFontEncoding.js'
 import { PdfWidgetAnnotation } from '../../annotations/pdf-widget-annotation.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
 import type { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js'
-import type { FormContext, PdfFieldType } from './types.js'
+import type { PdfFieldType } from './types.js'
 import { PdfFieldType as PdfFieldTypeConst } from './types.js'
-
 import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
+import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-resources.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -22,71 +22,66 @@ import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
  * Subclasses must implement generateAppearance().
  */
 export abstract class PdfFormField extends PdfWidgetAnnotation {
-    private _parent?: PdfFormField
     defaultGenerateAppearance: boolean = true
     protected _appearanceStream?: PdfAppearanceStream
     protected _appearanceStreamYes?: PdfAppearanceStream
-    form?: FormContext<PdfFormField>
 
-    constructor(options?: {
-        other?: PdfIndirectObject
-        form?: FormContext<PdfFormField>
-        parent?: PdfFormField
-    }) {
-        super({ other: options?.other })
-        this.form = options?.form
-        if (options?.parent) {
-            this._parent = options.parent
+    constructor(other?: PdfIndirectObject) {
+        super()
+    }
+
+    static create(other?: PdfIndirectObject): PdfFormField {
+        if (!(other?.content instanceof PdfDictionary))
+            throw new Error('Invalid form field object')
+
+        const ft = other?.content.get('FT')?.as(PdfName)?.value as
+            | 'Sig'
+            | 'Btn'
+            | 'Tx'
+            | 'Ch'
+            | undefined
+
+        const cls = ft ? PdfFormField._registry.get(ft) : undefined
+        if (!cls) {
+            if (PdfFormField._fallbackCtor) {
+                return other.becomes(PdfFormField._fallbackCtor)
+            }
+            throw new Error(`Unsupported form field type: ${ft ?? 'unknown'}`)
         }
+
+        return other.becomes(cls)
     }
 
     get parent(): PdfFormField | undefined {
-        if (this._parent) return this._parent
-        if (!this.form) return undefined
-        return this.form.fields.find(
-            (f) =>
-                f !== this &&
-                f.kids.some(
-                    (k) =>
-                        k.objectNumber === this.objectNumber &&
-                        k.generationNumber === this.generationNumber,
-                ),
-        )
+        return PdfFormField.create(this.content.get('Parent')?.resolve())
     }
 
     set parent(field: PdfFormField | undefined) {
-        if (this._parent) {
-            this._parent.kids = this._parent.kids.filter(
-                (k) =>
-                    k.objectNumber !== this.objectNumber ||
-                    k.generationNumber !== this.generationNumber,
-            )
+        if (!field) {
+            this.content.delete('Parent')
+            return
         }
-        this._parent = field
-        if (field) {
-            const alreadyInKids = field.kids.some(
-                (k) =>
-                    k.objectNumber === this.objectNumber &&
-                    k.generationNumber === this.generationNumber,
-            )
-            if (!alreadyInKids) {
-                field.kids = [...field.kids, this.reference]
-            }
-        }
+
+        this.content.set('Parent', field.reference)
+        field.children = [...field.children, this]
     }
 
     get children(): PdfFormField[] {
-        if (!this.form) return []
-        return this.form.fields.filter((f) => f.parent === this)
+        return (
+            this.content
+                .get('Kids')
+                ?.items.map((ref) => PdfFormField.create(ref.resolve())) ?? []
+        )
     }
 
     set children(fields: PdfFormField[]) {
-        for (const child of this.children) {
-            child._parent = undefined
+        if (fields.length === 0) {
+            this.content.delete('Kids')
+            return
         }
-        this.kids = fields.map((f) => f.reference)
+        this.content.set('Kids', PdfArray.refs(fields))
         for (const child of fields) {
-            child._parent = this
+            child.content.set('Parent', this.reference)
         }
     }
 
@@ -94,10 +89,43 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return this.parent?.children ?? []
     }
 
-    get encodingMap(): Map<number, string> | undefined {
+    get font(): PdfFont | null {
         const fontName = this.fontName
-        if (!fontName) return undefined
-        return this.form?.fontEncodingMaps?.get(fontName)
+        if (!fontName) return null
+
+        // Try resolving from default resources (DR) dict
+        const dr = this.defaultResources
+        const fontDict = dr?.get('Font')
+        if (fontDict instanceof PdfDictionary) {
+            const fontEntry = fontDict.get(fontName)
+            if (fontEntry instanceof PdfObjectReference) {
+                try {
+                    const resolved = fontEntry.resolve()
+                    if (resolved?.content instanceof PdfDictionary) {
+                        const font = resolved.becomes(PdfFont)
+                        font.resourceName = fontName
+                        return font
+                    }
+                } catch {
+                    // resolver not wired — fall through to standard fonts
+                }
+            }
+        }
+
+        // Fallback: standard font lookup (Helv, Helvetica, ZaDb, etc.)
+        return PdfFont.getStandardFont(fontName) ?? null
+    }
+
+    get defaultResources(): PdfDefaultResourcesDictionary | null {
+        return this.content.get('DR') ?? this.parent?.defaultResources ?? null
+    }
+
+    set defaultResources(resources: PdfDefaultResourcesDictionary | null) {
+        if (resources === null) {
+            this.content.delete('DR')
+        } else {
+            this.content.set('DR', resources)
+        }
     }
 
     get fieldType(): PdfFieldType | null {
@@ -154,8 +182,9 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const v = this.content.get('V') ?? this.parent?.content.get('V')
         if (v instanceof PdfString) {
             if (v.isUTF16BE) return v.value
-            if (this.encodingMap) {
-                return decodeWithFontEncoding(v.raw, this.encodingMap)
+            const encodingMap = this.font?.encodingMap
+            if (encodingMap) {
+                return decodeWithFontEncoding(v.raw, encodingMap)
             }
             return v.value
         } else if (v instanceof PdfName) {
@@ -202,14 +231,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
 
     protected tryGenerateAppearance(field: PdfFormField): void {
         field.generateAppearance()
-    }
-
-    get checked(): boolean {
-        return false
-    }
-
-    set checked(_isChecked: boolean) {
-        // no-op for non-button fields; overridden in PdfButtonFormField
     }
 
     get fontSize(): number | null {
@@ -422,8 +443,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     get defaultAppearance(): string | null {
         return (
             this.content.get('DA')?.as(PdfString)?.value ??
-            this.parent?.content.get('DA')?.as(PdfString)?.value ??
-            this.form?.defaultAppearance ??
+            this.parent?.defaultAppearance ??
             null
         )
     }
@@ -489,67 +509,24 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         apDict.set('N', appearanceStreamRef)
     }
 
-    private static _fallbackCtor?: new (options?: {
-        other?: PdfIndirectObject
-        form?: FormContext<PdfFormField>
-        parent?: PdfFormField
-    }) => PdfFormField
+    private static _fallbackCtor?: new (
+        other?: PdfIndirectObject,
+    ) => PdfFormField
 
     private static _registry = new Map<
         'Sig' | 'Btn' | 'Tx' | 'Ch',
-        new (options?: {
-            other?: PdfIndirectObject
-            form?: FormContext<PdfFormField>
-            parent?: PdfFormField
-        }) => PdfFormField
+        new (other?: PdfIndirectObject) => PdfFormField
     >()
 
     static registerFieldType(
         ft: 'Sig' | 'Btn' | 'Tx' | 'Ch',
-        ctor: new (options?: {
-            other?: PdfIndirectObject
-            form?: FormContext<PdfFormField>
-            parent?: PdfFormField
-        }) => PdfFormField,
+        ctor: new (other?: PdfIndirectObject) => PdfFormField,
         options?: { fallback?: boolean },
     ): void {
         PdfFormField._registry.set(ft, ctor)
         if (options?.fallback) {
             PdfFormField._fallbackCtor = ctor
         }
-    }
-
-    static create(options: {
-        other: PdfIndirectObject
-        form: FormContext<PdfFormField>
-        parent?: PdfFormField
-    }): PdfFormField {
-        let ft: 'Sig' | 'Btn' | 'Tx' | 'Ch' | undefined
-        try {
-            const dict = options.other.content.as(PdfDictionary)
-            ft = dict.get('FT')?.as(PdfName)?.value
-        } catch {
-            // content may not be a dictionary
-        }
-
-        if (!ft && options.parent) {
-            try {
-                ft = options.parent.content.get('FT')?.as(PdfName)?.value
-            } catch {
-                // ignore
-            }
-        }
-
-        const Ctor = ft ? PdfFormField._registry.get(ft) : undefined
-        if (!Ctor) {
-            // Fields without FT are parent/container nodes — use the
-            // fallback type (typically Text) as a concrete stand-in.
-            if (!PdfFormField._fallbackCtor) {
-                throw new Error(`Unknown field type: ${ft ?? '(none)'}`)
-            }
-            return new PdfFormField._fallbackCtor(options)
-        }
-        return new Ctor(options)
     }
 }
 

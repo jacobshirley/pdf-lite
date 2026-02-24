@@ -27,6 +27,7 @@ export class PdfAnnotation extends PdfIndirectObject<
         DV: PdfString | PdfName
         V: PdfString | PdfName
         DA: PdfString
+        DR: PdfDictionary
         Opt: PdfArray<PdfString | PdfArray<PdfString>> | PdfObjectReference
         MaxLen: PdfNumber
         Q: PdfNumber
@@ -35,6 +36,7 @@ export class PdfAnnotation extends PdfIndirectObject<
         F: PdfNumber
         AP?: PdfAppearanceStreamDictionary
         P?: PdfObjectReference
+        Parent?: PdfObjectReference
     }>
 > {
     private _annotationFlags: PdfAnnotationFlags

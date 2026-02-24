@@ -1,4 +1,4 @@
-import type { PdfDefaultResourcesDictionary } from '../acroform.js'
+import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-resources.js'
 import type { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 
 /**

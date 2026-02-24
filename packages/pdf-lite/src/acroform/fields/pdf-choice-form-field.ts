@@ -5,6 +5,7 @@ import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfArray } from '../../core/objects/pdf-array.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
+import { PdfIndirectObject, PdfObject } from '../../core/index.js'
 
 /**
  * Choice form field subtype (dropdowns, list boxes).
@@ -22,12 +23,20 @@ export class PdfChoiceFormField extends PdfFormField {
         label: string
         value: string
     }[] {
-        const opt = this.content.get('Opt')
+        let opt: PdfObject | undefined = this.content.get('Opt')
+        if (!opt) return []
+
         if (opt instanceof PdfObjectReference) {
-            throw new Error('Indirect Opt entries are not supported')
+            opt = opt
+                .resolve()
+                .as(
+                    PdfIndirectObject<
+                        PdfArray<PdfString | PdfArray<PdfString>>
+                    >,
+                )
         }
 
-        if (!opt) return []
+        if (!(opt instanceof PdfArray)) return []
 
         return opt.items.map((item) => {
             if (item instanceof PdfArray && item.items.length >= 2) {
@@ -102,48 +111,18 @@ export class PdfChoiceFormField extends PdfFormField {
         const parsed = PdfDefaultAppearance.parse(da)
         if (!parsed) return false
 
+        const font = this.font
         let fontResources: PdfDictionary | undefined
-        const drFontValue = this.form?.defaultResources?.get('Font')
-        const drFonts =
-            drFontValue instanceof PdfDictionary ? drFontValue : undefined
-        const daFontRef = this.form?.fontRefs?.get(parsed.fontName)
-        if (drFonts || daFontRef) {
-            // Build a fresh font dict using clean PdfObjectReferences (no
-            // pre/postTokens inherited from the original parse context).
+        if (font) {
+            const ref = font.reference
             const fontDict = new PdfDictionary()
-            if (drFonts) {
-                for (const [key, val] of drFonts.entries()) {
-                    if (val instanceof PdfObjectReference) {
-                        fontDict.set(
-                            key,
-                            new PdfObjectReference(
-                                val.objectNumber,
-                                val.generationNumber,
-                            ),
-                        )
-                    } else if (val != null) {
-                        fontDict.set(key, val)
-                    }
-                }
-            }
-            if (daFontRef && !fontDict.has(parsed.fontName)) {
-                fontDict.set(
-                    parsed.fontName,
-                    new PdfObjectReference(
-                        daFontRef.objectNumber,
-                        daFontRef.generationNumber,
-                    ),
-                )
-            }
+            fontDict.set(parsed.fontName, ref)
             fontResources = new PdfDictionary()
             fontResources.set('Font', fontDict)
         }
 
-        const isUnicode = this.form?.isFontUnicode(parsed.fontName) ?? false
-        const encodingMap = this.form?.fontEncodingMaps?.get(parsed.fontName)
-        const reverseEncodingMap: Map<string, number> | undefined = encodingMap
-            ? new Map(Array.from(encodingMap, ([code, char]) => [char, code]))
-            : undefined
+        const isUnicode = font?.isUnicode ?? false
+        const reverseEncodingMap = font?.reverseEncodingMap
 
         this._appearanceStream = new PdfChoiceAppearanceStream({
             rect: rect as [number, number, number, number],

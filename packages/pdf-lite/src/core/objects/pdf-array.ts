@@ -1,7 +1,36 @@
+import { PdfObjectReference } from '../index.js'
 import { PdfEndArrayToken } from '../tokens/end-array-token.js'
 import { PdfStartArrayToken } from '../tokens/start-array-token.js'
 import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
+import { PdfBoolean } from './pdf-boolean.js'
+import { PdfDictionary } from './pdf-dictionary.js'
+import { PdfHexadecimal } from './pdf-hexadecimal.js'
+import { PdfIndirectObject } from './pdf-indirect-object.js'
+import { PdfName } from './pdf-name.js'
+import { PdfNull } from './pdf-null.js'
+import { PdfNumber } from './pdf-number.js'
 import { PdfObject } from './pdf-object.js'
+import { PdfString } from './pdf-string.js'
+
+export type PdfArrayItem =
+    | PdfString
+    | PdfName
+    | PdfArray
+    | PdfDictionary
+    | PdfNumber
+    | PdfNull
+    | PdfHexadecimal
+    | PdfBoolean
+    | PdfIndirectObject
+    | PdfObjectReference
+
+function formatArrayItem(item: PdfArrayItem): PdfArrayItem {
+    if (item instanceof PdfIndirectObject) {
+        return item.reference
+    } else {
+        return item
+    }
+}
 
 export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
     items: T[]
@@ -10,6 +39,10 @@ export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
     constructor(items: T[] = []) {
         super()
         this.items = items
+    }
+
+    static refs(items: PdfIndirectObject[]): PdfArray<PdfObjectReference> {
+        return new PdfArray(items.map((item) => item.reference))
     }
 
     get length(): number {

@@ -7,7 +7,9 @@ export interface IPdfObjectResolver {
     resolve(objectNumber: number, generationNumber: number): PdfIndirectObject
 }
 
-export class PdfObjectReference extends PdfObject {
+export class PdfObjectReference<
+    T extends PdfIndirectObject = PdfIndirectObject,
+> extends PdfObject {
     objectNumber: number
     generationNumber: number
     resolver?: IPdfObjectResolver
@@ -35,12 +37,16 @@ export class PdfObjectReference extends PdfObject {
         return cloned
     }
 
-    resolve(): PdfIndirectObject {
+    resolve(): T {
         if (!this.resolver) {
             throw new Error(
                 `No resolver set for PdfObjectReference ${this.objectNumber} ${this.generationNumber}`,
             )
         }
-        return this.resolver.resolve(this.objectNumber, this.generationNumber)
+
+        return this.resolver.resolve(
+            this.objectNumber,
+            this.generationNumber,
+        ) as T
     }
 }

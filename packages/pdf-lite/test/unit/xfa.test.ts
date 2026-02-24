@@ -93,7 +93,8 @@ describe('XFA', () => {
         // Write the XFA form to the document via the standard acroform write path
 
         //acroform?.setXfa(xfaForm!)
-        await acroform?.write()
+        acroform?.write()
+        await document.finalize()
 
         await server.commands.writeFile(
             './test/unit/tmp/modifiedAdobeLivecycle.pdf',
@@ -105,7 +106,7 @@ describe('XFA', () => {
         rereadDocument.setPassword('')
 
         // Read it back to verify the changes were applied
-        const rereadXfa = await rereadDocument.acroForm.getXfa()
+        const rereadXfa = rereadDocument.acroForm.getXfa()
         expect(rereadXfa).not.toBeNull()
         const updatedXml = rereadXfa!.datasets!.readXml()
         expect(updatedXml).toContain('NEW COMPANY NAME LLC')

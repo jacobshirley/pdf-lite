@@ -86,13 +86,11 @@ export class PdfReader {
                     document.resetSecurityHandler()
                 }
             }
-        } else {
-            if (shouldDecrypt) {
-                try {
-                    await document.decrypt()
-                } catch (e) {
-                    document.resetSecurityHandler()
-                }
+        } else if (shouldDecrypt) {
+            try {
+                await document.decryptObjects()
+            } catch (e) {
+                document.resetSecurityHandler()
             }
         }
 

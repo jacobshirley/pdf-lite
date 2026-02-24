@@ -1382,9 +1382,6 @@ describe('AcroForm Appearance Generation', () => {
         document.add(catalog)
         document.trailerDict.set('Root', catalog.reference)
 
-        // Commit the basic structure first
-        await document.commit()
-
         const acroform = await document.acroForm.read()
         if (!acroform) {
             throw new Error('No AcroForm found')
@@ -1739,8 +1736,6 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
 
         document.add(catalog)
         document.trailerDict.set('Root', catalog.reference)
-
-        await document.commit()
 
         const acroform = await document.acroForm.read()
         if (!acroform) throw new Error('No AcroForm found')

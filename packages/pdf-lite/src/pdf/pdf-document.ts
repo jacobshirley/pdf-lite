@@ -552,6 +552,18 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     /**
+     * Re-encrypts all objects and updates the document structure.
+     * No-op if the document has no security handler (unencrypted document).
+     */
+    async finalize(): Promise<void> {
+        if (this.securityHandler) {
+            await this.encrypt()
+        } else {
+            await this.update()
+        }
+    }
+
+    /**
      * Decrypts all encrypted objects in the document.
      * Removes the security handler and encryption dictionary after decryption.
      */
@@ -576,16 +588,24 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     /**
-     * Encrypts all objects in the document using the security handler.
-     * Creates and adds an encryption dictionary to all revisions.
+     * Encrypts all encryptable objects using the security handler.
+     * Re-uses the existing encryption dictionary or creates one if needed,
+     * propagating it to all revisions.
      */
     async encrypt(): Promise<void> {
-        const isIncremental = this.incremental
+        if (!this.securityHandler) {
+            return
+        }
 
-        this.setIncremental(false)
+        const addingEncryption = !this.hasEncryptionDictionary
+        const wasIncremental = this.incremental
+
+        if (addingEncryption) {
+            this.setIncremental(false)
+        }
+
         this.initSecurityHandler({})
-
-        await this.securityHandler!.write()
+        await this.securityHandler.write()
 
         for (const object of this.objects) {
             if (!(object instanceof PdfIndirectObject)) {
@@ -596,36 +616,36 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                 continue
             }
 
-            await this.securityHandler!.encryptObject(object)
+            await this.securityHandler.encryptObject(object)
         }
 
-        const encryptionDictObject = new PdfIndirectObject({
-            content: this.securityHandler!.dict,
-            encryptable: false,
-        })
+        if (addingEncryption) {
+            const encryptionDictObject = new PdfIndirectObject({
+                content: this.securityHandler.dict,
+                encryptable: false,
+            })
 
-        for (const revision of this.revisions) {
-            revision.xref.trailerDict.set(
-                'Encrypt',
-                encryptionDictObject.reference,
-            )
+            this.add(encryptionDictObject)
+            this.hasEncryptionDictionary = true
 
-            if (!revision.xref.trailerDict.get('ID')) {
+            for (const revision of this.revisions) {
                 revision.xref.trailerDict.set(
-                    'ID',
-                    this.securityHandler!.getDocumentId(),
+                    'Encrypt',
+                    encryptionDictObject.reference,
                 )
-            }
-        }
 
-        await this.commit(encryptionDictObject)
-        this.hasEncryptionDictionary = true
+                if (!revision.xref.trailerDict.get('ID')) {
+                    revision.xref.trailerDict.set(
+                        'ID',
+                        this.securityHandler.getDocumentId(),
+                    )
+                }
+            }
+
+            this.setIncremental(wasIncremental)
+        }
 
         await this.update()
-
-        if (isIncremental !== undefined) {
-            this.setIncremental(isIncremental)
-        }
     }
 
     /**
@@ -822,59 +842,13 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     /**
-     * Commits pending objects to the document.
-     * Adds objects, applies encryption if configured, and updates the document structure.
-     *
-     * @param newObjects - Additional objects to add before committing
-     */
-    async commit(...newObjects: PdfObject[]): Promise<void> {
-        this.add(...newObjects)
-
-        const queue = this.toBeCommitted.slice()
-        this.toBeCommitted = []
-
-        for (const newObject of queue) {
-            if (
-                this.securityHandler &&
-                newObject instanceof PdfIndirectObject &&
-                this.isObjectEncryptable(newObject)
-            ) {
-                await this.securityHandler.write()
-
-                this.ensureEncryptionDictionary()
-
-                await this.securityHandler.encryptObject(newObject)
-            }
-        }
-
-        await this.update()
-    }
-
-    private ensureEncryptionDictionary(): void {
-        if (this.hasEncryptionDictionary) {
-            return
-        }
-
-        const encryptionDictObject = new PdfIndirectObject({
-            content: this.securityHandler!.dict,
-            encryptable: false,
-        })
-
-        this.latestRevision.addObject(encryptionDictObject)
-        this.trailerDict.set('Encrypt', encryptionDictObject.reference)
-        this.hasEncryptionDictionary = true
-    }
-
-    /**
      * Sets the Document Security Store (DSS) for the document.
      * Used for long-term validation of digital signatures.
      *
      * @param dss - The Document Security Store object to set
      * @throws Error if the document has no root dictionary
      */
-    async setDocumentSecurityStore(
-        dss: PdfDocumentSecurityStoreObject,
-    ): Promise<void> {
+    setDocumentSecurityStore(dss: PdfDocumentSecurityStoreObject): void {
         let rootDictionary = this.root?.content
         if (!rootDictionary) {
             throw new Error('Cannot set DSS - document has no root dictionary')
@@ -882,7 +856,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         rootDictionary.set('DSS', dss.reference)
 
         if (!this.hasObject(dss)) {
-            await this.commit(dss)
+            this.add(dss)
         }
     }
 

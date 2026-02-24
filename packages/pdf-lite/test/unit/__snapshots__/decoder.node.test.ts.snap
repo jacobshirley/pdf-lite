@@ -141,6 +141,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -787,6 +788,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -945,6 +947,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -989,6 +992,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -1033,6 +1037,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -1077,6 +1082,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -1121,6 +1127,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -1165,6 +1172,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -1755,6 +1763,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -1913,6 +1922,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -2263,6 +2273,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -2501,6 +2512,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -4995,6 +5007,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -57969,6 +57982,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -58847,6 +58861,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -59805,6 +59820,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -60139,6 +60155,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -61353,6 +61370,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -61447,6 +61465,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -62629,6 +62648,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -63347,6 +63367,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -63713,6 +63734,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -64207,6 +64229,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -69855,6 +69878,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -70109,6 +70133,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -70264,6 +70289,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfStartXRef {
     "cachedTokens": undefined,
@@ -70356,6 +70382,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -70400,6 +70427,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -70718,6 +70746,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -70820,6 +70849,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfStartXRef {
     "cachedTokens": undefined,
@@ -76202,6 +76232,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76246,6 +76277,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76290,6 +76322,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76334,6 +76367,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76378,6 +76412,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76422,6 +76457,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76466,6 +76502,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76510,6 +76547,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76527,6 +76565,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
           "objectNumber": 52,
           "postTokens": [],
           "preTokens": [],
+          "resolver": undefined,
         },
       ],
       "modified": false,
@@ -76565,6 +76604,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76609,6 +76649,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76653,6 +76694,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -76697,6 +76739,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -77741,6 +77784,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -77785,6 +77829,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -78029,6 +78074,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -79361,6 +79407,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -85925,6 +85972,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86041,6 +86089,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86085,6 +86134,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86129,6 +86179,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86173,6 +86224,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86217,6 +86269,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86261,6 +86314,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86305,6 +86359,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86349,6 +86404,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86393,6 +86449,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -86765,6 +86822,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -87137,6 +87195,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfIndirectObject {
     "cachedTokens": undefined,
@@ -87319,6 +87378,7 @@ exports[`PDF decoder > should read and write a file, ensuring it is byte-for-byt
       },
     ],
     "preTokens": [],
+    "resolver": undefined,
   },
   PdfStartXRef {
     "cachedTokens": undefined,

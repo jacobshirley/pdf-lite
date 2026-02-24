@@ -422,7 +422,7 @@ export class PdfAcroForm<
             document.add(xfaForm.datasets)
         }
 
-        await document.commit()
+        await document.finalize()
         document.setIncremental(isIncremental)
     }
 }

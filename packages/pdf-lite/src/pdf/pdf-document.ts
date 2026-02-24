@@ -217,6 +217,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             this.toBeCommitted.push(obj)
             this.latestRevision.addObject(obj)
         }
+
+        this.updateSync()
     }
 
     /**
@@ -1012,10 +1014,14 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
     }
 
-    private async update(): Promise<void> {
+    private updateSync(): void {
         this.calculateOffsets()
         this.updateRevisions()
         this.calculateOffsets()
+    }
+
+    private async update(): Promise<void> {
+        this.updateSync()
         await this.signer?.sign(this)
     }
 

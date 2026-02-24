@@ -5,13 +5,13 @@ import { PdfString } from '../../core/objects/pdf-string.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
-import { PdfXfaData } from './pdf-xfa-data.js'
+import { PdfXfaData } from '../objects/pdf-xfa-data.js'
 
 /**
  * Typed wrapper around the XFA name/stream-ref array.
  * Holds eagerly-loaded references to component streams like datasets.
  */
-export class PdfXfaForm extends PdfArray {
+export class PdfXfaForm {
     datasets: PdfXfaData | null = null
 
     static fromDocument(document: PdfDocument): PdfXfaForm | null {
@@ -34,7 +34,7 @@ export class PdfXfaForm extends PdfArray {
         const xfaArray = acroFormDict.get('XFA')
         if (!(xfaArray instanceof PdfArray)) return null
 
-        const form = new PdfXfaForm(xfaArray.items.slice())
+        const form = new PdfXfaForm()
 
         // Find the datasets reference in the name/ref pairs
         const items = xfaArray.items
@@ -57,7 +57,6 @@ export class PdfXfaForm extends PdfArray {
 
                 if (datasetObject) {
                     form.datasets = datasetObject.becomes(PdfXfaData)
-                    datasetObject.content.removeAllFilters()
                 }
                 break
             }

@@ -1,4 +1,3 @@
-import { PdfDocument } from '../pdf/pdf-document.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfString } from '../core/objects/pdf-string.js'
@@ -13,6 +12,7 @@ import './fields/pdf-button-form-field.js'
 import './fields/pdf-choice-form-field.js'
 import './fields/pdf-signature-form-field.js'
 import { PdfDefaultResourcesDictionary } from '../annotations/pdf-default-resources.js'
+import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
 
 export class PdfAcroFormObject<
     T extends Record<string, string> = Record<string, string>,
@@ -89,7 +89,43 @@ export class PdfAcroFormObject<
         for (const ref of refs) {
             const resolved = ref.resolve()
             if (!(resolved?.content instanceof PdfDictionary)) continue
-            result.push(PdfFormField.create(resolved))
+            const field = PdfFormField.create(resolved)
+            field.form = this
+            result.push(field)
+        }
+        const content = this.content
+        const originalPush = result.push.bind(result)
+        result.push = (...items: PdfFormField[]): number => {
+            const len = originalPush(...items)
+            let fieldsArray = content.get('Fields')
+            if (!fieldsArray) {
+                fieldsArray = new PdfArray()
+                content.set('Fields', fieldsArray)
+            }
+            for (const item of items) {
+                fieldsArray.items.push(item.reference)
+
+                // Auto-add to the page's Annots array
+                const pageRef = item.parentRef
+                if (pageRef) {
+                    try {
+                        const pageObj = pageRef.resolve()
+                        if (pageObj?.content instanceof PdfDictionary) {
+                            let annots = pageObj.content.get('Annots')
+                            if (!annots) {
+                                annots = new PdfArray()
+                                pageObj.content.set('Annots', annots)
+                            }
+                            if (annots instanceof PdfArray) {
+                                annots.items.push(item.reference)
+                            }
+                        }
+                    } catch {
+                        // page ref not resolvable
+                    }
+                }
+            }
+            return len
         }
         return result
     }
@@ -125,5 +161,55 @@ export class PdfAcroFormObject<
             }
         }
         return result
+    }
+
+    fontEncodingMaps: Map<string, Map<number, string>> = new Map()
+
+    getFontEncodingMap(fontName: string): Map<number, string> | null {
+        if (this.fontEncodingMaps.has(fontName)) {
+            return this.fontEncodingMaps.get(fontName)!
+        }
+
+        const dr = this.defaultResources
+        const fontDict = dr?.get('Font')?.as(PdfDictionary)
+        if (!fontDict) return null
+
+        const fontEntry = fontDict.get(fontName)
+        if (!fontEntry) return null
+
+        let fontObj: PdfDictionary | undefined
+        if (fontEntry instanceof PdfObjectReference) {
+            try {
+                const resolved = fontEntry.resolve()
+                if (resolved?.content instanceof PdfDictionary) {
+                    fontObj = resolved.content
+                }
+            } catch {
+                // resolver not available
+            }
+        } else if (fontEntry instanceof PdfDictionary) {
+            fontObj = fontEntry
+        }
+
+        if (!fontObj) return null
+
+        let encObj = fontObj.get('Encoding')
+        if (encObj instanceof PdfObjectReference) {
+            try {
+                encObj = encObj.resolve()?.content
+            } catch {
+                // resolver not available
+            }
+        }
+
+        const encDict = encObj instanceof PdfDictionary ? encObj : undefined
+        const diffs = encDict?.get('Differences')?.as(PdfArray)
+        if (!diffs) return null
+
+        const map = buildEncodingMap(diffs)
+        if (map) {
+            this.fontEncodingMaps.set(fontName, map)
+        }
+        return map
     }
 }

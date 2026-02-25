@@ -632,7 +632,7 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
 
         const appearance = childField.getAppearanceStream()
         expect(appearance).toBeDefined()
-        expect(appearance!.rawAsString).toContain('(Test) Tj')
+        expect(appearance!.content.rawAsString).toContain('(Test) Tj')
     })
 
     it('should read value back correctly after write with parent/child fields', async () => {
@@ -830,20 +830,36 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
         expect(child2.getAppearanceStream()).toBeDefined()
 
         // Both should contain the text
-        expect(child1.getAppearanceStream()!.rawAsString).toContain('(Test) Tj')
-        expect(child2.getAppearanceStream()!.rawAsString).toContain('(Test) Tj')
+        expect(child1.getAppearanceStream()!.content.rawAsString).toContain(
+            '(Test) Tj',
+        )
+        expect(child2.getAppearanceStream()!.content.rawAsString).toContain(
+            '(Test) Tj',
+        )
     })
 })
 
 describe('AcroForm Field Value Decoding with Custom Encoding', () => {
     it('should decode field values with custom Euro encoding', async () => {
+        // Build a font indirect object with Encoding Differences
+        const encodingDict = new PdfDictionary()
+        const differences = new PdfArray([
+            new PdfNumber(160),
+            new PdfName('Euro'),
+        ])
+        encodingDict.set('Differences', differences)
+
+        const fontObjDict = new PdfDictionary()
+        fontObjDict.set('Encoding', encodingDict)
+
+        const fontIndirect = new PdfIndirectObject({
+            content: fontObjDict,
+        })
+
         const drDict = new PdfDictionary()
         const fontDict = new PdfDictionary()
-        fontDict.set('Helv', new PdfObjectReference(1, 0))
+        fontDict.set('Helv', fontIndirect.reference)
         drDict.set('Font', fontDict)
-
-        const acroFormDict = new PdfDictionary()
-        acroFormDict.set('DR', drDict)
 
         const acroForm = new PdfAcroForm()
         acroForm.defaultResources = drDict
@@ -854,7 +870,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         field.value = '\xA050' // Byte 160 (0xA0) should map to Euro symbol
 
         acroForm.fields.push(field)
-        await acroForm.getFontEncodingMap('Helv')
+        acroForm.getFontEncodingMap('Helv')
 
         expect(field.value).toBe('€50')
     })
@@ -886,36 +902,30 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
     })
 
     it('should prioritize UTF-16BE over custom font encoding', async () => {
-        const mockDocument = {
-            async readObject({ objectNumber }: { objectNumber: number }) {
-                if (objectNumber === 1) {
-                    const fontDict = new PdfDictionary()
-                    fontDict.set('Encoding', new PdfObjectReference(2, 0))
-                    return { content: fontDict } as any
-                } else if (objectNumber === 2) {
-                    const encodingDict = new PdfDictionary()
-                    const differences = new PdfArray([
-                        new PdfNumber(160),
-                        new PdfName('Euro'),
-                    ])
-                    encodingDict.set('Differences', differences)
-                    return { content: encodingDict } as any
-                }
-                return null
-            },
-        } as any
+        // Build a resolvable font with Euro encoding
+        const encodingDict = new PdfDictionary()
+        const differences = new PdfArray([
+            new PdfNumber(160),
+            new PdfName('Euro'),
+        ])
+        encodingDict.set('Differences', differences)
+
+        const fontObjDict = new PdfDictionary()
+        fontObjDict.set('Encoding', encodingDict)
+
+        const fontIndirect = new PdfIndirectObject({
+            content: fontObjDict,
+        })
 
         const drDict = new PdfDictionary()
         const fontDict = new PdfDictionary()
-        fontDict.set('Helv', new PdfObjectReference(1, 0))
+        fontDict.set('Helv', fontIndirect.reference)
         drDict.set('Font', fontDict)
 
-        const acroFormDict = new PdfDictionary()
-        acroFormDict.set('DR', drDict)
-
         const acroForm = new PdfAcroForm()
+        acroForm.defaultResources = drDict
 
-        await acroForm.getFontEncodingMap('Helv')
+        acroForm.getFontEncodingMap('Helv')
 
         const field = new PdfTextFormField({ form: acroForm })
         field.defaultAppearance = '/Helv 12 Tf'
@@ -929,46 +939,32 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
     })
 
     it('should cache font encoding maps for performance', async () => {
-        const readObjectCalls: number[] = []
-        const mockDocument = {
-            async readObject({ objectNumber }: { objectNumber: number }) {
-                readObjectCalls.push(objectNumber)
+        // Build a resolvable font with Euro encoding
+        const encodingDict = new PdfDictionary()
+        const differences = new PdfArray([
+            new PdfNumber(160),
+            new PdfName('Euro'),
+        ])
+        encodingDict.set('Differences', differences)
 
-                if (objectNumber === 1) {
-                    const fontDict = new PdfDictionary()
-                    fontDict.set('Encoding', new PdfObjectReference(2, 0))
-                    return { content: fontDict } as any
-                } else if (objectNumber === 2) {
-                    const encodingDict = new PdfDictionary()
-                    const differences = new PdfArray([
-                        new PdfNumber(160),
-                        new PdfName('Euro'),
-                    ])
-                    encodingDict.set('Differences', differences)
-                    return { content: encodingDict } as any
-                }
-                return null
-            },
-        } as any
+        const fontObjDict = new PdfDictionary()
+        fontObjDict.set('Encoding', encodingDict)
+
+        const fontIndirect = new PdfIndirectObject({
+            content: fontObjDict,
+        })
 
         const drDict = new PdfDictionary()
         const fontDict = new PdfDictionary()
-        fontDict.set('Helv', new PdfObjectReference(1, 0))
+        fontDict.set('Helv', fontIndirect.reference)
         drDict.set('Font', fontDict)
-
-        const acroFormDict = new PdfDictionary()
-        acroFormDict.set('DR', drDict)
 
         const acroForm = new PdfAcroForm()
         acroForm.defaultResources = drDict
 
         acroForm.getFontEncodingMap('Helv')
-        const firstCallCount = readObjectCalls.length
-
         acroForm.getFontEncodingMap('Helv')
-        const secondCallCount = readObjectCalls.length
 
-        expect(secondCallCount).toBe(firstCallCount)
         expect(acroForm.fontEncodingMaps.has('Helv')).toBe(true)
         expect(acroForm.fontEncodingMaps.get('Helv')?.get(160)).toBe('\u20AC')
     })
@@ -1021,14 +1017,16 @@ describe('AcroForm Appearance Generation', () => {
         // Now appearance should be created for read-only field
         appearance = textField!.getAppearanceStream()
         expect(appearance).toBeDefined()
-        expect(appearance!.header.get('Type')?.as(PdfName)?.value).toBe(
+        expect(appearance!.content.header.get('Type')?.as(PdfName)?.value).toBe(
             'XObject',
         )
-        expect(appearance!.header.get('Subtype')?.as(PdfName)?.value).toBe(
-            'Form',
-        )
+        expect(
+            appearance!.content.header.get('Subtype')?.as(PdfName)?.value,
+        ).toBe('Form')
 
-        const bbox = appearance!.header.get('BBox')?.as(PdfArray<PdfNumber>)
+        const bbox = appearance!.content.header
+            .get('BBox')
+            ?.as(PdfArray<PdfNumber>)
         expect(bbox).toBeDefined()
         expect(bbox!.items[0].value).toBe(0)
         expect(bbox!.items[1].value).toBe(0)
@@ -1039,7 +1037,7 @@ describe('AcroForm Appearance Generation', () => {
         expect(bbox!.items[2].value).toBe(width)
         expect(bbox!.items[3].value).toBe(height)
 
-        const readOnlyStreamContent = appearance!.rawAsString
+        const readOnlyStreamContent = appearance!.content.rawAsString
         expect(readOnlyStreamContent).toContain('/Tx BMC') // marked content start
         expect(readOnlyStreamContent).toContain('EMC') // marked content end
         expect(readOnlyStreamContent).toContain('BT') // text block
@@ -1068,6 +1066,7 @@ describe('AcroForm Appearance Generation', () => {
         })
 
         // Write the form - this should automatically create the appearance indirect object
+        const outputBytes = document.toBytes()
 
         const textField = acroform.fields.find((f) => f.name === 'Client Name')
         expect(textField).toBeDefined()
@@ -1082,7 +1081,7 @@ describe('AcroForm Appearance Generation', () => {
 
         await server.commands.writeFile(
             './test/unit/tmp/form-with-auto-appearance.pdf',
-            bytesToBase64(document.toBytes()),
+            bytesToBase64(outputBytes),
             { encoding: 'base64' },
         )
     })
@@ -1163,7 +1162,7 @@ describe('AcroForm Appearance Generation', () => {
         const appearance = textField!.getAppearanceStream()
         expect(appearance).toBeDefined()
 
-        const streamContent = appearance!.rawAsString
+        const streamContent = appearance!.content.rawAsString
         expect(streamContent).toContain('\\(')
         expect(streamContent).toContain('\\)')
         expect(streamContent).toContain('\\\\')
@@ -1501,16 +1500,17 @@ describe('AcroForm Appearance Generation', () => {
 
         // Verify appearance content
         const checkboxStream =
-            checkboxChecked.getAppearanceStream()!.rawAsString
+            checkboxChecked.getAppearanceStream()!.content.rawAsString
         expect(checkboxStream).toContain('ZaDb') // ZapfDingbats font for checkmark
 
         const multilineStream =
-            multilineField.getAppearanceStream()!.rawAsString
+            multilineField.getAppearanceStream()!.content.rawAsString
         expect(multilineStream).toContain('Line 1')
         expect(multilineStream).toContain('Line 2')
 
         // Verify radio button appearance (selected one should have filled circle)
-        const radioStream = radioButton2.getAppearanceStream()!.rawAsString
+        const radioStream =
+            radioButton2.getAppearanceStream()!.content.rawAsString
         expect(radioStream.length).toBeGreaterThan(0) // Should have content for selected state
 
         await server.commands.writeFile(
@@ -1587,7 +1587,9 @@ describe('AcroForm Field DA Inheritance from Form Level', () => {
 
         expect(field.generateAppearance()).toBe(true)
         expect(field.getAppearanceStream()).toBeDefined()
-        expect(field.getAppearanceStream()!.rawAsString).toContain('(Test) Tj')
+        expect(field.getAppearanceStream()!.content.rawAsString).toContain(
+            '(Test) Tj',
+        )
     })
 
     it('should generate choice field appearance using form-level DA fallback', () => {
@@ -1604,7 +1606,7 @@ describe('AcroForm Field DA Inheritance from Form Level', () => {
 
         expect(field.generateAppearance()).toBe(true)
         expect(field.getAppearanceStream()).toBeDefined()
-        expect(field.getAppearanceStream()!.rawAsString).toContain(
+        expect(field.getAppearanceStream()!.content.rawAsString).toContain(
             '(Option A) Tj',
         )
     })
@@ -1791,7 +1793,9 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         const stream = field.getAppearanceStream()
         expect(stream).toBeDefined()
 
-        const resources = stream!.header.get('Resources')?.as(PdfDictionary)
+        const resources = stream!.content.header
+            .get('Resources')
+            ?.as(PdfDictionary)
         expect(resources).toBeDefined()
 
         const fontDict = resources!.get('Font')?.as(PdfDictionary)
@@ -1816,7 +1820,9 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         const stream = field.getAppearanceStream()
         expect(stream).toBeDefined()
 
-        const resources = stream!.header.get('Resources')?.as(PdfDictionary)
+        const resources = stream!.content.header
+            .get('Resources')
+            ?.as(PdfDictionary)
         expect(resources).toBeDefined()
 
         const fontDict = resources!.get('Font')?.as(PdfDictionary)
@@ -1835,7 +1841,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         const stream = field.getAppearanceStream()
         expect(stream).toBeDefined()
         // No Resources in XObject is valid — viewer falls back to page resources
-        expect(stream!.header.get('Resources')).toBeUndefined()
+        expect(stream!.content.header.get('Resources')).toBeUndefined()
     })
 
     it('should always embed ZapfDingbats in button field appearance XObject', () => {
@@ -1849,7 +1855,9 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         const stream = field.getAppearanceStream()
         expect(stream).toBeDefined()
 
-        const resources = stream!.header.get('Resources')?.as(PdfDictionary)
+        const resources = stream!.content.header
+            .get('Resources')
+            ?.as(PdfDictionary)
         expect(resources).toBeDefined()
 
         const fontDict = resources!.get('Font')?.as(PdfDictionary)

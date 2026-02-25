@@ -10,11 +10,11 @@ import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { decodeWithFontEncoding } from '../../utils/decodeWithFontEncoding.js'
 import { PdfWidgetAnnotation } from '../../annotations/pdf-widget-annotation.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
-import type { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js'
 import type { PdfFieldType } from './types.js'
 import { PdfFieldType as PdfFieldTypeConst } from './types.js'
 import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
 import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-resources.js'
+import type { PdfAcroFormObject } from '../pdf-acro-form.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -23,8 +23,22 @@ import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-res
  */
 export abstract class PdfFormField extends PdfWidgetAnnotation {
     defaultGenerateAppearance: boolean = true
-    constructor(other?: PdfIndirectObject) {
+
+    /** @internal */
+    _form?: PdfAcroFormObject
+
+    set form(f: PdfAcroFormObject) {
+        this._form = f
+    }
+    constructor(other?: PdfIndirectObject | { form?: PdfAcroFormObject }) {
         super()
+        if (other && !(other instanceof PdfIndirectObject)) {
+            this._form = other.form
+        }
+    }
+
+    init() {
+        this.defaultGenerateAppearance = true
     }
 
     static create(other?: PdfIndirectObject): PdfFormField {
@@ -53,25 +67,40 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const resolved = this.content.get('Parent')?.resolve()
         if (!resolved || !(resolved.content instanceof PdfDictionary))
             return undefined
-        return PdfFormField.create(resolved)
+        try {
+            return PdfFormField.create(resolved)
+        } catch {
+            // Parent may not have FT — treat it as a generic field wrapper
+            return resolved as unknown as PdfFormField
+        }
     }
 
-    set parent(field: PdfFormField | undefined) {
+    set parent(field: PdfFormField | PdfIndirectObject | undefined) {
         if (!field) {
             this.content.delete('Parent')
             return
         }
 
         this.content.set('Parent', field.reference)
-        field.children = [...field.children, this]
+        if (field instanceof PdfFormField) {
+            field.children = [...field.children, this]
+        }
     }
 
     get children(): PdfFormField[] {
-        return (
-            this.content
-                .get('Kids')
-                ?.items.map((ref) => PdfFormField.create(ref.resolve())) ?? []
-        )
+        const kids = this.content.get('Kids')?.items ?? []
+        const result: PdfFormField[] = []
+        for (const ref of kids) {
+            const resolved = ref.resolve()
+            if (!resolved || !(resolved.content instanceof PdfDictionary))
+                continue
+            try {
+                result.push(PdfFormField.create(resolved))
+            } catch {
+                result.push(resolved as unknown as PdfFormField)
+            }
+        }
+        return result
     }
 
     set children(fields: PdfFormField[]) {
@@ -117,7 +146,12 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     get defaultResources(): PdfDefaultResourcesDictionary | null {
-        return this.content.get('DR') ?? this.parent?.defaultResources ?? null
+        return (
+            this.content.get('DR') ??
+            this.parent?.defaultResources ??
+            this._form?.defaultResources ??
+            null
+        )
     }
 
     set defaultResources(resources: PdfDefaultResourcesDictionary | null) {
@@ -182,7 +216,11 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const v = this.content.get('V') ?? this.parent?.content.get('V')
         if (v instanceof PdfString) {
             if (v.isUTF16BE) return v.value
-            const encodingMap = this.font?.encodingMap
+            const encodingMap =
+                this.font?.encodingMap ??
+                (this.fontName
+                    ? this._form?.fontEncodingMaps?.get(this.fontName)
+                    : undefined)
             if (encodingMap) {
                 return decodeWithFontEncoding(v.raw, encodingMap)
             }
@@ -444,6 +482,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return (
             this.content.get('DA')?.as(PdfString)?.value ??
             this.parent?.defaultAppearance ??
+            this._form?.defaultAppearance ??
             null
         )
     }
@@ -514,14 +553,17 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
                 return resolved as PdfIndirectObject<PdfStream>
             }
         } else if (n instanceof PdfDictionary) {
-            const dict = n
-            if (setting && dict.get(setting) instanceof PdfObjectReference) {
-                const resolved = dict
-                    .get(setting)
-                    ?.as(PdfObjectReference)
-                    .resolve()
-                if (resolved?.content instanceof PdfStream) {
-                    return resolved as PdfIndirectObject<PdfStream>
+            const key =
+                setting ??
+                this.content.get('AS')?.as(PdfName)?.value ??
+                undefined
+            if (key) {
+                const entry = n.get(key)
+                if (entry instanceof PdfObjectReference) {
+                    const resolved = entry.resolve()
+                    if (resolved?.content instanceof PdfStream) {
+                        return resolved as PdfIndirectObject<PdfStream>
+                    }
                 }
             }
         }

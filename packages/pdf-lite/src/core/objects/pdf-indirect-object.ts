@@ -76,6 +76,12 @@ export class PdfIndirectObject<
                     // stays current even after the object is added to a document.
                     if (prop === 'resolve') {
                         return () => original
+                    } else if (prop === 'resolver') {
+                        // Signal that this proxy reference is resolvable
+                        // so collectMissingReferences can discover it
+                        return {
+                            resolve: () => original,
+                        }
                     } else if (prop === 'objectNumber') {
                         return original.objectNumber
                     } else if (prop === 'generationNumber') {
@@ -190,7 +196,13 @@ export class PdfIndirectObject<
             return this as T
         }
         Object.setPrototypeOf(this, cls.prototype)
+        cls.prototype.init.call(this)
         return this as unknown as T
+    }
+
+    init() {
+        // No-op by default, but subclasses can override to perform additional
+        // initialization after construction or cloning
     }
 
     resolve() {

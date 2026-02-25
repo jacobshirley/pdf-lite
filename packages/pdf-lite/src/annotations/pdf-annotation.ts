@@ -39,16 +39,24 @@ export class PdfAnnotation extends PdfIndirectObject<
         Parent?: PdfObjectReference
     }>
 > {
-    private _annotationFlags: PdfAnnotationFlags
+    private _annotationFlags?: PdfAnnotationFlags
+
+    private get flags_(): PdfAnnotationFlags {
+        if (!this._annotationFlags) {
+            const flagValue = this.content.get('F')?.as(PdfNumber)?.value ?? 0
+            this._annotationFlags = new PdfAnnotationFlags(flagValue)
+            this.content.set('F', this._annotationFlags)
+        }
+        return this._annotationFlags
+    }
 
     constructor(options?: { other?: PdfIndirectObject }) {
         super(
             options?.other ??
                 new PdfIndirectObject({ content: new PdfDictionary() }),
         )
-        const flagValue = this.content.get('F')?.as(PdfNumber)?.value ?? 0
-        this._annotationFlags = new PdfAnnotationFlags(flagValue)
-        this.content.set('F', this._annotationFlags)
+        // Eagerly initialize when constructed normally
+        this.flags_
     }
 
     get rect(): [number, number, number, number] | null {
@@ -74,67 +82,67 @@ export class PdfAnnotation extends PdfIndirectObject<
     }
 
     get annotationFlags(): number {
-        return this._annotationFlags.annotationFlags
+        return this.flags_.annotationFlags
     }
 
     set annotationFlags(flags: number) {
-        this._annotationFlags.annotationFlags = flags
+        this.flags_.annotationFlags = flags
     }
 
     get invisible(): boolean {
-        return this._annotationFlags.invisible
+        return this.flags_.invisible
     }
 
     set invisible(value: boolean) {
-        this._annotationFlags.invisible = value
+        this.flags_.invisible = value
     }
 
     get hidden(): boolean {
-        return this._annotationFlags.hidden
+        return this.flags_.hidden
     }
 
     set hidden(value: boolean) {
-        this._annotationFlags.hidden = value
+        this.flags_.hidden = value
     }
 
     get print(): boolean {
-        return this._annotationFlags.print
+        return this.flags_.print
     }
 
     set print(value: boolean) {
-        this._annotationFlags.print = value
+        this.flags_.print = value
     }
 
     get noZoom(): boolean {
-        return this._annotationFlags.noZoom
+        return this.flags_.noZoom
     }
 
     set noZoom(value: boolean) {
-        this._annotationFlags.noZoom = value
+        this.flags_.noZoom = value
     }
 
     get noRotate(): boolean {
-        return this._annotationFlags.noRotate
+        return this.flags_.noRotate
     }
 
     set noRotate(value: boolean) {
-        this._annotationFlags.noRotate = value
+        this.flags_.noRotate = value
     }
 
     get noView(): boolean {
-        return this._annotationFlags.noView
+        return this.flags_.noView
     }
 
     set noView(value: boolean) {
-        this._annotationFlags.noView = value
+        this.flags_.noView = value
     }
 
     get locked(): boolean {
-        return this._annotationFlags.locked
+        return this.flags_.locked
     }
 
     set locked(value: boolean) {
-        this._annotationFlags.locked = value
+        this.flags_.locked = value
     }
 
     get appearanceStreamDict(): PdfAppearanceStreamDictionary | null {

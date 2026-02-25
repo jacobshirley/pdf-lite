@@ -95,4 +95,17 @@ export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
         super.setImmutable(immutable)
         this.items.forEach((item) => item.setImmutable(immutable))
     }
+
+    refs(): PdfArray<PdfObjectReference> {
+        const refs = this.items.map((item) => {
+            if (item instanceof PdfIndirectObject) {
+                return item.reference
+            } else {
+                throw new Error(
+                    'Cannot get reference of non-indirect object in array',
+                )
+            }
+        })
+        return new PdfArray(refs)
+    }
 }

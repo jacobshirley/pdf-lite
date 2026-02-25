@@ -1103,9 +1103,24 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     private updateSync(): void {
         this.commitIncrementalUpdates()
         this.flushResolvedCache()
+        this.registerNewReferences()
         this.calculateOffsets()
         this.updateRevisions()
         this.calculateOffsets()
+    }
+
+    /**
+     * Walks all objects in the document and registers any newly created
+     * PdfIndirectObjects that are referenced but not yet part of the document
+     * (e.g. appearance streams created by generateAppearance).
+     */
+    private registerNewReferences(): void {
+        const missing = this.collectMissingReferences(
+            ...this.latestRevision.objects,
+        )
+        if (missing.length > 0) {
+            this.add(...missing)
+        }
     }
 
     private flushResolvedCache(): void {

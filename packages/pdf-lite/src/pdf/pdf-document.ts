@@ -69,6 +69,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
     private hasEncryptionDictionary?: boolean = false
     private _resolvedCache = new Map<string, PdfIndirectObject>()
+    private _committing = false
 
     /**
      * Creates a new PDF document instance.
@@ -554,20 +555,24 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     commitIncrementalUpdates(): void {
-        if (!this.incremental) {
+        if (!this.incremental || this._committing) {
             return
         }
 
-        let updates = 0
-        for (const obj of this.objects) {
-            if (obj.isModified()) {
-                this.add(obj.clone())
-                updates++
+        this._committing = true
+        try {
+            // Only clone modified objects from locked (previous) revisions.
+            // Objects in the latest (unlocked) revision are already there.
+            for (const revision of this.revisions) {
+                if (!revision.locked) continue
+                for (const obj of revision.objects) {
+                    if (obj.isModified()) {
+                        this.add(obj.clone())
+                    }
+                }
             }
-        }
-
-        if (updates > 0) {
-            this.updateSync()
+        } finally {
+            this._committing = false
         }
     }
 

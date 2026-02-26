@@ -33,7 +33,10 @@ export class PdfTextFormField extends PdfFormField {
         const drFontDict = dr?.get('Font')?.as(PdfDictionary)
         if (drFontDict && drFontDict.get(parsed.fontName)) {
             const resFontDict = new PdfDictionary()
-            resFontDict.set(parsed.fontName, drFontDict.get(parsed.fontName)!)
+            resFontDict.set(
+                parsed.fontName,
+                drFontDict.get(parsed.fontName)!.clone(),
+            )
             fontResources = new PdfDictionary()
             fontResources.set('Font', resFontDict)
         } else if (font && !PdfFont.getStandardFont(parsed.fontName)) {

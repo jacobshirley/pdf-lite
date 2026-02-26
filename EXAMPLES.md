@@ -109,7 +109,7 @@ document.add(catalog)
 document.trailerDict.set('Root', catalog.reference)
 
 document.add(contentStream)
-await document.commit()
+await document.finalize()
 
 const file = `${import.meta.dirname}/tmp/created.pdf`
 console.log(`Writing PDF to: ${file}`)
@@ -225,7 +225,7 @@ document.add(catalog)
 document.trailerDict.set('Root', catalog.reference)
 
 document.add(contentStream)
-await document.commit()
+await document.finalize()
 
 document.securityHandler = new PdfV2SecurityHandler({
     password: 'up',
@@ -584,7 +584,7 @@ allSignatures.forEach((sig) => {
     document.add(sig)
 })
 
-await document.commit()
+await document.finalize()
 
 const tmpFolder = `${import.meta.dirname}/tmp`
 await fs.mkdir(tmpFolder, { recursive: true })
@@ -694,7 +694,7 @@ document.add(catalog)
 document.trailerDict.set('Root', catalog.reference)
 document.add(contentStream)
 
-await document.commit()
+await document.finalize()
 // Save the original PDF
 const originalPdfPath = `${tmpFolder}/original.pdf`
 await fs.writeFile(originalPdfPath, document.toBytes())
@@ -726,7 +726,7 @@ const newContentStream = new PdfIndirectObject({
 
 // Add the new content to the document
 loadedDocument.add(newContentStream)
-await loadedDocument.commit()
+await loadedDocument.finalize()
 
 // Save the incrementally updated PDF
 const updatedPdfPath = `${tmpFolder}/incremental-update.pdf`
@@ -780,7 +780,7 @@ const thirdRevisionContent = new PdfIndirectObject({
 })
 
 secondUpdate.add(thirdRevisionContent)
-await secondUpdate.commit()
+await secondUpdate.finalize()
 
 const multiRevisionPdfPath = `${tmpFolder}/multi-revision.pdf`
 await fs.writeFile(multiRevisionPdfPath, secondUpdate.toBytes())
@@ -1092,7 +1092,7 @@ document.add(catalog)
 // Set the catalog as the root
 document.trailerDict.set('Root', catalog.reference)
 
-await document.commit()
+await document.finalize()
 
 // Save the empty form
 // This demonstrates creating a blank form that users can fill in
@@ -1109,7 +1109,7 @@ console.log('Created form-empty.pdf with empty form fields')
 const emptyFormBytes = await fs.readFile(`${tmpFolder}/form-empty.pdf`)
 const filledDocument = await PdfDocument.fromBytes([emptyFormBytes])
 
-const acroform = await filledDocument.acroForm.read()
+const acroform = await filledDocument.acroform
 if (!acroform) {
     throw new Error('No AcroForm found in the document')
 }
@@ -1119,7 +1119,6 @@ acroform.importData({
     phone: '+1 (555) 123-4567',
     subscribe: 'Off', // For checkbox, use the "Yes/Off" value
 })
-await filledDocument.acroForm.write(acroform)
 
 // Save the filled form
 await fs.writeFile(`${tmpFolder}/form-filled.pdf`, filledDocument.toBytes())
@@ -1808,7 +1807,7 @@ allSignatures.forEach((sig) => {
     document.add(sig)
 })
 
-await document.commit()
+await document.finalize()
 
 const documentBytes = document.toBytes()
 const newDocument = await PdfDocument.fromBytes([documentBytes])
@@ -1885,7 +1884,7 @@ async function main() {
 
     document.add(pages, catalog)
     document.trailerDict.set('Root', catalog.reference)
-    await document.commit()
+    await document.finalize()
 
     // Build content stream with different fonts
     // F1=Helvetica-Bold, F2=Times-Roman, F3=Courier, F4=Roboto
@@ -1931,10 +1930,9 @@ async function main() {
     })
 
     // Embed fonts - FontManager will automatically add them to the /Pages Resources
-    const helveticaBold =
-        await document.fonts.embedStandardFont('Helvetica-Bold')
-    const timesRoman = await document.fonts.embedStandardFont('Times-Roman')
-    const courier = await document.fonts.embedStandardFont('Courier')
+    const helveticaBold = PdfFont.fromStandardFont('Helvetica-Bold')
+    const timesRoman = PdfFont.fromStandardFont('Times-Roman')
+    const courier = PdfFont.fromStandardFont('Courier')
 
     console.log(
         `Embedded standard fonts: ${helveticaBold}, ${timesRoman}, ${courier}`,
@@ -1975,7 +1973,7 @@ async function main() {
     // - Creates the container indirect object
     // - Adds the font to the /Pages node Resources dictionary
     // - All child pages inherit these fonts (even pages added later!)
-    await document.fonts.write(robotoFont)
+    document.add(robotoFont)
     console.log(`Embedded custom font in PDF: ${robotoFont}`)
 
     console.log(`\nFont resource mappings:`)
@@ -1992,7 +1990,7 @@ async function main() {
     pages.content.set('Count', new PdfNumber(1))
 
     document.add(contentStream, page)
-    await document.commit()
+    await document.finalize()
 
     console.log(`\nFont resource mappings:`)
     console.log(`  ${helveticaBold.resourceName} = Helvetica-Bold`)

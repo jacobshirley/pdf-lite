@@ -105,7 +105,7 @@ document.add(catalog)
 document.trailerDict.set('Root', catalog.reference)
 
 document.add(contentStream)
-await document.commit()
+await document.finalize()
 
 document.securityHandler = new PdfV2SecurityHandler({
     password: 'up',

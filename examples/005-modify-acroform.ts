@@ -289,7 +289,7 @@ document.add(catalog)
 // Set the catalog as the root
 document.trailerDict.set('Root', catalog.reference)
 
-await document.commit()
+await document.finalize()
 
 // Save the empty form
 // This demonstrates creating a blank form that users can fill in
@@ -306,7 +306,7 @@ console.log('Created form-empty.pdf with empty form fields')
 const emptyFormBytes = await fs.readFile(`${tmpFolder}/form-empty.pdf`)
 const filledDocument = await PdfDocument.fromBytes([emptyFormBytes])
 
-const acroform = await filledDocument.acroForm.read()
+const acroform = await filledDocument.acroform
 if (!acroform) {
     throw new Error('No AcroForm found in the document')
 }
@@ -316,7 +316,6 @@ acroform.importData({
     phone: '+1 (555) 123-4567',
     subscribe: 'Off', // For checkbox, use the "Yes/Off" value
 })
-await filledDocument.acroForm.write(acroform)
 
 // Save the filled form
 await fs.writeFile(`${tmpFolder}/form-filled.pdf`, filledDocument.toBytes())

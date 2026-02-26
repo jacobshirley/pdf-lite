@@ -340,7 +340,7 @@ allSignatures.forEach((sig) => {
     document.add(sig)
 })
 
-await document.commit()
+await document.finalize()
 
 const tmpFolder = `${import.meta.dirname}/tmp`
 await fs.mkdir(tmpFolder, { recursive: true })

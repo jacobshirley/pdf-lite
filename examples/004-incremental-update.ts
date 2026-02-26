@@ -100,7 +100,7 @@ document.add(catalog)
 document.trailerDict.set('Root', catalog.reference)
 document.add(contentStream)
 
-await document.commit()
+await document.finalize()
 // Save the original PDF
 const originalPdfPath = `${tmpFolder}/original.pdf`
 await fs.writeFile(originalPdfPath, document.toBytes())
@@ -132,7 +132,7 @@ const newContentStream = new PdfIndirectObject({
 
 // Add the new content to the document
 loadedDocument.add(newContentStream)
-await loadedDocument.commit()
+await loadedDocument.finalize()
 
 // Save the incrementally updated PDF
 const updatedPdfPath = `${tmpFolder}/incremental-update.pdf`
@@ -186,7 +186,7 @@ const thirdRevisionContent = new PdfIndirectObject({
 })
 
 secondUpdate.add(thirdRevisionContent)
-await secondUpdate.commit()
+await secondUpdate.finalize()
 
 const multiRevisionPdfPath = `${tmpFolder}/multi-revision.pdf`
 await fs.writeFile(multiRevisionPdfPath, secondUpdate.toBytes())

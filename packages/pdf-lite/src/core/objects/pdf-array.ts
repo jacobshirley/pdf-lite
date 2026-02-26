@@ -1,3 +1,4 @@
+import { needsPreWhitespace } from '../../utils/needsPreWhitespace.js'
 import { PdfObjectReference } from '../index.js'
 import { PdfEndArrayToken } from '../tokens/end-array-token.js'
 import { PdfStartArrayToken } from '../tokens/start-array-token.js'
@@ -62,6 +63,11 @@ export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
                 : index === 0
                   ? [PdfWhitespaceToken.SPACE]
                   : []
+
+            if (needsPreWhitespace(this.items[index - 1], item)) {
+                preTokens.push(PdfWhitespaceToken.SPACE)
+            }
+
             const postTokens = item.postTokens ? [] : [PdfWhitespaceToken.SPACE]
 
             return [...preTokens, ...tokens, ...postTokens]

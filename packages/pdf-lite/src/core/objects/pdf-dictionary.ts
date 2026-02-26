@@ -1,3 +1,4 @@
+import { needsPreWhitespace } from '../../utils/needsPreWhitespace.js'
 import { PdfEndDictionaryToken } from '../tokens/end-dictionary-token.js'
 import { PdfStartDictionaryToken } from '../tokens/start-dictionary-token.js'
 import { PdfToken } from '../tokens/token.js'
@@ -147,6 +148,10 @@ export class PdfDictionary<
                 const postTokens = value.postTokens
                     ? []
                     : [PdfWhitespaceToken.SPACE]
+
+                if (needsPreWhitespace(key, value)) {
+                    centralTokens.push(PdfWhitespaceToken.SPACE)
+                }
 
                 index++
                 return [

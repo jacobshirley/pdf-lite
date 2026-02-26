@@ -64,7 +64,8 @@ export class PdfButtonFormField extends PdfFormField {
         // not lost when a child widget has its own Ff entry (even Ff: 0).
         const effectiveFlags =
             this.flags.flags | (this.parent?.flags?.flags ?? 0)
-        const yesContent = PdfButtonAppearanceStream.buildYesContent(
+
+        const yesAppearance = PdfButtonAppearanceStream.buildYesContent(
             width,
             height,
             effectiveFlags,
@@ -74,12 +75,6 @@ export class PdfButtonFormField extends PdfFormField {
             width,
             height,
             contentStream: '',
-        })
-
-        const yesAppearance = new PdfButtonAppearanceStream({
-            width,
-            height,
-            contentStream: yesContent,
         })
 
         this.setAppearanceStream({

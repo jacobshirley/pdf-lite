@@ -116,6 +116,10 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         this._fontData = options.fontData
     }
 
+    get dict(): PdfFontDictionary {
+        return this.content
+    }
+
     get fontName(): string | undefined {
         const baseFont = this.content.get('BaseFont')
         if (!baseFont) {

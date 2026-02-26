@@ -11,7 +11,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
     constructor(ctx: { width: number; height: number; contentStream: string }) {
         const resources = new PdfDictionary()
         const fonts = new PdfDictionary()
-        fonts.set('ZaDb', PdfFont.ZAPF_DINGBATS)
+        fonts.set('ZaDb', PdfFont.ZAPF_DINGBATS.dict.clone())
         resources.set('Font', fonts)
 
         super({
@@ -26,7 +26,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
         width: number,
         height: number,
         flags: number | PdfFormFieldFlags,
-    ): string {
+    ): PdfButtonAppearanceStream {
         const size = Math.min(width, height)
         const isRadio = new PdfFormFieldFlags(flags).radio
 
@@ -88,6 +88,10 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
             g.restore()
         }
 
-        return g.build()
+        return new PdfButtonAppearanceStream({
+            width,
+            height,
+            contentStream: g.build(),
+        })
     }
 }

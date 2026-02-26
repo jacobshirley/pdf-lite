@@ -15,7 +15,7 @@ import { PdfDefaultResourcesDictionary } from '../annotations/pdf-default-resour
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
 import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
 
-export class PdfAcroFormObject<
+export class PdfAcroForm<
     T extends Record<string, string> = Record<string, string>,
 > extends PdfIndirectObject<
     PdfDictionary<{

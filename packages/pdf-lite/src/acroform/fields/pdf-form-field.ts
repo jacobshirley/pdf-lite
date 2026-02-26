@@ -14,7 +14,7 @@ import type { PdfFieldType } from './types.js'
 import { PdfFieldType as PdfFieldTypeConst } from './types.js'
 import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
 import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-resources.js'
-import type { PdfAcroFormObject } from '../pdf-acro-form.js'
+import type { PdfAcroForm } from '../pdf-acro-form.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -25,12 +25,12 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     defaultGenerateAppearance: boolean = true
 
     /** @internal */
-    _form?: PdfAcroFormObject
+    _form?: PdfAcroForm
 
-    set form(f: PdfAcroFormObject) {
+    set form(f: PdfAcroForm) {
         this._form = f
     }
-    constructor(other?: PdfIndirectObject | { form?: PdfAcroFormObject }) {
+    constructor(other?: PdfIndirectObject | { form?: PdfAcroForm }) {
         super()
         if (other && !(other instanceof PdfIndirectObject)) {
             this._form = other.form

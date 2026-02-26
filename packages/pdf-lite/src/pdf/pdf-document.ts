@@ -561,13 +561,17 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
         this._committing = true
         try {
-            // Only clone modified objects from locked (previous) revisions.
-            // Objects in the latest (unlocked) revision are already there.
             for (const revision of this.revisions) {
                 if (!revision.locked) continue
                 for (const obj of revision.objects) {
+                    if (!(obj instanceof PdfIndirectObject)) {
+                        continue
+                    }
                     if (obj.isModified()) {
-                        this.add(obj.clone())
+                        const adding = obj.clone()
+                        this.add(adding)
+                        adding.setModified(false)
+                        obj.setModified(false)
                     }
                 }
             }
@@ -650,11 +654,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         const addingEncryption = !this.hasEncryptionDictionary
         const wasIncremental = this.incremental
 
-        console.log(
-            'Encrypting document with security handler',
-            addingEncryption,
-        )
-
         if (addingEncryption) {
             this.setIncremental(false)
         }
@@ -672,6 +671,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             }
 
             await this.securityHandler.encryptObject(object)
+            object.setModified(false)
         }
 
         if (addingEncryption) {
@@ -990,7 +990,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                 if (obj.resolver) {
                     try {
                         const resolved = obj.resolve()
-                        if (!this.objects.includes(resolved)) {
+                        if (
+                            resolved instanceof PdfIndirectObject &&
+                            !resolved.inPdf()
+                        ) {
                             missing.push(resolved)
                             walk(resolved)
                         }

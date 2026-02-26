@@ -393,12 +393,14 @@ export class PdfObjStream extends PdfStream {
                 const objectNumber = numbers[i * 2].value
                 const generationNumber = 0
 
-                yield new PdfIndirectObject({
+                const decompressedObject = new PdfIndirectObject({
                     objectNumber,
                     generationNumber,
                     content: obj,
                     compressed: true,
                 }).clone()
+                decompressedObject.setModified(false)
+                yield decompressedObject
 
                 i++
 

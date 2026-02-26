@@ -13,6 +13,7 @@ import './fields/pdf-choice-form-field.js'
 import './fields/pdf-signature-form-field.js'
 import { PdfDefaultResourcesDictionary } from '../annotations/pdf-default-resources.js'
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
+import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
 
 export class PdfAcroFormObject<
     T extends Record<string, string> = Record<string, string>,
@@ -25,7 +26,7 @@ export class PdfAcroFormObject<
         DR?: PdfDefaultResourcesDictionary
         DA?: PdfString
         Q?: PdfNumber
-        XFA?: PdfDictionary
+        XFA?: PdfArray<PdfObjectReference>
     }>
 > {
     constructor(options?: PdfIndirectObject) {
@@ -211,5 +212,16 @@ export class PdfAcroFormObject<
             this.fontEncodingMaps.set(fontName, map)
         }
         return map
+    }
+
+    get xfa(): PdfXfaForm | null {
+        const xfaEntry = this.content.get('XFA')
+        if (!xfaEntry) return null
+
+        if (!(xfaEntry instanceof PdfArray)) {
+            return null
+        }
+
+        return new PdfXfaForm(xfaEntry)
     }
 }

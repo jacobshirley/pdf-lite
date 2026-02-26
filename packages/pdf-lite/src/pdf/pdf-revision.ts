@@ -226,7 +226,7 @@ export class PdfRevision extends PdfObject {
      */
     deleteObject(...objects: PdfObject[]): void {
         if (this._locked) {
-            return
+            throw new Error('Cannot delete object from locked PDF revision')
         }
 
         for (const object of objects) {

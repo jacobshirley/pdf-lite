@@ -15,35 +15,32 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
         super(stream)
     }
 
-    readXml(): string {
+    get xml(): string {
         const decompressed = this.content.decode()
         return new TextDecoder().decode(decompressed)
     }
 
-    writeXml(xml: string): void {
+    set xml(xml: string) {
         this.content.removeAllFilters()
         this.content.rawAsString = xml
-        this.setModified(true)
     }
 
     updateField(name: string, value: string): void {
-        let xml = this.readXml()
-        xml = PdfXfaData.updateFieldValue(xml, name, value)
-        this.writeXml(xml)
+        this.xml = PdfXfaData.updateFieldValue(this.xml, name, value)
     }
 
     updateFields(fields: XfaFieldData[]): void {
         if (fields.length === 0) return
 
-        let xml = this.readXml()
+        let xml = this.xml
         for (const { name, value } of fields) {
             xml = PdfXfaData.updateFieldValue(xml, name, value)
         }
-        this.writeXml(xml)
+        this.xml = xml
     }
 
     getFieldValue(name: string): string | null {
-        const xml = this.readXml()
+        const xml = this.xml
         const segments = name.split('.')
         const leafSegment = segments[segments.length - 1]
         const leafName = leafSegment.replace(/\[\d+\]$/, '')

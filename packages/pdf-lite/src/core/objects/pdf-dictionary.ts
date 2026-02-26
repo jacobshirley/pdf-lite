@@ -1,4 +1,4 @@
-import { needsPreWhitespace } from '../../utils/needsPreWhitespace.js'
+import { needsCentralWhitespace } from '../../utils/needsCentralWhitespace.js'
 import { PdfEndDictionaryToken } from '../tokens/end-dictionary-token.js'
 import { PdfStartDictionaryToken } from '../tokens/start-dictionary-token.js'
 import { PdfToken } from '../tokens/token.js'
@@ -149,7 +149,7 @@ export class PdfDictionary<
                     ? []
                     : [PdfWhitespaceToken.SPACE]
 
-                if (needsPreWhitespace(key, value)) {
+                if (needsCentralWhitespace(key, value)) {
                     centralTokens.push(PdfWhitespaceToken.SPACE)
                 }
 

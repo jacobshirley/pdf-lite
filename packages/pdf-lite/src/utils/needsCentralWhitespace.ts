@@ -13,7 +13,7 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
  * Self-delimiting types (PdfString, PdfHexadecimal, PdfArray, PdfDictionary)
  * start with `(`, `<`, `[`, or `<<` and do not need a leading space.
  */
-export function needsPreWhitespace(
+export function needsCentralWhitespace(
     obj1?: PdfObject,
     obj2?: PdfObject,
 ): boolean {
@@ -27,6 +27,8 @@ export function needsPreWhitespace(
     }
 
     const tokens = [...(obj1.postTokens ?? []), ...(obj2?.preTokens ?? [])]
+
+    console.log(tokens)
 
     if (tokens.length > 0) {
         return false

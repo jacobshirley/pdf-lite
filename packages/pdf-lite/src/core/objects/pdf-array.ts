@@ -1,39 +1,15 @@
-import { needsPreWhitespace } from '../../utils/needsPreWhitespace.js'
+import { needsCentralWhitespace } from '../../utils/needsCentralWhitespace.js'
 import { PdfObjectReference } from '../index.js'
 import { PdfEndArrayToken } from '../tokens/end-array-token.js'
 import { PdfStartArrayToken } from '../tokens/start-array-token.js'
 import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
-import { PdfBoolean } from './pdf-boolean.js'
-import { PdfDictionary } from './pdf-dictionary.js'
-import { PdfHexadecimal } from './pdf-hexadecimal.js'
 import { PdfIndirectObject } from './pdf-indirect-object.js'
-import { PdfName } from './pdf-name.js'
-import { PdfNull } from './pdf-null.js'
-import { PdfNumber } from './pdf-number.js'
 import { PdfObject } from './pdf-object.js'
-import { PdfString } from './pdf-string.js'
 
-export type PdfArrayItem =
-    | PdfString
-    | PdfName
-    | PdfArray
-    | PdfDictionary
-    | PdfNumber
-    | PdfNull
-    | PdfHexadecimal
-    | PdfBoolean
-    | PdfIndirectObject
-    | PdfObjectReference
-
-function formatArrayItem(item: PdfArrayItem): PdfArrayItem {
-    if (item instanceof PdfIndirectObject) {
-        return item.reference
-    } else {
-        return item
-    }
-}
-
-export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
+export class PdfArray<T extends PdfObject = PdfObject>
+    extends PdfObject
+    implements Iterable<T>
+{
     items: T[]
     innerTokens: PdfWhitespaceToken[] = []
 
@@ -64,11 +40,20 @@ export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
                   ? [PdfWhitespaceToken.SPACE]
                   : []
 
-            if (needsPreWhitespace(this.items[index - 1], item)) {
-                preTokens.push(PdfWhitespaceToken.SPACE)
+            const postTokens = item.postTokens ? [] : [PdfWhitespaceToken.SPACE]
+
+            if (
+                postTokens.length === 0 &&
+                needsCentralWhitespace(item, this.items[index + 1])
+            ) {
+                postTokens.push(PdfWhitespaceToken.SPACE)
             }
 
-            const postTokens = item.postTokens ? [] : [PdfWhitespaceToken.SPACE]
+            console.log({
+                preTokens,
+                tokens,
+                postTokens,
+            })
 
             return [...preTokens, ...tokens, ...postTokens]
         })
@@ -113,5 +98,9 @@ export class PdfArray<T extends PdfObject = PdfObject> extends PdfObject {
             }
         })
         return new PdfArray(refs)
+    }
+
+    [Symbol.iterator](): Iterator<T> {
+        return this.items[Symbol.iterator]()
     }
 }

@@ -28,8 +28,6 @@ export function needsCentralWhitespace(
 
     const tokens = [...(obj1.postTokens ?? []), ...(obj2?.preTokens ?? [])]
 
-    console.log(tokens)
-
     if (tokens.length > 0) {
         return false
     }

@@ -49,12 +49,6 @@ export class PdfArray<T extends PdfObject = PdfObject>
                 postTokens.push(PdfWhitespaceToken.SPACE)
             }
 
-            console.log({
-                preTokens,
-                tokens,
-                postTokens,
-            })
-
             return [...preTokens, ...tokens, ...postTokens]
         })
 

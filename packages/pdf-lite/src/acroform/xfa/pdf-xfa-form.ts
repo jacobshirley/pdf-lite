@@ -39,6 +39,6 @@ export class PdfXfaForm {
         if (!datasetsRef) {
             return null
         }
-        return datasetsRef.resolve().becomes(PdfXfaData)
+        return datasetsRef.becomes(PdfXfaData)
     }
 }

@@ -16,8 +16,7 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
     }
 
     get xml(): string {
-        const decompressed = this.content.decode()
-        return new TextDecoder().decode(decompressed)
+        return this.content.rawAsString
     }
 
     set xml(xml: string) {
@@ -52,6 +51,13 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
         )
         const match = xml.match(contentRegex)
         return match ? match[1] : null
+    }
+
+    importData(fields: Record<string, string>): void {
+        for (const field in fields) {
+            const value = fields[field]
+            this.updateField(field, value)
+        }
     }
 
     private static updateFieldValue(

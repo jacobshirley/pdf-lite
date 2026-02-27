@@ -16,12 +16,11 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
     }
 
     get xml(): string {
-        return this.content.rawAsString
+        return this.content.decodedAsString
     }
 
     set xml(xml: string) {
-        this.content.removeAllFilters()
-        this.content.rawAsString = xml
+        this.content.decodedAsString = xml
     }
 
     updateField(name: string, value: string): void {

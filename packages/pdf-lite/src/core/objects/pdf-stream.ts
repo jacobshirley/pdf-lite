@@ -77,6 +77,19 @@ export class PdfStream<
         this.raw = stringToBytes(str)
     }
 
+    get decodedAsString(): string {
+        return bytesToString(this.decode())
+    }
+
+    set decodedAsString(str: string) {
+        const filters = this.getFilters()
+        this.removeAllFilters()
+        this.rawAsString = str
+        for (const filter of filters) {
+            this.addFilter(filter)
+        }
+    }
+
     getFilters(): PdfStreamFilterType[] {
         const filters = this.header.get('Filter') as
             | PdfArray<PdfName<PdfStreamFilterType>>

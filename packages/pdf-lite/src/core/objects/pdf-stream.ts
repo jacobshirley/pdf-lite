@@ -56,7 +56,6 @@ export class PdfStream<
     get raw(): ByteArray {
         const length = this.header.get('Length')?.as(PdfNumber)?.value
         if (length === undefined) return this.original
-
         return this.original.slice(0, length)
     }
 

@@ -1114,6 +1114,14 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         this.registerNewReferences()
         this.calculateOffsets()
         this.updateRevisions()
+        // Second pass: xref binary may have changed size (e.g. FlateDecode removed
+        // from xref stream), shifting objects that follow it. Recalculate so entry
+        // byteOffset refs hold the new positions, then rebuild the xref binary once
+        // more so the baked bytes match those positions.
+        this.calculateOffsets()
+        this.updateRevisions()
+        // Third pass: confirm positions are stable (xref binary size should not
+        // change again because W widths and entry count are the same).
         this.calculateOffsets()
     }
 

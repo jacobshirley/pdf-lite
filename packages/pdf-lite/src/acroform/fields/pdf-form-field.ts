@@ -146,8 +146,11 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     get defaultResources(): PdfDefaultResourcesDictionary | null {
+        const dr = this.content.get('DR')
+        const drDict =
+            dr instanceof PdfObjectReference ? dr.resolve()?.content : dr
         return (
-            this.content.get('DR') ??
+            (drDict instanceof PdfDictionary ? drDict : null) ??
             this.parent?.defaultResources ??
             this._form?.defaultResources ??
             null
@@ -160,6 +163,42 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         } else {
             this.content.set('DR', resources)
         }
+    }
+
+    /**
+     * Builds a Resources dictionary containing the font entry for `fontName`,
+     * resolved from DR (handling indirect references) or from a loaded font.
+     * Returns undefined if neither source provides the font.
+     */
+    buildFontResources(fontName: string): PdfDictionary | undefined {
+        const dr = this.defaultResources
+        const fontRaw = dr?.get('Font')
+        let drFontDict: PdfDictionary | undefined
+        if (fontRaw instanceof PdfObjectReference) {
+            const resolved = fontRaw.resolve()?.content
+            if (resolved instanceof PdfDictionary) drFontDict = resolved
+        } else if (fontRaw instanceof PdfDictionary) {
+            drFontDict = fontRaw
+        }
+
+        if (drFontDict && drFontDict.get(fontName)) {
+            const resFontDict = new PdfDictionary()
+            resFontDict.set(fontName, drFontDict.get(fontName)!)
+            const resources = new PdfDictionary()
+            resources.set('Font', resFontDict)
+            return resources
+        }
+
+        const font = this.font
+        if (font && !PdfFont.getStandardFont(fontName)) {
+            const fontDict = new PdfDictionary()
+            fontDict.set(fontName, font.reference)
+            const resources = new PdfDictionary()
+            resources.set('Font', fontDict)
+            return resources
+        }
+
+        return undefined
     }
 
     get fieldType(): PdfFieldType | null {

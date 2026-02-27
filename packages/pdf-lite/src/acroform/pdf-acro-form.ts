@@ -19,7 +19,7 @@ export class PdfAcroForm<
     T extends Record<string, string> = Record<string, string>,
 > extends PdfIndirectObject<
     PdfDictionary<{
-        Fields: PdfArray<PdfObjectReference>
+        Fields: PdfArray<PdfObjectReference> | PdfObjectReference
         NeedAppearances?: PdfBoolean
         SigFlags?: PdfNumber
         CO?: PdfArray<PdfObjectReference>
@@ -85,22 +85,57 @@ export class PdfAcroForm<
     }
 
     get fields(): PdfFormField[] {
-        const refs = this.content.get('Fields')?.items ?? []
         const result: PdfFormField[] = []
-        for (const ref of refs) {
-            const resolved = ref.resolve()
-            if (!(resolved?.content instanceof PdfDictionary)) continue
-            const field = PdfFormField.create(resolved)
-            field.form = this
-            result.push(field)
+        const seen = new Set<string>()
+        const collect = (refs: PdfObjectReference[]) => {
+            for (const ref of refs) {
+                const key = ref.key
+                if (seen.has(key)) continue
+                seen.add(key)
+                const resolved = ref.resolve()
+                if (!(resolved?.content instanceof PdfDictionary)) continue
+                const dict = resolved.content
+                const tEntry = dict.get('T')
+                const tValue = tEntry instanceof PdfString ? tEntry.value : null
+                const hasFt = dict.has('FT')
+                if (tValue) {
+                    const field = PdfFormField.create(resolved)
+                    field.form = this
+                    result.push(field)
+                }
+                // Only recurse into Kids for non-terminal (group) fields — those
+                // without FT. Terminal fields may have Kids that are pure widget
+                // annotations (no T) which would produce duplicate names.
+                if (!hasFt) {
+                    const kids = dict.get('Kids')
+                    if (kids instanceof PdfArray && kids.items.length > 0) {
+                        collect(kids.items as PdfObjectReference[])
+                    }
+                }
+            }
         }
+        const fieldsRaw = this.content.get('Fields')
+        const resolvedFields =
+            fieldsRaw instanceof PdfObjectReference
+                ? fieldsRaw.resolve()?.content
+                : fieldsRaw
+        collect(
+            resolvedFields instanceof PdfArray
+                ? (resolvedFields.items as PdfObjectReference[])
+                : [],
+        )
         const content = this.content
         const originalPush = result.push.bind(result)
         result.push = (...items: PdfFormField[]): number => {
             const len = originalPush(...items)
-            let fieldsArray = content.get('Fields')
+            const fieldsRawInner = content.get('Fields')
+            let fieldsArray: PdfArray<PdfObjectReference> =
+                fieldsRawInner instanceof PdfObjectReference
+                    ? (fieldsRawInner.resolve()
+                          ?.content as PdfArray<PdfObjectReference>)
+                    : (fieldsRawInner as PdfArray<PdfObjectReference>)
             if (!fieldsArray) {
-                fieldsArray = new PdfArray()
+                fieldsArray = new PdfArray<PdfObjectReference>()
                 content.set('Fields', fieldsArray)
             }
             for (const item of items) {
@@ -172,7 +207,14 @@ export class PdfAcroForm<
         }
 
         const dr = this.defaultResources
-        const fontDict = dr?.get('Font')?.as(PdfDictionary)
+        const fontRaw = dr?.get('Font')
+        let fontDict: PdfDictionary | undefined
+        if (fontRaw instanceof PdfObjectReference) {
+            const resolved = fontRaw.resolve()?.content
+            if (resolved instanceof PdfDictionary) fontDict = resolved
+        } else if (fontRaw instanceof PdfDictionary) {
+            fontDict = fontRaw
+        }
         if (!fontDict) return null
 
         const fontEntry = fontDict.get(fontName)

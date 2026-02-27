@@ -1,8 +1,6 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
 import { PdfTextAppearanceStream } from '../appearance/pdf-text-appearance-stream.js'
-import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
-import { PdfFont } from '../../fonts/pdf-font.js'
 
 /**
  * Text form field subtype.
@@ -28,23 +26,7 @@ export class PdfTextFormField extends PdfFormField {
         if (!parsed) return false
 
         const font = this.font
-        let fontResources: PdfDictionary | undefined
-
-        // Build Resources from DR if available
-        const dr = this.defaultResources
-        const drFontDict = dr?.get('Font')?.as(PdfDictionary)
-        if (drFontDict && drFontDict.get(parsed.fontName)) {
-            const resFontDict = new PdfDictionary()
-            resFontDict.set(parsed.fontName, drFontDict.get(parsed.fontName)!)
-            fontResources = new PdfDictionary()
-            fontResources.set('Font', resFontDict)
-        } else if (font && !PdfFont.getStandardFont(parsed.fontName)) {
-            const ref = font.reference
-            const fontDict = new PdfDictionary()
-            fontDict.set(parsed.fontName, ref)
-            fontResources = new PdfDictionary()
-            fontResources.set('Font', fontDict)
-        }
+        const fontResources = this.buildFontResources(parsed.fontName)
 
         const isUnicode = font?.isUnicode ?? false
         const reverseEncodingMap = font?.reverseEncodingMap

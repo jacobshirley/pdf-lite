@@ -1,12 +1,10 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
 import { PdfChoiceAppearanceStream } from '../appearance/pdf-choice-appearance-stream.js'
-import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfArray } from '../../core/objects/pdf-array.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
 import { PdfIndirectObject, PdfObject } from '../../core/index.js'
-import { PdfFont } from '../../fonts/pdf-font.js'
 
 /**
  * Choice form field subtype (dropdowns, list boxes).
@@ -114,23 +112,7 @@ export class PdfChoiceFormField extends PdfFormField {
         if (!parsed) return false
 
         const font = this.font
-        let fontResources: PdfDictionary | undefined
-
-        // Build Resources from DR if available
-        const dr = this.defaultResources
-        const drFontDict = dr?.get('Font')?.as(PdfDictionary)
-        if (drFontDict && drFontDict.get(parsed.fontName)) {
-            const resFontDict = new PdfDictionary()
-            resFontDict.set(parsed.fontName, drFontDict.get(parsed.fontName)!)
-            fontResources = new PdfDictionary()
-            fontResources.set('Font', resFontDict)
-        } else if (font && !PdfFont.getStandardFont(parsed.fontName)) {
-            const ref = font.reference
-            const fontDict = new PdfDictionary()
-            fontDict.set(parsed.fontName, ref)
-            fontResources = new PdfDictionary()
-            fontResources.set('Font', fontDict)
-        }
+        const fontResources = this.buildFontResources(parsed.fontName)
 
         const isUnicode = font?.isUnicode ?? false
         const reverseEncodingMap = font?.reverseEncodingMap

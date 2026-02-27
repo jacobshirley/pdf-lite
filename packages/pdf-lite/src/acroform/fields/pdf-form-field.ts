@@ -288,6 +288,16 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
                     this.tryGenerateAppearance(sibling)
                 }
             }
+            // Separated field/widget structure: field has no Rect but its Kids
+            // are widget annotations that do. Generate appearances for them.
+            if (!this.rect) {
+                for (const child of this.children) {
+                    if (child.rect && child.defaultGenerateAppearance) {
+                        if (this._form) child.form = this._form
+                        this.tryGenerateAppearance(child)
+                    }
+                }
+            }
         }
     }
 

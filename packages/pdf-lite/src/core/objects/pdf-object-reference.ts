@@ -49,4 +49,8 @@ export class PdfObjectReference<
             this.generationNumber,
         ) as T
     }
+
+    get key(): string {
+        return `${this.objectNumber}/${this.generationNumber}`
+    }
 }

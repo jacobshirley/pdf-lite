@@ -70,6 +70,10 @@ export class PdfHexadecimal extends PdfObject {
         return bytesToString(this.toHexBytes())
     }
 
+    override get isTrailingDelimited(): boolean {
+        return true
+    }
+
     protected tokenize() {
         return [new PdfHexadecimalToken(this.raw, this._originalBytes)]
     }

@@ -30,6 +30,10 @@ export class PdfArray<T extends PdfObject = PdfObject>
         this.items.push(item)
     }
 
+    override get isTrailingDelimited(): boolean {
+        return true
+    }
+
     protected tokenize() {
         const items = this.items.flatMap((item, index) => {
             const tokens = item.toTokens()
@@ -43,6 +47,7 @@ export class PdfArray<T extends PdfObject = PdfObject>
             const postTokens = item.postTokens ? [] : [PdfWhitespaceToken.SPACE]
 
             if (
+                index !== this.items.length - 1 &&
                 postTokens.length === 0 &&
                 needsCentralWhitespace(item, this.items[index + 1])
             ) {

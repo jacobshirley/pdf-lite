@@ -125,6 +125,10 @@ export class PdfDictionary<
         return entries[Symbol.iterator]()
     }
 
+    override get isTrailingDelimited(): boolean {
+        return true
+    }
+
     protected tokenize() {
         let index = 0
 

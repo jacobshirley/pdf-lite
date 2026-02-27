@@ -88,6 +88,10 @@ export class PdfString extends PdfObject {
         return decodeFromPDFDocEncoding(this.raw)
     }
 
+    override get isTrailingDelimited(): boolean {
+        return true
+    }
+
     protected tokenize() {
         return [new PdfStringToken(this.raw, this._originalBytes)]
     }

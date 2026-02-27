@@ -9,7 +9,9 @@ import { PdfFont } from '../../fonts/pdf-font.js'
  */
 export class PdfTextFormField extends PdfFormField {
     static {
-        PdfFormField.registerFieldType('Tx', PdfTextFormField)
+        PdfFormField.registerFieldType('Tx', PdfTextFormField, {
+            fallback: true,
+        })
     }
 
     generateAppearance(options?: {

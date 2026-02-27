@@ -26,6 +26,12 @@ export function needsCentralWhitespace(
         return false
     }
 
+    if (obj1.isTrailingDelimited) {
+        // Self-delimiting types (string, hex, array, dict) end with a delimiter
+        // character and never require trailing whitespace before the next token
+        return false
+    }
+
     const tokens = [...(obj1.postTokens ?? []), ...(obj2?.preTokens ?? [])]
 
     if (tokens.length > 0) {

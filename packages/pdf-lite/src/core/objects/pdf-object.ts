@@ -22,6 +22,15 @@ export abstract class PdfObject {
         return this.constructor.name
     }
 
+    /**
+     * Returns true if this object's serialized form ends with a self-delimiting
+     * character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+     * whitespace before the next token.
+     */
+    get isTrailingDelimited(): boolean {
+        return false
+    }
+
     /** Indicates whether the object has been modified. Override this method if the modified state is determined differently */
     isModified(): boolean {
         return this.modified

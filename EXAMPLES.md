@@ -706,7 +706,9 @@ console.log('\nStep 2: Loading PDF and performing incremental update...')
 
 // Read the existing PDF
 const existingPdfBytes = await fs.readFile(originalPdfPath)
-const loadedDocument = await PdfDocument.fromBytes([existingPdfBytes])
+const loadedDocument = await PdfDocument.fromBytes([existingPdfBytes], {
+    incremental: true,
+})
 
 // Lock existing revisions to enable incremental mode
 // This ensures changes are added as new revisions instead of modifying existing ones
@@ -768,7 +770,9 @@ console.log(`Original content preserved: ${originalBytesMatch ? 'Yes' : 'No'}`)
 // Step 4: Add another incremental revision
 console.log('\nStep 4: Adding another incremental revision...')
 
-const secondUpdate = await PdfDocument.fromBytes([updatedPdfBytes])
+const secondUpdate = await PdfDocument.fromBytes([updatedPdfBytes], {
+    incremental: true,
+})
 secondUpdate.setIncremental(true)
 
 const thirdRevisionContent = new PdfIndirectObject({

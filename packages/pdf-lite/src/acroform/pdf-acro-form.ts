@@ -186,7 +186,6 @@ export class PdfAcroForm<
                 field.value = fields[name]
             }
         }
-        this.xfa?.datasets?.importData(fields)
     }
 
     exportData(): Partial<T> {

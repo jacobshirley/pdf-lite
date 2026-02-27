@@ -299,6 +299,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
                 }
             }
         }
+
+        if (this._form) {
+            this._form.xfa?.datasets?.updateField(this.name, this.value)
+        }
     }
 
     /**

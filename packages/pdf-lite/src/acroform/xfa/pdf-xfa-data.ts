@@ -53,9 +53,10 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
         return match ? match[1] : null
     }
 
-    importData(fields: Record<string, string>): void {
+    importData(fields: Record<string, string | undefined>): void {
         for (const field in fields) {
             const value = fields[field]
+            if (value === undefined) continue
             this.updateField(field, value)
         }
     }

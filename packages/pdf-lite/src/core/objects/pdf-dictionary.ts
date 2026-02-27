@@ -42,10 +42,6 @@ export class PdfDictionary<
     }
 
     set<K extends Extract<keyof T, string>>(key: PdfName<K> | K, value: T[K]) {
-        if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfDictionary')
-        }
-
         const currentValue = this.get(key)
         if (currentValue !== value && !currentValue?.equals(value)) {
             this.modified = true
@@ -66,10 +62,6 @@ export class PdfDictionary<
     }
 
     delete<K extends Extract<keyof T, string>>(key: PdfName<K> | K) {
-        if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfDictionary')
-        }
-
         if (this.has(key)) {
             this.modified = true
         }

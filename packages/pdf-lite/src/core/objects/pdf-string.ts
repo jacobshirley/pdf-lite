@@ -41,10 +41,6 @@ export class PdfString extends PdfObject {
     }
 
     set raw(raw: ByteArray) {
-        if (this.isImmutable()) {
-            //throw new Error('Cannot modify an immutable PdfString')
-        }
-
         this.setModified()
         this._raw = raw
         // Clear original bytes when modified
@@ -62,10 +58,6 @@ export class PdfString extends PdfObject {
     }
 
     set value(str: string) {
-        if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfString')
-        }
-
         this.setModified()
 
         if (needsUnicodeEncoding(str)) {

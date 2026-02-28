@@ -140,13 +140,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
     get acroform(): PdfAcroForm | null {
         const root = this.root
-        const acroFormRef = root.content
-            .get('AcroForm')
-            ?.as(PdfObjectReference)
-            .resolve()
-        if (!acroFormRef) {
-            return null
-        }
+        const acroFormEntry = root.content.get('AcroForm')
+        if (!acroFormEntry) return null
+        const acroFormRef = acroFormEntry.as(PdfObjectReference)?.resolve()
+        if (!acroFormRef) return null
         return acroFormRef.becomes(PdfAcroForm)
     }
 

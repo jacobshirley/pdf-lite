@@ -16,11 +16,11 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
     }
 
     get xml(): string {
-        return this.content.decodedAsString
+        return this.content.dataAsString
     }
 
     set xml(xml: string) {
-        this.content.decodedAsString = xml
+        this.content.dataAsString = xml
     }
 
     updateField(name: string, value: string): void {

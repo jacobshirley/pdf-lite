@@ -77,24 +77,32 @@ export class PdfStream<
         this.raw = stringToBytes(str)
     }
 
-    get decodedAsString(): string {
-        return bytesToString(this.decode())
+    get data(): ByteArray {
+        return this.decode()
     }
 
-    set decodedAsString(str: string) {
+    set data(data: ByteArray) {
         const filters = this.getFilters()
         const predictorParams = Predictor.getDecodeParms(
             this.header.get('DecodeParms')?.as(PdfDictionary),
         )
         this.removeAllFilters()
         this.header.delete('DecodeParms')
-        this.rawAsString = str
+        this.raw = data
         if (predictorParams) {
             this.setPredictor(predictorParams)
         }
         for (const filter of filters) {
             this.addFilter(filter)
         }
+    }
+
+    get dataAsString(): string {
+        return bytesToString(this.data)
+    }
+
+    set dataAsString(str: string) {
+        this.data = stringToBytes(str)
     }
 
     getFilters(): PdfStreamFilterType[] {

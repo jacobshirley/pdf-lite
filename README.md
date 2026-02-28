@@ -4,7 +4,7 @@
 
 A low-level, minimal-dependency, type-safe PDF library that works in the browser and Node.js.
 
-> **Note**: This library is actively developed and may not support all PDF features yet. However, it is designed to be extensible and can be improved over time.
+> **Note**: This library is actively developed and may not support all PDF features yet. However, it is designed to be extensible and can be improved over time. I would also not expect the API to be stable until at least version 2.0 as a lot of features are still being added and the API is evolving.
 
 PRs and issues are welcome!
 

@@ -162,7 +162,9 @@ export class PdfStream<
         }
 
         for (const [key, value] of Object.entries(predictorParams)) {
-            decodeParms.set(key, new PdfNumber(value))
+            if (value !== undefined) {
+                decodeParms.set(key, new PdfNumber(value))
+            }
         }
 
         this.raw = Predictor.encode(this.raw, predictorParams)

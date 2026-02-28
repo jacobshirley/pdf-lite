@@ -12,7 +12,7 @@ import { ascii85 } from '../../filters/ascii85.js'
 import { lzw } from '../../filters/lzw.js'
 import { runLength } from '../../filters/runlength.js'
 import { passthroughFilter } from '../../filters/pass-through.js'
-import { ByteArray } from '../../types.js'
+import { ByteArray, DecodeParms } from '../../types.js'
 import { PdfNumber } from './pdf-number.js'
 import { Predictor } from '../../utils/predictors.js'
 import { bytesToPdfObjects } from '../generators.js'
@@ -22,9 +22,101 @@ import { stringToBytes } from '../../utils/stringToBytes.js'
 import { PdfFilter, PdfStreamFilterType } from '../../filters/types.js'
 import { bytesToString } from '../../utils/bytesToString.js'
 
+export class PdfStreamPredictor extends PdfDictionary<{
+    Predictor?: PdfNumber
+    Columns?: PdfNumber
+    Colors?: PdfNumber
+    BitsPerComponent?: PdfNumber
+}> {
+    static NONE = new PdfStreamPredictor({ Predictor: new PdfNumber(1) })
+    static TIFF = new PdfStreamPredictor({ Predictor: new PdfNumber(2) })
+    static PNG_NONE = new PdfStreamPredictor({ Predictor: new PdfNumber(10) })
+    static PNG_SUB = new PdfStreamPredictor({ Predictor: new PdfNumber(11) })
+    static PNG_UP = new PdfStreamPredictor({ Predictor: new PdfNumber(12) })
+    static PNG_AVERAGE = new PdfStreamPredictor({
+        Predictor: new PdfNumber(13),
+    })
+    static PNG_PAETH = new PdfStreamPredictor({ Predictor: new PdfNumber(14) })
+    static PNG_OPTIMUM = new PdfStreamPredictor({
+        Predictor: new PdfNumber(15),
+    })
+    static XREF_STREAM = new PdfStreamPredictor({
+        Predictor: new PdfNumber(12),
+        Columns: new PdfNumber(7),
+    })
+
+    get predictor(): number {
+        return this.get('Predictor')?.as(PdfNumber)?.value ?? 1
+    }
+
+    set predictor(value: number) {
+        this.set('Predictor', new PdfNumber(value))
+    }
+
+    get columns(): number {
+        return this.get('Columns')?.as(PdfNumber)?.value ?? 1
+    }
+
+    set columns(value: number) {
+        this.set('Columns', new PdfNumber(value))
+    }
+
+    get colors(): number {
+        return this.get('Colors')?.as(PdfNumber)?.value ?? 1
+    }
+
+    set colors(value: number) {
+        this.set('Colors', new PdfNumber(value))
+    }
+
+    get bitsPerComponent(): number {
+        return this.get('BitsPerComponent')?.as(PdfNumber)?.value ?? 8
+    }
+
+    set bitsPerComponent(value: number) {
+        this.set('BitsPerComponent', new PdfNumber(value))
+    }
+
+    toDecodeParms(): DecodeParms {
+        const params: DecodeParms = {}
+        const predictor = this.get('Predictor')?.as(PdfNumber)
+        if (predictor) params.Predictor = predictor.value
+        const columns = this.get('Columns')?.as(PdfNumber)
+        if (columns) params.Columns = columns.value
+        const colors = this.get('Colors')?.as(PdfNumber)
+        if (colors) params.Colors = colors.value
+        const bpc = this.get('BitsPerComponent')?.as(PdfNumber)
+        if (bpc) params.BitsPerComponent = bpc.value
+        return params
+    }
+
+    cloneImpl(): this {
+        return PdfStreamPredictor.fromDecodeParms(this.toDecodeParms()) as this
+    }
+
+    static fromDecodeParms(params: DecodeParms): PdfStreamPredictor {
+        const predictor = new PdfStreamPredictor()
+        if (params.Predictor !== undefined) {
+            predictor.predictor = params.Predictor
+        }
+        if (params.Columns !== undefined) {
+            predictor.columns = params.Columns
+        }
+        if (params.Colors !== undefined) {
+            predictor.colors = params.Colors
+        }
+        if (params.BitsPerComponent !== undefined) {
+            predictor.bitsPerComponent = params.BitsPerComponent
+        }
+        return predictor
+    }
+}
+
 export class PdfStream<
     T extends PdfDictionary = PdfDictionary,
 > extends PdfObject {
+    static PdfStreamPredictor = PdfStreamPredictor
+
     header: T
     original: ByteArray
     preStreamDataTokens?: PdfToken[]
@@ -83,14 +175,12 @@ export class PdfStream<
 
     set data(data: ByteArray) {
         const filters = this.getFilters()
-        const predictorParams = Predictor.getDecodeParms(
-            this.header.get('DecodeParms')?.as(PdfDictionary),
-        )
+        const existingPredictor = this.predictor
         this.removeAllFilters()
         this.header.delete('DecodeParms')
         this.raw = data
-        if (predictorParams) {
-            this.setPredictor(predictorParams)
+        if (existingPredictor) {
+            this.predictor = existingPredictor
         }
         for (const filter of filters) {
             this.addFilter(filter)
@@ -144,32 +234,29 @@ export class PdfStream<
         return this
     }
 
-    setPredictor(predictorParams: {
-        Predictor?: number
-        Columns?: number
-        Colors?: number
-        BitsPerComponent?: number
-    }) {
-        let decodeParms = this.header.get('DecodeParms')?.as(PdfDictionary)
+    get predictor(): PdfStreamPredictor | undefined {
+        const raw = this.header.get('DecodeParms')
+        if (!raw) return undefined
 
-        if (!decodeParms) {
-            decodeParms = new PdfDictionary()
-            this.header.set('DecodeParms', decodeParms)
-        } else if (decodeParms instanceof PdfDictionary) {
-            // already a dictionary
-        } else {
-            throw new Error('Invalid DecodeParms entry in PDF stream')
+        if (raw instanceof PdfStreamPredictor) {
+            if (raw.get('Predictor') === undefined) return undefined
+            return raw
         }
 
-        for (const [key, value] of Object.entries(predictorParams)) {
-            if (value !== undefined) {
-                decodeParms.set(key, new PdfNumber(value))
-            }
+        if (raw instanceof PdfDictionary) {
+            const params = Predictor.getDecodeParms(raw)
+            if (!params) return undefined
+            return PdfStreamPredictor.fromDecodeParms(params)
         }
 
-        this.raw = Predictor.encode(this.raw, predictorParams)
+        return undefined
+    }
 
-        return this
+    set predictor(predictor: PdfStreamPredictor) {
+        const params = predictor.toDecodeParms()
+        const cloned = PdfStreamPredictor.fromDecodeParms(params)
+        this.header.set('DecodeParms', cloned)
+        this.raw = Predictor.encode(this.raw, params)
     }
 
     removeFilter(filterName: PdfStreamFilterType) {

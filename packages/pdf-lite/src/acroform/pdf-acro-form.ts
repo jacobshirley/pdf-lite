@@ -84,7 +84,7 @@ export class PdfAcroForm<
         }
     }
 
-    get fields(): PdfFormField[] {
+    get fields(): ReadonlyArray<PdfFormField> {
         const result: PdfFormField[] = []
         const seen = new Set<string>()
         const collect = (refs: PdfObjectReference[]) => {
@@ -124,46 +124,43 @@ export class PdfAcroForm<
                 ? (resolvedFields.items as PdfObjectReference[])
                 : [],
         )
-        const content = this.content
-        const originalPush = result.push.bind(result)
-        result.push = (...items: PdfFormField[]): number => {
-            const len = originalPush(...items)
-            const fieldsRawInner = content.get('Fields')
-            let fieldsArray: PdfArray<PdfObjectReference> =
-                fieldsRawInner instanceof PdfObjectReference
-                    ? (fieldsRawInner.resolve()
-                          ?.content as PdfArray<PdfObjectReference>)
-                    : (fieldsRawInner as PdfArray<PdfObjectReference>)
-            if (!fieldsArray) {
-                fieldsArray = new PdfArray<PdfObjectReference>()
-                content.set('Fields', fieldsArray)
-            }
-            for (const item of items) {
-                fieldsArray.items.push(item.reference)
+        return result
+    }
 
-                // Auto-add to the page's Annots array
-                const pageRef = item.parentRef
-                if (pageRef) {
-                    try {
-                        const pageObj = pageRef.resolve()
-                        if (pageObj?.content instanceof PdfDictionary) {
-                            let annots = pageObj.content.get('Annots')
-                            if (!annots) {
-                                annots = new PdfArray()
-                                pageObj.content.set('Annots', annots)
-                            }
-                            if (annots instanceof PdfArray) {
-                                annots.items.push(item.reference)
-                            }
+    addField(...fields: PdfFormField[]): void {
+        const content = this.content
+        const fieldsRaw = content.get('Fields')
+        let fieldsArray: PdfArray<PdfObjectReference> =
+            fieldsRaw instanceof PdfObjectReference
+                ? (fieldsRaw.resolve()?.content as PdfArray<PdfObjectReference>)
+                : (fieldsRaw as PdfArray<PdfObjectReference>)
+        if (!fieldsArray) {
+            fieldsArray = new PdfArray<PdfObjectReference>()
+            content.set('Fields', fieldsArray)
+        }
+        for (const field of fields) {
+            fieldsArray.items.push(field.reference)
+
+            // Auto-add to the page's Annots array
+            const pageRef = field.parentRef
+            if (pageRef) {
+                try {
+                    const pageObj = pageRef.resolve()
+                    if (pageObj?.content instanceof PdfDictionary) {
+                        let annots = pageObj.content.get('Annots')
+                        if (!annots) {
+                            annots = new PdfArray()
+                            pageObj.content.set('Annots', annots)
                         }
-                    } catch {
-                        // page ref not resolvable
+                        if (annots instanceof PdfArray) {
+                            annots.items.push(field.reference)
+                        }
                     }
+                } catch {
+                    // page ref not resolvable
                 }
             }
-            return len
         }
-        return result
     }
 
     set fields(newFields: PdfFormField[]) {

@@ -396,7 +396,7 @@ describe('AcroForm', () => {
         newField.isWidget = true
 
         // Add the new field to the form
-        acroform.fields.push(newField)
+        acroform.addField(newField)
 
         // Verify the field was added
         expect(acroform.fields.length).toBe(initialFieldCount + 1)
@@ -735,7 +735,7 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
         )
     })
 
-    it('should handle Opt as object reference (currently fails)', () => {
+    it('should handle Opt as object reference', () => {
         // Create a mock document that can resolve object references
         const optionsArray = new PdfArray([
             new PdfString('Option 1'),
@@ -818,7 +818,7 @@ describe('AcroForm Parent/Child Field Inheritance', () => {
         child2.rect = [100, 200, 300, 220]
 
         // Register fields in the form so children getter works
-        acroForm.fields.push(parentField, child1, child2)
+        acroForm.addField(parentField, child1, child2)
 
         // Verify children are resolved
         expect(parentField.children).toHaveLength(2)
@@ -869,7 +869,7 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         field.defaultAppearance = '/Helv 12 Tf'
         field.value = '\xA050' // Byte 160 (0xA0) should map to Euro symbol
 
-        acroForm.fields.push(field)
+        acroForm.addField(field)
         acroForm.getFontEncodingMap('Helv')
 
         expect(field.value).toBe('€50')
@@ -1363,7 +1363,7 @@ describe('AcroForm Appearance Generation', () => {
         textField.isWidget = true
         textField.parentRef = firstPageRef
         textField.value = 'Regular Text Value'
-        acroform.fields.push(textField)
+        acroform.addField(textField)
 
         // 2. Comb field
         const combField = new PdfTextFormField({ form: acroform })
@@ -1376,7 +1376,7 @@ describe('AcroForm Appearance Generation', () => {
         combField.isWidget = true
         combField.parentRef = firstPageRef
         combField.value = '12345678'
-        acroform.fields.push(combField)
+        acroform.addField(combField)
 
         // 3. Multiline text field
         const multilineField = new PdfTextFormField({ form: acroform })
@@ -1388,7 +1388,7 @@ describe('AcroForm Appearance Generation', () => {
         multilineField.isWidget = true
         multilineField.parentRef = firstPageRef
         multilineField.value = 'Line 1\nLine 2\nLine 3'
-        acroform.fields.push(multilineField)
+        acroform.addField(multilineField)
 
         // 4. Checkbox (unchecked)
         const checkboxUnchecked = new PdfButtonFormField({ form: acroform })
@@ -1399,7 +1399,7 @@ describe('AcroForm Appearance Generation', () => {
         checkboxUnchecked.isWidget = true
         checkboxUnchecked.parentRef = firstPageRef
         checkboxUnchecked.checked = false
-        acroform.fields.push(checkboxUnchecked)
+        acroform.addField(checkboxUnchecked)
 
         // 5. Checkbox (checked)
         const checkboxChecked = new PdfButtonFormField({ form: acroform })
@@ -1410,7 +1410,7 @@ describe('AcroForm Appearance Generation', () => {
         checkboxChecked.isWidget = true
         checkboxChecked.parentRef = firstPageRef
         checkboxChecked.checked = true
-        acroform.fields.push(checkboxChecked)
+        acroform.addField(checkboxChecked)
 
         // 6. Choice/Dropdown field
         const choiceField = new PdfChoiceFormField({ form: acroform })
@@ -1423,7 +1423,7 @@ describe('AcroForm Appearance Generation', () => {
         choiceField.isWidget = true
         choiceField.parentRef = firstPageRef
         choiceField.value = 'Selected Option'
-        acroform.fields.push(choiceField)
+        acroform.addField(choiceField)
 
         // 7. List box (Choice field without Combo flag)
         const listField = new PdfChoiceFormField({ form: acroform })
@@ -1436,7 +1436,7 @@ describe('AcroForm Appearance Generation', () => {
         listField.isWidget = true
         listField.parentRef = firstPageRef
         listField.value = 'List Item 2'
-        acroform.fields.push(listField)
+        acroform.addField(listField)
 
         // 8. Radio button group
         // Note: In PDF, radio buttons that are mutually exclusive should share the same parent field
@@ -1452,7 +1452,7 @@ describe('AcroForm Appearance Generation', () => {
         radioButton1.isWidget = true
         radioButton1.parentRef = firstPageRef
         radioButton1.checked = false
-        acroform.fields.push(radioButton1)
+        acroform.addField(radioButton1)
 
         // 9. Radio button group (selected)
         const radioButton2 = new PdfButtonFormField({ form: acroform })
@@ -1465,7 +1465,7 @@ describe('AcroForm Appearance Generation', () => {
         radioButton2.isWidget = true
         radioButton2.parentRef = firstPageRef
         radioButton2.checked = true
-        acroform.fields.push(radioButton2)
+        acroform.addField(radioButton2)
 
         // Generate appearances for all fields
         const textSuccess = textField.generateAppearance()
@@ -1700,7 +1700,7 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         baseline.isWidget = true
         baseline.parentRef = pageRef
         baseline.value = 'Short text - no scaling needed'
-        acroform.fields.push(baseline)
+        acroform.addField(baseline)
 
         // 2. Font scaling: long text crammed into a narrow single-line field
         const scaled = new PdfTextFormField({ form: acroform })
@@ -1711,7 +1711,7 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         scaled.isWidget = true
         scaled.parentRef = pageRef
         scaled.value = 'This text is far too long for the narrow field'
-        acroform.fields.push(scaled)
+        acroform.addField(scaled)
 
         // 3. Word wrap: multiline field with explicit newlines
         const explicitWrap = new PdfTextFormField({ form: acroform })
@@ -1723,7 +1723,7 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         explicitWrap.isWidget = true
         explicitWrap.parentRef = pageRef
         explicitWrap.value = 'Line one\nLine two\nLine three'
-        acroform.fields.push(explicitWrap)
+        acroform.addField(explicitWrap)
 
         // 4. Word wrap: long paragraph auto-wrapped
         const autoWrap = new PdfTextFormField({ form: acroform })
@@ -1736,7 +1736,7 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         autoWrap.parentRef = pageRef
         autoWrap.value =
             'This is a long paragraph of text that should automatically wrap across multiple lines because the field is not wide enough to fit it all on one line.'
-        acroform.fields.push(autoWrap)
+        acroform.addField(autoWrap)
 
         // 5. Word wrap + font scaling: too much text for a small box
         const wrapAndScale = new PdfTextFormField({ form: acroform })
@@ -1749,7 +1749,7 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         wrapAndScale.parentRef = pageRef
         wrapAndScale.value =
             'Lots of text crammed into a small box. It wraps and the font shrinks to make everything fit within the constrained height of the field. More text to force scaling down.'
-        acroform.fields.push(wrapAndScale)
+        acroform.addField(wrapAndScale)
 
         for (const field of acroform.fields) {
             expect(field.generateAppearance()).toBe(true)

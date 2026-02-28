@@ -957,6 +957,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                 !(obj instanceof PdfIndirectObject)
             ) {
                 obj.resolver = this
+            } else if (obj instanceof PdfStream) {
+                walk(obj.header)
             } else if (obj instanceof PdfDictionary) {
                 for (const [, value] of obj.entries()) {
                     if (value) walk(value)
@@ -1001,6 +1003,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                         // Skip unresolvable references
                     }
                 }
+            } else if (obj instanceof PdfStream) {
+                walk(obj.header)
             } else if (obj instanceof PdfDictionary) {
                 for (const [, value] of obj.entries()) {
                     if (value) walk(value)

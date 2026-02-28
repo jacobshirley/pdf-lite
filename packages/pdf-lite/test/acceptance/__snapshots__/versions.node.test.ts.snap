@@ -3,7 +3,9 @@
 exports[`PDF 1.3 acceptance tests > 1.3-basic.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": false,
   "immutable": false,
@@ -12665,6 +12667,7 @@ PdfDocument {
   ],
   "securityHandler": undefined,
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -12673,7 +12676,9 @@ PdfDocument {
 exports[`PDF 1.4 acceptance tests > 1.4-basic.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": false,
   "immutable": false,
@@ -20023,6 +20028,7 @@ PdfDocument {
   ],
   "securityHandler": undefined,
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -20031,7 +20037,9 @@ PdfDocument {
 exports[`PDF 1.4 acceptance tests > 1.4-basic-aes-128.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": true,
   "immutable": false,
@@ -23131,6 +23139,7 @@ PdfDocument {
     ],
   },
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -23139,7 +23148,9 @@ PdfDocument {
 exports[`PDF 1.4 acceptance tests > 1.4-basic-aes-256.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": true,
   "immutable": false,
@@ -26357,6 +26368,7 @@ PdfDocument {
     ],
   },
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -26365,7 +26377,9 @@ PdfDocument {
 exports[`PDF 1.4 acceptance tests > 1.4-basic-rc4-40.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": true,
   "immutable": false,
@@ -29454,6 +29468,7 @@ PdfDocument {
     ],
   },
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -29462,7 +29477,9 @@ PdfDocument {
 exports[`PDF 1.4 acceptance tests > 1.4-basic-rc4-128.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": true,
   "immutable": false,
@@ -32562,6 +32579,7 @@ PdfDocument {
     ],
   },
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -32570,7 +32588,9 @@ PdfDocument {
 exports[`PDF 1.5 acceptance tests > 1.5-basic.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": false,
   "immutable": false,
@@ -40045,6 +40065,7 @@ PdfDocument {
   ],
   "securityHandler": undefined,
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -40053,7 +40074,9 @@ PdfDocument {
 exports[`PDF 1.6 acceptance tests > 1.6-basic.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": false,
   "immutable": false,
@@ -47528,6 +47551,7 @@ PdfDocument {
   ],
   "securityHandler": undefined,
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -47536,7 +47560,9 @@ PdfDocument {
 exports[`PDF 1.7 acceptance tests > 1.7-basic.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": false,
   "immutable": false,
@@ -55011,6 +55037,7 @@ PdfDocument {
   ],
   "securityHandler": undefined,
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -55019,7 +55046,9 @@ PdfDocument {
 exports[`PDF 2.0 acceptance tests > 2.0-basic.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": false,
   "immutable": false,
@@ -56972,6 +57001,7 @@ PdfDocument {
   ],
   "securityHandler": undefined,
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -56980,7 +57010,9 @@ PdfDocument {
 exports[`PDF 2.0 acceptance tests > 2.0-basic-aes-128.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": true,
   "immutable": false,
@@ -59375,6 +59407,7 @@ PdfDocument {
     ],
   },
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -59383,7 +59416,9 @@ PdfDocument {
 exports[`PDF 2.0 acceptance tests > 2.0-basic-aes-256.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": true,
   "immutable": false,
@@ -61898,6 +61933,7 @@ PdfDocument {
     ],
   },
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -61906,7 +61942,9 @@ PdfDocument {
 exports[`PDF 2.0 acceptance tests > 2.0-basic-rc4-40.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": true,
   "immutable": false,
@@ -64290,6 +64328,7 @@ PdfDocument {
     ],
   },
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }
@@ -64298,7 +64337,9 @@ PdfDocument {
 exports[`PDF 2.0 acceptance tests > 2.0-basic-rc4-128.pdf 1`] = `
 PdfDocument {
   "_committing": false,
+  "_finalized": false,
   "_resolvedCache": Map {},
+  "_signed": false,
   "cachedTokens": undefined,
   "hasEncryptionDictionary": true,
   "immutable": false,
@@ -66693,6 +66734,7 @@ PdfDocument {
     ],
   },
   "signer": PdfSigner {
+    "document": [Circular],
     "useDocumentSecurityStore": true,
   },
 }

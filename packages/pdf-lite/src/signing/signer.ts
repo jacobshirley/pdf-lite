@@ -1,8 +1,4 @@
-import { PdfCommentToken } from '../core/tokens/comment-token.js'
-import { PdfHexadecimalToken } from '../core/tokens/hexadecimal-token.js'
-import { PdfNameToken } from '../core/tokens/name-token.js'
-import { PdfToken } from '../core/tokens/token.js'
-import { PdfDocument } from '../pdf/pdf-document.js'
+import { ByteArray } from '../types.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfDocumentSecurityStoreObject } from './document-security-store.js'
 import {
@@ -24,9 +20,13 @@ import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfObject } from '../core/objects/pdf-object.js'
-
+import { PdfNameToken } from '../core/tokens/name-token.js'
+import { PdfCommentToken } from '../core/tokens/comment-token.js'
+import { PdfDocument } from '../pdf/pdf-document.js'
+import { PdfToken } from '../core/tokens/token.js'
+import { PdfHexadecimalToken } from '../core/tokens/hexadecimal-token.js'
 /**
- * Result of verifying all signatures in a document.
+ * Result of verifying all signatures in a this.document.
  */
 export type PdfDocumentVerificationResult = {
     /** Whether all signatures in the document are valid. */
@@ -35,7 +35,7 @@ export type PdfDocumentVerificationResult = {
     signatures: {
         /** The signature subfilter type. */
         type: PdfSignatureSubType
-        /** Index of the signature in the document. */
+        /** Index of the signature in the this.document. */
         index: number
         /** The signature object. */
         signature: PdfSignatureObject
@@ -55,30 +55,51 @@ export type PdfDocumentVerificationResult = {
  * ```
  */
 export class PdfSigner {
+    /** The PDF document to be signed. */
+    document: PdfDocument
     /** Whether to use the Document Security Store for revocation information. */
     useDocumentSecurityStore: boolean = true
 
+    constructor(options: {
+        useDocumentSecurityStore?: boolean
+        document: PdfDocument
+    }) {
+        this.document = options.document
+        if (options?.useDocumentSecurityStore !== undefined) {
+            this.useDocumentSecurityStore = options.useDocumentSecurityStore
+        }
+    }
+
     /**
-     * Signs all signature objects in the document.
+     * Signs all signature objects in the this.document.
      * Computes byte ranges, generates signatures, and optionally adds revocation info to DSS.
      *
      * @param document - The PDF document to sign.
-     * @returns The signed document.
+     * @returns The signed this.document.
      */
-    async sign(document: PdfDocument): Promise<PdfDocument> {
+    async sign(): Promise<void> {
         const signatures: PdfSignatureObject[] = [
-            ...document.objects.filter((x) => x instanceof PdfSignatureObject),
+            ...this.document.objects.filter(
+                (x) => x instanceof PdfSignatureObject,
+            ),
         ]
 
+        // Move all signature objects to the end of the document in a new revision to ensure their byte positions are after all other content.
+        signatures.forEach((sig) => {
+            this.document.deleteObject(sig)
+            this.document.startNewRevision()
+            this.document.add(sig)
+        })
+
         const dss = this.useDocumentSecurityStore
-            ? (document.objects.find(
+            ? (this.document.objects.find(
                   (x) => x instanceof PdfDocumentSecurityStoreObject,
-              ) ?? new PdfDocumentSecurityStoreObject(document))
+              ) ?? new PdfDocumentSecurityStoreObject())
             : undefined
 
         for (let i = 0; i < signatures.length; i++) {
             const signature = signatures[i]
-            const tokens = document.tokensWithObjects()
+            const tokens = this.document.tokensWithObjects()
             const signableTokens: PdfToken[] = []
 
             let contentsOffset = 0
@@ -130,7 +151,7 @@ export class PdfSigner {
             ]
             signature.setByteRange(byteRange)
 
-            const allBytes = document.toBytes()
+            const allBytes = this.document.toBytes()
 
             const toSign = concatUint8Arrays(
                 allBytes.slice(byteRange[0], byteRange[1]),
@@ -149,10 +170,8 @@ export class PdfSigner {
         }
 
         if (dss && !dss.isEmpty()) {
-            await document.setDocumentSecurityStore(dss)
+            this.setDocumentSecurityStore(dss)
         }
-
-        return document
     }
 
     /**
@@ -233,7 +252,7 @@ export class PdfSigner {
     }
 
     /**
-     * Verifies all signatures in the document.
+     * Verifies all signatures in the this.document.
      * First serializes the document to bytes and reloads it to ensure signatures
      * are properly deserialized into the correct classes before verification.
      * Then searches for signature objects, computes their byte ranges, and verifies each one.
@@ -257,17 +276,14 @@ export class PdfSigner {
      * }
      * ```
      */
-    async verify(
-        document: PdfDocument,
-        options?: {
-            certificateValidation?: CertificateValidationOptions | boolean
-        },
-    ): Promise<PdfDocumentVerificationResult> {
-        const documentBytes = document.toBytes()
+    async verify(options?: {
+        certificateValidation?: CertificateValidationOptions | boolean
+    }): Promise<PdfDocumentVerificationResult> {
+        const documentBytes = this.document.toBytes()
 
         const results: PdfDocumentVerificationResult['signatures'] = []
         let allValid = true
-        const documentObjects = document.objects
+        const documentObjects = this.document.objects
 
         for (let i = 0; i < documentObjects.length; i++) {
             const obj = documentObjects[i]
@@ -384,5 +400,29 @@ export class PdfSigner {
             valid: allValid,
             signatures: results,
         }
+    }
+
+    /**
+     * Sets the Document Security Store (DSS) for the this.document.
+     * Used for long-term validation of digital signatures.
+     *
+     * @param dss - The Document Security Store object to set
+     * @throws Error if the document has no root dictionary
+     */
+    setDocumentSecurityStore(dss: PdfDocumentSecurityStoreObject): void {
+        const root = this.document.root
+        if (!root?.content) {
+            throw new Error('Cannot set DSS - document has no root dictionary')
+        }
+
+        // Add DSS in a new incremental revision so it doesn't change
+        // byte positions in earlier revisions (which have signed ByteRanges).
+        this.document.startNewRevision()
+
+        // Clone the root catalog into the new revision with the DSS reference
+        const updatedRoot = root.clone() as PdfIndirectObject<PdfDictionary>
+        updatedRoot.content.set('DSS', dss.reference)
+        this.document.add(updatedRoot)
+        this.document.add(dss)
     }
 }

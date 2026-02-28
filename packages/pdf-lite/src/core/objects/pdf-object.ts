@@ -147,4 +147,19 @@ export abstract class PdfObject {
 
         return true
     }
+
+    /**
+     * Serializes the document to a Base64-encoded string.
+     *
+     * @returns A promise that resolves to the PDF document as a Base64 string
+     */
+    toBase64(): string {
+        const bytes = this.toBytes()
+        let binary = ''
+        const len = bytes.byteLength
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i])
+        }
+        return btoa(binary)
+    }
 }

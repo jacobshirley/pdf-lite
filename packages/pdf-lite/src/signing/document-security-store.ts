@@ -33,9 +33,9 @@ export type PdfVriObject = PdfIndirectObject<
     PdfDictionary<{
         [CertHash: string]: PdfDictionary<{
             Type?: PdfName<'VRI'>
-            Cert?: PdfObjectReference
-            OCSP?: PdfObjectReference
-            CRL?: PdfObjectReference
+            Cert?: PdfObjectReference<PdfIndirectObject<PdfStream>>
+            OCSP?: PdfObjectReference<PdfIndirectObject<PdfStream>>
+            CRL?: PdfObjectReference<PdfIndirectObject<PdfStream>>
             TU?: PdfDate
             TS?: PdfString
         }>
@@ -49,9 +49,9 @@ export type PdfVriObject = PdfIndirectObject<
 export class PdfDocumentSecurityStoreDictionary extends PdfDictionary<{
     Type?: PdfName<'DSS'>
     VRI?: PdfObjectReference
-    OCSPs?: PdfArray<PdfObjectReference>
-    CRLs?: PdfArray<PdfObjectReference>
-    Certs?: PdfArray<PdfObjectReference>
+    OCSPs?: PdfArray<PdfObjectReference<PdfIndirectObject<PdfStream>>>
+    CRLs?: PdfArray<PdfObjectReference<PdfIndirectObject<PdfStream>>>
+    Certs?: PdfArray<PdfObjectReference<PdfIndirectObject<PdfStream>>>
 }> {}
 
 /**
@@ -67,21 +67,14 @@ export class PdfDocumentSecurityStoreDictionary extends PdfDictionary<{
  * ```
  */
 export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumentSecurityStoreDictionary> {
-    /** Reference to the parent document. */
-    private document: PdfDocument
-
     /**
      * Creates a new DSS object.
      *
      * @param document - The parent PDF document.
      * @param content - Optional pre-existing DSS dictionary.
      */
-    constructor(
-        document: PdfDocument,
-        content?: PdfDocumentSecurityStoreDictionary,
-    ) {
+    constructor(content?: PdfDocumentSecurityStoreDictionary) {
         super(content ?? new PdfDocumentSecurityStoreDictionary())
-        this.document = document
     }
 
     /**
@@ -94,25 +87,26 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
         const newOcsp = new PdfStream(ocsp)
         let ocspArray = this.content.get('OCSPs')
 
-        const currentOcsps = (ocspArray?.items ?? []).map((ref) => {
-            return this.document.readObject(ref)
-        }) as PdfIndirectObject<PdfStream>[]
+        const currentOcsps = (ocspArray?.items ?? []).map((ref) =>
+            ref.resolve(),
+        )
 
         for (const existingOcsp of currentOcsps) {
             if (existingOcsp.content.equals(newOcsp)) {
-                return existingOcsp as PdfOcspObject
+                return existingOcsp.becomes(PdfOcspObject)
             }
         }
 
         const ocspObject = new PdfOcspObject(newOcsp)
-        this.document.add(ocspObject)
 
         if (!ocspArray) {
-            ocspArray = new PdfArray<PdfObjectReference>([])
+            ocspArray = new PdfArray<
+                PdfObjectReference<PdfIndirectObject<PdfStream>>
+            >([])
             this.content.set('OCSPs', ocspArray)
         }
 
-        ocspArray.items.push(ocspObject.reference)
+        ocspArray.push(ocspObject.reference)
 
         return ocspObject
     }
@@ -126,25 +120,24 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
     addCrl(crl: ByteArray): PdfCrlObject {
         let crlArray = this.content.get('CRLs')
 
-        const currentCrls = (crlArray?.items ?? []).map((ref) => {
-            return this.document.readObject(ref)
-        }) as PdfIndirectObject<PdfStream>[]
+        const currentCrls = (crlArray?.items ?? []).map((ref) => ref.resolve())
 
         for (const existingCrl of currentCrls) {
             if (existingCrl.content.equals(new PdfStream(crl))) {
-                return existingCrl as PdfCrlObject
+                return existingCrl.becomes(PdfCrlObject)
             }
         }
 
         const crlObject = new PdfCrlObject(new PdfStream(crl))
-        this.document.add(crlObject)
 
         if (!crlArray) {
-            crlArray = new PdfArray<PdfObjectReference>([])
+            crlArray = new PdfArray<
+                PdfObjectReference<PdfIndirectObject<PdfStream>>
+            >([])
             this.content.set('CRLs', crlArray)
         }
 
-        crlArray.items.push(crlObject.reference)
+        crlArray.push(crlObject.reference)
 
         return crlObject
     }
@@ -158,25 +151,26 @@ export class PdfDocumentSecurityStoreObject extends PdfIndirectObject<PdfDocumen
     addCert(cert: ByteArray): PdfCertObject {
         let certArray = this.content.get('Certs')
 
-        const currentCerts = (certArray?.items ?? []).map((ref) => {
-            return this.document.readObject(ref)
-        }) as PdfIndirectObject<PdfStream>[]
+        const currentCerts = (certArray?.items ?? []).map((ref) =>
+            ref.resolve(),
+        )
 
         for (const existingCert of currentCerts) {
             if (existingCert.content.equals(new PdfStream(cert))) {
-                return existingCert as PdfCertObject
+                return existingCert.becomes(PdfCertObject)
             }
         }
 
         const certObject = new PdfCertObject(new PdfStream(cert))
-        this.document.add(certObject)
 
         if (!certArray) {
-            certArray = new PdfArray<PdfObjectReference>([])
+            certArray = new PdfArray<
+                PdfObjectReference<PdfIndirectObject<PdfStream>>
+            >([])
             this.content.set('Certs', certArray)
         }
 
-        certArray.items.push(certObject.reference)
+        certArray.push(certObject.reference)
 
         return certObject
     }

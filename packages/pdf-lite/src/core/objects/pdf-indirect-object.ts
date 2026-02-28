@@ -66,7 +66,7 @@ export class PdfIndirectObject<
         this.compressed = options?.compressed
     }
 
-    get reference(): PdfObjectReference {
+    get reference(): PdfObjectReference<this> {
         const original = this
         return new Proxy(
             new PdfObjectReference(this.objectNumber, this.generationNumber),

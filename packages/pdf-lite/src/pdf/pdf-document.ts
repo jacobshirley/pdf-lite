@@ -31,7 +31,6 @@ import { Ref } from '../core/ref.js'
 import { PdfStartXRef } from '../core/objects/pdf-start-xref.js'
 import { PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
 import { FoundCompressedObjectError } from '../errors.js'
-import { PdfDocumentSecurityStoreObject } from '../signing/document-security-store.js'
 import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
@@ -70,6 +69,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     private hasEncryptionDictionary?: boolean = false
     private _resolvedCache = new Map<string, PdfIndirectObject>()
     private _committing = false
+    private _finalized = false
+    private _signed = false
 
     /**
      * Creates a new PDF document instance.
@@ -107,7 +108,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             this.setOwnerPassword(options.ownerPassword)
         }
 
-        this.signer = options?.signer ?? new PdfSigner()
+        this.signer = options?.signer ?? new PdfSigner({ document: this })
 
         this.linkRevisions()
         this.wireResolvers(
@@ -239,7 +240,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             this.add(...missing)
         }
 
-        this.updateSync()
+        this.update()
 
         for (const obj of objects) {
             obj.setModified(false)
@@ -609,12 +610,19 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * No-op if the document has no security handler (unencrypted document).
      */
     async finalize(): Promise<void> {
-        this.updateSync()
+        if (this._finalized) {
+            throw new Error('Document has already been finalized')
+        }
+
+        this._finalized = true
+        this.update()
 
         if (this.securityHandler) {
             await this.encrypt()
         }
-        await this.update()
+
+        this.update()
+        await this.sign()
     }
 
     /**
@@ -635,10 +643,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
         this.trailerDict.delete('Encrypt')
         if (encryptionDict) {
-            await this.deleteObject(encryptionDict)
+            this.deleteObject(encryptionDict)
         }
 
-        await this.update()
+        this.update()
     }
 
     /**
@@ -700,7 +708,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             this.setIncremental(wasIncremental)
         }
 
-        await this.update()
+        this.update()
     }
 
     /**
@@ -838,19 +846,30 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
         return foundObject
     }
+
+    /**
+     * Finds the revision that contains a given PDF object.
+     * Useful for determining the origin of an object across multiple revisions.
+     * @param obj - The PDF object to find the revision for
+     * @returns The PdfRevision that contains the object, or undefined if not found in any revision
+     */
+    findRevisionForObject(obj: PdfObject): PdfRevision | undefined {
+        return this.revisions.find((rev) => rev.objects.includes(obj))
+    }
+
     /**
      * Deletes an object from all revisions in the document.
      *
      * @param obj - The PDF object to delete
      */
-    async deleteObject(obj: PdfObject | undefined): Promise<void> {
+    deleteObject(obj: PdfObject | undefined): void {
         if (!obj) return
 
         for (const revision of this.revisions) {
             revision.deleteObject(obj)
         }
 
-        await this.update()
+        this.update()
     }
 
     /**
@@ -894,25 +913,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      */
     isIncremental(): boolean {
         return this.incremental
-    }
-
-    /**
-     * Sets the Document Security Store (DSS) for the document.
-     * Used for long-term validation of digital signatures.
-     *
-     * @param dss - The Document Security Store object to set
-     * @throws Error if the document has no root dictionary
-     */
-    setDocumentSecurityStore(dss: PdfDocumentSecurityStoreObject): void {
-        let rootDictionary = this.root?.content
-        if (!rootDictionary) {
-            throw new Error('Cannot set DSS - document has no root dictionary')
-        }
-        rootDictionary.set('DSS', dss.reference)
-
-        if (!this.hasObject(dss)) {
-            this.add(dss)
-        }
     }
 
     /**
@@ -1108,7 +1108,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
     }
 
-    private updateSync(): void {
+    private update(): void {
         this.commitIncrementalUpdates()
         this.flushResolvedCache()
         this.registerNewReferences()
@@ -1148,12 +1148,16 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     async sign() {
-        await this.signer?.sign(this)
-    }
+        if (this._signed) {
+            throw new Error('Document has already been signed')
+        }
 
-    private async update(): Promise<void> {
-        this.updateSync()
-        await this.sign()
+        if (!this.signer) {
+            return
+        }
+
+        await this.signer.sign()
+        this._signed = true
     }
 
     /**
@@ -1162,23 +1166,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns The PDF document as a Uint8Array
      */
     toBytes(): ByteArray {
-        this.updateSync()
+        this.update()
         return concatUint8Arrays(...this.revisions.map((x) => x.toBytes()))
-    }
-
-    /**
-     * Serializes the document to a Base64-encoded string.
-     *
-     * @returns A promise that resolves to the PDF document as a Base64 string
-     */
-    toBase64(): string {
-        const bytes = this.toBytes()
-        let binary = ''
-        const len = bytes.byteLength
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i])
-        }
-        return btoa(binary)
     }
 
     /**
@@ -1224,6 +1213,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns A promise that resolves to the verification result
      */
     async verifySignatures(): Promise<PdfDocumentVerificationResult> {
-        return await this.signer.verify(this)
+        return await this.signer.verify()
     }
 }

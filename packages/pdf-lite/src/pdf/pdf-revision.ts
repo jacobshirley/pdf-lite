@@ -313,4 +313,12 @@ export class PdfRevision extends PdfObject {
 
         return output
     }
+
+    isEmpty(): boolean {
+        return (
+            this.indirectObjects.length < 1 ||
+            (this.indirectObjects.length === 1 &&
+                this.indirectObjects[0] === this.xref.object)
+        )
+    }
 }

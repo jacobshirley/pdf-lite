@@ -1645,8 +1645,8 @@ describe('PdfSigner.verify', () => {
     it('should return empty result for unsigned PDF document', async () => {
         const document = await createBasicPDF()
 
-        const signer = new PdfSigner()
-        const result = await signer.verify(document)
+        const signer = new PdfSigner({ document })
+        const result = await signer.verify()
 
         expect(result.valid).toBe(true)
         expect(result.signatures).toHaveLength(0)

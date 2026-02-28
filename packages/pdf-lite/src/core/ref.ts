@@ -71,12 +71,6 @@ export class Ref<T> {
 
         const oldValue = this.resolve()
         if (oldValue !== resolvedNewValue) {
-            if (this.immutable) {
-                /*throw new Error(
-                    `Cannot update an immutable Ref (${oldValue} -> ${resolvedNewValue})`,
-                )*/
-                return
-            }
             this.modified = true
         }
 

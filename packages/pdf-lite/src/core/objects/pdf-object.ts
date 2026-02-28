@@ -14,10 +14,21 @@ export abstract class PdfObject {
     protected immutable: boolean = false
     /** Tokenizes the object into an array of PdfTokens */
     protected abstract tokenize(): PdfToken[]
+    /** Cached byte representation of the object, if available */
+    protected cachedTokens?: PdfToken[]
 
     /** The type of this PDF object */
     get objectType(): string {
         return this.constructor.name
+    }
+
+    /**
+     * Returns true if this object's serialized form ends with a self-delimiting
+     * character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+     * whitespace before the next token.
+     */
+    get isTrailingDelimited(): boolean {
+        return false
     }
 
     /** Indicates whether the object has been modified. Override this method if the modified state is determined differently */
@@ -37,11 +48,24 @@ export abstract class PdfObject {
 
     /** Sets the immutable state of the object */
     setImmutable(immutable: boolean = true): void {
+        if (immutable === this.immutable) {
+            return
+        }
+
         this.immutable = immutable
+
+        if (immutable) {
+            this.cachedTokens = this.toTokens()
+        } else {
+            this.cachedTokens = undefined
+        }
     }
 
     /** Converts the object to an array of PdfTokens, including any pre or post tokens */
     toTokens(): PdfToken[] {
+        if (this.cachedTokens) {
+            return this.cachedTokens
+        }
         return [
             ...(this.preTokens ?? []),
             ...this.tokenize(),
@@ -122,5 +146,20 @@ export abstract class PdfObject {
         }
 
         return true
+    }
+
+    /**
+     * Serializes the document to a Base64-encoded string.
+     *
+     * @returns A promise that resolves to the PDF document as a Base64 string
+     */
+    toBase64(): string {
+        const bytes = this.toBytes()
+        let binary = ''
+        const len = bytes.byteLength
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i])
+        }
+        return btoa(binary)
     }
 }

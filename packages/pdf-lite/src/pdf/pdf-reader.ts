@@ -1,5 +1,10 @@
 import { PdfObject } from '../core/objects/pdf-object.js'
 import { PdfObjectStream } from '../core/streams/object-stream.js'
+import {
+    PdfDictionary,
+    PdfIndirectObject,
+    PdfIndirectObjectOptions,
+} from '../index.js'
 import { ByteArray } from '../types.js'
 import { PdfDocument } from './pdf-document.js'
 
@@ -50,8 +55,50 @@ export class PdfReader {
      */
     static async fromBytes(
         input: AsyncIterable<ByteArray> | Iterable<ByteArray>,
+        options?: {
+            password?: string
+            ownerPassword?: string
+            incremental?: boolean
+        },
     ): Promise<PdfDocument> {
         const reader = new PdfReader(new PdfObjectStream(input))
-        return reader.read()
+        const document = await reader.read()
+
+        let shouldDecrypt = Boolean(document.encryptionDictionary)
+
+        if (typeof options?.password === 'string') {
+            document.setPassword(options.password)
+            shouldDecrypt = true
+        }
+
+        if (typeof options?.ownerPassword === 'string') {
+            document.setOwnerPassword(options.ownerPassword)
+            shouldDecrypt = true
+        }
+
+        if (options?.incremental) {
+            // Lock revisions first to preserve the original bytes
+            // (including encrypted data) via cached tokens.
+            document.setIncremental(true)
+
+            // Then decrypt the live object data so built-in operations
+            // (AcroForm, fonts, etc.) can read it. The cached tokens
+            // still produce the original encrypted bytes on serialization.
+            if (shouldDecrypt) {
+                try {
+                    await document.decryptObjects()
+                } catch (e) {
+                    document.resetSecurityHandler()
+                }
+            }
+        } else if (shouldDecrypt) {
+            try {
+                await document.decryptObjects()
+            } catch (e) {
+                document.resetSecurityHandler()
+            }
+        }
+
+        return document
     }
 }

@@ -61,7 +61,7 @@ async function main() {
 
     document.add(pages, catalog)
     document.trailerDict.set('Root', catalog.reference)
-    await document.commit()
+    await document.finalize()
 
     // Build content stream with different fonts
     // F1=Helvetica-Bold, F2=Times-Roman, F3=Courier, F4=Roboto
@@ -106,11 +106,13 @@ async function main() {
         }),
     })
 
-    // Embed fonts - FontManager will automatically add them to the /Pages Resources
-    const helveticaBold =
-        await document.fonts.embedStandardFont('Helvetica-Bold')
-    const timesRoman = await document.fonts.embedStandardFont('Times-Roman')
-    const courier = await document.fonts.embedStandardFont('Courier')
+    // Create standard fonts and assign resource names to match the content stream
+    const helveticaBold = PdfFont.fromStandardFont('Helvetica-Bold')
+    helveticaBold.resourceName = 'F1'
+    const timesRoman = PdfFont.fromStandardFont('Times-Roman')
+    timesRoman.resourceName = 'F2'
+    const courier = PdfFont.fromStandardFont('Courier')
+    courier.resourceName = 'F3'
 
     console.log(
         `Embedded standard fonts: ${helveticaBold}, ${timesRoman}, ${courier}`,
@@ -136,6 +138,7 @@ async function main() {
     // - Creates a ready-to-use PdfFont instance
     // - Throws descriptive errors for unsupported formats (WOFF2, CFF-based OTF)
     const robotoFont = PdfFont.fromBytes(fontData)
+    robotoFont.resourceName = 'F4'
 
     console.log(
         `Created PdfFont from bytes - Font name: ${robotoFont.fontName}`,
@@ -145,14 +148,21 @@ async function main() {
         `  Embedded font data preserved: ${robotoFont.fontData ? 'Yes' : 'No'}`,
     )
 
-    // Write the font to the document
-    // FontManager.write() automatically:
-    // - Assigns a resource name (F1, F2, F3, etc.)
-    // - Creates the container indirect object
-    // - Adds the font to the /Pages node Resources dictionary
-    // - All child pages inherit these fonts (even pages added later!)
-    await document.fonts.write(robotoFont)
+    // Add all fonts to the document
+    document.add(helveticaBold, timesRoman, courier, robotoFont)
     console.log(`Embedded custom font in PDF: ${robotoFont}`)
+
+    // Build a Font resource dictionary mapping resource names to font references
+    const fontDict = new PdfDictionary()
+    fontDict.set(helveticaBold.resourceName, helveticaBold.reference)
+    fontDict.set(timesRoman.resourceName, timesRoman.reference)
+    fontDict.set(courier.resourceName, courier.reference)
+    fontDict.set(robotoFont.resourceName, robotoFont.reference)
+
+    // Add font resources to the /Pages node so all child pages inherit them
+    const resourcesDict = new PdfDictionary()
+    resourcesDict.set('Font', fontDict)
+    pages.content.set('Resources', resourcesDict)
 
     console.log(`\nFont resource mappings:`)
     console.log(`  ${helveticaBold.resourceName} = Helvetica-Bold`)
@@ -168,7 +178,7 @@ async function main() {
     pages.content.set('Count', new PdfNumber(1))
 
     document.add(contentStream, page)
-    await document.commit()
+    await document.finalize()
 
     console.log(`\nFont resource mappings:`)
     console.log(`  ${helveticaBold.resourceName} = Helvetica-Bold`)

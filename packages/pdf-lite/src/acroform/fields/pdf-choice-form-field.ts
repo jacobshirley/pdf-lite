@@ -1,10 +1,10 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
 import { PdfChoiceAppearanceStream } from '../appearance/pdf-choice-appearance-stream.js'
-import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfArray } from '../../core/objects/pdf-array.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
+import { PdfIndirectObject, PdfObject } from '../../core/index.js'
 
 /**
  * Choice form field subtype (dropdowns, list boxes).
@@ -22,14 +22,21 @@ export class PdfChoiceFormField extends PdfFormField {
         label: string
         value: string
     }[] {
-        const opt =
-            this.content
-                .get('Opt')
-                ?.as(PdfArray<PdfString | PdfArray<PdfString>>) ??
-            this.parent?.content
-                .get('Opt')
-                ?.as(PdfArray<PdfString | PdfArray<PdfString>>)
+        let opt: PdfObject | undefined =
+            this.content.get('Opt') ?? this.parent?.content.get('Opt')
         if (!opt) return []
+
+        if (opt instanceof PdfObjectReference) {
+            opt = opt
+                .resolve()
+                .as(
+                    PdfIndirectObject<
+                        PdfArray<PdfString | PdfArray<PdfString>>
+                    >,
+                ).content
+        }
+
+        if (!(opt instanceof PdfArray)) return []
 
         return opt.items.map((item) => {
             if (item instanceof PdfArray && item.items.length >= 2) {
@@ -57,10 +64,16 @@ export class PdfChoiceFormField extends PdfFormField {
                   value: string
               }[]
             | string[]
+            | PdfObjectReference
             | undefined,
     ) {
         if (values === undefined) {
             this.content.delete('Opt')
+            return
+        }
+
+        if (values instanceof PdfObjectReference) {
+            this.content.set('Opt', values)
             return
         }
 
@@ -98,60 +111,25 @@ export class PdfChoiceFormField extends PdfFormField {
         const parsed = PdfDefaultAppearance.parse(da)
         if (!parsed) return false
 
-        let fontResources: PdfDictionary | undefined
-        const drFontValue = this.form?.defaultResources?.get('Font')
-        const drFonts =
-            drFontValue instanceof PdfDictionary ? drFontValue : undefined
-        const daFontRef = this.form?.fontRefs?.get(parsed.fontName)
-        if (drFonts || daFontRef) {
-            // Build a fresh font dict using clean PdfObjectReferences (no
-            // pre/postTokens inherited from the original parse context).
-            const fontDict = new PdfDictionary()
-            if (drFonts) {
-                for (const [key, val] of drFonts.entries()) {
-                    if (val instanceof PdfObjectReference) {
-                        fontDict.set(
-                            key,
-                            new PdfObjectReference(
-                                val.objectNumber,
-                                val.generationNumber,
-                            ),
-                        )
-                    } else if (val != null) {
-                        fontDict.set(key, val)
-                    }
-                }
-            }
-            if (daFontRef && !fontDict.has(parsed.fontName)) {
-                fontDict.set(
-                    parsed.fontName,
-                    new PdfObjectReference(
-                        daFontRef.objectNumber,
-                        daFontRef.generationNumber,
-                    ),
-                )
-            }
-            fontResources = new PdfDictionary()
-            fontResources.set('Font', fontDict)
-        }
+        const font = this.font
+        const fontResources = this.buildFontResources(parsed.fontName)
 
-        const isUnicode = this.form?.isFontUnicode(parsed.fontName) ?? false
-        const encodingMap = this.form?.fontEncodingMaps?.get(parsed.fontName)
-        const reverseEncodingMap: Map<string, number> | undefined = encodingMap
-            ? new Map(Array.from(encodingMap, ([code, char]) => [char, code]))
-            : undefined
+        const isUnicode = font?.isUnicode ?? false
+        const reverseEncodingMap = font?.reverseEncodingMap
 
-        this._appearanceStream = new PdfChoiceAppearanceStream({
-            rect: rect as [number, number, number, number],
-            value,
-            da: parsed,
-            flags: this.flags,
-            fontResources,
-            isUnicode,
-            reverseEncodingMap,
-            displayOptions: this.options.map((opt) => opt.label),
-            selectedIndex: this.selectedIndex,
-        })
+        this.setAppearanceStream(
+            new PdfChoiceAppearanceStream({
+                rect: rect as [number, number, number, number],
+                value,
+                da: parsed,
+                flags: this.flags,
+                fontResources,
+                isUnicode,
+                reverseEncodingMap,
+                displayOptions: this.options.map((opt) => opt.label),
+                selectedIndex: this.selectedIndex,
+            }),
+        )
 
         if (options?.makeReadOnly) {
             this.readOnly = true

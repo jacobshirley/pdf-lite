@@ -399,6 +399,7 @@ describe('PDF decoder', () => {
         expect(object.toString()).toBe(pdfString)
         expect(object).toMatchInlineSnapshot(`
           PdfDictionary {
+            "cachedTokens": undefined,
             "immutable": false,
             "innerTokens": [
               PdfWhitespaceToken {

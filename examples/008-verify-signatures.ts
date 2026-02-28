@@ -339,7 +339,7 @@ allSignatures.forEach((sig) => {
     document.add(sig)
 })
 
-await document.commit()
+await document.finalize()
 
 const documentBytes = document.toBytes()
 const newDocument = await PdfDocument.fromBytes([documentBytes])

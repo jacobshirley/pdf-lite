@@ -106,10 +106,13 @@ export class PdfXrefLookup {
         !dict.has('Encrypt') &&
             dict.set('Encrypt', prevDict.get('Encrypt')?.clone())
         !dict.has('ID') && dict.set('ID', prevDict.get('ID')?.clone())
-        !dict.has('Prev') && dict.set('Prev', new PdfNumber(xref.offset))
-
-        const prev = dict.get('Prev')
-        if (prev) {
+        if (!dict.has('Prev')) {
+            const prevNumber = new PdfNumber(xref.offset)
+            prevNumber.isByteOffset = true
+            dict.set('Prev', prevNumber)
+        } else {
+            const prev = dict.get('Prev')!
+            prev.ref.update(xref.offset)
             prev.isByteOffset = true
         }
     }
@@ -173,11 +176,23 @@ export class PdfXrefLookup {
 
         const initialLookup = lookup
         while (lookup) {
-            lookup.prev = lookups.find((x) =>
-                x.offset.equals(lookup?.trailerDict.get('Prev')?.value),
+            const prevEntry: PdfNumber | undefined =
+                lookup.trailerDict.get('Prev')
+            const prevLookup: PdfXrefLookup | undefined = lookups.find((x) =>
+                x.offset.equals(prevEntry?.value),
             )
 
-            lookup = lookup.prev
+            if (prevLookup) {
+                lookup.prev = prevLookup
+                // Link the Prev entry's Ref to the previous xref's offset Ref
+                // so it automatically updates when positions change
+                if (prevEntry) {
+                    prevEntry.ref.update(prevLookup.offset)
+                    prevEntry.isByteOffset = true
+                }
+            }
+
+            lookup = prevLookup
         }
 
         return initialLookup
@@ -322,13 +337,13 @@ export class PdfXrefLookup {
      * @param objects - Array of xref lookups to search for the previous one
      */
     linkPrev(objects: PdfXrefLookup[]): void {
-        const prevOffset = this.trailerDict.get('Prev')?.value
-        if (prevOffset === undefined) {
+        const prevEntry = this.trailerDict.get('Prev')
+        if (prevEntry?.value === undefined) {
             return
         }
 
         const prevLookup = objects.filter((obj) =>
-            obj.offset.equals(prevOffset),
+            obj.offset.equals(prevEntry.value),
         )
 
         if (prevLookup.length === 0) {
@@ -339,7 +354,10 @@ export class PdfXrefLookup {
 
         if (prevLookup[0].offset.equals(0)) return
 
-        this.setPrev(prevLookup[0])
+        this.prev = prevLookup[0]
+        // Link the Prev entry's Ref to the previous xref's offset Ref
+        prevEntry.ref.update(prevLookup[0].offset)
+        prevEntry.isByteOffset = true
     }
 
     /**
@@ -349,6 +367,10 @@ export class PdfXrefLookup {
      * @returns The updated xref object
      */
     update(): PdfIndirectObject<PdfXRefStream> | PdfXRefTable {
+        if (this.object?.isImmutable()) {
+            return this.object
+        }
+
         if (this.object instanceof PdfXRefTable) {
             const tableEntries = this.entriesValues.filter(
                 (entry) => entry instanceof PdfXRefTableEntry,

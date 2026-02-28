@@ -125,7 +125,7 @@ export class PdfXRefTable extends PdfObject {
             super.isModified() ||
             this.sections.some((section) => section.isModified()) ||
             this.entries.some((entry) => entry.isModified()) ||
-            this.offset.isModified
+            this.offset.modified
         )
     }
 

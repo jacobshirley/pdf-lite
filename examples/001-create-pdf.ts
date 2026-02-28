@@ -104,7 +104,7 @@ document.add(catalog)
 document.trailerDict.set('Root', catalog.reference)
 
 document.add(contentStream)
-await document.commit()
+await document.finalize()
 
 const file = `${import.meta.dirname}/tmp/created.pdf`
 console.log(`Writing PDF to: ${file}`)

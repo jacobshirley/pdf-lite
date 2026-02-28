@@ -36,12 +36,12 @@ export class PdfButtonFormField extends PdfFormField {
         return true
     }
 
-    override get checked(): boolean {
+    get checked(): boolean {
         const v = this.content.get('V') ?? this.parent?.content.get('V')
         return v instanceof PdfName && v.value === 'Yes'
     }
 
-    override set checked(isChecked: boolean) {
+    set checked(isChecked: boolean) {
         const target = this.parent ?? this
         if (isChecked) {
             target.content.set('V', new PdfName('Yes'))
@@ -49,42 +49,6 @@ export class PdfButtonFormField extends PdfFormField {
         } else {
             target.content.set('V', new PdfName('Off'))
             this.content.set('AS', new PdfName('Off'))
-        }
-    }
-
-    override getAppearanceStream(): PdfStream | undefined {
-        if (this.checked && this._appearanceStreamYes) {
-            return this._appearanceStreamYes.content
-        }
-        return this._appearanceStream?.content
-    }
-
-    override getAppearanceStreamsForWriting():
-        | { primary: PdfAppearanceStream; secondary?: PdfAppearanceStream }
-        | undefined {
-        if (!this._appearanceStream) return undefined
-        return {
-            primary: this._appearanceStream,
-            secondary: this._appearanceStreamYes,
-        }
-    }
-
-    override setAppearanceReference(
-        appearanceStreamRef: PdfObjectReference,
-        appearanceStreamYesRef?: PdfObjectReference,
-    ): void {
-        let apDict = this.appearanceStreamDict
-        if (!apDict) {
-            apDict = new PdfDictionary()
-            this.appearanceStreamDict = apDict
-        }
-        if (appearanceStreamYesRef) {
-            const stateDict = new PdfDictionary()
-            stateDict.set('Off', appearanceStreamRef)
-            stateDict.set('Yes', appearanceStreamYesRef)
-            apDict.set('N', stateDict)
-        } else {
-            apDict.set('N', appearanceStreamRef)
         }
     }
 
@@ -96,25 +60,26 @@ export class PdfButtonFormField extends PdfFormField {
         const width = x2 - x1
         const height = y2 - y1
 
-        this._appearanceStream = new PdfButtonAppearanceStream({
+        // Merge own flags with parent flags so inherited bits (e.g. Radio) are
+        // not lost when a child widget has its own Ff entry (even Ff: 0).
+        const effectiveFlags =
+            this.flags.flags | (this.parent?.flags?.flags ?? 0)
+
+        const yesAppearance = PdfButtonAppearanceStream.buildYesContent(
+            width,
+            height,
+            effectiveFlags,
+        )
+
+        const noAppearance = new PdfButtonAppearanceStream({
             width,
             height,
             contentStream: '',
         })
 
-        // Merge own flags with parent flags so inherited bits (e.g. Radio) are
-        // not lost when a child widget has its own Ff entry (even Ff: 0).
-        const effectiveFlags =
-            this.flags.flags | (this.parent?.flags?.flags ?? 0)
-        const yesContent = PdfButtonAppearanceStream.buildYesContent(
-            width,
-            height,
-            effectiveFlags,
-        )
-        this._appearanceStreamYes = new PdfButtonAppearanceStream({
-            width,
-            height,
-            contentStream: yesContent,
+        this.setAppearanceStream({
+            Yes: yesAppearance,
+            Off: noAppearance,
         })
 
         if (options?.makeReadOnly) {

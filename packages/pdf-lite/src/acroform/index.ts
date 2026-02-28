@@ -1,6 +1,4 @@
-export * from './manager.js'
 export * from './pdf-acro-form.js'
 export * from './fields/index.js'
 export * from './appearance/index.js'
 export * from './xfa/index.js'
-export { PdfFontEncodingCache } from './pdf-font-encoding-cache.js'

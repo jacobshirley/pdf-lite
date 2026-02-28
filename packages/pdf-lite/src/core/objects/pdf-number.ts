@@ -60,9 +60,6 @@ export class PdfNumber extends PdfObject {
     }
 
     set value(value: number) {
-        if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfNumber')
-        }
         this.#value.update(value)
     }
 
@@ -92,8 +89,13 @@ export class PdfNumber extends PdfObject {
         return cloned
     }
 
+    setModified(modified?: boolean): void {
+        super.setModified(modified)
+        this.#value.setModified(modified)
+    }
+
     isModified(): boolean {
-        return super.isModified() || this.#value.isModified
+        return super.isModified() || this.#value.isModified()
     }
 }
 

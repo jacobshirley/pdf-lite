@@ -11,37 +11,34 @@ export interface XfaFieldData {
  * Provides methods to read/write XML and update individual field values.
  */
 export class PdfXfaData extends PdfIndirectObject<PdfStream> {
-    constructor(stream: PdfIndirectObject<PdfStream>) {
+    constructor(stream: PdfIndirectObject) {
         super(stream)
     }
 
-    readXml(): string {
-        const decompressed = this.content.decode()
-        return new TextDecoder().decode(decompressed)
+    get xml(): string {
+        return this.content.dataAsString
     }
 
-    writeXml(xml: string): void {
-        this.content = PdfStream.fromString(xml)
+    set xml(xml: string) {
+        this.content.dataAsString = xml
     }
 
     updateField(name: string, value: string): void {
-        let xml = this.readXml()
-        xml = PdfXfaData.updateFieldValue(xml, name, value)
-        this.writeXml(xml)
+        this.xml = PdfXfaData.updateFieldValue(this.xml, name, value)
     }
 
     updateFields(fields: XfaFieldData[]): void {
         if (fields.length === 0) return
 
-        let xml = this.readXml()
+        let xml = this.xml
         for (const { name, value } of fields) {
             xml = PdfXfaData.updateFieldValue(xml, name, value)
         }
-        this.writeXml(xml)
+        this.xml = xml
     }
 
     getFieldValue(name: string): string | null {
-        const xml = this.readXml()
+        const xml = this.xml
         const segments = name.split('.')
         const leafSegment = segments[segments.length - 1]
         const leafName = leafSegment.replace(/\[\d+\]$/, '')
@@ -53,6 +50,14 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
         )
         const match = xml.match(contentRegex)
         return match ? match[1] : null
+    }
+
+    importData(fields: Record<string, string | undefined>): void {
+        for (const field in fields) {
+            const value = fields[field]
+            if (value === undefined) continue
+            this.updateField(field, value)
+        }
     }
 
     private static updateFieldValue(

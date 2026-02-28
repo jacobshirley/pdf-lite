@@ -12,9 +12,8 @@ import { ascii85 } from '../../filters/ascii85.js'
 import { lzw } from '../../filters/lzw.js'
 import { runLength } from '../../filters/runlength.js'
 import { passthroughFilter } from '../../filters/pass-through.js'
-import { ByteArray } from '../../types.js'
+import { ByteArray, DecodeParms } from '../../types.js'
 import { PdfNumber } from './pdf-number.js'
-import { Predictor } from '../../utils/predictors.js'
 import { bytesToPdfObjects } from '../generators.js'
 import { PdfIndirectObject } from './pdf-indirect-object.js'
 import { PdfXRefTableEntry } from './pdf-xref-table.js'
@@ -22,9 +21,303 @@ import { stringToBytes } from '../../utils/stringToBytes.js'
 import { PdfFilter, PdfStreamFilterType } from '../../filters/types.js'
 import { bytesToString } from '../../utils/bytesToString.js'
 
+export class PdfStreamPredictor extends PdfDictionary<{
+    Predictor?: PdfNumber
+    Columns?: PdfNumber
+    Colors?: PdfNumber
+    BitsPerComponent?: PdfNumber
+}> {
+    static NONE = new PdfStreamPredictor({ Predictor: new PdfNumber(1) })
+    static TIFF = new PdfStreamPredictor({ Predictor: new PdfNumber(2) })
+    static PNG_NONE = new PdfStreamPredictor({ Predictor: new PdfNumber(10) })
+    static PNG_SUB = new PdfStreamPredictor({ Predictor: new PdfNumber(11) })
+    static PNG_UP = new PdfStreamPredictor({ Predictor: new PdfNumber(12) })
+    static PNG_AVERAGE = new PdfStreamPredictor({
+        Predictor: new PdfNumber(13),
+    })
+    static PNG_PAETH = new PdfStreamPredictor({ Predictor: new PdfNumber(14) })
+    static PNG_OPTIMUM = new PdfStreamPredictor({
+        Predictor: new PdfNumber(15),
+    })
+    static XREF_STREAM = new PdfStreamPredictor({
+        Predictor: new PdfNumber(12),
+        Columns: new PdfNumber(7),
+    })
+
+    get predictor(): number {
+        return this.get('Predictor')?.as(PdfNumber)?.value ?? 1
+    }
+
+    set predictor(value: number) {
+        this.set('Predictor', new PdfNumber(value))
+    }
+
+    get columns(): number {
+        return this.get('Columns')?.as(PdfNumber)?.value ?? 1
+    }
+
+    set columns(value: number) {
+        this.set('Columns', new PdfNumber(value))
+    }
+
+    get colors(): number {
+        return this.get('Colors')?.as(PdfNumber)?.value ?? 1
+    }
+
+    set colors(value: number) {
+        this.set('Colors', new PdfNumber(value))
+    }
+
+    get bitsPerComponent(): number {
+        return this.get('BitsPerComponent')?.as(PdfNumber)?.value ?? 8
+    }
+
+    set bitsPerComponent(value: number) {
+        this.set('BitsPerComponent', new PdfNumber(value))
+    }
+
+    toDecodeParms(): DecodeParms {
+        const params: DecodeParms = {}
+        const predictor = this.get('Predictor')?.as(PdfNumber)
+        if (predictor) params.Predictor = predictor.value
+        const columns = this.get('Columns')?.as(PdfNumber)
+        if (columns) params.Columns = columns.value
+        const colors = this.get('Colors')?.as(PdfNumber)
+        if (colors) params.Colors = colors.value
+        const bpc = this.get('BitsPerComponent')?.as(PdfNumber)
+        if (bpc) params.BitsPerComponent = bpc.value
+        return params
+    }
+
+    cloneImpl(): this {
+        return PdfStreamPredictor.fromDecodeParms(this.toDecodeParms()) as this
+    }
+
+    static fromDecodeParms(params: DecodeParms): PdfStreamPredictor {
+        const predictor = new PdfStreamPredictor()
+        if (params.Predictor !== undefined) {
+            predictor.predictor = params.Predictor
+        }
+        if (params.Columns !== undefined) {
+            predictor.columns = params.Columns
+        }
+        if (params.Colors !== undefined) {
+            predictor.colors = params.Colors
+        }
+        if (params.BitsPerComponent !== undefined) {
+            predictor.bitsPerComponent = params.BitsPerComponent
+        }
+        return predictor
+    }
+
+    static fromDictionary(
+        dict?: PdfDictionary,
+    ): PdfStreamPredictor | undefined {
+        if (!dict) return undefined
+
+        const predictor = dict.get('Predictor')?.as(PdfNumber)?.value
+        if (predictor === undefined || predictor <= 1 || predictor > 15) {
+            return undefined
+        }
+
+        return PdfStreamPredictor.fromDecodeParms({
+            Predictor: predictor,
+            Columns: dict.get('Columns')?.as(PdfNumber)?.value,
+            Colors: dict.get('Colors')?.as(PdfNumber)?.value,
+            BitsPerComponent: dict.get('BitsPerComponent')?.as(PdfNumber)
+                ?.value,
+        })
+    }
+
+    encode(data: ByteArray, filterType: number = 0): ByteArray {
+        const bpp = Math.ceil((this.colors * this.bitsPerComponent) / 8)
+
+        if (this.predictor === 2) {
+            return PdfStreamPredictor.tiffEncode(data, this.columns, bpp)
+        } else if (this.predictor >= 10 && this.predictor <= 15) {
+            return PdfStreamPredictor.pngEncode(
+                data,
+                this.columns,
+                bpp,
+                filterType,
+            )
+        }
+
+        return data
+    }
+
+    decode(data: ByteArray): ByteArray {
+        const bpp = Math.ceil((this.colors * this.bitsPerComponent) / 8)
+
+        if (this.predictor === 2) {
+            return PdfStreamPredictor.tiffDecode(data, this.columns, bpp)
+        } else if (this.predictor >= 10 && this.predictor <= 15) {
+            return PdfStreamPredictor.pngDecode(data, this.columns, bpp)
+        }
+
+        return data
+    }
+
+    private static tiffDecode(
+        data: ByteArray,
+        columns: number,
+        bpp: number,
+    ): ByteArray {
+        const rowLength = columns * bpp
+        const output = new Uint8Array(data.length)
+
+        for (let i = 0; i < data.length; i += rowLength) {
+            for (let j = 0; j < rowLength; j++) {
+                output[i + j] =
+                    j < bpp
+                        ? data[i + j]
+                        : (data[i + j] + output[i + j - bpp]) & 0xff
+            }
+        }
+
+        return output
+    }
+
+    private static tiffEncode(
+        data: ByteArray,
+        columns: number,
+        bpp: number,
+    ): ByteArray {
+        const rowLength = columns * bpp
+        const output = new Uint8Array(data.length)
+
+        for (let i = 0; i < data.length; i += rowLength) {
+            for (let j = 0; j < rowLength; j++) {
+                output[i + j] =
+                    j < bpp
+                        ? data[i + j]
+                        : (data[i + j] - data[i + j - bpp] + 256) & 0xff
+            }
+        }
+
+        return output
+    }
+
+    private static pngDecode(
+        data: ByteArray,
+        columns: number,
+        bpp: number,
+    ): ByteArray {
+        const rowLength = columns * bpp
+        const output: number[] = []
+
+        for (let i = 0; i < data.length; ) {
+            const filter = data[i]
+            const row = data.slice(i + 1, i + 1 + rowLength)
+            const prior = output.slice(output.length - rowLength, output.length)
+
+            const decodedRow = new Uint8Array(rowLength)
+            for (let j = 0; j < rowLength; j++) {
+                const left = j >= bpp ? decodedRow[j - bpp] : 0
+                const up = prior[j] ?? 0
+                const upperLeft = j >= bpp ? (prior[j - bpp] ?? 0) : 0
+
+                switch (filter) {
+                    case 0:
+                        decodedRow[j] = row[j]
+                        break
+                    case 1:
+                        decodedRow[j] = (row[j] + left) & 0xff
+                        break
+                    case 2:
+                        decodedRow[j] = (row[j] + up) & 0xff
+                        break
+                    case 3:
+                        decodedRow[j] =
+                            (row[j] + Math.floor((left + up) / 2)) & 0xff
+                        break
+                    case 4:
+                        decodedRow[j] =
+                            (row[j] +
+                                this.paethPredictor(left, up, upperLeft)) &
+                            0xff
+                        break
+                    default:
+                        throw new Error(`Unsupported PNG filter: ${filter}`)
+                }
+            }
+
+            output.push(...decodedRow)
+            i += 1 + rowLength
+        }
+
+        return new Uint8Array(output)
+    }
+
+    private static pngEncode(
+        data: ByteArray,
+        columns: number,
+        bpp: number,
+        filterType: number,
+    ): ByteArray {
+        const rowLength = columns * bpp
+        const output: number[] = []
+        let prior = new Uint8Array(rowLength)
+
+        for (let i = 0; i < data.length; i += rowLength) {
+            const row = data.slice(i, i + rowLength)
+            const encodedRow = new Uint8Array(rowLength)
+
+            for (let j = 0; j < rowLength; j++) {
+                const left = j >= bpp ? row[j - bpp] : 0
+                const up = prior[j] ?? 0
+                const upperLeft = j >= bpp ? (prior[j - bpp] ?? 0) : 0
+
+                switch (filterType) {
+                    case 0:
+                        encodedRow[j] = row[j]
+                        break
+                    case 1:
+                        encodedRow[j] = (row[j] - left + 256) & 0xff
+                        break
+                    case 2:
+                        encodedRow[j] = (row[j] - up + 256) & 0xff
+                        break
+                    case 3:
+                        encodedRow[j] =
+                            (row[j] - Math.floor((left + up) / 2) + 256) & 0xff
+                        break
+                    case 4:
+                        encodedRow[j] =
+                            (row[j] -
+                                this.paethPredictor(left, up, upperLeft) +
+                                256) &
+                            0xff
+                        break
+                    default:
+                        throw new Error(`Unsupported PNG filter: ${filterType}`)
+                }
+            }
+
+            output.push(filterType, ...encodedRow)
+            prior = row
+        }
+
+        return new Uint8Array(output)
+    }
+
+    private static paethPredictor(a: number, b: number, c: number): number {
+        const p = a + b - c
+        const pa = Math.abs(p - a)
+        const pb = Math.abs(p - b)
+        const pc = Math.abs(p - c)
+
+        if (pa <= pb && pa <= pc) return a
+        if (pb <= pc) return b
+        return c
+    }
+}
+
 export class PdfStream<
     T extends PdfDictionary = PdfDictionary,
 > extends PdfObject {
+    static PdfStreamPredictor = PdfStreamPredictor
+
     header: T
     original: ByteArray
     preStreamDataTokens?: PdfToken[]
@@ -56,14 +349,10 @@ export class PdfStream<
     get raw(): ByteArray {
         const length = this.header.get('Length')?.as(PdfNumber)?.value
         if (length === undefined) return this.original
-
         return this.original.slice(0, length)
     }
 
     set raw(data: ByteArray) {
-        if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfStream')
-        }
         this.setModified()
         this.original = data
         this.header.set('Length', new PdfNumber(data.length))
@@ -79,6 +368,32 @@ export class PdfStream<
 
     set rawAsString(str: string) {
         this.raw = stringToBytes(str)
+    }
+
+    get data(): ByteArray {
+        return this.decode()
+    }
+
+    set data(data: ByteArray) {
+        const filters = this.getFilters()
+        const existingPredictor = this.predictor
+        this.removeAllFilters()
+        this.header.delete('DecodeParms')
+        this.raw = data
+        if (existingPredictor) {
+            this.predictor = existingPredictor
+        }
+        for (const filter of filters) {
+            this.addFilter(filter)
+        }
+    }
+
+    get dataAsString(): string {
+        return bytesToString(this.data)
+    }
+
+    set dataAsString(str: string) {
+        this.data = stringToBytes(str)
     }
 
     getFilters(): PdfStreamFilterType[] {
@@ -120,30 +435,26 @@ export class PdfStream<
         return this
     }
 
-    setPredictor(predictorParams: {
-        Predictor?: number
-        Columns?: number
-        Colors?: number
-        BitsPerComponent?: number
-    }) {
-        let decodeParms = this.header.get('DecodeParms')?.as(PdfDictionary)
+    get predictor(): PdfStreamPredictor | undefined {
+        const raw = this.header.get('DecodeParms')
+        if (!raw) return undefined
 
-        if (!decodeParms) {
-            decodeParms = new PdfDictionary()
-            this.header.set('DecodeParms', decodeParms)
-        } else if (decodeParms instanceof PdfDictionary) {
-            // already a dictionary
-        } else {
-            throw new Error('Invalid DecodeParms entry in PDF stream')
+        if (raw instanceof PdfStreamPredictor) {
+            if (raw.get('Predictor') === undefined) return undefined
+            return raw
         }
 
-        for (const [key, value] of Object.entries(predictorParams)) {
-            decodeParms.set(key, new PdfNumber(value))
+        if (raw instanceof PdfDictionary) {
+            return PdfStreamPredictor.fromDictionary(raw)
         }
 
-        this.raw = Predictor.encode(this.raw, predictorParams)
+        return undefined
+    }
 
-        return this
+    set predictor(predictor: PdfStreamPredictor) {
+        const cloned = predictor.cloneImpl()
+        this.header.set('DecodeParms', cloned)
+        this.raw = cloned.encode(this.raw)
     }
 
     removeFilter(filterName: PdfStreamFilterType) {
@@ -200,12 +511,12 @@ export class PdfStream<
             data = filter.decode(data)
         }
 
-        const predictorParams = Predictor.getDecodeParms(
+        const streamPredictor = PdfStreamPredictor.fromDictionary(
             this.header.get('DecodeParms')?.as(PdfDictionary),
         )
 
-        if (predictorParams) {
-            data = Predictor.decode(data, predictorParams)
+        if (streamPredictor) {
+            data = streamPredictor.decode(data)
         }
 
         return data
@@ -393,11 +704,14 @@ export class PdfObjStream extends PdfStream {
                 const objectNumber = numbers[i * 2].value
                 const generationNumber = 0
 
-                yield new PdfIndirectObject({
+                const decompressedObject = new PdfIndirectObject({
                     objectNumber,
                     generationNumber,
                     content: obj,
-                })
+                    compressed: true,
+                }).clone()
+                decompressedObject.setModified(false)
+                yield decompressedObject
 
                 i++
 

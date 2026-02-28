@@ -100,7 +100,7 @@ document.add(catalog)
 document.trailerDict.set('Root', catalog.reference)
 document.add(contentStream)
 
-await document.commit()
+await document.finalize()
 // Save the original PDF
 const originalPdfPath = `${tmpFolder}/original.pdf`
 await fs.writeFile(originalPdfPath, document.toBytes())
@@ -112,7 +112,9 @@ console.log('\nStep 2: Loading PDF and performing incremental update...')
 
 // Read the existing PDF
 const existingPdfBytes = await fs.readFile(originalPdfPath)
-const loadedDocument = await PdfDocument.fromBytes([existingPdfBytes])
+const loadedDocument = await PdfDocument.fromBytes([existingPdfBytes], {
+    incremental: true,
+})
 
 // Lock existing revisions to enable incremental mode
 // This ensures changes are added as new revisions instead of modifying existing ones
@@ -132,7 +134,7 @@ const newContentStream = new PdfIndirectObject({
 
 // Add the new content to the document
 loadedDocument.add(newContentStream)
-await loadedDocument.commit()
+await loadedDocument.finalize()
 
 // Save the incrementally updated PDF
 const updatedPdfPath = `${tmpFolder}/incremental-update.pdf`
@@ -174,7 +176,9 @@ console.log(`Original content preserved: ${originalBytesMatch ? 'Yes' : 'No'}`)
 // Step 4: Add another incremental revision
 console.log('\nStep 4: Adding another incremental revision...')
 
-const secondUpdate = await PdfDocument.fromBytes([updatedPdfBytes])
+const secondUpdate = await PdfDocument.fromBytes([updatedPdfBytes], {
+    incremental: true,
+})
 secondUpdate.setIncremental(true)
 
 const thirdRevisionContent = new PdfIndirectObject({
@@ -186,7 +190,7 @@ const thirdRevisionContent = new PdfIndirectObject({
 })
 
 secondUpdate.add(thirdRevisionContent)
-await secondUpdate.commit()
+await secondUpdate.finalize()
 
 const multiRevisionPdfPath = `${tmpFolder}/multi-revision.pdf`
 await fs.writeFile(multiRevisionPdfPath, secondUpdate.toBytes())

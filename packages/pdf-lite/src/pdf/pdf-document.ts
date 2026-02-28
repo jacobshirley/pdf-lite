@@ -13,8 +13,12 @@ import {
     PdfStream,
     PdfXRefStreamCompressedEntry,
 } from '../core/objects/pdf-stream.js'
+import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
-import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
+import {
+    IPdfObjectResolver,
+    PdfObjectReference,
+} from '../core/objects/pdf-object-reference.js'
 import { PdfXrefLookup } from './pdf-xref-lookup.js'
 import { PdfTokenSerializer } from '../core/serializer.js'
 import { PdfRevision } from './pdf-revision.js'
@@ -25,16 +29,13 @@ import { PdfNumberToken } from '../core/tokens/number-token.js'
 import { PdfXRefTableEntryToken } from '../core/tokens/xref-table-entry-token.js'
 import { Ref } from '../core/ref.js'
 import { PdfStartXRef } from '../core/objects/pdf-start-xref.js'
-import { PdfTrailer, PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
+import { PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
 import { FoundCompressedObjectError } from '../errors.js'
-import { PdfDocumentSecurityStoreObject } from '../signing/document-security-store.js'
 import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
-import { PdfAcroFormManager } from '../acroform/manager.js'
-import { PdfFontManager } from '../fonts/manager.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
-import { PdfArray } from '../index.js'
+import { PdfAcroForm } from '../acroform/pdf-acro-form.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -53,20 +54,23 @@ import { PdfArray } from '../index.js'
  * await document.commit()
  * ```
  */
-export class PdfDocument extends PdfObject {
+export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     /** List of document revisions for incremental updates */
     revisions: PdfRevision[]
     /** Signer instance for digital signature operations */
     signer: PdfSigner
     /** Security handler for encryption/decryption operations */
     securityHandler?: PdfSecurityHandler
+    /** Whether the document is currently in incremental mode (appending changes as a new revision) */
+    private incremental: boolean = false
 
-    /**  */
-    readonly acroForm: PdfAcroFormManager
-    readonly fonts: PdfFontManager
+    private originalSecurityHandler?: PdfSecurityHandler
 
     private hasEncryptionDictionary?: boolean = false
-    private toBeCommitted: PdfObject[] = []
+    private _resolvedCache = new Map<string, PdfIndirectObject>()
+    private _committing = false
+    private _finalized = false
+    private _signed = false
 
     /**
      * Creates a new PDF document instance.
@@ -104,16 +108,43 @@ export class PdfDocument extends PdfObject {
             this.setOwnerPassword(options.ownerPassword)
         }
 
-        this.signer = options?.signer ?? new PdfSigner()
+        this.signer = options?.signer ?? new PdfSigner({ document: this })
 
         this.linkRevisions()
+        this.wireResolvers(
+            ...this.objects.filter((x) => x instanceof PdfIndirectObject),
+            ...this.revisions.map((rev) => rev.xref.trailerDict),
+        )
         this.calculateOffsets()
 
-        this.securityHandler =
-            options?.securityHandler ?? this.getSecurityHandler()
+        this.originalSecurityHandler = options?.securityHandler
+        this.resetSecurityHandler()
+    }
 
-        this.acroForm = new PdfAcroFormManager(this)
-        this.fonts = new PdfFontManager(this)
+    resolve(objectNumber: number, generationNumber: number): PdfIndirectObject {
+        const cacheKey = `${objectNumber} ${generationNumber}`
+        const cached = this._resolvedCache.get(cacheKey)
+        if (cached) return cached
+
+        const found = this.readObject({ objectNumber, generationNumber })
+        if (!found) {
+            throw new Error(
+                `Object ${objectNumber} ${generationNumber} not found`,
+            )
+        }
+        this.wireResolvers(found)
+        this._resolvedCache.set(cacheKey, found)
+
+        return found
+    }
+
+    get acroform(): PdfAcroForm | null {
+        const root = this.root
+        const acroFormEntry = root.content.get('AcroForm')
+        if (!acroFormEntry) return null
+        const acroFormRef = acroFormEntry.as(PdfObjectReference)?.resolve()
+        if (!acroFormRef) return null
+        return acroFormRef.becomes(PdfAcroForm)
     }
 
     get header(): PdfComment | undefined {
@@ -177,6 +208,10 @@ export class PdfDocument extends PdfObject {
         return this
     }
 
+    hasObjectInLatestRevision(obj: PdfObject): boolean {
+        return this.latestRevision.objects.includes(obj)
+    }
+
     /**
      * Adds objects to the document's latest revision.
      * Automatically starts a new revision if the current one is locked.
@@ -189,11 +224,23 @@ export class PdfDocument extends PdfObject {
         }
 
         for (const obj of objects) {
-            if (obj.isImmutable()) {
-                throw new Error('Risky adding a immutable obj')
+            this.wireResolvers(obj)
+            if (this.hasObjectInLatestRevision(obj)) {
+                continue
             }
-            this.toBeCommitted.push(obj)
             this.latestRevision.addObject(obj)
+        }
+
+        // Auto-add any referenced-but-missing objects
+        const missing = this.collectMissingReferences(...objects)
+        if (missing.length > 0) {
+            this.add(...missing)
+        }
+
+        this.update()
+
+        for (const obj of objects) {
+            obj.setModified(false)
         }
     }
 
@@ -381,6 +428,11 @@ export class PdfDocument extends PdfObject {
         return metadataRef
     }
 
+    resetSecurityHandler(): void {
+        this.securityHandler =
+            this.originalSecurityHandler ?? this.getSecurityHandler()
+    }
+
     private getSecurityHandler(): PdfSecurityHandler | undefined {
         const encryptionDictionaryRef = this.trailerDict
             .get('Encrypt')
@@ -500,11 +552,39 @@ export class PdfDocument extends PdfObject {
         return true
     }
 
+    commitIncrementalUpdates(): void {
+        if (!this.incremental || this._committing) {
+            return
+        }
+
+        this._committing = true
+        try {
+            for (const revision of this.revisions) {
+                if (!revision.locked) continue
+                for (const obj of revision.objects) {
+                    if (!(obj instanceof PdfIndirectObject)) {
+                        continue
+                    }
+                    if (obj.isModified()) {
+                        const adding = obj.clone()
+                        this.add(adding)
+                        adding.setModified(false)
+                        obj.setModified(false)
+                    }
+                }
+            }
+        } finally {
+            this._committing = false
+        }
+    }
+
     /**
-     * Decrypts all encrypted objects in the document.
-     * Removes the security handler and encryption dictionary after decryption.
+     * Decrypts all encrypted object data in-place without removing
+     * the encryption infrastructure. Useful in incremental mode where
+     * the original (encrypted) bytes are preserved via cached tokens
+     * but the live object data needs to be readable.
      */
-    async decrypt(): Promise<void> {
+    async decryptObjects(): Promise<void> {
         if (!this.securityHandler) {
             return
         }
@@ -520,27 +600,71 @@ export class PdfDocument extends PdfObject {
 
             await this.securityHandler.decryptObject(object)
         }
-
-        this.securityHandler = undefined
-        this.hasEncryptionDictionary = false
-
-        const encryptionDict = this.encryptionDictionary
-
-        if (encryptionDict) {
-            await this.deleteObject(encryptionDict)
-        }
-
-        await this.update()
     }
 
     /**
-     * Encrypts all objects in the document using the security handler.
-     * Creates and adds an encryption dictionary to all revisions.
+     * Re-encrypts all objects and updates the document structure.
+     * No-op if the document has no security handler (unencrypted document).
+     */
+    async finalize(): Promise<void> {
+        if (this._finalized) {
+            throw new Error('Document has already been finalized')
+        }
+
+        this._finalized = true
+        this.update()
+
+        if (this.securityHandler) {
+            await this.encrypt()
+        }
+
+        this.update()
+        await this.sign()
+    }
+
+    /**
+     * Decrypts all encrypted objects in the document.
+     * Removes the security handler and encryption dictionary after decryption.
+     */
+    async decrypt(): Promise<void> {
+        if (!this.securityHandler) {
+            return
+        }
+
+        await this.decryptObjects()
+
+        this.hasEncryptionDictionary = false
+        this.securityHandler = undefined
+
+        const encryptionDict = this.encryptionDictionary
+
+        this.trailerDict.delete('Encrypt')
+        if (encryptionDict) {
+            this.deleteObject(encryptionDict)
+        }
+
+        this.update()
+    }
+
+    /**
+     * Encrypts all encryptable objects using the security handler.
+     * Re-uses the existing encryption dictionary or creates one if needed,
+     * propagating it to all revisions.
      */
     async encrypt(): Promise<void> {
-        this.initSecurityHandler({})
+        if (!this.securityHandler) {
+            return
+        }
 
-        await this.securityHandler!.write()
+        const addingEncryption = !this.hasEncryptionDictionary
+        const wasIncremental = this.incremental
+
+        if (addingEncryption) {
+            this.setIncremental(false)
+        }
+
+        this.initSecurityHandler({})
+        await this.securityHandler.write()
 
         for (const object of this.objects) {
             if (!(object instanceof PdfIndirectObject)) {
@@ -551,32 +675,37 @@ export class PdfDocument extends PdfObject {
                 continue
             }
 
-            await this.securityHandler!.encryptObject(object)
+            await this.securityHandler.encryptObject(object)
+            object.setModified(false)
         }
 
-        const encryptionDictObject = new PdfIndirectObject({
-            content: this.securityHandler!.dict,
-            encryptable: false,
-        })
+        if (addingEncryption) {
+            const encryptionDictObject = new PdfIndirectObject({
+                content: this.securityHandler.dict,
+                encryptable: false,
+            })
 
-        for (const revision of this.revisions) {
-            revision.xref.trailerDict.set(
-                'Encrypt',
-                encryptionDictObject.reference,
-            )
+            this.add(encryptionDictObject)
+            this.hasEncryptionDictionary = true
 
-            if (!revision.xref.trailerDict.get('ID')) {
+            for (const revision of this.revisions) {
                 revision.xref.trailerDict.set(
-                    'ID',
-                    this.securityHandler!.getDocumentId(),
+                    'Encrypt',
+                    encryptionDictObject.reference,
                 )
+
+                if (!revision.xref.trailerDict.get('ID')) {
+                    revision.xref.trailerDict.set(
+                        'ID',
+                        this.securityHandler.getDocumentId(),
+                    )
+                }
             }
+
+            this.setIncremental(wasIncremental)
         }
 
-        await this.commit(encryptionDictObject)
-        this.hasEncryptionDictionary = true
-
-        await this.update()
+        this.update()
     }
 
     /**
@@ -586,14 +715,14 @@ export class PdfDocument extends PdfObject {
      * @returns The found indirect object or undefined if not found
      * @throws Error if the object cannot be found in the expected object stream
      */
-    async findCompressedObject(
+    findCompressedObject(
         options:
             | {
                   objectNumber: number
                   generationNumber?: number
               }
             | PdfObjectReference,
-    ): Promise<PdfIndirectObject | undefined> {
+    ): PdfIndirectObject | undefined {
         const xrefEntry = this.xrefLookup.getObject(options.objectNumber)
 
         if (!(xrefEntry instanceof PdfXRefStreamCompressedEntry)) {
@@ -610,13 +739,6 @@ export class PdfDocument extends PdfObject {
             throw new Error(
                 `Cannot find object stream ${xrefEntry.objectStreamNumber.value} for object ${options.objectNumber}`,
             )
-        }
-
-        if (
-            this.securityHandler &&
-            this.isObjectEncryptable(objectStreamIndirect)
-        ) {
-            await this.securityHandler.decryptObject(objectStreamIndirect)
         }
 
         const objectStream = objectStreamIndirect.content
@@ -683,18 +805,19 @@ export class PdfDocument extends PdfObject {
      * @param options.allowUnindexed - If true, searches unindexed objects as fallback
      * @returns A cloned and decrypted copy of the object, or undefined if not found
      */
-    async readObject(options: {
+    readObject(options: {
         objectNumber: number
         generationNumber?: number
         allowUnindexed?: boolean
-    }): Promise<PdfIndirectObject | undefined> {
+        cloned?: boolean
+    }): PdfIndirectObject | undefined {
         let foundObject: PdfIndirectObject | undefined
 
         try {
             foundObject = this.findUncompressedObject(options)
         } catch (e) {
             if (e instanceof FoundCompressedObjectError) {
-                foundObject = await this.findCompressedObject(options)
+                foundObject = this.findCompressedObject(options)
             } else {
                 throw e
             }
@@ -714,26 +837,36 @@ export class PdfDocument extends PdfObject {
             return undefined
         }
 
-        if (this.securityHandler && this.isObjectEncryptable(foundObject)) {
+        if (options.cloned) {
             foundObject = foundObject.clone()
-            await this.securityHandler.decryptObject(foundObject)
         }
 
         return foundObject
     }
+
+    /**
+     * Finds the revision that contains a given PDF object.
+     * Useful for determining the origin of an object across multiple revisions.
+     * @param obj - The PDF object to find the revision for
+     * @returns The PdfRevision that contains the object, or undefined if not found in any revision
+     */
+    findRevisionForObject(obj: PdfObject): PdfRevision | undefined {
+        return this.revisions.find((rev) => rev.objects.includes(obj))
+    }
+
     /**
      * Deletes an object from all revisions in the document.
      *
      * @param obj - The PDF object to delete
      */
-    async deleteObject(obj: PdfObject | undefined): Promise<void> {
+    deleteObject(obj: PdfObject | undefined): void {
         if (!obj) return
 
         for (const revision of this.revisions) {
             revision.deleteObject(obj)
         }
 
-        await this.update()
+        this.update()
     }
 
     /**
@@ -763,11 +896,11 @@ export class PdfDocument extends PdfObject {
             return
         }
 
+        this.incremental = value
+
         for (const revision of this.revisions) {
             revision.locked = value
         }
-
-        this.startNewRevision()
     }
 
     /**
@@ -776,72 +909,7 @@ export class PdfDocument extends PdfObject {
      * @returns True if all revisions are locked for incremental updates
      */
     isIncremental(): boolean {
-        return this.latestRevision.locked
-    }
-
-    /**
-     * Commits pending objects to the document.
-     * Adds objects, applies encryption if configured, and updates the document structure.
-     *
-     * @param newObjects - Additional objects to add before committing
-     */
-    async commit(...newObjects: PdfObject[]): Promise<void> {
-        this.add(...newObjects)
-
-        const queue = this.toBeCommitted.slice()
-        this.toBeCommitted = []
-
-        for (const newObject of queue) {
-            if (
-                this.securityHandler &&
-                newObject instanceof PdfIndirectObject &&
-                this.isObjectEncryptable(newObject)
-            ) {
-                await this.securityHandler.write()
-
-                this.ensureEncryptionDictionary()
-
-                await this.securityHandler.encryptObject(newObject)
-            }
-        }
-
-        await this.update()
-    }
-
-    private ensureEncryptionDictionary(): void {
-        if (this.hasEncryptionDictionary) {
-            return
-        }
-
-        const encryptionDictObject = new PdfIndirectObject({
-            content: this.securityHandler!.dict,
-            encryptable: false,
-        })
-
-        this.latestRevision.addObject(encryptionDictObject)
-        this.trailerDict.set('Encrypt', encryptionDictObject.reference)
-        this.hasEncryptionDictionary = true
-    }
-
-    /**
-     * Sets the Document Security Store (DSS) for the document.
-     * Used for long-term validation of digital signatures.
-     *
-     * @param dss - The Document Security Store object to set
-     * @throws Error if the document has no root dictionary
-     */
-    async setDocumentSecurityStore(
-        dss: PdfDocumentSecurityStoreObject,
-    ): Promise<void> {
-        let rootDictionary = this.root?.content
-        if (!rootDictionary) {
-            throw new Error('Cannot set DSS - document has no root dictionary')
-        }
-        rootDictionary.set('DSS', dss.reference)
-
-        if (!this.hasObject(dss)) {
-            await this.commit(dss)
-        }
+        return this.incremental
     }
 
     /**
@@ -875,6 +943,79 @@ export class PdfDocument extends PdfObject {
         return this.tokensWithObjects().map(({ token }) => token)
     }
 
+    private wireResolvers(...objects: PdfObject[]): void {
+        const seen = new Set<PdfObject>()
+        const walk = (obj: PdfObject) => {
+            if (seen.has(obj)) return
+            seen.add(obj)
+
+            if (
+                obj instanceof PdfObjectReference &&
+                !(obj instanceof PdfIndirectObject)
+            ) {
+                obj.resolver = this
+            } else if (obj instanceof PdfStream) {
+                walk(obj.header)
+            } else if (obj instanceof PdfDictionary) {
+                for (const [, value] of obj.entries()) {
+                    if (value) walk(value)
+                }
+            } else if (obj instanceof PdfArray) {
+                for (const item of obj.items) {
+                    walk(item)
+                }
+            } else if (obj instanceof PdfIndirectObject) {
+                walk(obj.content)
+            }
+        }
+        for (const obj of objects) {
+            walk(obj)
+        }
+    }
+
+    private collectMissingReferences(
+        ...objects: PdfObject[]
+    ): PdfIndirectObject[] {
+        const seen = new Set<PdfObject>()
+        const missing: PdfIndirectObject[] = []
+        const walk = (obj: PdfObject) => {
+            if (seen.has(obj)) return
+            seen.add(obj)
+
+            if (
+                obj instanceof PdfObjectReference &&
+                !(obj instanceof PdfIndirectObject)
+            ) {
+                if (obj.resolver) {
+                    try {
+                        const resolved = obj.resolve()
+                        if (
+                            resolved instanceof PdfIndirectObject &&
+                            !resolved.inPdf()
+                        ) {
+                            missing.push(resolved)
+                            walk(resolved)
+                        }
+                    } catch {
+                        // Skip unresolvable references
+                    }
+                }
+            } else if (obj instanceof PdfStream) {
+                walk(obj.header)
+            } else if (obj instanceof PdfDictionary) {
+                for (const [, value] of obj.entries()) {
+                    if (value) walk(value)
+                }
+            } else if (obj instanceof PdfArray) {
+                for (const item of obj.items) walk(item)
+            } else if (obj instanceof PdfIndirectObject) {
+                walk(obj.content)
+            }
+        }
+        for (const obj of objects) walk(obj)
+        return missing
+    }
+
     private linkRevisions(): void {
         const xrefLookups = this.revisions.map((rev) => rev.xref)
         const indirectObjects = this.objects.filter(
@@ -883,7 +1024,12 @@ export class PdfDocument extends PdfObject {
 
         for (const revision of this.revisions) {
             revision.xref.linkPrev(xrefLookups)
-            revision.xref.linkIndirectObjects(indirectObjects)
+            // Walk the entire prev chain to link all xref entries
+            let xref: PdfXrefLookup | undefined = revision.xref
+            while (xref) {
+                xref.linkIndirectObjects(indirectObjects)
+                xref = xref.prev
+            }
         }
     }
 
@@ -942,7 +1088,7 @@ export class PdfDocument extends PdfObject {
 
     private updateRevisions(): void {
         let modified = false
-        this.revisions.forEach((rev, i) => {
+        this.revisions.forEach((rev) => {
             if (rev.isModified()) {
                 modified = true
             }
@@ -951,12 +1097,71 @@ export class PdfDocument extends PdfObject {
                 rev.update()
             }
         })
+
+        // Always rebuild xref binary data to reflect recalculated offsets
+        // This walks the entire prev chain for each revision
+        for (const rev of this.revisions) {
+            let xref: PdfXrefLookup | undefined = rev.xref
+            while (xref) {
+                xref.update()
+                xref = xref.prev
+            }
+        }
     }
 
-    private async update(): Promise<void> {
+    /**
+     * Performs a full update cycle to ensure all revisions are consistent and offsets are correct.
+     */
+    private update(): void {
+        this.commitIncrementalUpdates()
+        this.flushResolvedCache()
+        this.registerNewReferences()
         this.calculateOffsets()
         this.updateRevisions()
-        await this.signer?.sign(this)
+        // Second pass: xref binary may have changed size (e.g. FlateDecode removed
+        // from xref stream), shifting objects that follow it. Recalculate so entry
+        // byteOffset refs hold the new positions, then rebuild the xref binary once
+        // more so the baked bytes match those positions.
+        this.calculateOffsets()
+        this.updateRevisions()
+        // Third pass: confirm positions are stable (xref binary size should not
+        // change again because W widths and entry count are the same).
+        this.calculateOffsets()
+    }
+
+    /**
+     * Walks all objects in the document and registers any newly created
+     * PdfIndirectObjects that are referenced but not yet part of the document
+     * (e.g. appearance streams created by generateAppearance).
+     */
+    private registerNewReferences(): void {
+        const missing = this.collectMissingReferences(
+            ...this.latestRevision.objects,
+        )
+        if (missing.length > 0) {
+            this.add(...missing)
+        }
+    }
+
+    private flushResolvedCache(): void {
+        for (const [, obj] of this._resolvedCache) {
+            if (obj.isModified() && !this.objects.includes(obj)) {
+                this.add(obj)
+            }
+        }
+    }
+
+    async sign() {
+        if (this._signed) {
+            throw new Error('Document has already been signed')
+        }
+
+        if (!this.signer) {
+            return
+        }
+
+        await this.signer.sign()
+        this._signed = true
     }
 
     /**
@@ -965,24 +1170,8 @@ export class PdfDocument extends PdfObject {
      * @returns The PDF document as a Uint8Array
      */
     toBytes(): ByteArray {
-        this.calculateOffsets()
-        this.updateRevisions()
+        this.update()
         return concatUint8Arrays(...this.revisions.map((x) => x.toBytes()))
-    }
-
-    /**
-     * Serializes the document to a Base64-encoded string.
-     *
-     * @returns A promise that resolves to the PDF document as a Base64 string
-     */
-    toBase64(): string {
-        const bytes = this.toBytes()
-        let binary = ''
-        const len = bytes.byteLength
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i])
-        }
-        return btoa(binary)
     }
 
     /**
@@ -1007,8 +1196,13 @@ export class PdfDocument extends PdfObject {
      */
     static fromBytes(
         input: AsyncIterable<ByteArray> | Iterable<ByteArray>,
+        options?: {
+            password?: string
+            ownerPassword?: string
+            incremental?: boolean
+        },
     ): Promise<PdfDocument> {
-        return PdfReader.fromBytes(input)
+        return PdfReader.fromBytes(input, options)
     }
 
     isModified(): boolean {
@@ -1023,6 +1217,6 @@ export class PdfDocument extends PdfObject {
      * @returns A promise that resolves to the verification result
      */
     async verifySignatures(): Promise<PdfDocumentVerificationResult> {
-        return await this.signer.verify(this)
+        return await this.signer.verify()
     }
 }

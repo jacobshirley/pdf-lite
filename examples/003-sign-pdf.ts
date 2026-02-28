@@ -333,14 +333,7 @@ document.add(catalog)
 // Set the catalog as the root
 document.trailerDict.set('Root', catalog.reference)
 
-// IMPORTANT: Add all signatures LAST - after all other objects
-// This ensures the ByteRange is calculated correctly for each signature
-allSignatures.forEach((sig) => {
-    document.startNewRevision()
-    document.add(sig)
-})
-
-await document.commit()
+await document.finalize()
 
 const tmpFolder = `${import.meta.dirname}/tmp`
 await fs.mkdir(tmpFolder, { recursive: true })

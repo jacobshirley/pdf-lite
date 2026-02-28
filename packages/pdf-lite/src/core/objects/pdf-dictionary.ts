@@ -1,3 +1,4 @@
+import { needsCentralWhitespace } from '../../utils/needsCentralWhitespace.js'
 import { PdfEndDictionaryToken } from '../tokens/end-dictionary-token.js'
 import { PdfStartDictionaryToken } from '../tokens/start-dictionary-token.js'
 import { PdfToken } from '../tokens/token.js'
@@ -41,10 +42,6 @@ export class PdfDictionary<
     }
 
     set<K extends Extract<keyof T, string>>(key: PdfName<K> | K, value: T[K]) {
-        if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfDictionary')
-        }
-
         const currentValue = this.get(key)
         if (currentValue !== value && !currentValue?.equals(value)) {
             this.modified = true
@@ -65,10 +62,6 @@ export class PdfDictionary<
     }
 
     delete<K extends Extract<keyof T, string>>(key: PdfName<K> | K) {
-        if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfDictionary')
-        }
-
         if (this.has(key)) {
             this.modified = true
         }
@@ -124,6 +117,10 @@ export class PdfDictionary<
         return entries[Symbol.iterator]()
     }
 
+    override get isTrailingDelimited(): boolean {
+        return true
+    }
+
     protected tokenize() {
         let index = 0
 
@@ -147,6 +144,10 @@ export class PdfDictionary<
                 const postTokens = value.postTokens
                     ? []
                     : [PdfWhitespaceToken.SPACE]
+
+                if (needsCentralWhitespace(key, value)) {
+                    centralTokens.push(PdfWhitespaceToken.SPACE)
+                }
 
                 index++
                 return [
@@ -181,6 +182,13 @@ export class PdfDictionary<
         }
         const cloned = new PdfDictionary(clonedEntries) as this
         return cloned
+    }
+
+    setModified(modified?: boolean): void {
+        super.setModified(modified)
+        for (const value of this.#entries.values()) {
+            value?.setModified(modified)
+        }
     }
 
     isModified(): boolean {

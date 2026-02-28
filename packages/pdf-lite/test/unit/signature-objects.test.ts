@@ -1563,7 +1563,7 @@ describe('PdfSigner.verify', () => {
         font.content.set('Type', new PdfName('Font'))
         font.content.set('Subtype', new PdfName('Type1'))
         font.content.set('BaseFont', new PdfName('Helvetica'))
-        await document.commit(font)
+        document.add(font)
 
         // Create resources
         const resources = new PdfIndirectObject({
@@ -1572,7 +1572,7 @@ describe('PdfSigner.verify', () => {
         const fontDict = new PdfDictionary()
         fontDict.set('F1', font.reference)
         resources.content.set('Font', fontDict)
-        await document.commit(resources)
+        document.add(resources)
 
         // Create content stream
         const contentStream = new PdfIndirectObject({
@@ -1581,7 +1581,7 @@ describe('PdfSigner.verify', () => {
                 original: 'BT /F1 24 Tf 100 700 Td (Test PDF) Tj ET',
             }),
         })
-        await document.commit(contentStream)
+        document.add(contentStream)
 
         // Create page
         const page = new PdfIndirectObject({ content: new PdfDictionary() })
@@ -1597,7 +1597,7 @@ describe('PdfSigner.verify', () => {
         )
         page.content.set('Contents', contentStream.reference)
         page.content.set('Resources', resources.reference)
-        await document.commit(page)
+        document.add(page)
 
         // Create pages collection
         const pages = new PdfIndirectObject({ content: new PdfDictionary() })
@@ -1605,7 +1605,7 @@ describe('PdfSigner.verify', () => {
         pages.content.set('Kids', new PdfArray([page.reference]))
         pages.content.set('Count', new PdfNumber(1))
         page.content.set('Parent', pages.reference)
-        await document.commit(pages)
+        document.add(pages)
 
         // Create catalog
         const catalog = new PdfIndirectObject({
@@ -1614,7 +1614,7 @@ describe('PdfSigner.verify', () => {
         catalog.content.set('Type', new PdfName('Catalog'))
         catalog.content.set('Pages', pages.reference)
         document.trailerDict.set('Root', catalog.reference)
-        await document.commit(catalog)
+        document.add(catalog)
 
         return document
     }
@@ -1627,7 +1627,8 @@ describe('PdfSigner.verify', () => {
             certificate: rsaSigningKeys.cert,
             date: new Date('2024-01-01T12:00:00Z'),
         })
-        await document.commit(sig)
+        document.add(sig)
+        await document.sign()
 
         // Serialize the document to bytes and reload it to ensure signatures
         // are properly deserialized into the correct signature classes
@@ -1644,8 +1645,8 @@ describe('PdfSigner.verify', () => {
     it('should return empty result for unsigned PDF document', async () => {
         const document = await createBasicPDF()
 
-        const signer = new PdfSigner()
-        const result = await signer.verify(document)
+        const signer = new PdfSigner({ document })
+        const result = await signer.verify()
 
         expect(result.valid).toBe(true)
         expect(result.signatures).toHaveLength(0)

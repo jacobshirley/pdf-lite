@@ -44,10 +44,6 @@ export class PdfHexadecimal extends PdfObject {
     }
 
     set raw(raw: ByteArray) {
-        if (this.isImmutable()) {
-            throw new Error('Cannot modify an immutable PdfHexadecimal')
-        }
-
         this.setModified()
         this._raw = raw
         // Clear original bytes when modified
@@ -68,6 +64,10 @@ export class PdfHexadecimal extends PdfObject {
 
     toHexString(): string {
         return bytesToString(this.toHexBytes())
+    }
+
+    override get isTrailingDelimited(): boolean {
+        return true
     }
 
     protected tokenize() {

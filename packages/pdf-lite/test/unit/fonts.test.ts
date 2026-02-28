@@ -42,27 +42,29 @@ const WOFF_FIXTURE = './test/unit/fixtures/fonts/Roboto-Regular.woff'
 
 describe('Font Embedding', () => {
     describe('Standard Fonts', () => {
-        it('should embed Helvetica standard font', async () => {
+        it('should embed Helvetica standard font', () => {
             const document = new PdfDocument()
 
-            const font = await document.fonts.embedStandardFont('Helvetica')
-            expect(font.resourceName).toMatch(/^F\d+$/)
+            const font = PdfFont.fromStandardFont('Helvetica')
+            font.resourceName = 'F1'
+            document.add(font)
+
+            expect(font.resourceName).toBe('F1')
             expect(font.fontName).toBe('Helvetica')
             expect(font.toString()).toBe(font.resourceName)
         })
 
-        it('should embed multiple standard fonts', async () => {
+        it('should create multiple standard fonts with unique resource names', () => {
             const document = new PdfDocument()
 
-            const helvetica =
-                await document.fonts.embedStandardFont('Helvetica')
-            const helveticaBold =
-                await document.fonts.embedStandardFont('Helvetica-Bold')
-            const times = await document.fonts.embedStandardFont('Times-Roman')
+            const helvetica = PdfFont.fromStandardFont('Helvetica')
+            helvetica.resourceName = 'F1'
+            const helveticaBold = PdfFont.fromStandardFont('Helvetica-Bold')
+            helveticaBold.resourceName = 'F2'
+            const times = PdfFont.fromStandardFont('Times-Roman')
+            times.resourceName = 'F3'
 
-            expect(helvetica.resourceName).toMatch(/^F\d+$/)
-            expect(helveticaBold.resourceName).toMatch(/^F\d+$/)
-            expect(times.resourceName).toMatch(/^F\d+$/)
+            document.add(helvetica, helveticaBold, times)
 
             // Should have unique resource names
             expect(helvetica.resourceName).not.toBe(helveticaBold.resourceName)
@@ -70,19 +72,7 @@ describe('Font Embedding', () => {
             expect(helveticaBold.resourceName).not.toBe(times.resourceName)
         })
 
-        it('should allow embedding same font twice (no deduplication without cache)', async () => {
-            const document = new PdfDocument()
-
-            const font1 = await document.fonts.embedStandardFont('Helvetica')
-            const font2 = await document.fonts.embedStandardFont('Helvetica')
-
-            // Without cache, same font embedded twice gets different resource names
-            expect(font1.resourceName).not.toBe(font2.resourceName)
-        })
-
-        it('should embed all 14 standard PDF fonts', async () => {
-            const document = new PdfDocument()
-
+        it('should embed all 14 standard PDF fonts', () => {
             const standardFonts = [
                 'Helvetica',
                 'Helvetica-Bold',
@@ -100,20 +90,16 @@ describe('Font Embedding', () => {
                 'ZapfDingbats',
             ] as const
 
-            const fonts = []
-            for (const fontName of standardFonts) {
-                const font = await document.fonts.embedStandardFont(fontName)
-                fonts.push(font)
-            }
+            const fonts = standardFonts.map((name) =>
+                PdfFont.fromStandardFont(name),
+            )
 
             expect(fonts.length).toBe(14)
         })
     })
 
     describe('TrueType Fonts', () => {
-        it('should embed a TrueType font with descriptor', async () => {
-            const document = new PdfDocument()
-
+        it('should create a TrueType font with descriptor', () => {
             // Create mock font data (minimal valid TrueType header)
             const mockFontData = new Uint8Array([
                 0x00,
@@ -143,47 +129,16 @@ describe('Font Embedding', () => {
                 stemV: 80,
             }
 
-            const font = await document.fonts.embedTrueTypeFont(
+            const font = PdfFont.fromTrueTypeData(
                 mockFontData,
                 'CustomFont',
                 descriptor,
             )
+            font.resourceName = 'F1'
 
-            expect(font.resourceName).toMatch(/^F\d+$/)
+            expect(font.resourceName).toBe('F1')
             expect(font.fontName).toBe('CustomFont')
             expect(font.encoding).toBe('WinAnsiEncoding')
-        })
-
-        it('should allow embedding same TrueType font twice (no deduplication)', async () => {
-            const document = new PdfDocument()
-
-            const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
-
-            const descriptor: FontDescriptor = {
-                fontName: 'CustomFont',
-                fontFamily: 'Custom',
-                fontWeight: 400,
-                flags: 32,
-                fontBBox: [-200, -200, 1000, 900],
-                italicAngle: 0,
-                ascent: 900,
-                descent: -200,
-                capHeight: 700,
-                stemV: 80,
-            }
-
-            const font1 = await document.fonts.embedTrueTypeFont(
-                mockFontData,
-                'CustomFont',
-                descriptor,
-            )
-            const font2 = await document.fonts.embedTrueTypeFont(
-                mockFontData,
-                'CustomFont',
-                descriptor,
-            )
-
-            expect(font1.resourceName).not.toBe(font2.resourceName)
         })
     })
 
@@ -191,8 +146,12 @@ describe('Font Embedding', () => {
         it('should serialize document with embedded fonts', async () => {
             const document = new PdfDocument()
 
-            await document.fonts.embedStandardFont('Helvetica')
-            await document.fonts.embedStandardFont('Times-Roman')
+            const helvetica = PdfFont.fromStandardFont('Helvetica')
+            helvetica.resourceName = 'F1'
+            const times = PdfFont.fromStandardFont('Times-Roman')
+            times.resourceName = 'F2'
+
+            document.add(helvetica, times)
 
             const bytes = document.toBytes()
             expect(bytes.length).toBeGreaterThan(0)
@@ -204,9 +163,7 @@ describe('Font Embedding', () => {
     })
 
     describe('TrueType Font Width Arrays', () => {
-        it('should embed TrueType font with default widths', async () => {
-            const document = new PdfDocument()
-
+        it('should create TrueType font with default widths', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
             const descriptor: FontDescriptor = {
@@ -222,18 +179,17 @@ describe('Font Embedding', () => {
                 stemV: 80,
             }
 
-            const font = await document.fonts.embedTrueTypeFont(
+            const font = PdfFont.fromTrueTypeData(
                 mockFontData,
                 'TestFont',
                 descriptor,
             )
+            font.resourceName = 'F1'
 
-            expect(font.resourceName).toMatch(/^F\d+$/)
+            expect(font.resourceName).toBe('F1')
         })
 
-        it('should embed TrueType font with custom widths', async () => {
-            const document = new PdfDocument()
-
+        it('should create TrueType font with custom widths', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
             const descriptor: FontDescriptor = {
@@ -252,18 +208,17 @@ describe('Font Embedding', () => {
                 widths: [250, 333, 408, 500, 500], // Custom widths for chars 32-36
             }
 
-            const font = await document.fonts.embedTrueTypeFont(
+            const font = PdfFont.fromTrueTypeData(
                 mockFontData,
                 'CustomWidthFont',
                 descriptor,
             )
+            font.resourceName = 'F1'
 
-            expect(font.resourceName).toMatch(/^F\d+$/)
+            expect(font.resourceName).toBe('F1')
         })
 
-        it('should embed TrueType font with custom firstChar/lastChar range', async () => {
-            const document = new PdfDocument()
-
+        it('should create TrueType font with custom firstChar/lastChar range', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
             const descriptor: FontDescriptor = {
@@ -281,20 +236,19 @@ describe('Font Embedding', () => {
                 lastChar: 90, // 'Z'
             }
 
-            const font = await document.fonts.embedTrueTypeFont(
+            const font = PdfFont.fromTrueTypeData(
                 mockFontData,
                 'RangeFont',
                 descriptor,
             )
+            font.resourceName = 'F1'
 
-            expect(font.resourceName).toMatch(/^F\d+$/)
+            expect(font.resourceName).toBe('F1')
         })
     })
 
     describe('Unicode/Type0 Fonts', () => {
-        it('should embed a Unicode TrueType font', async () => {
-            const document = new PdfDocument()
-
+        it('should create a Unicode TrueType font', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
             const descriptor: UnicodeFontDescriptor = {
@@ -311,19 +265,18 @@ describe('Font Embedding', () => {
                 defaultWidth: 1000,
             }
 
-            const font = await document.fonts.embedTrueTypeFontUnicode(
+            const font = PdfFont.fromType0Data(
                 mockFontData,
                 'UnicodeFont',
                 descriptor,
             )
+            font.resourceName = 'F1'
 
-            expect(font.resourceName).toMatch(/^F\d+$/)
+            expect(font.resourceName).toBe('F1')
             expect(font.encoding).toBe('Identity-H')
         })
 
-        it('should embed Unicode font with CID widths', async () => {
-            const document = new PdfDocument()
-
+        it('should create Unicode font with CID widths', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
             const cidWidths: CIDWidth[] = [
@@ -346,18 +299,17 @@ describe('Font Embedding', () => {
                 cidWidths,
             }
 
-            const font = await document.fonts.embedTrueTypeFontUnicode(
+            const font = PdfFont.fromType0Data(
                 mockFontData,
                 'CIDWidthFont',
                 descriptor,
             )
+            font.resourceName = 'F1'
 
-            expect(font.resourceName).toMatch(/^F\d+$/)
+            expect(font.resourceName).toBe('F1')
         })
 
-        it('should embed Unicode font with ToUnicode CMap', async () => {
-            const document = new PdfDocument()
-
+        it('should create Unicode font with ToUnicode CMap', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
             const descriptor: UnicodeFontDescriptor = {
@@ -381,72 +333,15 @@ describe('Font Embedding', () => {
                 [100, 0x4e2d], // CID 100 -> '中'
             ])
 
-            const font = await document.fonts.embedTrueTypeFontUnicode(
+            const font = PdfFont.fromType0Data(
                 mockFontData,
                 'CMapFont',
                 descriptor,
                 unicodeMappings,
             )
+            font.resourceName = 'F1'
 
-            expect(font.resourceName).toMatch(/^F\d+$/)
-        })
-
-        it('should allow embedding same Unicode font twice (no deduplication)', async () => {
-            const document = new PdfDocument()
-
-            const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
-
-            const descriptor: UnicodeFontDescriptor = {
-                fontName: 'DuplicateTest',
-                fontFamily: 'Test',
-                fontWeight: 400,
-                flags: 32,
-                fontBBox: [-200, -200, 1000, 900],
-                italicAngle: 0,
-                ascent: 900,
-                descent: -200,
-                capHeight: 700,
-                stemV: 80,
-            }
-
-            const font1 = await document.fonts.embedTrueTypeFontUnicode(
-                mockFontData,
-                'DuplicateTest',
-                descriptor,
-            )
-            const font2 = await document.fonts.embedTrueTypeFontUnicode(
-                mockFontData,
-                'DuplicateTest',
-                descriptor,
-            )
-
-            expect(font1.resourceName).not.toBe(font2.resourceName)
-        })
-    })
-
-    describe('Load Existing Fonts', () => {
-        it('should find fonts after serialize/deserialize cycle', async () => {
-            // Create a document with fonts
-            const document = new PdfDocument()
-            await document.fonts.embedStandardFont('Helvetica')
-            await document.fonts.embedStandardFont('Courier')
-
-            const bytes = document.toBytes()
-
-            // Parse the document and load fonts
-            const reparsed = await PdfDocument.fromBytes([bytes])
-            const loadedFonts = await reparsed.fonts.loadExistingFonts()
-
-            // loadExistingFonts should return a valid Map (may be empty if no pages)
-            expect(loadedFonts).toBeInstanceOf(Map)
-        })
-
-        it('should return empty map for new document without fonts', async () => {
-            const document = new PdfDocument()
-
-            // No fonts initially
-            const initialFonts = await document.fonts.loadExistingFonts()
-            expect(initialFonts.size).toBe(0)
+            expect(font.resourceName).toBe('F1')
         })
     })
 })
@@ -582,19 +477,19 @@ describe('Font Parsers with Real Fonts', () => {
     })
 
     describe('Font embedding with real fonts', () => {
-        it('should embed Roboto TTF in a PDF', async () => {
-            const document = new PdfDocument()
+        it('should create PdfFont from Roboto TTF', async () => {
             const fontData = await loadFont(TTF_FIXTURE)
             const parser = parseFont(fontData)
             const descriptor = parser.getFontDescriptor('Roboto')
 
-            const font = await document.fonts.embedTrueTypeFont(
+            const font = PdfFont.fromTrueTypeData(
                 fontData,
                 'Roboto',
                 descriptor,
             )
+            font.resourceName = 'F1'
 
-            expect(font.resourceName).toMatch(/^F\d+$/)
+            expect(font.resourceName).toBe('F1')
         })
 
         it('should serialize PDF with embedded custom font', async () => {
@@ -603,11 +498,13 @@ describe('Font Parsers with Real Fonts', () => {
             const parser = parseFont(fontData)
             const descriptor = parser.getFontDescriptor('Roboto')
 
-            await document.fonts.embedTrueTypeFont(
+            const font = PdfFont.fromTrueTypeData(
                 fontData,
                 'Roboto',
                 descriptor,
             )
+            font.resourceName = 'F1'
+            document.add(font)
 
             const bytes = document.toBytes()
             expect(bytes.length).toBeGreaterThan(0) // PDF should be generated
@@ -1048,9 +945,9 @@ describe('Font Parsers with Minimal Test Data', () => {
             const font = PdfFont.fromBytes(ttfData)
 
             // Check that the font has the required PDF dictionary entries
-            expect(font.get('Type')?.toString()).toBe('/Font')
-            expect(font.get('Subtype')?.toString()).toBe('/TrueType')
-            expect(font.get('BaseFont')).toBeDefined()
+            expect(font.content.get('Type')?.toString()).toBe('/Font')
+            expect(font.content.get('Subtype')?.toString()).toBe('/TrueType')
+            expect(font.content.get('BaseFont')).toBeDefined()
         })
 
         it('should have embedded font data', () => {

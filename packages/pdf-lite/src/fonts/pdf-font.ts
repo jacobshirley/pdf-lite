@@ -6,7 +6,7 @@ import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfString } from '../core/objects/pdf-string.js'
-import type { PdfFontManager } from './manager.js'
+import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
 import type {
     FontDescriptor,
     UnicodeFontDescriptor,
@@ -16,6 +16,19 @@ import type {
 import type { ByteArray } from '../types.js'
 import { parseFont } from './parsers/font-parser.js'
 import { OtfParser } from './parsers/otf-parser.js'
+
+type PdfFontDictionary = PdfDictionary<{
+    Type: PdfName<'Font'>
+    Subtype: PdfName<'Type1' | 'TrueType' | 'Type0'>
+    BaseFont: PdfName
+    FontDescriptor?: PdfObjectReference
+    Encoding?: PdfName
+    FirstChar?: PdfNumber
+    LastChar?: PdfNumber
+    Widths?: PdfArray<PdfNumber>
+    DescendantFonts?: PdfArray<PdfObjectReference>
+    ToUnicode?: PdfObjectReference
+}>
 
 type PdfStandardFontName =
     | 'Helvetica'
@@ -35,37 +48,19 @@ type PdfStandardFontName =
 
 /**
  * Represents an embedded font in a PDF document.
- * Extends PdfDictionary to provide both font metadata and PDF dictionary structure.
+ * Extends PdfIndirectObject with a PdfDictionary content for the font dict.
  */
-export class PdfFont extends PdfDictionary<{
-    Type: PdfName<'Font'>
-    Subtype: PdfName<'Type1' | 'TrueType' | 'Type0'>
-    BaseFont: PdfName
-    FontDescriptor?: PdfObjectReference
-    Encoding?: PdfName
-    FirstChar?: PdfNumber
-    LastChar?: PdfNumber
-    Widths?: PdfArray<PdfNumber>
-    DescendantFonts?: PdfArray<PdfObjectReference>
-    ToUnicode?: PdfObjectReference
-}> {
+export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     /**
      * The PDF resource name used in content streams (e.g., 'F1', 'F2').
      * This is the identifier used in PDF operators like `/F1 12 Tf`.
      */
     resourceName: string
 
-    /**
-     * Reference to the container indirect object that wraps this font dict.
-     * Set by FontManager.write() when the font is committed to the PDF.
-     */
-    container?: PdfIndirectObject
-
-    /**
-     * Auxiliary objects that must be committed along with the font dict.
-     * Includes FontDescriptor, FontFile2, CIDFont, ToUnicode, etc.
-     */
-    protected auxiliaryObjects: PdfIndirectObject[] = []
+    private static _resourceCounter = 0
+    private static nextResourceName(): string {
+        return `F${++PdfFont._resourceCounter}`
+    }
 
     /**
      * @internal
@@ -81,12 +76,9 @@ export class PdfFont extends PdfDictionary<{
 
     constructor(fontName: string)
     constructor(options: {
-        dict?: PdfDictionary
         fontName?: string
         resourceName?: string
         encoding?: string
-        manager?: PdfFontManager
-        container?: PdfIndirectObject
         descriptor?: FontDescriptor | UnicodeFontDescriptor
         fontData?: ByteArray
     })
@@ -94,16 +86,14 @@ export class PdfFont extends PdfDictionary<{
         optionsOrFontName:
             | string
             | {
-                  dict?: PdfDictionary
                   fontName?: string
                   resourceName?: string
                   encoding?: string
-                  container?: PdfIndirectObject
                   descriptor?: FontDescriptor | UnicodeFontDescriptor
                   fontData?: ByteArray
               },
     ) {
-        super()
+        super(new PdfIndirectObject({ content: new PdfDictionary() }))
 
         // Handle string parameter (simple fontName)
         if (typeof optionsOrFontName === 'string') {
@@ -112,21 +102,21 @@ export class PdfFont extends PdfDictionary<{
             return
         }
 
-        // Handle options object (existing behavior)
+        // Handle options object
         const options = optionsOrFontName
-        if (options.dict) {
-            this.copyFrom(options.dict)
-        }
         this.fontName = options.fontName
-        this.resourceName = options.resourceName ?? ''
+        this.resourceName = options.resourceName || PdfFont.nextResourceName()
         this.encoding = options.encoding
-        this.container = options.container
         this._descriptor = options.descriptor
         this._fontData = options.fontData
     }
 
+    get dict(): PdfFontDictionary {
+        return this.content
+    }
+
     get fontName(): string | undefined {
-        const baseFont = this.get('BaseFont')
+        const baseFont = this.content.get('BaseFont')
         if (!baseFont) {
             return undefined
         }
@@ -135,23 +125,54 @@ export class PdfFont extends PdfDictionary<{
 
     set fontName(name: string | undefined) {
         if (!name) {
-            this.delete('BaseFont')
+            this.content.delete('BaseFont')
             return
         }
-        this.set('BaseFont', new PdfName(name))
+        this.content.set('BaseFont', new PdfName(name))
     }
 
     get encoding(): string | undefined {
-        const encoding = this.get('Encoding')
+        const encoding = this.content.get('Encoding')
         return encoding ? encoding.value : undefined
     }
 
     set encoding(enc: string | undefined) {
         if (enc) {
-            this.set('Encoding', new PdfName(enc))
+            this.content.set('Encoding', new PdfName(enc))
         } else {
-            this.delete('Encoding')
+            this.content.delete('Encoding')
         }
+    }
+
+    /**
+     * Gets the encoding map from the font's Encoding dictionary's Differences array.
+     * Maps byte codes to Unicode characters for custom-encoded fonts.
+     */
+    get encodingMap(): Map<number, string> | null {
+        const enc = this.content.get('Encoding')
+        const encObj =
+            enc instanceof PdfObjectReference ? enc.resolve()?.content : enc
+        const encDict = encObj instanceof PdfDictionary ? encObj : undefined
+        const diffs = encDict?.get('Differences')?.as(PdfArray)
+        if (!diffs) return null
+        return buildEncodingMap(diffs)
+    }
+
+    /**
+     * Gets the reverse encoding map (Unicode character → byte code).
+     * Useful for encoding text back into the font's custom encoding.
+     */
+    get reverseEncodingMap(): Map<string, number> | undefined {
+        const map = this.encodingMap
+        if (!map) return undefined
+        return new Map(Array.from(map, ([code, char]) => [char, code]))
+    }
+
+    /**
+     * Whether this font uses Unicode (Type0/composite) encoding.
+     */
+    get isUnicode(): boolean {
+        return this.fontType === 'Type0'
     }
 
     /**
@@ -180,7 +201,7 @@ export class PdfFont extends PdfDictionary<{
         | 'MMType1'
         | 'Type3'
         | undefined {
-        const subtype = this.get('Subtype')
+        const subtype = this.content.get('Subtype')
         return subtype?.value as
             | 'Type1'
             | 'TrueType'
@@ -197,12 +218,12 @@ export class PdfFont extends PdfDictionary<{
         type: 'Type1' | 'TrueType' | 'Type0' | 'MMType1' | 'Type3' | undefined,
     ) {
         if (type) {
-            this.set(
+            this.content.set(
                 'Subtype',
                 new PdfName(type) as PdfName<'Type1' | 'TrueType' | 'Type0'>,
             )
         } else {
-            this.delete('Subtype')
+            this.content.delete('Subtype')
         }
     }
 
@@ -210,7 +231,7 @@ export class PdfFont extends PdfDictionary<{
      * Gets the first character code in the Widths array.
      */
     get firstChar(): number | undefined {
-        const firstChar = this.get('FirstChar')
+        const firstChar = this.content.get('FirstChar')
         return firstChar?.value
     }
 
@@ -219,9 +240,9 @@ export class PdfFont extends PdfDictionary<{
      */
     set firstChar(value: number | undefined) {
         if (value !== undefined) {
-            this.set('FirstChar', new PdfNumber(value))
+            this.content.set('FirstChar', new PdfNumber(value))
         } else {
-            this.delete('FirstChar')
+            this.content.delete('FirstChar')
         }
     }
 
@@ -229,7 +250,7 @@ export class PdfFont extends PdfDictionary<{
      * Gets the last character code in the Widths array.
      */
     get lastChar(): number | undefined {
-        const lastChar = this.get('LastChar')
+        const lastChar = this.content.get('LastChar')
         return lastChar?.value
     }
 
@@ -238,9 +259,9 @@ export class PdfFont extends PdfDictionary<{
      */
     set lastChar(value: number | undefined) {
         if (value !== undefined) {
-            this.set('LastChar', new PdfNumber(value))
+            this.content.set('LastChar', new PdfNumber(value))
         } else {
-            this.delete('LastChar')
+            this.content.delete('LastChar')
         }
     }
 
@@ -248,7 +269,7 @@ export class PdfFont extends PdfDictionary<{
      * Gets the character widths array.
      */
     get widths(): number[] | undefined {
-        const widths = this.get('Widths')
+        const widths = this.content.get('Widths')
         if (!widths) return undefined
         return widths.items.map((item) => item.value)
     }
@@ -258,12 +279,12 @@ export class PdfFont extends PdfDictionary<{
      */
     set widths(values: number[] | undefined) {
         if (values) {
-            this.set(
+            this.content.set(
                 'Widths',
                 new PdfArray(values.map((w) => new PdfNumber(w))),
             )
         } else {
-            this.delete('Widths')
+            this.content.delete('Widths')
         }
     }
 
@@ -344,27 +365,12 @@ export class PdfFont extends PdfDictionary<{
     }
 
     /**
-     * Returns all objects that need to be committed to the PDF.
-     * Includes auxiliary objects (descriptors, streams) and the container.
-     */
-    getObjectsToCommit(): PdfIndirectObject[] {
-        const objects = [...this.auxiliaryObjects]
-        if (this.container) {
-            objects.push(this.container)
-        }
-        return objects
-    }
-
-    /**
      * @internal
      * Legacy property for backward compatibility with code that accesses fontRef.
-     * Returns the container object if available.
+     * Returns this font's reference since PdfFont IS the indirect object.
      */
     get fontRef(): PdfObjectReference {
-        if (!this.container) {
-            throw new Error('Font has not been written to PDF yet')
-        }
-        return this.container.reference
+        return this.reference
     }
 
     /**
@@ -415,9 +421,9 @@ export class PdfFont extends PdfDictionary<{
         const font = new PdfFont({ fontName })
 
         // Build Type1 font dictionary
-        font.set('Type', new PdfName('Font'))
-        font.set('Subtype', new PdfName('Type1'))
-        font.set('BaseFont', new PdfName(fontName))
+        font.content.set('Type', new PdfName('Font'))
+        font.content.set('Subtype', new PdfName('Type1'))
+        font.content.set('BaseFont', new PdfName(fontName))
 
         if (widths) {
             font.firstChar = 32
@@ -647,24 +653,21 @@ export class PdfFont extends PdfDictionary<{
             content: fontDescriptorDict,
         })
 
-        // Store auxiliary objects
-        font.auxiliaryObjects.push(fontFileObject, fontDescriptorObject)
-
         // Build TrueType font dictionary
-        font.set('Type', new PdfName('Font'))
-        font.set('Subtype', new PdfName('TrueType'))
-        font.set('BaseFont', new PdfName(descriptor.fontName))
-        font.set('FontDescriptor', fontDescriptorObject.reference)
-        font.set('Encoding', new PdfName('WinAnsiEncoding'))
+        font.content.set('Type', new PdfName('Font'))
+        font.content.set('Subtype', new PdfName('TrueType'))
+        font.content.set('BaseFont', new PdfName(descriptor.fontName))
+        font.content.set('FontDescriptor', fontDescriptorObject.reference)
+        font.content.set('Encoding', new PdfName('WinAnsiEncoding'))
 
         // Add width information for proper glyph rendering
         const firstChar = descriptor.firstChar ?? 32
         const lastChar = descriptor.lastChar ?? 255
-        font.set('FirstChar', new PdfNumber(firstChar))
-        font.set('LastChar', new PdfNumber(lastChar))
+        font.content.set('FirstChar', new PdfNumber(firstChar))
+        font.content.set('LastChar', new PdfNumber(lastChar))
 
         if (descriptor.widths) {
-            font.set(
+            font.content.set(
                 'Widths',
                 new PdfArray(descriptor.widths.map((w) => new PdfNumber(w))),
             )
@@ -673,7 +676,7 @@ export class PdfFont extends PdfDictionary<{
             const defaultWidths = Array(lastChar - firstChar + 1)
                 .fill(0)
                 .map(() => new PdfNumber(1000))
-            font.set('Widths', new PdfArray(defaultWidths))
+            font.content.set('Widths', new PdfArray(defaultWidths))
         }
 
         return font
@@ -748,9 +751,6 @@ export class PdfFont extends PdfDictionary<{
             content: fontDescriptorDict,
         })
 
-        // Store descriptor and font file
-        font.auxiliaryObjects.push(fontFileObject, fontDescriptorObject)
-
         // Create CIDFont dictionary (descendant font)
         const cidFontDict = new PdfDictionary()
         cidFontDict.set('Type', new PdfName('Font'))
@@ -785,14 +785,18 @@ export class PdfFont extends PdfDictionary<{
             content: cidFontDict,
         })
 
-        font.auxiliaryObjects.push(cidFontObject)
-
         // Build Type0 font dictionary
-        font.set('Type', new PdfName('Font'))
-        font.set('Subtype', new PdfName('Type0'))
-        font.set('BaseFont', new PdfName(`${descriptor.fontName}-Identity-H`))
-        font.set('Encoding', new PdfName('Identity-H'))
-        font.set('DescendantFonts', new PdfArray([cidFontObject.reference]))
+        font.content.set('Type', new PdfName('Font'))
+        font.content.set('Subtype', new PdfName('Type0'))
+        font.content.set(
+            'BaseFont',
+            new PdfName(`${descriptor.fontName}-Identity-H`),
+        )
+        font.content.set('Encoding', new PdfName('Identity-H'))
+        font.content.set(
+            'DescendantFonts',
+            new PdfArray([cidFontObject.reference]),
+        )
 
         // Create ToUnicode CMap if mappings provided
         if (unicodeMappings && unicodeMappings.size > 0) {
@@ -807,11 +811,50 @@ export class PdfFont extends PdfDictionary<{
                 content: cmapStream,
             })
 
-            font.set('ToUnicode', cmapObject.reference)
-            font.auxiliaryObjects.push(cmapObject)
+            font.content.set('ToUnicode', cmapObject.reference)
         }
 
         return font
+    }
+
+    static fromFile(
+        fontData: ByteArray,
+        options?: {
+            fontName?: string
+            unicode?: boolean
+            unicodeMappings?: Map<number, number>
+        },
+    ): PdfFont {
+        // Parse the font to extract metadata
+        const parser = parseFont(fontData)
+        const info = parser.getFontInfo()
+
+        // Auto-generate font name from metadata if not provided
+        const fontName =
+            options?.fontName ?? info.postScriptName ?? info.fullName
+
+        // Get the appropriate descriptor based on unicode option
+        const descriptor = parser.getFontDescriptor(fontName)
+
+        // Embed using the appropriate method and return PdfFont
+        if (options?.unicode) {
+            // For Unicode fonts, we need a UnicodeFontDescriptor
+            // Create one by extending the base descriptor
+            const unicodeDescriptor: UnicodeFontDescriptor = {
+                ...descriptor,
+                defaultWidth: 1000,
+                cidToGidMap: 'Identity',
+            }
+            return PdfFont.fromType0Data(
+                fontData,
+                fontName,
+                unicodeDescriptor,
+                options.unicodeMappings,
+            )
+        } else {
+            // Use standard TrueType embedding
+            return PdfFont.fromTrueTypeData(fontData, fontName, descriptor)
+        }
     }
 
     /**

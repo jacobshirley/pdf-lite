@@ -8,67 +8,93 @@ import { PdfStream } from './pdf-stream.js'
 import { Ref } from '../ref.js'
 import { PdfByteOffsetToken } from '../tokens/byte-offset-token.js'
 
+export type PdfIndirectObjectOptions<T extends PdfObject = PdfObject> =
+    | {
+          objectNumber?: number
+          generationNumber?: number
+          content?: T
+          offset?: number | Ref<number>
+          encryptable?: boolean
+          compressed?: boolean
+      }
+    | T
+    | PdfIndirectObject
+    | undefined
+
 export class PdfIndirectObject<
     T extends PdfObject = PdfObject,
-> extends PdfObjectReference {
+> extends PdfObject {
     static readonly MAX_ORDER_INDEX = 2147483647
 
+    objectNumber: number
+    generationNumber: number
     content: T
     offset: Ref<number>
     encryptable?: boolean
+    compressed?: boolean
     orderIndex?: number
 
-    constructor(
-        options?:
-            | {
-                  objectNumber?: number
-                  generationNumber?: number
-                  content?: T
-                  offset?: number | Ref<number>
-                  encryptable?: boolean
-              }
-            | T
-            | PdfIndirectObject,
-    ) {
+    constructor(options?: PdfIndirectObjectOptions<T>) {
         if (options instanceof PdfIndirectObject) {
-            super(options.objectNumber, options.generationNumber)
+            super()
+            this.objectNumber = options.objectNumber
+            this.generationNumber = options.generationNumber
             this.content = options.content.clone() as T
             this.offset = options.offset.clone()
+            this.compressed = options.compressed
             return
         }
 
         if (options instanceof PdfObject) {
-            super(-1, 0)
+            super()
+            this.objectNumber = -1
+            this.generationNumber = 0
             this.content = options
             this.offset = new Ref(0)
             return
         }
 
-        super(options?.objectNumber ?? -1, options?.generationNumber ?? 0)
+        super()
+        this.objectNumber = options?.objectNumber ?? -1
+        this.generationNumber = options?.generationNumber ?? 0
         this.content = options?.content ?? (new PdfNull() as unknown as T)
         this.offset =
             options?.offset instanceof Ref
                 ? options.offset
                 : new Ref(options?.offset ?? 0)
         this.encryptable = options?.encryptable
+        this.compressed = options?.compressed
     }
 
-    get reference(): PdfObjectReference {
-        return new Proxy(this, {
-            get: (target, prop) => {
-                const value = new PdfObjectReference(
-                    target.objectNumber,
-                    target.generationNumber,
-                )
-                if (prop === 'objectNumber') {
-                    return target.objectNumber
-                } else if (prop === 'generationNumber') {
-                    return target.generationNumber
-                } else {
+    get reference(): PdfObjectReference<this> {
+        const original = this
+        return new Proxy(
+            new PdfObjectReference(this.objectNumber, this.generationNumber),
+            {
+                get: (_target, prop) => {
+                    // Always read from the live indirect object so objectNumber
+                    // stays current even after the object is added to a document.
+                    if (prop === 'resolve') {
+                        return () => original
+                    } else if (prop === 'resolver') {
+                        // Signal that this proxy reference is resolvable
+                        // so collectMissingReferences can discover it
+                        return {
+                            resolve: () => original,
+                        }
+                    } else if (prop === 'objectNumber') {
+                        return original.objectNumber
+                    } else if (prop === 'generationNumber') {
+                        return original.generationNumber
+                    }
+                    const value = new PdfObjectReference(
+                        original.objectNumber,
+                        original.generationNumber,
+                    )
                     return value[prop as keyof PdfObjectReference]
-                }
+                },
             },
-        })
+        )
     }
 
     isEncryptable() {
@@ -136,6 +162,8 @@ export class PdfIndirectObject<
             generationNumber: this.generationNumber,
             content: this.content.clone(),
             offset: this.offset.resolve(),
+            encryptable: this.encryptable,
+            compressed: this.compressed,
         }) as this
     }
 
@@ -143,11 +171,17 @@ export class PdfIndirectObject<
         return this.orderIndex ?? 0
     }
 
+    setModified(modified = true): void {
+        super.setModified(modified)
+        this.content.setModified(modified)
+        this.offset.setModified(modified)
+    }
+
     isModified(): boolean {
         return (
             super.isModified() ||
             this.content.isModified() ||
-            this.offset.isModified
+            this.offset.isModified()
         )
     }
 
@@ -155,5 +189,23 @@ export class PdfIndirectObject<
         super.setImmutable(immutable)
         this.content.setImmutable(immutable)
         this.offset.setImmutable(immutable)
+    }
+
+    becomes<T>(cls: new (options: PdfIndirectObject) => T): T {
+        if (this instanceof cls) {
+            return this as T
+        }
+        Object.setPrototypeOf(this, cls.prototype)
+        cls.prototype.init.call(this)
+        return this as unknown as T
+    }
+
+    init() {
+        // No-op by default, but subclasses can override to perform additional
+        // initialization after construction or cloning
+    }
+
+    resolve() {
+        return this
     }
 }

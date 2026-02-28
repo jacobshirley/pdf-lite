@@ -21,8 +21,6 @@ export class PdfRevision extends PdfObject {
     /** Cross-reference lookup table for this revision */
     xref: PdfXrefLookup
 
-    private cachedBytes?: ByteArray
-
     /**
      * Creates a new PDF revision.
      *
@@ -81,7 +79,6 @@ export class PdfRevision extends PdfObject {
      */
     set locked(value: boolean) {
         this._locked = value
-        this.cachedBytes = value ? this.toBytes() : undefined
         for (const obj of this._objects) {
             obj.setImmutable(value)
         }
@@ -105,6 +102,12 @@ export class PdfRevision extends PdfObject {
             throw new Error('Cannot modify objects array in locked revision')
         }
         this._objects = value
+    }
+
+    get indirectObjects(): PdfIndirectObject[] {
+        return this._objects.filter(
+            (obj): obj is PdfIndirectObject => obj instanceof PdfIndirectObject,
+        )
     }
 
     /**
@@ -310,11 +313,11 @@ export class PdfRevision extends PdfObject {
         return output
     }
 
-    toBytes(): ByteArray {
-        if (this.cachedBytes) {
-            return this.cachedBytes
-        }
-
-        return super.toBytes()
+    isEmpty(): boolean {
+        return (
+            this.indirectObjects.length < 1 ||
+            (this.indirectObjects.length === 1 &&
+                this.indirectObjects[0] === this.xref.object)
+        )
     }
 }

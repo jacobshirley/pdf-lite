@@ -8,19 +8,19 @@ import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
  * Manages page Annots arrays during AcroForm write operations.
  */
 export class PdfAnnotationWriter {
-    static async getPageAnnotsArray(
+    static getPageAnnotsArray(
         document: PdfDocument,
         pageDict: PdfDictionary,
-    ): Promise<{
+    ): {
         annotsArray: PdfArray<PdfObjectReference>
         isIndirect: boolean
         objectNumber?: number
         generationNumber?: number
-    }> {
+    } {
         const annotsRef = pageDict.get('Annots')
 
         if (annotsRef instanceof PdfObjectReference) {
-            const annotsObj = await document.readObject({
+            const annotsObj = document.readObject({
                 objectNumber: annotsRef.objectNumber,
                 generationNumber: annotsRef.generationNumber,
             })
@@ -59,7 +59,7 @@ export class PdfAnnotationWriter {
         }
     }
 
-    static async updatePageAnnotations(
+    static updatePageAnnotations(
         document: PdfDocument,
         fieldsByPage: Map<
             string,
@@ -68,9 +68,9 @@ export class PdfAnnotationWriter {
                 fieldRefs: PdfObjectReference[]
             }
         >,
-    ): Promise<void> {
+    ): void {
         for (const { pageRef, fieldRefs } of fieldsByPage.values()) {
-            const pageObj = await document.readObject({
+            const pageObj = document.readObject({
                 objectNumber: pageRef.objectNumber,
                 generationNumber: pageRef.generationNumber,
             })
@@ -78,7 +78,7 @@ export class PdfAnnotationWriter {
             if (!pageObj) continue
 
             const pageDict = pageObj.content.as(PdfDictionary).clone()
-            const annotsInfo = await PdfAnnotationWriter.getPageAnnotsArray(
+            const annotsInfo = PdfAnnotationWriter.getPageAnnotsArray(
                 document,
                 pageDict,
             )

@@ -7,7 +7,6 @@ export class PdfSignatureFormField extends PdfFormField {
     static {
         PdfFormField.registerFieldType('Sig', PdfSignatureFormField)
     }
-
     generateAppearance(): boolean {
         return false
     }

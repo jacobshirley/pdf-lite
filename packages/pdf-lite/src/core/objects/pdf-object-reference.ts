@@ -3,9 +3,16 @@ import { PdfObjectReferenceToken } from '../tokens/object-reference-token.js'
 import { PdfObject } from './pdf-object.js'
 import { PdfIndirectObject } from './pdf-indirect-object.js'
 
-export class PdfObjectReference extends PdfObject {
+export interface IPdfObjectResolver {
+    resolve(objectNumber: number, generationNumber: number): PdfIndirectObject
+}
+
+export class PdfObjectReference<
+    T extends PdfIndirectObject = PdfIndirectObject,
+> extends PdfObject {
     objectNumber: number
     generationNumber: number
+    resolver?: IPdfObjectResolver
 
     constructor(objectNumber: number, generationNumber: number) {
         super()
@@ -28,5 +35,22 @@ export class PdfObjectReference extends PdfObject {
             this.generationNumber,
         ) as this
         return cloned
+    }
+
+    resolve(): T {
+        if (!this.resolver) {
+            throw new Error(
+                `No resolver set for PdfObjectReference ${this.objectNumber} ${this.generationNumber}`,
+            )
+        }
+
+        return this.resolver.resolve(
+            this.objectNumber,
+            this.generationNumber,
+        ) as T
+    }
+
+    get key(): string {
+        return `${this.objectNumber}/${this.generationNumber}`
     }
 }

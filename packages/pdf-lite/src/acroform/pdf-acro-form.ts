@@ -12,6 +12,7 @@ import './fields/pdf-button-form-field.js'
 import './fields/pdf-choice-form-field.js'
 import './fields/pdf-signature-form-field.js'
 import { PdfDefaultResourcesDictionary } from '../annotations/pdf-default-resources.js'
+import { PdfPage } from '../pdf/pdf-page.js'
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
 import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
 
@@ -144,21 +145,8 @@ export class PdfAcroForm<
             // Auto-add to the page's Annots array
             const pageRef = field.parentRef
             if (pageRef) {
-                try {
-                    const pageObj = pageRef.resolve()
-                    if (pageObj?.content instanceof PdfDictionary) {
-                        let annots = pageObj.content.get('Annots')
-                        if (!annots) {
-                            annots = new PdfArray()
-                            pageObj.content.set('Annots', annots)
-                        }
-                        if (annots instanceof PdfArray) {
-                            annots.items.push(field.reference)
-                        }
-                    }
-                } catch {
-                    // page ref not resolvable
-                }
+                const page = pageRef.resolve(PdfPage)
+                page.annotations.items.push(field.reference)
             }
         }
     }

@@ -1,8 +1,8 @@
 import { PdfDocument } from '../pdf/pdf-document.js'
-import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
+import { PdfPage } from '../pdf/pdf-page.js'
 
 /**
  * Manages page Annots arrays during AcroForm write operations.
@@ -10,14 +10,14 @@ import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 export class PdfAnnotationWriter {
     static getPageAnnotsArray(
         document: PdfDocument,
-        pageDict: PdfDictionary,
+        page: PdfPage,
     ): {
         annotsArray: PdfArray<PdfObjectReference>
         isIndirect: boolean
         objectNumber?: number
         generationNumber?: number
     } {
-        const annotsRef = pageDict.get('Annots')
+        const annotsRef = page.content.get('Annots')
 
         if (annotsRef instanceof PdfObjectReference) {
             const annotsObj = document.readObject({
@@ -39,7 +39,7 @@ export class PdfAnnotationWriter {
             }
         } else {
             const newArray = new PdfArray<PdfObjectReference>()
-            pageDict.set('Annots', newArray)
+            page.content.set('Annots', newArray)
             return {
                 annotsArray: newArray,
                 isIndirect: false,
@@ -77,10 +77,10 @@ export class PdfAnnotationWriter {
 
             if (!pageObj) continue
 
-            const pageDict = pageObj.content.as(PdfDictionary).clone()
+            const page = pageObj.becomes(PdfPage)
             const annotsInfo = PdfAnnotationWriter.getPageAnnotsArray(
                 document,
-                pageDict,
+                page,
             )
 
             PdfAnnotationWriter.addFieldsToAnnots(
@@ -100,12 +100,7 @@ export class PdfAnnotationWriter {
                 document.add(annotsIndirect)
             }
 
-            const pageIndirect = new PdfIndirectObject({
-                objectNumber: pageRef.objectNumber,
-                generationNumber: pageRef.generationNumber,
-                content: pageDict,
-            })
-            document.add(pageIndirect)
+            document.add(page)
         }
     }
 }

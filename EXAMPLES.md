@@ -10,38 +10,11 @@ import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
 import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
 import { PdfIndirectObject } from 'pdf-lite/core/objects/pdf-indirect-object'
 import { PdfName } from 'pdf-lite/core/objects/pdf-name'
-import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
 import { PdfStream } from 'pdf-lite/core/objects/pdf-stream'
 import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
-
-function createPage(
-    contentStreamRef: PdfObjectReference,
-): PdfIndirectObject<PdfDictionary> {
-    const pageDict = new PdfDictionary()
-    pageDict.set('Type', new PdfName('Page'))
-    pageDict.set(
-        'MediaBox',
-        new PdfArray([
-            new PdfNumber(0),
-            new PdfNumber(0),
-            new PdfNumber(612),
-            new PdfNumber(792),
-        ]),
-    )
-    pageDict.set('Contents', contentStreamRef)
-    return new PdfIndirectObject({ content: pageDict })
-}
-
-function createPages(
-    pages: PdfIndirectObject<PdfDictionary>[],
-): PdfIndirectObject<PdfDictionary> {
-    const pagesDict = new PdfDictionary()
-    pagesDict.set('Type', new PdfName('Pages'))
-    pagesDict.set('Kids', new PdfArray(pages.map((x) => x.reference)))
-    pagesDict.set('Count', new PdfNumber(pages.length))
-    return new PdfIndirectObject({ content: pagesDict })
-}
+import { PdfPage } from 'pdf-lite/pdf/pdf-page'
+import { PdfPages } from 'pdf-lite/pdf/pdf-pages'
 
 function createCatalog(
     pagesRef: PdfObjectReference,
@@ -89,16 +62,18 @@ const contentStream = new PdfIndirectObject({
     }),
 })
 
-// Create a page
-const page = createPage(contentStream.reference)
-// Add resources to the page
-page.content.set('Resources', resources.reference)
+// Create a page using PdfPage
+const page = new PdfPage()
+page.mediaBox = [0, 0, 612, 792]
+page.contents = contentStream.reference
+page.resources = resources.reference
 document.add(page)
 
-// Create pages collection
-const pages = createPages([page])
-// Set parent reference for the page
-page.content.set('Parent', pages.reference)
+// Create pages collection using PdfPages
+const pages = new PdfPages()
+pages.kids = new PdfArray([page.reference])
+pages.count = 1
+page.parent = pages.reference
 document.add(pages)
 
 // Create catalog
@@ -1106,7 +1081,7 @@ console.log('Created form-empty.pdf with empty form fields')
 const emptyFormBytes = await fs.readFile(`${tmpFolder}/form-empty.pdf`)
 const filledDocument = await PdfDocument.fromBytes([emptyFormBytes])
 
-const acroform = await filledDocument.acroform
+const acroform = filledDocument.acroform
 if (!acroform) {
     throw new Error('No AcroForm found in the document')
 }

@@ -36,6 +36,7 @@ import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfAcroForm } from '../acroform/pdf-acro-form.js'
+import { PdfPages } from './pdf-pages.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -145,6 +146,15 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         const acroFormRef = acroFormEntry.as(PdfObjectReference)?.resolve()
         if (!acroFormRef) return null
         return acroFormRef.becomes(PdfAcroForm)
+    }
+
+    get pages(): PdfPages | null {
+        const root = this.root
+        const pagesEntry = root.content.get('Pages')
+        if (!pagesEntry) return null
+        const pagesRef = pagesEntry.as(PdfObjectReference)?.resolve()
+        if (!pagesRef) return null
+        return pagesRef.becomes(PdfPages)
     }
 
     get header(): PdfComment | undefined {

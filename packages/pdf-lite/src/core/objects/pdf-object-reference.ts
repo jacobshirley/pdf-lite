@@ -37,17 +37,23 @@ export class PdfObjectReference<
         return cloned
     }
 
-    resolve(): T {
+    resolve<U extends T>(cls?: new (options: PdfIndirectObject) => U): U {
         if (!this.resolver) {
             throw new Error(
                 `No resolver set for PdfObjectReference ${this.objectNumber} ${this.generationNumber}`,
             )
         }
 
-        return this.resolver.resolve(
+        const object = this.resolver.resolve(
             this.objectNumber,
             this.generationNumber,
-        ) as T
+        ) as U
+
+        if (cls) {
+            return object.becomes(cls)
+        }
+
+        return object
     }
 
     get key(): string {

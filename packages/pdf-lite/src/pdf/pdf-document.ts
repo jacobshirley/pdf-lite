@@ -1108,6 +1108,9 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
     }
 
+    /**
+     * Performs a full update cycle to ensure all revisions are consistent and offsets are correct.
+     */
     private update(): void {
         this.commitIncrementalUpdates()
         this.flushResolvedCache()

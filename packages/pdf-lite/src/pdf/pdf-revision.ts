@@ -79,7 +79,6 @@ export class PdfRevision extends PdfObject {
      */
     set locked(value: boolean) {
         this._locked = value
-        // this.setImmutable(value)
         for (const obj of this._objects) {
             obj.setImmutable(value)
         }

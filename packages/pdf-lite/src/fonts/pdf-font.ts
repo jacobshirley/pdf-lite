@@ -76,7 +76,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
 
     constructor(fontName: string)
     constructor(options: {
-        dict?: PdfDictionary
         fontName?: string
         resourceName?: string
         encoding?: string
@@ -87,7 +86,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         optionsOrFontName:
             | string
             | {
-                  dict?: PdfDictionary
                   fontName?: string
                   resourceName?: string
                   encoding?: string
@@ -106,9 +104,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
 
         // Handle options object
         const options = optionsOrFontName
-        if (options.dict) {
-            this.content.copyFrom(options.dict)
-        }
         this.fontName = options.fontName
         this.resourceName = options.resourceName || PdfFont.nextResourceName()
         this.encoding = options.encoding

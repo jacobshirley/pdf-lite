@@ -278,8 +278,8 @@ describe('AcroForm', () => {
         // Verify the font was embedded correctly
         expect(font).toBeDefined()
         expect(font.fontName).toBe('Helvetica-Custom')
-        //  expect(font.resourceName).toMatch(/^F\d+$/)
-        // expect(font.toString()).toBe(font.resourceName)
+        expect(font.resourceName).toMatch(/^F\d+$/)
+        expect(font.toString()).toBe(font.resourceName)
 
         // Get the AcroForm and modify a field to use the custom font
         const acroform = document.acroform
@@ -962,11 +962,13 @@ describe('AcroForm Field Value Decoding with Custom Encoding', () => {
         const acroForm = new PdfAcroForm()
         acroForm.defaultResources = drDict
 
-        acroForm.getFontEncodingMap('Helv')
-        acroForm.getFontEncodingMap('Helv')
+        const first = acroForm.getFontEncodingMap('Helv')
+        const second = acroForm.getFontEncodingMap('Helv')
 
-        expect(acroForm.fontEncodingMaps.has('Helv')).toBe(true)
-        expect(acroForm.fontEncodingMaps.get('Helv')?.get(160)).toBe('\u20AC')
+        expect(first).not.toBeNull()
+        expect(first?.get(160)).toBe('\u20AC')
+        // Second call must return the exact same cached object
+        expect(second).toBe(first)
     })
 })
 

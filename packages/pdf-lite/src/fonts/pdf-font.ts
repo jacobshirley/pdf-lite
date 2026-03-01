@@ -74,6 +74,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      */
     private _fontData?: ByteArray
 
+    constructor(font: PdfIndirectObject)
     constructor(fontName: string)
     constructor(options: {
         fontName?: string
@@ -91,9 +92,23 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                   encoding?: string
                   descriptor?: FontDescriptor | UnicodeFontDescriptor
                   fontData?: ByteArray
-              },
+              }
+            | PdfIndirectObject,
     ) {
         super(new PdfIndirectObject({ content: new PdfDictionary() }))
+
+        if (optionsOrFontName instanceof PdfIndirectObject) {
+            // Handle PdfIndirectObject input (existing font object)
+            const fontObj = optionsOrFontName
+            if (!(fontObj.content instanceof PdfDictionary)) {
+                throw new Error(
+                    'PdfIndirectObject content must be a PdfDictionary',
+                )
+            }
+            this.content = fontObj.content as PdfFontDictionary
+            this.resourceName = fontObj.reference.key
+            return
+        }
 
         // Handle string parameter (simple fontName)
         if (typeof optionsOrFontName === 'string') {

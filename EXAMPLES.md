@@ -73,7 +73,7 @@ document.add(page)
 const pages = new PdfPages()
 pages.kids = new PdfArray([page.reference])
 pages.count = 1
-page.parent = pages.reference
+page.parent = pages
 document.add(pages)
 
 // Create catalog

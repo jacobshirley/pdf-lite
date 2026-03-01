@@ -15,6 +15,7 @@ import { PdfFieldType as PdfFieldTypeConst } from './types.js'
 import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
 import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-resources.js'
 import type { PdfAcroForm } from '../pdf-acro-form.js'
+import { PdfPage } from '../../pdf/pdf-page.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -26,10 +27,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
 
     /** @internal */
     _form?: PdfAcroForm
-
-    set form(f: PdfAcroForm) {
-        this._form = f
-    }
     constructor(other?: PdfIndirectObject | { form?: PdfAcroForm }) {
         super()
         if (other && !(other instanceof PdfIndirectObject)) {
@@ -37,8 +34,8 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
     }
 
-    init() {
-        this.defaultGenerateAppearance = true
+    set form(f: PdfAcroForm) {
+        this._form = f
     }
 
     static create(other?: PdfIndirectObject): PdfFormField {
@@ -67,12 +64,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const resolved = this.content.get('Parent')?.resolve()
         if (!resolved || !(resolved.content instanceof PdfDictionary))
             return undefined
-        try {
-            return PdfFormField.create(resolved)
-        } catch {
-            // Parent may not have FT — treat it as a generic field wrapper
-            return resolved as unknown as PdfFormField
-        }
+        return PdfFormField.create(resolved)
     }
 
     set parent(field: PdfFormField | PdfIndirectObject | undefined) {
@@ -94,11 +86,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             const resolved = ref.resolve()
             if (!resolved || !(resolved.content instanceof PdfDictionary))
                 continue
-            try {
-                result.push(PdfFormField.create(resolved))
-            } catch {
-                result.push(resolved as unknown as PdfFormField)
-            }
+            result.push(PdfFormField.create(resolved))
         }
         return result
     }
@@ -127,16 +115,13 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const fontDict = dr?.get('Font')
         if (fontDict instanceof PdfDictionary) {
             const fontEntry = fontDict.get(fontName)
+            console.log('Looking up font in DR:', fontName, fontEntry)
             if (fontEntry instanceof PdfObjectReference) {
-                try {
-                    const resolved = fontEntry.resolve()
-                    if (resolved?.content instanceof PdfDictionary) {
-                        const font = resolved.becomes(PdfFont)
-                        font.resourceName = fontName
-                        return font
-                    }
-                } catch {
-                    // resolver not wired — fall through to standard fonts
+                const resolved = fontEntry.resolve()
+                if (resolved?.content instanceof PdfDictionary) {
+                    const font = resolved.becomes(PdfFont)
+                    font.resourceName = fontName
+                    return font
                 }
             }
         }
@@ -278,14 +263,14 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             : undefined
         const generateAppearance = this._storeValue(val, fieldParent)
         if (generateAppearance && this.defaultGenerateAppearance) {
-            this.tryGenerateAppearance(this)
+            this.generateAppearance()
             for (const sibling of this.siblings) {
                 if (
                     sibling !== this &&
                     sibling.rect &&
                     sibling.defaultGenerateAppearance
                 ) {
-                    this.tryGenerateAppearance(sibling)
+                    sibling.generateAppearance()
                 }
             }
             // Separated field/widget structure: field has no Rect but its Kids
@@ -294,7 +279,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
                 for (const child of this.children) {
                     if (child.rect && child.defaultGenerateAppearance) {
                         if (this._form) child.form = this._form
-                        this.tryGenerateAppearance(child)
+                        child.generateAppearance()
                     }
                 }
             }
@@ -318,10 +303,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         this.content.set('V', pdfVal)
         fieldParent?.content.set('V', pdfVal)
         return true
-    }
-
-    protected tryGenerateAppearance(field: PdfFormField): void {
-        field.generateAppearance()
     }
 
     get fontSize(): number | null {
@@ -556,12 +537,12 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
     }
 
-    get kids(): PdfObjectReference[] {
+    get kids(): PdfArray<PdfObjectReference> | undefined {
         const kidsArray = this.content
             .get('Kids')
             ?.as(PdfArray<PdfObjectReference>)
-        if (!kidsArray) return []
-        return kidsArray.items
+        if (!kidsArray) return undefined
+        return kidsArray
     }
 
     set kids(kids: PdfObjectReference[]) {

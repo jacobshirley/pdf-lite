@@ -6,22 +6,15 @@
 
 # Class: PdfAcroForm\<T\>
 
-Interface that PdfAcroForm implements, used by PdfFormField to avoid circular imports.
-Uses generic field type to avoid circular dependency.
-
 ## Extends
 
-- [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<\{ `CO?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>; `DA?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `DR?`: [`PdfDefaultResourcesDictionary`](../type-aliases/PdfDefaultResourcesDictionary.md); `Fields`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>; `NeedAppearances?`: [`PdfBoolean`](../../../core/objects/pdf-boolean/classes/PdfBoolean.md); `Q?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `SigFlags?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `XFA?`: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md); \}\>\>
+- [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<\{ `CO?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>; `DA?`: [`PdfString`](../../../core/objects/pdf-string/classes/PdfString.md); `DR?`: [`PdfDefaultResourcesDictionary`](../../../annotations/pdf-default-resources/classes/PdfDefaultResourcesDictionary.md); `Fields`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\> \| [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md); `NeedAppearances?`: [`PdfBoolean`](../../../core/objects/pdf-boolean/classes/PdfBoolean.md); `Q?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `SigFlags?`: [`PdfNumber`](../../../core/objects/pdf-number/classes/PdfNumber.md); `XFA?`: [`PdfArray`](../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>; \}\>\>
 
 ## Type Parameters
 
 ### T
 
 `T` _extends_ `Record`\<`string`, `string`\> = `Record`\<`string`, `string`\>
-
-## Implements
-
-- [`FormContext`](../../fields/types/interfaces/FormContext.md)\<[`PdfFormField`](../../fields/pdf-form-field/classes/PdfFormField.md)\>
 
 ## Constructors
 
@@ -32,16 +25,6 @@ Uses generic field type to avoid circular dependency.
 #### Parameters
 
 ##### options?
-
-###### document?
-
-[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)
-
-###### fields?
-
-[`PdfFormField`](../../fields/pdf-form-field/classes/PdfFormField.md)[]
-
-###### other?
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
 
@@ -54,6 +37,28 @@ Uses generic field type to avoid circular dependency.
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`constructor`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#constructor)
 
 ## Properties
+
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`cachedTokens`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#cachedtokens)
+
+---
+
+### compressed?
+
+> `optional` **compressed**: `boolean`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`compressed`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#compressed)
+
+---
 
 ### content
 
@@ -75,13 +80,9 @@ Uses generic field type to avoid circular dependency.
 
 ---
 
-### fields
+### fontEncodingMaps
 
-> **fields**: [`PdfFormField`](../../fields/pdf-form-field/classes/PdfFormField.md)[]
-
-#### Implementation of
-
-[`FormContext`](../../fields/types/interfaces/FormContext.md).[`fields`](../../fields/types/interfaces/FormContext.md#fields)
+> **fontEncodingMaps**: `Map`\<`string`, `Map`\<`number`, `string`\>\>
 
 ---
 
@@ -207,10 +208,6 @@ Optional tokens to prepend or append during serialization
 
 `void`
 
-#### Implementation of
-
-[`FormContext`](../../fields/types/interfaces/FormContext.md).[`defaultAppearance`](../../fields/types/interfaces/FormContext.md#defaultappearance)
-
 ---
 
 ### defaultQuadding
@@ -243,11 +240,11 @@ Optional tokens to prepend or append during serialization
 
 #### Get Signature
 
-> **get** **defaultResources**(): [`PdfDefaultResourcesDictionary`](../type-aliases/PdfDefaultResourcesDictionary.md) \| `null`
+> **get** **defaultResources**(): [`PdfDefaultResourcesDictionary`](../../../annotations/pdf-default-resources/classes/PdfDefaultResourcesDictionary.md) \| `null`
 
 ##### Returns
 
-[`PdfDefaultResourcesDictionary`](../type-aliases/PdfDefaultResourcesDictionary.md) \| `null`
+[`PdfDefaultResourcesDictionary`](../../../annotations/pdf-default-resources/classes/PdfDefaultResourcesDictionary.md) \| `null`
 
 #### Set Signature
 
@@ -257,51 +254,73 @@ Optional tokens to prepend or append during serialization
 
 ###### resources
 
-[`PdfDefaultResourcesDictionary`](../type-aliases/PdfDefaultResourcesDictionary.md) | `null`
+[`PdfDefaultResourcesDictionary`](../../../annotations/pdf-default-resources/classes/PdfDefaultResourcesDictionary.md) | `null`
 
 ##### Returns
 
 `void`
 
-#### Implementation of
-
-[`FormContext`](../../fields/types/interfaces/FormContext.md).[`defaultResources`](../../fields/types/interfaces/FormContext.md#defaultresources)
-
 ---
 
-### fontEncodingMaps
+### fields
 
 #### Get Signature
 
-> **get** **fontEncodingMaps**(): `Map`\<`string`, `Map`\<`number`, `string`\>\>
+> **get** **fields**(): readonly [`PdfFormField`](../../fields/pdf-form-field/classes/PdfFormField.md)[]
 
 ##### Returns
 
-`Map`\<`string`, `Map`\<`number`, `string`\>\>
+readonly [`PdfFormField`](../../fields/pdf-form-field/classes/PdfFormField.md)[]
 
-#### Implementation of
+#### Set Signature
 
-[`FormContext`](../../fields/types/interfaces/FormContext.md).[`fontEncodingMaps`](../../fields/types/interfaces/FormContext.md#fontencodingmaps)
+> **set** **fields**(`newFields`): `void`
+
+##### Parameters
+
+###### newFields
+
+[`PdfFormField`](../../fields/pdf-form-field/classes/PdfFormField.md)[]
+
+##### Returns
+
+`void`
 
 ---
 
-### fontRefs
+### isTrailingDelimited
 
 #### Get Signature
 
-> **get** **fontRefs**(): `Map`\<`string`, [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>
+> **get** **isTrailingDelimited**(): `boolean`
 
-Object references for all resolved fonts, keyed by resource name.
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
 
 ##### Returns
 
-`Map`\<`string`, [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>
+`boolean`
 
-Object references for all resolved fonts, keyed by resource name.
+#### Inherited from
 
-#### Implementation of
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`isTrailingDelimited`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#istrailingdelimited)
 
-[`FormContext`](../../fields/types/interfaces/FormContext.md).[`fontRefs`](../../fields/types/interfaces/FormContext.md#fontrefs)
+---
+
+### key
+
+#### Get Signature
+
+> **get** **key**(): `string`
+
+##### Returns
+
+`string`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`key`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#key)
 
 ---
 
@@ -329,10 +348,6 @@ Object references for all resolved fonts, keyed by resource name.
 
 `void`
 
-#### Implementation of
-
-[`FormContext`](../../fields/types/interfaces/FormContext.md).[`needAppearances`](../../fields/types/interfaces/FormContext.md#needappearances)
-
 ---
 
 ### objectType
@@ -357,11 +372,11 @@ The type of this PDF object
 
 #### Get Signature
 
-> **get** **reference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+> **get** **reference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 ##### Returns
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 #### Inherited from
 
@@ -393,7 +408,35 @@ The type of this PDF object
 
 `void`
 
+---
+
+### xfa
+
+#### Get Signature
+
+> **get** **xfa**(): [`PdfXfaForm`](../../xfa/pdf-xfa-form/classes/PdfXfaForm.md) \| `null`
+
+##### Returns
+
+[`PdfXfaForm`](../../xfa/pdf-xfa-form/classes/PdfXfaForm.md) \| `null`
+
 ## Methods
+
+### addField()
+
+> **addField**(...`fields`): `void`
+
+#### Parameters
+
+##### fields
+
+...[`PdfFormField`](../../fields/pdf-form-field/classes/PdfFormField.md)[]
+
+#### Returns
+
+`void`
+
+---
 
 ### as()
 
@@ -420,6 +463,32 @@ Attempts to cast the object to a specific PdfObject subclass
 #### Inherited from
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`as`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#as)
+
+---
+
+### becomes()
+
+> **becomes**\<`T`\>(`cls`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`becomes`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#becomes)
 
 ---
 
@@ -509,7 +578,7 @@ Compares this object to another for equality based on their token representation
 
 ### getFontEncodingMap()
 
-> **getFontEncodingMap**(`fontName`): `Promise`\<`Map`\<`number`, `string`\> \| `null`\>
+> **getFontEncodingMap**(`fontName`): `Map`\<`number`, `string`\> \| `null`
 
 #### Parameters
 
@@ -519,23 +588,7 @@ Compares this object to another for equality based on their token representation
 
 #### Returns
 
-`Promise`\<`Map`\<`number`, `string`\> \| `null`\>
-
----
-
-### getXfa()
-
-> **getXfa**(`document?`): `Promise`\<[`PdfXfaForm`](../../xfa/pdf-xfa-form/classes/PdfXfaForm.md) \| `null`\>
-
-#### Parameters
-
-##### document?
-
-[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)
-
-#### Returns
-
-`Promise`\<[`PdfXfaForm`](../../xfa/pdf-xfa-form/classes/PdfXfaForm.md) \| `null`\>
+`Map`\<`number`, `string`\> \| `null`
 
 ---
 
@@ -583,26 +636,6 @@ Compares this object to another for equality based on their token representation
 
 ---
 
-### isFontUnicode()
-
-> **isFontUnicode**(`fontName`): `boolean`
-
-#### Parameters
-
-##### fontName
-
-`string`
-
-#### Returns
-
-`boolean`
-
-#### Implementation of
-
-[`FormContext`](../../fields/types/interfaces/FormContext.md).[`isFontUnicode`](../../fields/types/interfaces/FormContext.md#isfontunicode)
-
----
-
 ### isImmutable()
 
 > **isImmutable**(): `boolean`
@@ -629,7 +662,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 `boolean`
 
-#### Overrides
+#### Inherited from
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`isModified`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#ismodified)
 
@@ -643,7 +676,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### ref?
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\>
 
 #### Returns
 
@@ -666,6 +699,32 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Inherited from
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`order`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#order)
+
+---
+
+### resolve()
+
+> **resolve**\<`T`\>(`cls?`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls?
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`resolve`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#resolve)
 
 ---
 
@@ -729,19 +788,21 @@ Sets the modified state of the object. Override this method if the modified stat
 
 ---
 
-### setXfa()
+### toBase64()
 
-> **setXfa**(`xfa`): `void`
+> **toBase64**(): `string`
 
-#### Parameters
-
-##### xfa
-
-[`PdfXfaForm`](../../xfa/pdf-xfa-form/classes/PdfXfaForm.md) | `null`
+Serializes the document to a Base64-encoded string.
 
 #### Returns
 
-`void`
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`toBase64`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#tobase64)
 
 ---
 
@@ -815,22 +876,6 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 
 ---
 
-### write()
-
-> **write**(`document?`): `Promise`\<`void`\>
-
-#### Parameters
-
-##### document?
-
-[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)
-
-#### Returns
-
-`Promise`\<`void`\>
-
----
-
 ### createPlaceholder()
 
 > `static` **createPlaceholder**\<`T`\>(`objectNumber?`, `generationNumber?`, `content?`): [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<`T` _extends_ `unknown` ? [`PdfNull`](../../../core/objects/pdf-null/classes/PdfNull.md) : `T`\>
@@ -862,19 +907,3 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`createPlaceholder`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#createplaceholder)
-
----
-
-### fromDocument()
-
-> `static` **fromDocument**(`document`): `Promise`\<`PdfAcroForm`\<`Record`\<`string`, `string`\>\> \| `null`\>
-
-#### Parameters
-
-##### document
-
-[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)
-
-#### Returns
-
-`Promise`\<`PdfAcroForm`\<`Record`\<`string`, `string`\>\> \| `null`\>

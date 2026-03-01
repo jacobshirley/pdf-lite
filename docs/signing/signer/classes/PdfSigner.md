@@ -20,13 +20,33 @@ const signedDoc = await signer.sign(document)
 
 ### Constructor
 
-> **new PdfSigner**(): `PdfSigner`
+> **new PdfSigner**(`options`): `PdfSigner`
+
+#### Parameters
+
+##### options
+
+###### document
+
+[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)
+
+###### useDocumentSecurityStore?
+
+`boolean`
 
 #### Returns
 
 `PdfSigner`
 
 ## Properties
+
+### document
+
+> **document**: [`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)
+
+The PDF document to be signed.
+
+---
 
 ### useDocumentSecurityStore
 
@@ -36,45 +56,56 @@ Whether to use the Document Security Store for revocation information.
 
 ## Methods
 
-### sign()
+### setDocumentSecurityStore()
 
-> **sign**(`document`): `Promise`\<[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)\>
+> **setDocumentSecurityStore**(`dss`): `void`
 
-Signs all signature objects in the document.
-Computes byte ranges, generates signatures, and optionally adds revocation info to DSS.
+Sets the Document Security Store (DSS) for the this.document.
+Used for long-term validation of digital signatures.
 
 #### Parameters
 
-##### document
+##### dss
 
-[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)
+[`PdfDocumentSecurityStoreObject`](../../document-security-store/classes/PdfDocumentSecurityStoreObject.md)
 
-The PDF document to sign.
+The Document Security Store object to set
 
 #### Returns
 
-`Promise`\<[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)\>
+`void`
 
-The signed document.
+#### Throws
+
+Error if the document has no root dictionary
+
+---
+
+### sign()
+
+> **sign**(): `Promise`\<`void`\>
+
+Signs all signature objects in the this.document.
+Computes byte ranges, generates signatures, and optionally adds revocation info to DSS.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+The signed this.document.
 
 ---
 
 ### verify()
 
-> **verify**(`document`, `options?`): `Promise`\<[`PdfDocumentVerificationResult`](../type-aliases/PdfDocumentVerificationResult.md)\>
+> **verify**(`options?`): `Promise`\<[`PdfDocumentVerificationResult`](../type-aliases/PdfDocumentVerificationResult.md)\>
 
-Verifies all signatures in the document.
+Verifies all signatures in the this.document.
 First serializes the document to bytes and reloads it to ensure signatures
 are properly deserialized into the correct classes before verification.
 Then searches for signature objects, computes their byte ranges, and verifies each one.
 
 #### Parameters
-
-##### document
-
-[`PdfDocument`](../../../pdf/pdf-document/classes/PdfDocument.md)
-
-The PDF document to verify.
 
 ##### options?
 

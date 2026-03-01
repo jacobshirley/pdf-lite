@@ -22,7 +22,7 @@ Indirect object containing a CRL stream.
 
 ##### options?
 
-[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\> | [`PdfStream`](../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\> | \{ `content?`: [`PdfStream`](../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\>; `encryptable?`: `boolean`; `generationNumber?`: `number`; `objectNumber?`: `number`; `offset?`: `number` \| [`Ref`](../../../core/ref/classes/Ref.md)\<`number`\>; \}
+[`PdfIndirectObjectOptions`](../../../core/objects/pdf-indirect-object/type-aliases/PdfIndirectObjectOptions.md)\<[`PdfStream`](../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\>\>
 
 #### Returns
 
@@ -33,6 +33,28 @@ Indirect object containing a CRL stream.
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`constructor`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#constructor)
 
 ## Properties
+
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`cachedTokens`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#cachedtokens)
+
+---
+
+### compressed?
+
+> `optional` **compressed**: `boolean`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`compressed`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#compressed)
+
+---
 
 ### content
 
@@ -152,6 +174,42 @@ Optional tokens to prepend or append during serialization
 
 ## Accessors
 
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`isTrailingDelimited`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#istrailingdelimited)
+
+---
+
+### key
+
+#### Get Signature
+
+> **get** **key**(): `string`
+
+##### Returns
+
+`string`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`key`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#key)
+
+---
+
 ### objectType
 
 #### Get Signature
@@ -174,11 +232,11 @@ The type of this PDF object
 
 #### Get Signature
 
-> **get** **reference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+> **get** **reference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 ##### Returns
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 #### Inherited from
 
@@ -211,6 +269,32 @@ Attempts to cast the object to a specific PdfObject subclass
 #### Inherited from
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`as`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#as)
+
+---
+
+### becomes()
+
+> **becomes**\<`T`\>(`cls`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`becomes`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#becomes)
 
 ---
 
@@ -356,7 +440,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### ref?
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\>
 
 #### Returns
 
@@ -379,6 +463,32 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Inherited from
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`order`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#order)
+
+---
+
+### resolve()
+
+> **resolve**\<`T`\>(`cls?`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls?
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`resolve`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#resolve)
 
 ---
 
@@ -423,6 +533,24 @@ Sets the modified state of the object. Override this method if the modified stat
 #### Inherited from
 
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`setModified`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`toBase64`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#tobase64)
 
 ---
 

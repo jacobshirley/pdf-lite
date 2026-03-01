@@ -62,7 +62,7 @@ A promise that resolves to the parsed PdfDocument
 
 ### fromBytes()
 
-> `static` **fromBytes**(`input`): `Promise`\<[`PdfDocument`](../../pdf-document/classes/PdfDocument.md)\>
+> `static` **fromBytes**(`input`, `options?`): `Promise`\<[`PdfDocument`](../../pdf-document/classes/PdfDocument.md)\>
 
 Creates a PdfDocument directly from a byte stream.
 Convenience method that creates a reader internally.
@@ -74,6 +74,20 @@ Convenience method that creates a reader internally.
 Async or sync iterable of byte arrays
 
 `Iterable`\<[`ByteArray`](../../../types/type-aliases/ByteArray.md), `any`, `any`\> | `AsyncIterable`\<[`ByteArray`](../../../types/type-aliases/ByteArray.md), `any`, `any`\>
+
+##### options?
+
+###### incremental?
+
+`boolean`
+
+###### ownerPassword?
+
+`string`
+
+###### password?
+
+`string`
 
 #### Returns
 

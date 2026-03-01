@@ -9,7 +9,3 @@
 ## Classes
 
 - [PdfAcroForm](classes/PdfAcroForm.md)
-
-## Type Aliases
-
-- [PdfDefaultResourcesDictionary](type-aliases/PdfDefaultResourcesDictionary.md)

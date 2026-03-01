@@ -41,6 +41,28 @@ properties: isWidget (Type/Subtype) and AS (appearance state).
 
 ## Properties
 
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`cachedTokens`](../../pdf-annotation/classes/PdfAnnotation.md#cachedtokens)
+
+---
+
+### compressed?
+
+> `optional` **compressed**: `boolean`
+
+#### Inherited from
+
+[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`compressed`](../../pdf-annotation/classes/PdfAnnotation.md#compressed)
+
+---
+
 ### content
 
 > **content**: [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)
@@ -305,6 +327,26 @@ Optional tokens to prepend or append during serialization
 
 ---
 
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`isTrailingDelimited`](../../pdf-annotation/classes/PdfAnnotation.md#istrailingdelimited)
+
+---
+
 ### isWidget
 
 #### Get Signature
@@ -328,6 +370,22 @@ Optional tokens to prepend or append during serialization
 ##### Returns
 
 `void`
+
+---
+
+### key
+
+#### Get Signature
+
+> **get** **key**(): `string`
+
+##### Returns
+
+`string`
+
+#### Inherited from
+
+[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`key`](../../pdf-annotation/classes/PdfAnnotation.md#key)
 
 ---
 
@@ -469,15 +527,31 @@ The type of this PDF object
 
 ---
 
+### page
+
+#### Get Signature
+
+> **get** **page**(): [`PdfPage`](../../../pdf/pdf-page/classes/PdfPage.md) \| `null`
+
+##### Returns
+
+[`PdfPage`](../../../pdf/pdf-page/classes/PdfPage.md) \| `null`
+
+#### Inherited from
+
+[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`page`](../../pdf-annotation/classes/PdfAnnotation.md#page)
+
+---
+
 ### parentRef
 
 #### Get Signature
 
-> **get** **parentRef**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) \| `null`
+> **get** **parentRef**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\> \| `null`
 
 ##### Returns
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) \| `null`
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\> \| `null`
 
 #### Set Signature
 
@@ -487,7 +561,7 @@ The type of this PDF object
 
 ###### ref
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) | `null`
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\> | `null`
 
 ##### Returns
 
@@ -563,11 +637,11 @@ The type of this PDF object
 
 #### Get Signature
 
-> **get** **reference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+> **get** **reference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 ##### Returns
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 #### Inherited from
 
@@ -600,6 +674,32 @@ Attempts to cast the object to a specific PdfObject subclass
 #### Inherited from
 
 [`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`as`](../../pdf-annotation/classes/PdfAnnotation.md#as)
+
+---
+
+### becomes()
+
+> **becomes**\<`T`\>(`cls`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`becomes`](../../pdf-annotation/classes/PdfAnnotation.md#becomes)
 
 ---
 
@@ -745,7 +845,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### ref?
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\>
 
 #### Returns
 
@@ -768,6 +868,32 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Inherited from
 
 [`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`order`](../../pdf-annotation/classes/PdfAnnotation.md#order)
+
+---
+
+### resolve()
+
+> **resolve**\<`T`\>(`cls?`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls?
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`resolve`](../../pdf-annotation/classes/PdfAnnotation.md#resolve)
 
 ---
 
@@ -812,6 +938,24 @@ Sets the modified state of the object. Override this method if the modified stat
 #### Inherited from
 
 [`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`setModified`](../../pdf-annotation/classes/PdfAnnotation.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`toBase64`](../../pdf-annotation/classes/PdfAnnotation.md#tobase64)
 
 ---
 

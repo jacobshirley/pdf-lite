@@ -9,3 +9,7 @@
 ## Classes
 
 - [PdfIndirectObject](classes/PdfIndirectObject.md)
+
+## Type Aliases
+
+- [PdfIndirectObjectOptions](type-aliases/PdfIndirectObjectOptions.md)

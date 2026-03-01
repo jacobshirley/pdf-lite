@@ -74,12 +74,6 @@ Re-exports [PdfFont](pdf-font/classes/PdfFont.md)
 
 ---
 
-### PdfFontManager
-
-Re-exports [PdfFontManager](manager/classes/PdfFontManager.md)
-
----
-
 ### TtfFontInfo
 
 Re-exports [TtfFontInfo](types/interfaces/TtfFontInfo.md)

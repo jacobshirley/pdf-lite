@@ -182,12 +182,6 @@ Re-exports [padBytes](padBytes/functions/padBytes.md)
 
 ---
 
-### Predictor
-
-Re-exports [Predictor](predictors/classes/Predictor.md)
-
----
-
 ### replaceInBuffer
 
 Re-exports [replaceInBuffer](replaceInBuffer/functions/replaceInBuffer.md)

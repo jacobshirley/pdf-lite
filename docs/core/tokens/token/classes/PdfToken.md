@@ -4,7 +4,7 @@
 
 [pdf-lite](../../../../README.md) / [core/tokens/token](../README.md) / PdfToken
 
-# Abstract Class: PdfToken
+# Class: PdfToken
 
 ## Extended by
 
@@ -80,6 +80,16 @@
 `string`
 
 ## Methods
+
+### clone()
+
+> **clone**(): `PdfToken`
+
+#### Returns
+
+`PdfToken`
+
+---
 
 ### equals()
 

@@ -4,21 +4,23 @@
 
 [pdf-lite](../../../../README.md) / [core/objects/pdf-object-reference](../README.md) / PdfObjectReference
 
-# Class: PdfObjectReference
+# Class: PdfObjectReference\<T\>
 
 ## Extends
 
 - [`PdfObject`](../../pdf-object/classes/PdfObject.md)
 
-## Extended by
+## Type Parameters
 
-- [`PdfIndirectObject`](../../pdf-indirect-object/classes/PdfIndirectObject.md)
+### T
+
+`T` _extends_ [`PdfIndirectObject`](../../pdf-indirect-object/classes/PdfIndirectObject.md) = [`PdfIndirectObject`](../../pdf-indirect-object/classes/PdfIndirectObject.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new PdfObjectReference**(`objectNumber`, `generationNumber`): `PdfObjectReference`
+> **new PdfObjectReference**\<`T`\>(`objectNumber`, `generationNumber`): `PdfObjectReference`\<`T`\>
 
 #### Parameters
 
@@ -32,13 +34,25 @@
 
 #### Returns
 
-`PdfObjectReference`
+`PdfObjectReference`\<`T`\>
 
 #### Overrides
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`constructor`](../../pdf-object/classes/PdfObject.md#constructor)
 
 ## Properties
+
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`cachedTokens`](../../pdf-object/classes/PdfObject.md#cachedtokens)
+
+---
 
 ### generationNumber
 
@@ -98,7 +112,45 @@ Optional tokens to prepend or append during serialization
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`preTokens`](../../pdf-object/classes/PdfObject.md#pretokens)
 
+---
+
+### resolver?
+
+> `optional` **resolver**: [`IPdfObjectResolver`](../interfaces/IPdfObjectResolver.md)
+
 ## Accessors
+
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`isTrailingDelimited`](../../pdf-object/classes/PdfObject.md#istrailingdelimited)
+
+---
+
+### key
+
+#### Get Signature
+
+> **get** **key**(): `string`
+
+##### Returns
+
+`string`
+
+---
 
 ### objectType
 
@@ -232,6 +284,28 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ---
 
+### resolve()
+
+> **resolve**\<`U`\>(`cls?`): `U`
+
+#### Type Parameters
+
+##### U
+
+`U` _extends_ [`PdfIndirectObject`](../../pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\> = `T`
+
+#### Parameters
+
+##### cls?
+
+(`options`) => `U`
+
+#### Returns
+
+`U`
+
+---
+
 ### setImmutable()
 
 > **setImmutable**(`immutable`): `void`
@@ -273,6 +347,24 @@ Sets the modified state of the object. Override this method if the modified stat
 #### Inherited from
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`setModified`](../../pdf-object/classes/PdfObject.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toBase64`](../../pdf-object/classes/PdfObject.md#tobase64)
 
 ---
 

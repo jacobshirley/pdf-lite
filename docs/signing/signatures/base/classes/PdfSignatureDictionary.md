@@ -39,6 +39,18 @@ The signature dictionary entries, ByteRange and Contents are auto-populated if n
 
 ## Properties
 
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../../core/tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`cachedTokens`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#cachedtokens)
+
+---
+
 ### immutable
 
 > `protected` **immutable**: `boolean` = `false`
@@ -96,6 +108,26 @@ Optional tokens to prepend or append during serialization
 [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`preTokens`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#pretokens)
 
 ## Accessors
+
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`isTrailingDelimited`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#istrailingdelimited)
+
+---
 
 ### objectType
 
@@ -414,15 +446,15 @@ Sets the immutable state of the object
 
 ### setModified()
 
-> **setModified**(`modified`): `void`
+> **setModified**(`modified?`): `void`
 
 Sets the modified state of the object. Override this method if the modified state is determined differently
 
 #### Parameters
 
-##### modified
+##### modified?
 
-`boolean` = `true`
+`boolean`
 
 #### Returns
 
@@ -431,6 +463,24 @@ Sets the modified state of the object. Override this method if the modified stat
 #### Inherited from
 
 [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`setModified`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`toBase64`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#tobase64)
 
 ---
 

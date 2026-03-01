@@ -148,13 +148,18 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         return acroFormRef.becomes(PdfAcroForm)
     }
 
-    get pages(): PdfPages | null {
+    get pages(): PdfPages {
         const root = this.root
         const pagesEntry = root.content.get('Pages')
-        if (!pagesEntry) return null
-        const pagesRef = pagesEntry.as(PdfObjectReference)?.resolve()
-        if (!pagesRef) return null
-        return pagesRef.becomes(PdfPages)
+        if (pagesEntry) {
+            const pagesRef = pagesEntry.as(PdfObjectReference)?.resolve()
+            if (pagesRef) return pagesRef.becomes(PdfPages)
+        }
+
+        const pages = new PdfPages()
+        this.add(pages)
+        root.content.set('Pages', pages.reference)
+        return pages
     }
 
     get header(): PdfComment | undefined {

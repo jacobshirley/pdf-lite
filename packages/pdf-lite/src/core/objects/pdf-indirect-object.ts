@@ -199,16 +199,19 @@ export class PdfIndirectObject<
         }
         // Preserve identity-critical properties that subclass constructors
         // may inadvertently reset (e.g. PdfFont's super() creates a fresh
-        // PdfIndirectObject with objectNumber = -1).
+        // PdfIndirectObject with objectNumber = -1, and PdfFormField's
+        // super() chain creates a fresh empty PdfDictionary as content).
         const savedObjectNumber = this.objectNumber
         const savedGenerationNumber = this.generationNumber
         const savedOffset = this.offset
+        const savedContent = this.content
         const newObject = new cls(this)
         Object.setPrototypeOf(this, cls.prototype)
         Object.assign(this, newObject)
         this.objectNumber = savedObjectNumber
         this.generationNumber = savedGenerationNumber
         this.offset = savedOffset
+        this.content = savedContent
         return this as unknown as T
     }
 

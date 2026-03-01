@@ -197,9 +197,18 @@ export class PdfIndirectObject<
         if (this instanceof cls) {
             return this as T
         }
+        // Preserve identity-critical properties that subclass constructors
+        // may inadvertently reset (e.g. PdfFont's super() creates a fresh
+        // PdfIndirectObject with objectNumber = -1).
+        const savedObjectNumber = this.objectNumber
+        const savedGenerationNumber = this.generationNumber
+        const savedOffset = this.offset
         const newObject = new cls(this)
         Object.setPrototypeOf(this, cls.prototype)
         Object.assign(this, newObject)
+        this.objectNumber = savedObjectNumber
+        this.generationNumber = savedGenerationNumber
+        this.offset = savedOffset
         return this as unknown as T
     }
 

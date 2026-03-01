@@ -988,8 +988,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     ): PdfIndirectObject[] {
         const seen = new Set<PdfObject>()
         const missing: PdfIndirectObject[] = []
-        const walk = (obj: PdfObject) => {
-            if (seen.has(obj)) return
+        const queue: PdfObject[] = [...objects]
+        while (queue.length > 0) {
+            const obj = queue.pop()!
+            if (seen.has(obj)) continue
             seen.add(obj)
 
             if (
@@ -1004,25 +1006,24 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                             !resolved.inPdf()
                         ) {
                             missing.push(resolved)
-                            walk(resolved)
+                            queue.push(resolved)
                         }
                     } catch {
                         // Skip unresolvable references
                     }
                 }
             } else if (obj instanceof PdfStream) {
-                walk(obj.header)
+                queue.push(obj.header)
             } else if (obj instanceof PdfDictionary) {
                 for (const [, value] of obj.entries()) {
-                    if (value) walk(value)
+                    if (value) queue.push(value)
                 }
             } else if (obj instanceof PdfArray) {
-                for (const item of obj.items) walk(item)
+                for (const item of obj.items) queue.push(item)
             } else if (obj instanceof PdfIndirectObject) {
-                walk(obj.content)
+                queue.push(obj.content)
             }
         }
-        for (const obj of objects) walk(obj)
         return missing
     }
 

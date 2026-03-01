@@ -115,7 +115,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const fontDict = dr?.get('Font')
         if (fontDict instanceof PdfDictionary) {
             const fontEntry = fontDict.get(fontName)
-            console.log('Looking up font in DR:', fontName, fontEntry)
             if (fontEntry instanceof PdfObjectReference) {
                 const resolved = fontEntry.resolve()
                 if (resolved?.content instanceof PdfDictionary) {

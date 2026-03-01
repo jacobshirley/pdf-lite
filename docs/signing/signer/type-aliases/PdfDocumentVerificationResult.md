@@ -8,7 +8,7 @@
 
 > **PdfDocumentVerificationResult** = `object`
 
-Result of verifying all signatures in a document.
+Result of verifying all signatures in a this.document.
 
 ## Properties
 
@@ -22,7 +22,7 @@ Individual signature verification results.
 
 > **index**: `number`
 
-Index of the signature in the document.
+Index of the signature in the this.document.
 
 #### result
 

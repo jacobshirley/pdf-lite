@@ -20,7 +20,7 @@
 
 ##### offset
 
-`number` | [`PdfNumberToken`](../../number-token/classes/PdfNumberToken.md) | [`Ref`](../../../ref/classes/Ref.md)\<`number`\>
+`number` | [`Ref`](../../../ref/classes/Ref.md)\<`number`\> | [`PdfNumberToken`](../../number-token/classes/PdfNumberToken.md)
 
 ##### generationNumber
 
@@ -109,6 +109,20 @@
 [`PdfToken`](../../token/classes/PdfToken.md).[`type`](../../token/classes/PdfToken.md#type)
 
 ## Methods
+
+### clone()
+
+> **clone**(): [`PdfToken`](../../token/classes/PdfToken.md)
+
+#### Returns
+
+[`PdfToken`](../../token/classes/PdfToken.md)
+
+#### Inherited from
+
+[`PdfToken`](../../token/classes/PdfToken.md).[`clone`](../../token/classes/PdfToken.md#clone)
+
+---
 
 ### equals()
 

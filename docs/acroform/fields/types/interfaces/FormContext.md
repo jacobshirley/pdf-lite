@@ -25,7 +25,7 @@ Uses generic field type to avoid circular dependency.
 
 ### defaultResources
 
-> **defaultResources**: [`PdfDefaultResourcesDictionary`](../../../pdf-acro-form/type-aliases/PdfDefaultResourcesDictionary.md) \| `null`
+> **defaultResources**: [`PdfDefaultResourcesDictionary`](../../../../annotations/pdf-default-resources/classes/PdfDefaultResourcesDictionary.md) \| `null`
 
 ---
 
@@ -43,7 +43,7 @@ Uses generic field type to avoid circular dependency.
 
 ### fontRefs
 
-> **fontRefs**: `Map`\<`string`, [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\>
+> **fontRefs**: `Map`\<`string`, [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\>\>
 
 Object references for all resolved fonts, keyed by resource name.
 

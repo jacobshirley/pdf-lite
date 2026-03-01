@@ -8,12 +8,15 @@
 
 ## Extends
 
-- [`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)
+- [`PdfObject`](../../pdf-object/classes/PdfObject.md)
 
 ## Extended by
 
 - [`PdfAcroForm`](../../../../acroform/pdf-acro-form/classes/PdfAcroForm.md)
 - [`PdfAnnotation`](../../../../annotations/pdf-annotation/classes/PdfAnnotation.md)
+- [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)
+- [`PdfPage`](../../../../pdf/pdf-page/classes/PdfPage.md)
+- [`PdfPages`](../../../../pdf/pdf-pages/classes/PdfPages.md)
 - [`PdfCertObject`](../../../../signing/document-security-store/classes/PdfCertObject.md)
 - [`PdfCrlObject`](../../../../signing/document-security-store/classes/PdfCrlObject.md)
 - [`PdfOcspObject`](../../../../signing/document-security-store/classes/PdfOcspObject.md)
@@ -38,7 +41,7 @@
 
 ##### options?
 
-`T` | `PdfIndirectObject`\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\> | \{ `content?`: `T`; `encryptable?`: `boolean`; `generationNumber?`: `number`; `objectNumber?`: `number`; `offset?`: `number` \| [`Ref`](../../../ref/classes/Ref.md)\<`number`\>; \}
+[`PdfIndirectObjectOptions`](../type-aliases/PdfIndirectObjectOptions.md)\<`T`\>
 
 #### Returns
 
@@ -46,9 +49,27 @@
 
 #### Overrides
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`constructor`](../../pdf-object-reference/classes/PdfObjectReference.md#constructor)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`constructor`](../../pdf-object/classes/PdfObject.md#constructor)
 
 ## Properties
+
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`cachedTokens`](../../pdf-object/classes/PdfObject.md#cachedtokens)
+
+---
+
+### compressed?
+
+> `optional` **compressed**: `boolean`
+
+---
 
 ### content
 
@@ -66,10 +87,6 @@
 
 > **generationNumber**: `number`
 
-#### Inherited from
-
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`generationNumber`](../../pdf-object-reference/classes/PdfObjectReference.md#generationnumber)
-
 ---
 
 ### immutable
@@ -80,7 +97,7 @@ Indicates whether the object is immutable (cannot be modified)
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`immutable`](../../pdf-object-reference/classes/PdfObjectReference.md#immutable)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`immutable`](../../pdf-object/classes/PdfObject.md#immutable)
 
 ---
 
@@ -92,17 +109,13 @@ Indicates whether the object has been modified. By default, assume it has been m
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`modified`](../../pdf-object-reference/classes/PdfObjectReference.md#modified)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`modified`](../../pdf-object/classes/PdfObject.md#modified)
 
 ---
 
 ### objectNumber
 
 > **objectNumber**: `number`
-
-#### Inherited from
-
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`objectNumber`](../../pdf-object-reference/classes/PdfObjectReference.md#objectnumber)
 
 ---
 
@@ -126,7 +139,7 @@ Optional tokens to prepend or append during serialization
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`postTokens`](../../pdf-object-reference/classes/PdfObjectReference.md#posttokens)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`postTokens`](../../pdf-object/classes/PdfObject.md#posttokens)
 
 ---
 
@@ -138,7 +151,7 @@ Optional tokens to prepend or append during serialization
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`preTokens`](../../pdf-object-reference/classes/PdfObjectReference.md#pretokens)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`preTokens`](../../pdf-object/classes/PdfObject.md#pretokens)
 
 ---
 
@@ -147,6 +160,38 @@ Optional tokens to prepend or append during serialization
 > `readonly` `static` **MAX_ORDER_INDEX**: `2147483647` = `2147483647`
 
 ## Accessors
+
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`isTrailingDelimited`](../../pdf-object/classes/PdfObject.md#istrailingdelimited)
+
+---
+
+### key
+
+#### Get Signature
+
+> **get** **key**(): `string`
+
+##### Returns
+
+`string`
+
+---
 
 ### objectType
 
@@ -162,7 +207,7 @@ The type of this PDF object
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`objectType`](../../pdf-object-reference/classes/PdfObjectReference.md#objecttype)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`objectType`](../../pdf-object/classes/PdfObject.md#objecttype)
 
 ---
 
@@ -170,11 +215,11 @@ The type of this PDF object
 
 #### Get Signature
 
-> **get** **reference**(): [`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)
+> **get** **reference**(): [`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 ##### Returns
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 ## Methods
 
@@ -202,7 +247,29 @@ Attempts to cast the object to a specific PdfObject subclass
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`as`](../../pdf-object-reference/classes/PdfObjectReference.md#as)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`as`](../../pdf-object/classes/PdfObject.md#as)
+
+---
+
+### becomes()
+
+> **becomes**\<`T`\>(`cls`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ `PdfIndirectObject`\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
 
 ---
 
@@ -218,7 +285,7 @@ Creates a deep clone of the object
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`clone`](../../pdf-object-reference/classes/PdfObjectReference.md#clone)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`clone`](../../pdf-object/classes/PdfObject.md#clone)
 
 ---
 
@@ -234,7 +301,7 @@ Creates a deep clone of the object. Override this method in subclasses to ensure
 
 #### Overrides
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`cloneImpl`](../../pdf-object-reference/classes/PdfObjectReference.md#cloneimpl)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`cloneImpl`](../../pdf-object/classes/PdfObject.md#cloneimpl)
 
 ---
 
@@ -272,7 +339,7 @@ Compares this object to another for equality based on their token representation
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`equals`](../../pdf-object-reference/classes/PdfObjectReference.md#equals)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`equals`](../../pdf-object/classes/PdfObject.md#equals)
 
 ---
 
@@ -308,7 +375,7 @@ Indicates whether the object is immutable (cannot be modified)
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`isImmutable`](../../pdf-object-reference/classes/PdfObjectReference.md#isimmutable)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`isImmutable`](../../pdf-object/classes/PdfObject.md#isimmutable)
 
 ---
 
@@ -324,7 +391,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 #### Overrides
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`isModified`](../../pdf-object-reference/classes/PdfObjectReference.md#ismodified)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`isModified`](../../pdf-object/classes/PdfObject.md#ismodified)
 
 ---
 
@@ -336,7 +403,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### ref?
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)\<`PdfIndirectObject`\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\>\>
 
 #### Returns
 
@@ -351,6 +418,28 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Returns
 
 `number`
+
+---
+
+### resolve()
+
+> **resolve**\<`T`\>(`cls?`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ `PdfIndirectObject`\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls?
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
 
 ---
 
@@ -372,7 +461,7 @@ Sets the immutable state of the object
 
 #### Overrides
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`setImmutable`](../../pdf-object-reference/classes/PdfObjectReference.md#setimmutable)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`setImmutable`](../../pdf-object/classes/PdfObject.md#setimmutable)
 
 ---
 
@@ -392,9 +481,27 @@ Sets the modified state of the object. Override this method if the modified stat
 
 `void`
 
+#### Overrides
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`setModified`](../../pdf-object/classes/PdfObject.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`setModified`](../../pdf-object-reference/classes/PdfObjectReference.md#setmodified)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toBase64`](../../pdf-object/classes/PdfObject.md#tobase64)
 
 ---
 
@@ -416,7 +523,7 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`toBytes`](../../pdf-object-reference/classes/PdfObjectReference.md#tobytes)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toBytes`](../../pdf-object/classes/PdfObject.md#tobytes)
 
 ---
 
@@ -432,7 +539,7 @@ Tokenizes the object into an array of PdfTokens
 
 #### Overrides
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`tokenize`](../../pdf-object-reference/classes/PdfObjectReference.md#tokenize)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`tokenize`](../../pdf-object/classes/PdfObject.md#tokenize)
 
 ---
 
@@ -448,7 +555,7 @@ Converts the object to a string representation
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`toString`](../../pdf-object-reference/classes/PdfObjectReference.md#tostring)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toString`](../../pdf-object/classes/PdfObject.md#tostring)
 
 ---
 
@@ -464,7 +571,7 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 
 #### Inherited from
 
-[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md).[`toTokens`](../../pdf-object-reference/classes/PdfObjectReference.md#totokens)
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toTokens`](../../pdf-object/classes/PdfObject.md#totokens)
 
 ---
 

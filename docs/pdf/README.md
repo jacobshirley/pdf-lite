@@ -14,6 +14,18 @@ Re-exports [PdfDocument](pdf-document/classes/PdfDocument.md)
 
 ---
 
+### PdfPage
+
+Re-exports [PdfPage](pdf-page/classes/PdfPage.md)
+
+---
+
+### PdfPages
+
+Re-exports [PdfPages](pdf-pages/classes/PdfPages.md)
+
+---
+
 ### PdfReader
 
 Re-exports [PdfReader](pdf-reader/classes/PdfReader.md)

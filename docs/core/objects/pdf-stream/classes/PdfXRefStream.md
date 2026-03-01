@@ -42,6 +42,18 @@
 
 ## Properties
 
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfStream`](PdfStream.md).[`cachedTokens`](PdfStream.md#cachedtokens)
+
+---
+
 ### header
 
 > **header**: [`PdfDictionary`](../../pdf-dictionary/classes/PdfDictionary.md)
@@ -128,7 +140,97 @@ Optional tokens to prepend or append during serialization
 
 [`PdfStream`](PdfStream.md).[`preTokens`](PdfStream.md#pretokens)
 
+---
+
+### PdfStreamPredictor
+
+> `static` **PdfStreamPredictor**: _typeof_ [`PdfStreamPredictor`](PdfStreamPredictor.md)
+
+#### Inherited from
+
+[`PdfStream`](PdfStream.md).[`PdfStreamPredictor`](PdfStream.md#pdfstreampredictor)
+
 ## Accessors
+
+### data
+
+#### Get Signature
+
+> **get** **data**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+##### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+#### Set Signature
+
+> **set** **data**(`data`): `void`
+
+##### Parameters
+
+###### data
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfStream`](PdfStream.md).[`data`](PdfStream.md#data)
+
+---
+
+### dataAsString
+
+#### Get Signature
+
+> **get** **dataAsString**(): `string`
+
+##### Returns
+
+`string`
+
+#### Set Signature
+
+> **set** **dataAsString**(`str`): `void`
+
+##### Parameters
+
+###### str
+
+`string`
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfStream`](PdfStream.md).[`dataAsString`](PdfStream.md#dataasstring)
+
+---
+
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfStream`](PdfStream.md).[`isTrailingDelimited`](PdfStream.md#istrailingdelimited)
+
+---
 
 ### objectType
 
@@ -161,6 +263,36 @@ The type of this PDF object
 #### Inherited from
 
 [`PdfStream`](PdfStream.md).[`originalAsString`](PdfStream.md#originalasstring)
+
+---
+
+### predictor
+
+#### Get Signature
+
+> **get** **predictor**(): [`PdfStreamPredictor`](PdfStreamPredictor.md) \| `undefined`
+
+##### Returns
+
+[`PdfStreamPredictor`](PdfStreamPredictor.md) \| `undefined`
+
+#### Set Signature
+
+> **set** **predictor**(`predictor`): `void`
+
+##### Parameters
+
+###### predictor
+
+[`PdfStreamPredictor`](PdfStreamPredictor.md)
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfStream`](PdfStream.md).[`predictor`](PdfStream.md#predictor)
 
 ---
 
@@ -572,37 +704,21 @@ Sets the modified state of the object. Override this method if the modified stat
 
 ---
 
-### setPredictor()
+### toBase64()
 
-> **setPredictor**(`predictorParams`): `PdfXRefStream`
+> **toBase64**(): `string`
 
-#### Parameters
-
-##### predictorParams
-
-###### BitsPerComponent?
-
-`number`
-
-###### Colors?
-
-`number`
-
-###### Columns?
-
-`number`
-
-###### Predictor?
-
-`number`
+Serializes the document to a Base64-encoded string.
 
 #### Returns
 
-`PdfXRefStream`
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
 
 #### Inherited from
 
-[`PdfStream`](PdfStream.md).[`setPredictor`](PdfStream.md#setpredictor)
+[`PdfStream`](PdfStream.md).[`toBase64`](PdfStream.md#tobase64)
 
 ---
 

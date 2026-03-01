@@ -21,13 +21,33 @@ export class PdfPages
         super(
             options ??
                 new PdfIndirectObject({
-                    content: new PdfDictionary(),
+                    content: new PdfDictionary({
+                        Type: new PdfName('Pages'),
+                        Kids: new PdfArray(),
+                        Count: new PdfNumber(0),
+                    }),
                 }),
         )
     }
 
-    get kids(): PdfArray<PdfObjectReference> {
-        return this.content.get('Kids')!.as(PdfArray<PdfObjectReference>)!
+    get kids(): (PdfPage | PdfPages)[] {
+        const kidsArray = this.content
+            .get('Kids')
+            ?.as(PdfArray<PdfObjectReference>)
+        if (!kidsArray) return []
+
+        return kidsArray.items.map((ref) => {
+            const resolved = ref.as(PdfObjectReference)!.resolve()
+            const type = resolved.content
+                ?.as(PdfDictionary)
+                ?.get('Type')
+                ?.as(PdfName)
+
+            if (type?.value === 'Pages') {
+                return resolved.becomes(PdfPages)
+            }
+            return resolved.becomes(PdfPage)
+        })
     }
 
     set kids(value: PdfArray<PdfObjectReference>) {
@@ -42,16 +62,34 @@ export class PdfPages
         this.content.set('Count', new PdfNumber(value))
     }
 
-    get parent(): PdfObjectReference | null {
+    get parentRef(): PdfObjectReference | null {
         return this.content.get('Parent')?.as(PdfObjectReference) ?? null
     }
 
-    set parent(value: PdfObjectReference | null) {
+    set parentRef(value: PdfObjectReference | null) {
         if (value === null) {
             this.content.delete('Parent')
         } else {
             this.content.set('Parent', value)
         }
+    }
+
+    get parent(): PdfPages | null {
+        const ref = this.parentRef
+        if (!ref) return null
+        return ref.resolve(PdfPages)
+    }
+
+    set parent(value: PdfPages | null) {
+        this.parentRef = value?.reference ?? null
+    }
+
+    get(index: number): PdfPage {
+        return [...this][index]
+    }
+
+    toArray(): PdfPage[] {
+        return [...this]
     }
 
     *[Symbol.iterator](): Iterator<PdfPage> {

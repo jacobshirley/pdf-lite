@@ -101,11 +101,10 @@ export class PdfXrefLookup {
         const prevDict = xref.trailerDict
         const dict = this.trailerDict
 
-        !dict.has('Info') && dict.set('Info', prevDict.get('Info')?.clone())
-        !dict.has('Root') && dict.set('Root', prevDict.get('Root')?.clone())
-        !dict.has('Encrypt') &&
-            dict.set('Encrypt', prevDict.get('Encrypt')?.clone())
-        !dict.has('ID') && dict.set('ID', prevDict.get('ID')?.clone())
+        !dict.has('Info') && dict.set('Info', prevDict.get('Info'))
+        !dict.has('Root') && dict.set('Root', prevDict.get('Root'))
+        !dict.has('Encrypt') && dict.set('Encrypt', prevDict.get('Encrypt'))
+        !dict.has('ID') && dict.set('ID', prevDict.get('ID'))
         if (!dict.has('Prev')) {
             const prevNumber = new PdfNumber(xref.offset)
             prevNumber.isByteOffset = true

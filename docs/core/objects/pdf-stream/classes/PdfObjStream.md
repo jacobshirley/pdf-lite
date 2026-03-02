@@ -320,7 +320,7 @@ The type of this PDF object
 
 `void`
 
-#### Inherited from
+#### Overrides
 
 [`PdfStream`](PdfStream.md).[`raw`](PdfStream.md#raw)
 

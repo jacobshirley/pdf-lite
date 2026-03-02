@@ -694,8 +694,13 @@ export class PdfObjStream extends PdfStream {
             const { value: obj, done } = reader.next()
             if (done) break
 
-            if (obj instanceof PdfNumber) {
-                // Collect object numbers and byte offsets
+            if (
+                obj instanceof PdfNumber &&
+                (totalObjects === 0 || numbers.length < totalObjects * 2)
+            ) {
+                // Collect object numbers and byte offsets from the header section.
+                // Stop once we have all 2*N pairs so that object values that happen
+                // to be plain integers are not mistakenly treated as header entries.
                 numbers.push(obj)
             } else {
                 // This is an actual PDF object (can be Dictionary, Array, String, Name, etc.)

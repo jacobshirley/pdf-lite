@@ -57,7 +57,7 @@ export class PdfDefaultAppearance extends PdfString {
     }
 
     static parse(da: string): PdfDefaultAppearance | null {
-        const fontMatch = da.match(/\/(\w+)\s+([\d.]+)\s+Tf/)
+        const fontMatch = da.match(/\/([\w-]+)\s+([\d.]+)\s+Tf/)
         if (!fontMatch) return null
 
         const fontName = fontMatch[1]

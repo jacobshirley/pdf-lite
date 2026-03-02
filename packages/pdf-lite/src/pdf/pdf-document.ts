@@ -581,6 +581,14 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                         continue
                     }
                     if (obj.isModified()) {
+                        // Pre-register any new objects referenced by obj before
+                        // cloning so the clone gets correct object numbers.
+                        // Without this, proxy references (objectNumber = -1) get
+                        // frozen into the clone as "-1 0 R" — a dangling reference.
+                        const missing = this.collectMissingReferences(obj)
+                        if (missing.length > 0) {
+                            this.add(...missing)
+                        }
                         const adding = obj.clone()
                         this.add(adding)
                         adding.setModified(false)

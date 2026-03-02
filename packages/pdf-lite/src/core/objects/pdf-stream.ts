@@ -615,6 +615,17 @@ export class PdfStream<
 }
 
 export class PdfObjStream extends PdfStream {
+    private _parsedObjects?: Map<number, PdfIndirectObject>
+
+    override set raw(data: ByteArray) {
+        super.raw = data
+        this._parsedObjects = undefined
+    }
+
+    override get raw(): ByteArray {
+        return super.raw
+    }
+
     constructor(options: {
         header: PdfDictionary
         original: ByteArray | string
@@ -728,19 +739,24 @@ export class PdfObjStream extends PdfStream {
         }
     }
 
+    private getParsedObjects(): Map<number, PdfIndirectObject> {
+        if (!this._parsedObjects) {
+            this._parsedObjects = new Map()
+            for (const obj of this.getObjectStream()) {
+                this._parsedObjects.set(obj.objectNumber, obj)
+            }
+        }
+        return this._parsedObjects
+    }
+
     getObject(options: {
         objectNumber: number
     }): PdfIndirectObject | undefined {
-        for (const obj of this.getObjectStream()) {
-            if (obj.objectNumber === options.objectNumber) {
-                return obj
-            }
-        }
-        return undefined
+        return this.getParsedObjects().get(options.objectNumber)
     }
 
     getObjects(): PdfIndirectObject[] {
-        return Array.from(this.getObjectStream())
+        return Array.from(this.getParsedObjects().values())
     }
 
     cloneImpl(): this {

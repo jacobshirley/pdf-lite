@@ -69,7 +69,9 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
     private hasEncryptionDictionary?: boolean = false
     private _resolvedCache = new Map<string, PdfIndirectObject>()
+    private _objStreamCache = new Map<number, PdfObjStream>()
     private _committing = false
+    private _updating = false
     private _finalized = false
     private _signed = false
 
@@ -754,25 +756,27 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             )
         }
 
-        const objectStreamIndirect = this.findUncompressedObject({
-            objectNumber: xrefEntry.objectStreamNumber.value,
-        })?.clone()
+        const streamNumber = xrefEntry.objectStreamNumber.value
 
-        if (!objectStreamIndirect) {
-            throw new Error(
-                `Cannot find object stream ${xrefEntry.objectStreamNumber.value} for object ${options.objectNumber}`,
-            )
+        let objectStream = this._objStreamCache.get(streamNumber)
+        if (!objectStream) {
+            const objectStreamIndirect = this.findUncompressedObject({
+                objectNumber: streamNumber,
+            })
+
+            if (!objectStreamIndirect) {
+                throw new Error(
+                    `Cannot find object stream ${streamNumber} for object ${options.objectNumber}`,
+                )
+            }
+
+            objectStream = objectStreamIndirect.content
+                .as(PdfStream)
+                .parseAs(PdfObjStream)
+            this._objStreamCache.set(streamNumber, objectStream)
         }
 
-        const objectStream = objectStreamIndirect.content
-            .as(PdfStream)
-            .parseAs(PdfObjStream)
-
-        const decompressedObject = objectStream.getObject({
-            objectNumber: options.objectNumber,
-        })
-
-        return decompressedObject
+        return objectStream.getObject({ objectNumber: options.objectNumber })
     }
 
     /**
@@ -1137,20 +1141,26 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * Performs a full update cycle to ensure all revisions are consistent and offsets are correct.
      */
     private update(): void {
-        this.commitIncrementalUpdates()
-        this.flushResolvedCache()
-        this.registerNewReferences()
-        this.calculateOffsets()
-        this.updateRevisions()
-        // Second pass: xref binary may have changed size (e.g. FlateDecode removed
-        // from xref stream), shifting objects that follow it. Recalculate so entry
-        // byteOffset refs hold the new positions, then rebuild the xref binary once
-        // more so the baked bytes match those positions.
-        this.calculateOffsets()
-        this.updateRevisions()
-        // Third pass: confirm positions are stable (xref binary size should not
-        // change again because W widths and entry count are the same).
-        this.calculateOffsets()
+        if (this._updating) return
+        this._updating = true
+        try {
+            this.commitIncrementalUpdates()
+            this.flushResolvedCache()
+            this.registerNewReferences()
+            this.calculateOffsets()
+            this.updateRevisions()
+            // Second pass: xref binary may have changed size (e.g. FlateDecode removed
+            // from xref stream), shifting objects that follow it. Recalculate so entry
+            // byteOffset refs hold the new positions, then rebuild the xref binary once
+            // more so the baked bytes match those positions.
+            this.calculateOffsets()
+            this.updateRevisions()
+            // Third pass: confirm positions are stable (xref binary size should not
+            // change again because W widths and entry count are the same).
+            this.calculateOffsets()
+        } finally {
+            this._updating = false
+        }
     }
 
     /**
@@ -1168,9 +1178,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     private flushResolvedCache(): void {
+        const existing = new Set(this.objects)
         for (const [, obj] of this._resolvedCache) {
-            if (obj.isModified() && !this.objects.includes(obj)) {
+            if (obj.isModified() && !existing.has(obj)) {
                 this.add(obj)
+                existing.add(obj)
             }
         }
     }

@@ -16,6 +16,8 @@ import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
 import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-resources.js'
 import type { PdfAcroForm } from '../pdf-acro-form.js'
 import { PdfPage } from '../../pdf/pdf-page.js'
+import { PdfFieldActions } from '../js/pdf-field-actions.js'
+import { PdfJavaScriptAction } from '../js/pdf-javascript-action.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -551,6 +553,49 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
         const kidsArray = new PdfArray<PdfObjectReference>(kids)
         this.content.set('Kids', kidsArray)
+    }
+
+    get actions(): PdfFieldActions | null {
+        const aa = this.content.get('AA')
+        let aaDict: PdfDictionary | undefined
+        if (aa instanceof PdfObjectReference) {
+            const resolved = aa.resolve()
+            if (resolved?.content instanceof PdfDictionary) {
+                aaDict = resolved.content
+            }
+        } else if (aa instanceof PdfDictionary) {
+            aaDict = aa
+        }
+        if (!aaDict) return null
+
+        // Also resolve the /A (activate) action dict
+        const a = this.content.get('A')
+        let aDict: PdfDictionary | undefined
+        if (a instanceof PdfObjectReference) {
+            const resolved = a.resolve()
+            if (resolved?.content instanceof PdfDictionary) {
+                aDict = resolved.content
+            }
+        } else if (a instanceof PdfDictionary) {
+            aDict = a
+        }
+
+        return new PdfFieldActions(aaDict, aDict)
+    }
+
+    get activateAction(): PdfJavaScriptAction | null {
+        const a = this.content.get('A')
+        let aDict: PdfDictionary | undefined
+        if (a instanceof PdfObjectReference) {
+            const resolved = a.resolve()
+            if (resolved?.content instanceof PdfDictionary) {
+                aDict = resolved.content
+            }
+        } else if (a instanceof PdfDictionary) {
+            aDict = a
+        }
+        if (!aDict) return null
+        return new PdfJavaScriptAction(aDict)
     }
 
     abstract generateAppearance(options?: {

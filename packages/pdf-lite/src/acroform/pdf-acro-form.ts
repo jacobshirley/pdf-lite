@@ -14,6 +14,7 @@ import './fields/pdf-signature-form-field.js'
 import { PdfDefaultResourcesDictionary } from '../annotations/pdf-default-resources.js'
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
 import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
+import type { PdfJsEngine, PdfJsEvent } from './js/pdf-js-engine.js'
 
 export class PdfAcroForm<
     T extends Record<string, string> = Record<string, string>,
@@ -157,16 +158,64 @@ export class PdfAcroForm<
         for (const field of this.fields) {
             const name = field.name
             if (name in values && values[name] !== undefined) {
-                field.value = values[name]
+                const newValue = values[name]
+                if (!this._fireValidate(field, newValue)) continue
+                field.value = newValue
             }
         }
+        this._fireCalculate()
     }
 
     importData(fields: T): void {
         for (const field of this.fields) {
             const name = field.name
             if (name && name in fields) {
-                field.value = fields[name]
+                const newValue = fields[name]
+                if (!this._fireValidate(field, newValue)) continue
+                field.value = newValue
+            }
+        }
+        this._fireCalculate()
+    }
+
+    private _fireValidate(field: PdfFormField, value: string): boolean {
+        if (!this.jsEngine) return true
+        const validateAction = field.actions?.validate
+        const code = validateAction?.code
+        if (!code) return true
+        const event: PdfJsEvent = {
+            fieldName: field.name,
+            value,
+            willCommit: true,
+            rc: true,
+        }
+        this.jsEngine.execute(code, event)
+        return event.rc
+    }
+
+    private _fireCalculate(): void {
+        if (!this.jsEngine) return
+        const co = this.content.get('CO')
+        if (!(co instanceof PdfArray)) return
+        const allFields = this.fields
+        for (const ref of co.items as PdfObjectReference[]) {
+            const resolved = ref.resolve()
+            if (!resolved) continue
+            const field = allFields.find(
+                (f) => f.objectNumber === resolved.objectNumber,
+            )
+            if (!field) continue
+            const calcAction = field.actions?.calculate
+            const code = calcAction?.code
+            if (!code) continue
+            const event: PdfJsEvent = {
+                fieldName: field.name,
+                value: field.value,
+                rc: true,
+            }
+            this.jsEngine.execute(code, event)
+            if (event.rc && event.value !== field.value) {
+                field.value = event.value
             }
         }
     }
@@ -181,6 +230,8 @@ export class PdfAcroForm<
         }
         return result
     }
+
+    jsEngine?: PdfJsEngine
 
     fontEncodingMaps: Map<string, Map<number, string>> = new Map()
 

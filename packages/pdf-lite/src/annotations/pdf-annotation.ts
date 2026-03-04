@@ -38,6 +38,26 @@ export class PdfAnnotation extends PdfIndirectObject<
         AP?: PdfAppearanceStreamDictionary
         P?: PdfObjectReference
         Parent?: PdfObjectReference<PdfPage>
+        A?: PdfDictionary<{
+            Type?: PdfName
+            S?: PdfName
+            D?: PdfArray | PdfDictionary
+            T?: PdfString
+            F?: PdfNumber
+            Win?: PdfDictionary
+            JS?: PdfString
+        }>
+        AA?: PdfDictionary<{
+            D?: PdfObjectReference | PdfDictionary
+            U?: PdfObjectReference | PdfDictionary
+            Fo?: PdfObjectReference | PdfDictionary
+            Bl?: PdfObjectReference | PdfDictionary
+            PO?: PdfObjectReference | PdfDictionary
+            K?: PdfObjectReference | PdfDictionary
+            V?: PdfObjectReference | PdfDictionary
+            C?: PdfObjectReference | PdfDictionary
+            F?: PdfObjectReference | PdfDictionary
+        }>
     }>
 > {
     private _annotationFlags?: PdfAnnotationFlags

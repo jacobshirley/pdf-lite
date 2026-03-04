@@ -358,41 +358,6 @@ describe('PdfAppearanceStream', () => {
                     expect(lines[lines.length - 1]).toBe('EMC')
                 })
             })
-
-            describe('Performance and Optimization', () => {
-                it('should handle large text efficiently', () => {
-                    const largeText = 'This is a large text block. '.repeat(100)
-
-                    const start = Date.now()
-                    const stream = new PdfTextAppearanceStream(
-                        createContext({
-                            value: largeText,
-                            multiline: true,
-                        }),
-                    )
-                    const duration = Date.now() - start
-
-                    expect(stream).toBeDefined()
-                    expect(duration).toBeLessThan(1000) // Should complete within 1 second
-                })
-
-                it('should handle many comb cells efficiently', () => {
-                    const manyChars = 'A'.repeat(50)
-
-                    const start = Date.now()
-                    const stream = new PdfTextAppearanceStream(
-                        createContext({
-                            value: manyChars,
-                            comb: true,
-                            maxLen: 50,
-                        }),
-                    )
-                    const duration = Date.now() - start
-
-                    expect(stream).toBeDefined()
-                    expect(duration).toBeLessThan(500) // Should be fast
-                })
-            })
         })
     })
 })

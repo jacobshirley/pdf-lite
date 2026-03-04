@@ -577,6 +577,18 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
     }
 
+    /**
+     * Returns the list of appearance state names from the normal appearance
+     * dictionary (e.g. ["Yes", "Off"] for a checkbox).
+     */
+    get appearanceStates(): string[] {
+        const n = this.appearanceStreamDict?.get('N')
+        if (n instanceof PdfDictionary) {
+            return Array.from(n.entries(), ([key]) => key)
+        }
+        return []
+    }
+
     getAppearanceStream(setting?: string): PdfIndirectObject<PdfStream> | null {
         const n = this.appearanceStreamDict?.get('N')
         if (!n) return null

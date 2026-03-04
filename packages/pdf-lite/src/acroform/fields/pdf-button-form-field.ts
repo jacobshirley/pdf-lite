@@ -56,8 +56,10 @@ export class PdfButtonFormField extends PdfFormField {
     set checked(isChecked: boolean) {
         const target = this.parent ?? this
         if (isChecked) {
-            target.content.set('V', new PdfName('Yes'))
-            this.content.set('AS', new PdfName('Yes'))
+            const onState =
+                this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
+            target.content.set('V', new PdfName(onState))
+            this.content.set('AS', new PdfName(onState))
         } else {
             target.content.set('V', new PdfName('Off'))
             this.content.set('AS', new PdfName('Off'))
@@ -89,8 +91,9 @@ export class PdfButtonFormField extends PdfFormField {
             contentStream: '',
         })
 
+        const onState = this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
         this.setAppearanceStream({
-            Yes: yesAppearance,
+            [onState]: yesAppearance,
             Off: noAppearance,
         })
 

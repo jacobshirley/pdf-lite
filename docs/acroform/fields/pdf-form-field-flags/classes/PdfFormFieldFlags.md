@@ -36,6 +36,18 @@ Extends PdfNumber so it can be stored directly in a PDF dictionary.
 
 ## Properties
 
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../../core/tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfNumber`](../../../../core/objects/pdf-number/classes/PdfNumber.md).[`cachedTokens`](../../../../core/objects/pdf-number/classes/PdfNumber.md#cachedtokens)
+
+---
+
 ### decimalPlaces
 
 > **decimalPlaces**: `number`
@@ -293,6 +305,26 @@ Optional tokens to prepend or append during serialization
 ##### Returns
 
 `void`
+
+---
+
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfNumber`](../../../../core/objects/pdf-number/classes/PdfNumber.md).[`isTrailingDelimited`](../../../../core/objects/pdf-number/classes/PdfNumber.md#istrailingdelimited)
 
 ---
 
@@ -778,15 +810,15 @@ Sets the immutable state of the object
 
 ### setModified()
 
-> **setModified**(`modified`): `void`
+> **setModified**(`modified?`): `void`
 
 Sets the modified state of the object. Override this method if the modified state is determined differently
 
 #### Parameters
 
-##### modified
+##### modified?
 
-`boolean` = `true`
+`boolean`
 
 #### Returns
 
@@ -795,6 +827,24 @@ Sets the modified state of the object. Override this method if the modified stat
 #### Inherited from
 
 [`PdfNumber`](../../../../core/objects/pdf-number/classes/PdfNumber.md).[`setModified`](../../../../core/objects/pdf-number/classes/PdfNumber.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfNumber`](../../../../core/objects/pdf-number/classes/PdfNumber.md).[`toBase64`](../../../../core/objects/pdf-number/classes/PdfNumber.md#tobase64)
 
 ---
 

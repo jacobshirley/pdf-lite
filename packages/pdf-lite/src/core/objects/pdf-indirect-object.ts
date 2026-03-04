@@ -39,8 +39,8 @@ export class PdfIndirectObject<
             super()
             this.objectNumber = options.objectNumber
             this.generationNumber = options.generationNumber
-            this.content = options.content.clone() as T
-            this.offset = options.offset.clone()
+            this.content = options.content as T
+            this.offset = options.offset
             this.compressed = options.compressed
             return
         }
@@ -75,7 +75,7 @@ export class PdfIndirectObject<
                     // Always read from the live indirect object so objectNumber
                     // stays current even after the object is added to a document.
                     if (prop === 'resolve') {
-                        return () => original
+                        return original.resolve.bind(original)
                     } else if (prop === 'resolver') {
                         // Signal that this proxy reference is resolvable
                         // so collectMissingReferences can discover it
@@ -191,21 +191,40 @@ export class PdfIndirectObject<
         this.offset.setImmutable(immutable)
     }
 
-    becomes<T>(cls: new (options: PdfIndirectObject) => T): T {
+    becomes<T extends PdfIndirectObject>(
+        cls: new (options: PdfIndirectObject) => T,
+    ): T {
         if (this instanceof cls) {
             return this as T
         }
+        // Preserve identity-critical properties that subclass constructors
+        // may inadvertently reset (e.g. PdfFont's super() creates a fresh
+        // PdfIndirectObject with objectNumber = -1, and PdfFormField's
+        // super() chain creates a fresh empty PdfDictionary as content).
+        const savedObjectNumber = this.objectNumber
+        const savedGenerationNumber = this.generationNumber
+        const savedOffset = this.offset
+        const savedContent = this.content
+        const newObject = new cls(this)
         Object.setPrototypeOf(this, cls.prototype)
-        cls.prototype.init.call(this)
+        Object.assign(this, newObject)
+        this.objectNumber = savedObjectNumber
+        this.generationNumber = savedGenerationNumber
+        this.offset = savedOffset
+        this.content = savedContent
         return this as unknown as T
     }
 
-    init() {
-        // No-op by default, but subclasses can override to perform additional
-        // initialization after construction or cloning
+    resolve<T extends PdfIndirectObject>(
+        cls?: new (options: PdfIndirectObject) => T,
+    ): T {
+        if (cls) {
+            return this.becomes(cls)
+        }
+        return this as unknown as T
     }
 
-    resolve() {
-        return this
+    get key(): string {
+        return `${this.objectNumber}/${this.generationNumber}`
     }
 }

@@ -1846,6 +1846,52 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         expect(stream!.content.header.get('Resources')).toBeUndefined()
     })
 
+    it('should use custom appearance state names for checked setter', () => {
+        const field = new PdfButtonFormField()
+        field.rect = [100, 100, 120, 120]
+        field.fieldType = 'Button'
+
+        // Simulate a widget whose "on" state is a custom name
+        const onStream = new PdfIndirectObject(new PdfStream(''))
+        const offStream = new PdfIndirectObject(new PdfStream(''))
+        field.setAppearanceStream({
+            CustomOn: onStream,
+            Off: offStream,
+        })
+
+        field.checked = true
+
+        const v = field.content.get('V') as PdfName
+        const as = field.content.get('AS') as PdfName
+        expect(v.value).toBe('CustomOn')
+        expect(as.value).toBe('CustomOn')
+
+        field.checked = false
+        expect((field.content.get('V') as PdfName).value).toBe('Off')
+        expect((field.content.get('AS') as PdfName).value).toBe('Off')
+    })
+
+    it('should preserve custom appearance state names in generateAppearance', () => {
+        const field = new PdfButtonFormField()
+        field.rect = [100, 100, 120, 120]
+        field.fieldType = 'Button'
+
+        // Pre-set a custom on-state
+        const onStream = new PdfIndirectObject(new PdfStream(''))
+        const offStream = new PdfIndirectObject(new PdfStream(''))
+        field.setAppearanceStream({
+            Oui: onStream,
+            Off: offStream,
+        })
+
+        field.generateAppearance()
+
+        // The appearance dict should still use "Oui", not "Yes"
+        const states = field.appearanceStates
+        expect(states).toContain('Oui')
+        expect(states).not.toContain('Yes')
+    })
+
     it('should always embed ZapfDingbats in button field appearance XObject', () => {
         const field = new PdfButtonFormField()
         field.rect = [100, 100, 120, 120]

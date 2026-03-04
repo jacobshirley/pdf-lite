@@ -32,6 +32,18 @@
 
 ## Properties
 
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfString`](../../pdf-string/classes/PdfString.md).[`cachedTokens`](../../pdf-string/classes/PdfString.md#cachedtokens)
+
+---
+
 ### immutable
 
 > `protected` **immutable**: `boolean` = `false`
@@ -89,6 +101,26 @@ Optional tokens to prepend or append during serialization
 ##### Returns
 
 `Date`
+
+---
+
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfString`](../../pdf-string/classes/PdfString.md).[`isTrailingDelimited`](../../pdf-string/classes/PdfString.md#istrailingdelimited)
 
 ---
 
@@ -344,6 +376,24 @@ Sets the modified state of the object. Override this method if the modified stat
 #### Inherited from
 
 [`PdfString`](../../pdf-string/classes/PdfString.md).[`setModified`](../../pdf-string/classes/PdfString.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfString`](../../pdf-string/classes/PdfString.md).[`toBase64`](../../pdf-string/classes/PdfString.md#tobase64)
 
 ---
 

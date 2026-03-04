@@ -16,23 +16,13 @@ Button form field subtype (checkboxes, radio buttons, push buttons).
 
 ### Constructor
 
-> **new PdfButtonFormField**(`options?`): `PdfButtonFormField`
+> **new PdfButtonFormField**(`other?`): `PdfButtonFormField`
 
 #### Parameters
 
-##### options?
+##### other?
 
-###### form?
-
-[`FormContext`](../../types/interfaces/FormContext.md)\<[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)\>
-
-###### other?
-
-[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>
-
-###### parent?
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\> | \{ `form?`: [`PdfAcroForm`](../../../pdf-acro-form/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\>; \}
 
 #### Returns
 
@@ -44,23 +34,37 @@ Button form field subtype (checkboxes, radio buttons, push buttons).
 
 ## Properties
 
-### \_appearanceStream?
+### \_form?
 
-> `protected` `optional` **\_appearanceStream**: [`PdfAppearanceStream`](../../../appearance/pdf-appearance-stream/classes/PdfAppearanceStream.md)
+> `optional` **\_form**: [`PdfAcroForm`](../../../pdf-acro-form/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\>
+
+**`Internal`**
 
 #### Inherited from
 
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`_appearanceStream`](../../pdf-form-field/classes/PdfFormField.md#_appearancestream)
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`_form`](../../pdf-form-field/classes/PdfFormField.md#_form)
 
 ---
 
-### \_appearanceStreamYes?
+### cachedTokens?
 
-> `protected` `optional` **\_appearanceStreamYes**: [`PdfAppearanceStream`](../../../appearance/pdf-appearance-stream/classes/PdfAppearanceStream.md)
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../../core/tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
 
 #### Inherited from
 
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`_appearanceStreamYes`](../../pdf-form-field/classes/PdfFormField.md#_appearancestreamyes)
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`cachedTokens`](../../pdf-form-field/classes/PdfFormField.md#cachedtokens)
+
+---
+
+### compressed?
+
+> `optional` **compressed**: `boolean`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`compressed`](../../pdf-form-field/classes/PdfFormField.md#compressed)
 
 ---
 
@@ -91,16 +95,6 @@ Button form field subtype (checkboxes, radio buttons, push buttons).
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`encryptable`](../../pdf-form-field/classes/PdfFormField.md#encryptable)
-
----
-
-### form?
-
-> `optional` **form**: [`FormContext`](../../types/interfaces/FormContext.md)\<[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)\>
-
-#### Inherited from
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`form`](../../pdf-form-field/classes/PdfFormField.md#form)
 
 ---
 
@@ -316,10 +310,6 @@ Optional tokens to prepend or append during serialization
 
 `void`
 
-#### Overrides
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`checked`](../../pdf-form-field/classes/PdfFormField.md#checked)
-
 ---
 
 ### children
@@ -488,6 +478,36 @@ Optional tokens to prepend or append during serialization
 
 ---
 
+### defaultResources
+
+#### Get Signature
+
+> **get** **defaultResources**(): [`PdfDefaultResourcesDictionary`](../../../../annotations/pdf-default-resources/classes/PdfDefaultResourcesDictionary.md) \| `null`
+
+##### Returns
+
+[`PdfDefaultResourcesDictionary`](../../../../annotations/pdf-default-resources/classes/PdfDefaultResourcesDictionary.md) \| `null`
+
+#### Set Signature
+
+> **set** **defaultResources**(`resources`): `void`
+
+##### Parameters
+
+###### resources
+
+[`PdfDefaultResourcesDictionary`](../../../../annotations/pdf-default-resources/classes/PdfDefaultResourcesDictionary.md) | `null`
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`defaultResources`](../../pdf-form-field/classes/PdfFormField.md#defaultresources)
+
+---
+
 ### defaultValue
 
 #### Set Signature
@@ -600,22 +620,6 @@ Optional tokens to prepend or append during serialization
 
 ---
 
-### encodingMap
-
-#### Get Signature
-
-> **get** **encodingMap**(): `Map`\<`number`, `string`\> \| `undefined`
-
-##### Returns
-
-`Map`\<`number`, `string`\> \| `undefined`
-
-#### Inherited from
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`encodingMap`](../../pdf-form-field/classes/PdfFormField.md#encodingmap)
-
----
-
 ### fieldType
 
 #### Get Signature
@@ -677,6 +681,14 @@ Optional tokens to prepend or append during serialization
 ---
 
 ### font
+
+#### Get Signature
+
+> **get** **font**(): [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md) \| `null`
+
+##### Returns
+
+[`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md) \| `null`
 
 #### Set Signature
 
@@ -758,6 +770,28 @@ Optional tokens to prepend or append during serialization
 
 ---
 
+### form
+
+#### Set Signature
+
+> **set** **form**(`f`): `void`
+
+##### Parameters
+
+###### f
+
+[`PdfAcroForm`](../../../pdf-acro-form/classes/PdfAcroForm.md)
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`form`](../../pdf-form-field/classes/PdfFormField.md#form)
+
+---
+
 ### hidden
 
 #### Get Signature
@@ -818,6 +852,26 @@ Optional tokens to prepend or append during serialization
 
 ---
 
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`isTrailingDelimited`](../../pdf-form-field/classes/PdfFormField.md#istrailingdelimited)
+
+---
+
 ### isWidget
 
 #### Get Signature
@@ -848,15 +902,31 @@ Optional tokens to prepend or append during serialization
 
 ---
 
+### key
+
+#### Get Signature
+
+> **get** **key**(): `string`
+
+##### Returns
+
+`string`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`key`](../../pdf-form-field/classes/PdfFormField.md#key)
+
+---
+
 ### kids
 
 #### Get Signature
 
-> **get** **kids**(): [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)[]
+> **get** **kids**(): [`PdfArray`](../../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\>\> \| `undefined`
 
 ##### Returns
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)[]
+[`PdfArray`](../../../../core/objects/pdf-array/classes/PdfArray.md)\<[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\>\> \| `undefined`
 
 #### Set Signature
 
@@ -866,7 +936,7 @@ Optional tokens to prepend or append during serialization
 
 ###### kids
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)[]
+[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\>[]
 
 ##### Returns
 
@@ -1196,6 +1266,22 @@ The type of this PDF object
 
 ---
 
+### page
+
+#### Get Signature
+
+> **get** **page**(): [`PdfPage`](../../../../pdf/pdf-page/classes/PdfPage.md) \| `null`
+
+##### Returns
+
+[`PdfPage`](../../../../pdf/pdf-page/classes/PdfPage.md) \| `null`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`page`](../../pdf-form-field/classes/PdfFormField.md#page)
+
+---
+
 ### parent
 
 #### Get Signature
@@ -1214,7 +1300,7 @@ The type of this PDF object
 
 ###### field
 
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md) | `undefined`
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\> | [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md) | `undefined`
 
 ##### Returns
 
@@ -1230,11 +1316,11 @@ The type of this PDF object
 
 #### Get Signature
 
-> **get** **parentRef**(): [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) \| `null`
+> **get** **parentRef**(): [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\> \| `null`
 
 ##### Returns
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) \| `null`
+[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\> \| `null`
 
 #### Set Signature
 
@@ -1244,7 +1330,7 @@ The type of this PDF object
 
 ###### ref
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) | `null`
+[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\> | `null`
 
 ##### Returns
 
@@ -1470,11 +1556,11 @@ The type of this PDF object
 
 #### Get Signature
 
-> **get** **reference**(): [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+> **get** **reference**(): [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 ##### Returns
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 #### Inherited from
 
@@ -1644,6 +1730,56 @@ Attempts to cast the object to a specific PdfObject subclass
 
 ---
 
+### becomes()
+
+> **becomes**\<`T`\>(`cls`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`becomes`](../../pdf-form-field/classes/PdfFormField.md#becomes)
+
+---
+
+### buildFontResources()
+
+> **buildFontResources**(`fontName`): [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\> \| `undefined`
+
+Builds a Resources dictionary containing the font entry for `fontName`,
+resolved from DR (handling indirect references) or from a loaded font.
+Returns undefined if neither source provides the font.
+
+#### Parameters
+
+##### fontName
+
+`string`
+
+#### Returns
+
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\> \| `undefined`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`buildFontResources`](../../pdf-form-field/classes/PdfFormField.md#buildfontresources)
+
+---
+
 ### clone()
 
 > **clone**(): `this`
@@ -1742,29 +1878,21 @@ Compares this object to another for equality based on their token representation
 
 ### getAppearanceStream()
 
-> **getAppearanceStream**(): [`PdfStream`](../../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\> \| `undefined`
+> **getAppearanceStream**(`setting?`): [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfStream`](../../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\>\> \| `null`
+
+#### Parameters
+
+##### setting?
+
+`string`
 
 #### Returns
 
-[`PdfStream`](../../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\> \| `undefined`
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfStream`](../../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\>\> \| `null`
 
-#### Overrides
+#### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`getAppearanceStream`](../../pdf-form-field/classes/PdfFormField.md#getappearancestream)
-
----
-
-### getAppearanceStreamsForWriting()
-
-> **getAppearanceStreamsForWriting**(): \{ `primary`: [`PdfAppearanceStream`](../../../appearance/pdf-appearance-stream/classes/PdfAppearanceStream.md); `secondary?`: [`PdfAppearanceStream`](../../../appearance/pdf-appearance-stream/classes/PdfAppearanceStream.md); \} \| `undefined`
-
-#### Returns
-
-\{ `primary`: [`PdfAppearanceStream`](../../../appearance/pdf-appearance-stream/classes/PdfAppearanceStream.md); `secondary?`: [`PdfAppearanceStream`](../../../appearance/pdf-appearance-stream/classes/PdfAppearanceStream.md); \} \| `undefined`
-
-#### Overrides
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`getAppearanceStreamsForWriting`](../../pdf-form-field/classes/PdfFormField.md#getappearancestreamsforwriting)
 
 ---
 
@@ -1836,7 +1964,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### ref?
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\>
 
 #### Returns
 
@@ -1862,27 +1990,49 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ---
 
-### setAppearanceReference()
+### resolve()
 
-> **setAppearanceReference**(`appearanceStreamRef`, `appearanceStreamYesRef?`): `void`
+> **resolve**\<`T`\>(`cls?`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>
 
 #### Parameters
 
-##### appearanceStreamRef
+##### cls?
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+(`options`) => `T`
 
-##### appearanceStreamYesRef?
+#### Returns
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+`T`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`resolve`](../../pdf-form-field/classes/PdfFormField.md#resolve)
+
+---
+
+### setAppearanceStream()
+
+> **setAppearanceStream**(`stream`): `void`
+
+#### Parameters
+
+##### stream
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\> | \{\[`key`: `string`\]: [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>; \}
 
 #### Returns
 
 `void`
 
-#### Overrides
+#### Inherited from
 
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`setAppearanceReference`](../../pdf-form-field/classes/PdfFormField.md#setappearancereference)
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`setAppearanceStream`](../../pdf-form-field/classes/PdfFormField.md#setappearancestream)
 
 ---
 
@@ -1927,6 +2077,24 @@ Sets the modified state of the object. Override this method if the modified stat
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`setModified`](../../pdf-form-field/classes/PdfFormField.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`toBase64`](../../pdf-form-field/classes/PdfFormField.md#tobase64)
 
 ---
 
@@ -2000,45 +2168,15 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 
 ---
 
-### tryGenerateAppearance()
-
-> `protected` **tryGenerateAppearance**(`field`): `void`
-
-#### Parameters
-
-##### field
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)
-
-#### Returns
-
-`void`
-
-#### Inherited from
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`tryGenerateAppearance`](../../pdf-form-field/classes/PdfFormField.md#trygenerateappearance)
-
----
-
 ### create()
 
-> `static` **create**(`options`): [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)
+> `static` **create**(`other?`): [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)
 
 #### Parameters
 
-##### options
+##### other?
 
-###### form
-
-[`FormContext`](../../types/interfaces/FormContext.md)\<[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)\>
-
-###### other
-
-[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)
-
-###### parent?
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>
 
 #### Returns
 
@@ -2096,7 +2234,7 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 
 ##### ctor
 
-(`options?`) => [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)
+(`other?`) => [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md)
 
 ##### options?
 

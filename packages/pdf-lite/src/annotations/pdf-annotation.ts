@@ -6,6 +6,7 @@ import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfAnnotationFlags } from './pdf-annotation-flags.js'
 import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfString } from '../core/objects/pdf-string.js'
+import { PdfPage } from '../pdf/pdf-page.js'
 
 export type PdfAppearanceStreamDictionary = PdfDictionary<{
     N: PdfObjectReference | PdfDictionary
@@ -36,7 +37,7 @@ export class PdfAnnotation extends PdfIndirectObject<
         F: PdfNumber
         AP?: PdfAppearanceStreamDictionary
         P?: PdfObjectReference
-        Parent?: PdfObjectReference
+        Parent?: PdfObjectReference<PdfPage>
     }>
 > {
     private _annotationFlags?: PdfAnnotationFlags
@@ -170,5 +171,9 @@ export class PdfAnnotation extends PdfIndirectObject<
         } else {
             this.content.set('P', ref)
         }
+    }
+
+    get page(): PdfPage | null {
+        return this.parentRef?.resolve(PdfPage) ?? null
     }
 }

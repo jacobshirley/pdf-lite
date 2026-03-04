@@ -20,7 +20,7 @@
 
 ##### options
 
-`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | \{ `decimalPlaces?`: `number`; `isByteToken?`: `boolean`; `padTo?`: `number`; `value`: `number` \| [`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| `PdfNumberToken` \| [`Ref`](../../../ref/classes/Ref.md)\<`number`\>; \}
+`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | \{ `decimalPlaces?`: `number`; `isByteToken?`: `boolean`; `padTo?`: `number`; `value`: `number` \| [`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| [`Ref`](../../../ref/classes/Ref.md)\<`number`\> \| `PdfNumberToken`; \}
 
 ##### padTo?
 
@@ -152,6 +152,20 @@
 
 ## Methods
 
+### clone()
+
+> **clone**(): [`PdfToken`](../../token/classes/PdfToken.md)
+
+#### Returns
+
+[`PdfToken`](../../token/classes/PdfToken.md)
+
+#### Inherited from
+
+[`PdfToken`](../../token/classes/PdfToken.md).[`clone`](../../token/classes/PdfToken.md#clone)
+
+---
+
 ### equals()
 
 > **equals**(`other`): `boolean`
@@ -208,7 +222,7 @@
 
 ##### bytes
 
-`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | `PdfNumberToken` | [`Ref`](../../../ref/classes/Ref.md)\<`number`\>
+`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | [`Ref`](../../../ref/classes/Ref.md)\<`number`\> | `PdfNumberToken`
 
 #### Returns
 
@@ -224,7 +238,7 @@
 
 ##### bytes
 
-`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | `PdfNumberToken` | [`Ref`](../../../ref/classes/Ref.md)\<`number`\>
+`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | [`Ref`](../../../ref/classes/Ref.md)\<`number`\> | `PdfNumberToken`
 
 #### Returns
 
@@ -240,7 +254,7 @@
 
 ##### bytes
 
-`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | `PdfNumberToken` | [`Ref`](../../../ref/classes/Ref.md)\<`number`\>
+`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | [`Ref`](../../../ref/classes/Ref.md)\<`number`\> | `PdfNumberToken`
 
 #### Returns
 
@@ -256,7 +270,7 @@
 
 ##### value
 
-`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | `PdfNumberToken` | [`Ref`](../../../ref/classes/Ref.md)\<`number`\>
+`number` | [`ByteArray`](../../../../types/type-aliases/ByteArray.md) | [`Ref`](../../../ref/classes/Ref.md)\<`number`\> | `PdfNumberToken`
 
 ##### padTo?
 

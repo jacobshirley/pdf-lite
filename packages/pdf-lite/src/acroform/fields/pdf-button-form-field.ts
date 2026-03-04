@@ -30,22 +30,36 @@ export class PdfButtonFormField extends PdfFormField {
             this.content.delete('AS')
             return false
         }
-        this.content.set('V', new PdfName(strVal))
-        fieldParent?.content.set('V', new PdfName(strVal))
-        this.content.set('AS', new PdfName(strVal))
+        // Check if the value matches an existing appearance state;
+        // otherwise map truthy values to the widget's "on" state (the
+        // first state that isn't "Off"), falling back to "Yes".
+        const states = this.appearanceStates
+        let resolved: string
+        if (states.includes(strVal)) {
+            resolved = strVal
+        } else if (strVal === 'Off' || strVal === 'No') {
+            resolved = 'Off'
+        } else {
+            resolved = states.find((s) => s !== 'Off') ?? 'Yes'
+        }
+        this.content.set('V', new PdfName(resolved))
+        fieldParent?.content.set('V', new PdfName(resolved))
+        this.content.set('AS', new PdfName(resolved))
         return true
     }
 
     get checked(): boolean {
         const v = this.content.get('V') ?? this.parent?.content.get('V')
-        return v instanceof PdfName && v.value === 'Yes'
+        return v instanceof PdfName && v.value !== 'Off'
     }
 
     set checked(isChecked: boolean) {
         const target = this.parent ?? this
         if (isChecked) {
-            target.content.set('V', new PdfName('Yes'))
-            this.content.set('AS', new PdfName('Yes'))
+            const onState =
+                this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
+            target.content.set('V', new PdfName(onState))
+            this.content.set('AS', new PdfName(onState))
         } else {
             target.content.set('V', new PdfName('Off'))
             this.content.set('AS', new PdfName('Off'))
@@ -77,8 +91,9 @@ export class PdfButtonFormField extends PdfFormField {
             contentStream: '',
         })
 
+        const onState = this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
         this.setAppearanceStream({
-            Yes: yesAppearance,
+            [onState]: yesAppearance,
             Off: noAppearance,
         })
 

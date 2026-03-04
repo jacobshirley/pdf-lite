@@ -56,6 +56,18 @@ Previous revision or xref lookup to link to
 
 ## Properties
 
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`cachedTokens`](../../../core/objects/pdf-object/classes/PdfObject.md#cachedtokens)
+
+---
+
 ### immutable
 
 > `protected` **immutable**: `boolean` = `false`
@@ -135,6 +147,38 @@ Cross-reference lookup table for this revision
 ##### Returns
 
 `void`
+
+---
+
+### indirectObjects
+
+#### Get Signature
+
+> **get** **indirectObjects**(): [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>[]
+
+##### Returns
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>[]
+
+---
+
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`isTrailingDelimited`](../../../core/objects/pdf-object/classes/PdfObject.md#istrailingdelimited)
 
 ---
 
@@ -446,6 +490,16 @@ True if an equal object exists in this revision
 
 ---
 
+### isEmpty()
+
+> **isEmpty**(): `boolean`
+
+#### Returns
+
+`boolean`
+
+---
+
 ### isImmutable()
 
 > **isImmutable**(): `boolean`
@@ -555,17 +609,41 @@ Indirect objects are placed before other objects.
 
 ---
 
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`toBase64`](../../../core/objects/pdf-object/classes/PdfObject.md#tobase64)
+
+---
+
 ### toBytes()
 
-> **toBytes**(): [`ByteArray`](../../../types/type-aliases/ByteArray.md)
+> **toBytes**(`padTo?`): [`ByteArray`](../../../types/type-aliases/ByteArray.md)
 
 Converts the object to a ByteArray, optionally padding to a specified length
+
+#### Parameters
+
+##### padTo?
+
+`number`
 
 #### Returns
 
 [`ByteArray`](../../../types/type-aliases/ByteArray.md)
 
-#### Overrides
+#### Inherited from
 
 [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`toBytes`](../../../core/objects/pdf-object/classes/PdfObject.md#tobytes)
 

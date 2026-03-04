@@ -22,7 +22,7 @@ export class PdfDictionary<
         this.#entries = entries instanceof Map ? entries : new Map<any, any>()
         if (entries) {
             for (const [key, value] of Object.entries(entries)) {
-                this.#entries.set(new PdfName(key), value)
+                this.set(key as Extract<keyof T, string>, value)
             }
         }
     }

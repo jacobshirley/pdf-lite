@@ -10,6 +10,7 @@
 
 - [PdfObjStream](classes/PdfObjStream.md)
 - [PdfStream](classes/PdfStream.md)
+- [PdfStreamPredictor](classes/PdfStreamPredictor.md)
 - [PdfXRefStream](classes/PdfXRefStream.md)
 - [PdfXRefStreamCompressedEntry](classes/PdfXRefStreamCompressedEntry.md)
 

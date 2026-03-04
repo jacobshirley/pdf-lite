@@ -96,6 +96,20 @@
 
 ## Methods
 
+### clone()
+
+> **clone**(): [`PdfToken`](../../token/classes/PdfToken.md)
+
+#### Returns
+
+[`PdfToken`](../../token/classes/PdfToken.md)
+
+#### Inherited from
+
+[`PdfToken`](../../token/classes/PdfToken.md).[`clone`](../../token/classes/PdfToken.md#clone)
+
+---
+
 ### equals()
 
 > **equals**(`other`): `boolean`

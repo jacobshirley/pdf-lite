@@ -12,7 +12,6 @@ import './fields/pdf-button-form-field.js'
 import './fields/pdf-choice-form-field.js'
 import './fields/pdf-signature-form-field.js'
 import { PdfDefaultResourcesDictionary } from '../annotations/pdf-default-resources.js'
-import { PdfPage } from '../pdf/pdf-page.js'
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
 import { PdfXfaForm } from './xfa/pdf-xfa-form.js'
 
@@ -143,9 +142,8 @@ export class PdfAcroForm<
             fieldsArray.items.push(field.reference)
 
             // Auto-add to the page's Annots array
-            const pageRef = field.parentRef
-            if (pageRef) {
-                const page = pageRef.resolve(PdfPage)
+            const page = field.page
+            if (page) {
                 page.annotations.items.push(field.reference)
             }
         }
@@ -207,13 +205,9 @@ export class PdfAcroForm<
 
         let fontObj: PdfDictionary | undefined
         if (fontEntry instanceof PdfObjectReference) {
-            try {
-                const resolved = fontEntry.resolve()
-                if (resolved?.content instanceof PdfDictionary) {
-                    fontObj = resolved.content
-                }
-            } catch {
-                // resolver not available
+            const resolved = fontEntry.resolve()
+            if (resolved?.content instanceof PdfDictionary) {
+                fontObj = resolved.content
             }
         } else if (fontEntry instanceof PdfDictionary) {
             fontObj = fontEntry
@@ -223,11 +217,7 @@ export class PdfAcroForm<
 
         let encObj = fontObj.get('Encoding')
         if (encObj instanceof PdfObjectReference) {
-            try {
-                encObj = encObj.resolve()?.content
-            } catch {
-                // resolver not available
-            }
+            encObj = encObj.resolve()?.content
         }
 
         const encDict = encObj instanceof PdfDictionary ? encObj : undefined

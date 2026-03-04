@@ -26,12 +26,6 @@ Renames and re-exports [PdfFormField](fields/pdf-form-field/classes/PdfFormField
 
 ---
 
-### PdfAcroFormManager
-
-Re-exports [PdfAcroFormManager](manager/classes/PdfAcroFormManager.md)
-
----
-
 ### PdfAppearanceStream
 
 Re-exports [PdfAppearanceStream](appearance/pdf-appearance-stream/classes/PdfAppearanceStream.md)
@@ -68,21 +62,9 @@ Re-exports [PdfDefaultAppearance](fields/pdf-default-appearance/classes/PdfDefau
 
 ---
 
-### PdfDefaultResourcesDictionary
-
-Re-exports [PdfDefaultResourcesDictionary](pdf-acro-form/type-aliases/PdfDefaultResourcesDictionary.md)
-
----
-
 ### PdfFieldType
 
 Re-exports [PdfFieldType](fields/types/variables/PdfFieldType.md)
-
----
-
-### PdfFontEncodingCache
-
-Re-exports [PdfFontEncodingCache](pdf-font-encoding-cache/classes/PdfFontEncodingCache.md)
 
 ---
 

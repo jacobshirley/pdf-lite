@@ -66,11 +66,33 @@ Signature algorithm parameters.
 
 ---
 
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../../core/tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`cachedTokens`](../../base/classes/PdfSignatureObject.md#cachedtokens)
+
+---
+
 ### certificate
 
 > **certificate**: [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
 
 Signer certificate.
+
+---
+
+### compressed?
+
+> `optional` **compressed**: `boolean`
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`compressed`](../../base/classes/PdfSignatureObject.md#compressed)
 
 ---
 
@@ -334,6 +356,42 @@ The verification result.
 
 ## Accessors
 
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`isTrailingDelimited`](../../base/classes/PdfSignatureObject.md#istrailingdelimited)
+
+---
+
+### key
+
+#### Get Signature
+
+> **get** **key**(): `string`
+
+##### Returns
+
+`string`
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`key`](../../base/classes/PdfSignatureObject.md#key)
+
+---
+
 ### objectType
 
 #### Get Signature
@@ -356,11 +414,11 @@ The type of this PDF object
 
 #### Get Signature
 
-> **get** **reference**(): [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+> **get** **reference**(): [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 ##### Returns
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 #### Inherited from
 
@@ -437,6 +495,32 @@ Attempts to cast the object to a specific PdfObject subclass
 #### Inherited from
 
 [`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`as`](../../base/classes/PdfSignatureObject.md#as)
+
+---
+
+### becomes()
+
+> **becomes**\<`T`\>(`cls`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`becomes`](../../base/classes/PdfSignatureObject.md#becomes)
 
 ---
 
@@ -614,7 +698,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### ref?
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\>
 
 #### Returns
 
@@ -641,6 +725,32 @@ High order value to place signature near end of document.
 #### Inherited from
 
 [`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`order`](../../base/classes/PdfSignatureObject.md#order)
+
+---
+
+### resolve()
+
+> **resolve**\<`T`\>(`cls?`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls?
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`resolve`](../../base/classes/PdfSignatureObject.md#resolve)
 
 ---
 
@@ -741,6 +851,24 @@ Error if Contents entry is missing.
 #### Inherited from
 
 [`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`setSignedBytes`](../../base/classes/PdfSignatureObject.md#setsignedbytes)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfSignatureObject`](../../base/classes/PdfSignatureObject.md).[`toBase64`](../../base/classes/PdfSignatureObject.md#tobase64)
 
 ---
 

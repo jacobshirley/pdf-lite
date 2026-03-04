@@ -274,12 +274,14 @@ export class PdfGraphics {
         const minSize = 0.5
 
         const fits = (size: number): boolean => {
-            if (this.measureTextWidth(text, size) > maxWidth) return false
             if (maxHeight !== undefined) {
+                // Wrapping mode: text is allowed to span multiple lines,
+                // so only check that the wrapped result fits the box.
                 const lines = this.wrapTextToLines(text, maxWidth, size)
                 return lines.length * size * lineHeight <= maxHeight
             }
-            return true
+            // Single-line mode: text must fit within maxWidth.
+            return this.measureTextWidth(text, size) <= maxWidth
         }
 
         if (fits(startSize)) return startSize

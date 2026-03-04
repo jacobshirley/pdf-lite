@@ -61,10 +61,7 @@ export class PdfDefaultAppearance extends PdfString {
         if (!fontMatch) return null
 
         const fontName = fontMatch[1]
-        let fontSize = parseFloat(fontMatch[2])
-        if (!fontSize || fontSize <= 0) {
-            fontSize = 12
-        }
+        const fontSize = parseFloat(fontMatch[2]) || 0
 
         let colorOp = '0 g'
         const rgMatch = da.match(/([\d.]+\s+[\d.]+\s+[\d.]+)\s+rg/)

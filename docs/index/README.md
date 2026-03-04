@@ -434,6 +434,12 @@ Re-exports [int32ToLittleEndianBytes](../crypto/utils/functions/int32ToLittleEnd
 
 ---
 
+### IPdfObjectResolver
+
+Re-exports [IPdfObjectResolver](../core/objects/pdf-object-reference/interfaces/IPdfObjectResolver.md)
+
+---
+
 ### isSupportedFontFormat
 
 Re-exports [isSupportedFontFormat](../fonts/parsers/font-parser/functions/isSupportedFontFormat.md)
@@ -545,12 +551,6 @@ Re-exports [PdfAnnotation](../annotations/pdf-annotation/classes/PdfAnnotation.m
 ### PdfAnnotationFlags
 
 Re-exports [PdfAnnotationFlags](../annotations/pdf-annotation-flags/classes/PdfAnnotationFlags.md)
-
----
-
-### PdfAnnotationWriter
-
-Re-exports [PdfAnnotationWriter](../annotations/pdf-annotation-writer/classes/PdfAnnotationWriter.md)
 
 ---
 
@@ -794,12 +794,6 @@ Re-exports [PdfFont](../fonts/pdf-font/classes/PdfFont.md)
 
 ---
 
-### PdfFontManager
-
-Re-exports [PdfFontManager](../fonts/manager/classes/PdfFontManager.md)
-
----
-
 ### PdfHexadecimal
 
 Re-exports [PdfHexadecimal](../core/objects/pdf-hexadecimal/classes/PdfHexadecimal.md)
@@ -821,6 +815,12 @@ Re-exports [PdfId](../security/types/type-aliases/PdfId.md)
 ### PdfIndirectObject
 
 Re-exports [PdfIndirectObject](../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)
+
+---
+
+### PdfIndirectObjectOptions
+
+Re-exports [PdfIndirectObjectOptions](../core/objects/pdf-indirect-object/type-aliases/PdfIndirectObjectOptions.md)
 
 ---
 
@@ -905,6 +905,18 @@ Re-exports [PdfObjStream](../core/objects/pdf-stream/classes/PdfObjStream.md)
 ### PdfOcspObject
 
 Re-exports [PdfOcspObject](../signing/document-security-store/classes/PdfOcspObject.md)
+
+---
+
+### PdfPage
+
+Re-exports [PdfPage](../pdf/pdf-page/classes/PdfPage.md)
+
+---
+
+### PdfPages
+
+Re-exports [PdfPages](../pdf/pdf-pages/classes/PdfPages.md)
 
 ---
 
@@ -1061,6 +1073,12 @@ Re-exports [PdfStreamChunkToken](../core/tokens/stream-chunk-token/classes/PdfSt
 ### PdfStreamFilterType
 
 Re-exports [PdfStreamFilterType](../filters/types/type-aliases/PdfStreamFilterType.md)
+
+---
+
+### PdfStreamPredictor
+
+Re-exports [PdfStreamPredictor](../core/objects/pdf-stream/classes/PdfStreamPredictor.md)
 
 ---
 
@@ -1235,12 +1253,6 @@ Re-exports [PdfXRefTableStartToken](../core/tokens/xref-table-start-token/classe
 ### PERMISSION_FLAGS
 
 Re-exports [PERMISSION_FLAGS](../types/variables/PERMISSION_FLAGS.md)
-
----
-
-### Predictor
-
-Re-exports [Predictor](../utils/predictors/classes/Predictor.md)
 
 ---
 

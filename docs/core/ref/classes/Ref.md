@@ -39,7 +39,7 @@ Creates a new Ref with an initial value.
 
 The initial value or another Ref to chain
 
-`T` | `Ref`\<`T`\>
+`Ref`\<`T`\> | `T`
 
 #### Returns
 
@@ -65,15 +65,15 @@ Registered callbacks for update notifications
 
 ---
 
-### isModified
+### modified
 
-> **isModified**: `boolean` = `false`
+> **modified**: `boolean` = `true`
 
 ---
 
 ### value
 
-> **value**: `T` \| `Ref`\<`T`\>
+> **value**: `Ref`\<`T`\> \| `T`
 
 The current value or a reference to another Ref
 
@@ -103,7 +103,7 @@ Compares this Ref's resolved value with another value or Ref.
 
 The value or Ref to compare against
 
-`T` | `Ref`\<`T`\>
+`Ref`\<`T`\> | `T`
 
 #### Returns
 
@@ -116,6 +116,16 @@ True if the resolved values are equal
 ### isImmutable()
 
 > **isImmutable**(): `boolean`
+
+#### Returns
+
+`boolean`
+
+---
+
+### isModified()
+
+> **isModified**(): `boolean`
 
 #### Returns
 
@@ -173,6 +183,22 @@ The resolved value of type T
 
 ---
 
+### setModified()
+
+> **setModified**(`modified`): `void`
+
+#### Parameters
+
+##### modified
+
+`boolean` = `true`
+
+#### Returns
+
+`void`
+
+---
+
 ### update()
 
 > **update**(`newValue`): `void`
@@ -186,7 +212,7 @@ Notifies all registered callbacks of the change.
 
 The new value or Ref to point to
 
-`T` | `Ref`\<`T`\>
+`Ref`\<`T`\> | `T`
 
 #### Returns
 

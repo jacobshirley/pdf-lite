@@ -615,6 +615,17 @@ export class PdfStream<
 }
 
 export class PdfObjStream extends PdfStream {
+    private _parsedObjects?: Map<number, PdfIndirectObject>
+
+    override set raw(data: ByteArray) {
+        super.raw = data
+        this._parsedObjects = undefined
+    }
+
+    override get raw(): ByteArray {
+        return super.raw
+    }
+
     constructor(options: {
         header: PdfDictionary
         original: ByteArray | string
@@ -694,8 +705,13 @@ export class PdfObjStream extends PdfStream {
             const { value: obj, done } = reader.next()
             if (done) break
 
-            if (obj instanceof PdfNumber) {
-                // Collect object numbers and byte offsets
+            if (
+                obj instanceof PdfNumber &&
+                (totalObjects === 0 || numbers.length < totalObjects * 2)
+            ) {
+                // Collect object numbers and byte offsets from the header section.
+                // Stop once we have all 2*N pairs so that object values that happen
+                // to be plain integers are not mistakenly treated as header entries.
                 numbers.push(obj)
             } else {
                 // This is an actual PDF object (can be Dictionary, Array, String, Name, etc.)
@@ -723,19 +739,24 @@ export class PdfObjStream extends PdfStream {
         }
     }
 
+    private getParsedObjects(): Map<number, PdfIndirectObject> {
+        if (!this._parsedObjects) {
+            this._parsedObjects = new Map()
+            for (const obj of this.getObjectStream()) {
+                this._parsedObjects.set(obj.objectNumber, obj)
+            }
+        }
+        return this._parsedObjects
+    }
+
     getObject(options: {
         objectNumber: number
     }): PdfIndirectObject | undefined {
-        for (const obj of this.getObjectStream()) {
-            if (obj.objectNumber === options.objectNumber) {
-                return obj
-            }
-        }
-        return undefined
+        return this.getParsedObjects().get(options.objectNumber)
     }
 
     getObjects(): PdfIndirectObject[] {
-        return Array.from(this.getObjectStream())
+        return Array.from(this.getParsedObjects().values())
     }
 
     cloneImpl(): this {

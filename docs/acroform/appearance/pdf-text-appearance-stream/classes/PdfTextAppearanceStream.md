@@ -73,6 +73,28 @@ Enhanced with word wrapping and automatic font scaling.
 
 ## Properties
 
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../../core/tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`cachedTokens`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#cachedtokens)
+
+---
+
+### compressed?
+
+> `optional` **compressed**: `boolean`
+
+#### Inherited from
+
+[`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`compressed`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#compressed)
+
+---
+
 ### content
 
 > **content**: [`PdfStream`](../../../../core/objects/pdf-stream/classes/PdfStream.md)
@@ -243,6 +265,42 @@ Optional tokens to prepend or append during serialization
 
 ---
 
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`isTrailingDelimited`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#istrailingdelimited)
+
+---
+
+### key
+
+#### Get Signature
+
+> **get** **key**(): `string`
+
+##### Returns
+
+`string`
+
+#### Inherited from
+
+[`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`key`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#key)
+
+---
+
 ### objectType
 
 #### Get Signature
@@ -265,11 +323,11 @@ The type of this PDF object
 
 #### Get Signature
 
-> **get** **reference**(): [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+> **get** **reference**(): [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 ##### Returns
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<`this`\>
 
 #### Inherited from
 
@@ -302,6 +360,32 @@ Attempts to cast the object to a specific PdfObject subclass
 #### Inherited from
 
 [`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`as`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#as)
+
+---
+
+### becomes()
+
+> **becomes**\<`T`\>(`cls`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`becomes`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#becomes)
 
 ---
 
@@ -447,7 +531,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### ref?
 
-[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)
+[`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\>
 
 #### Returns
 
@@ -470,6 +554,32 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Inherited from
 
 [`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`order`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#order)
+
+---
+
+### resolve()
+
+> **resolve**\<`T`\>(`cls?`): `T`
+
+#### Type Parameters
+
+##### T
+
+`T` _extends_ [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>
+
+#### Parameters
+
+##### cls?
+
+(`options`) => `T`
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+[`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`resolve`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#resolve)
 
 ---
 
@@ -514,6 +624,24 @@ Sets the modified state of the object. Override this method if the modified stat
 #### Inherited from
 
 [`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`setModified`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfAppearanceStream`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md).[`toBase64`](../../pdf-appearance-stream/classes/PdfAppearanceStream.md#tobase64)
 
 ---
 

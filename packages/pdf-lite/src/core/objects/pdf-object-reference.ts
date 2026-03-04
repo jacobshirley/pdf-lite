@@ -37,10 +37,12 @@ export class PdfObjectReference<
         return cloned
     }
 
-    resolve<U extends T>(cls?: new (options: PdfIndirectObject) => U): U {
+    resolve<U extends PdfIndirectObject = T>(
+        cls?: new (options: PdfIndirectObject) => U,
+    ): U {
         if (!this.resolver) {
             throw new Error(
-                `No resolver set for PdfObjectReference ${this.objectNumber} ${this.generationNumber}`,
+                `No resolver set for PdfObjectReference '${this.objectNumber} ${this.generationNumber}'`,
             )
         }
 

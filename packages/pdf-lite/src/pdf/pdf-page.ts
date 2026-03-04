@@ -4,6 +4,7 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfName } from '../core/objects/pdf-name.js'
+import { PdfPages } from './pdf-pages.js'
 
 type PdfPageDictionary = PdfDictionary<{
     Type: PdfName<'Page'>
@@ -173,11 +174,19 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         this.content.set('Annots', value)
     }
 
-    get parent(): PdfObjectReference {
+    get parentRef(): PdfObjectReference {
         return this.content.get('Parent')!.as(PdfObjectReference)!
     }
 
-    set parent(value: PdfObjectReference) {
+    set parentRef(value: PdfObjectReference) {
         this.content.set('Parent', value)
+    }
+
+    get parent(): PdfPages {
+        return this.parentRef.resolve(PdfPages)
+    }
+
+    set parent(value: PdfPages) {
+        this.parentRef = value.reference
     }
 }

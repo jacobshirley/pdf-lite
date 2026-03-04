@@ -20,6 +20,12 @@ Re-exports [IncrementalParser](parser/incremental-parser/classes/IncrementalPars
 
 ---
 
+### IPdfObjectResolver
+
+Re-exports [IPdfObjectResolver](objects/pdf-object-reference/interfaces/IPdfObjectResolver.md)
+
+---
+
 ### objectToTokens
 
 Re-exports [objectToTokens](tokeniser/functions/objectToTokens.md)
@@ -170,6 +176,12 @@ Re-exports [PdfIndirectObject](objects/pdf-indirect-object/classes/PdfIndirectOb
 
 ---
 
+### PdfIndirectObjectOptions
+
+Re-exports [PdfIndirectObjectOptions](objects/pdf-indirect-object/type-aliases/PdfIndirectObjectOptions.md)
+
+---
+
 ### PdfName
 
 Re-exports [PdfName](objects/pdf-name/classes/PdfName.md)
@@ -293,6 +305,12 @@ Re-exports [PdfStream](objects/pdf-stream/classes/PdfStream.md)
 ### PdfStreamChunkToken
 
 Re-exports [PdfStreamChunkToken](tokens/stream-chunk-token/classes/PdfStreamChunkToken.md)
+
+---
+
+### PdfStreamPredictor
+
+Re-exports [PdfStreamPredictor](objects/pdf-stream/classes/PdfStreamPredictor.md)
 
 ---
 

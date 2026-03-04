@@ -69,7 +69,9 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
     private hasEncryptionDictionary?: boolean = false
     private _resolvedCache = new Map<string, PdfIndirectObject>()
+    private _objStreamCache = new Map<number, PdfObjStream>()
     private _committing = false
+    private _updating = false
     private _finalized = false
     private _signed = false
 
@@ -148,13 +150,18 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         return acroFormRef.becomes(PdfAcroForm)
     }
 
-    get pages(): PdfPages | null {
+    get pages(): PdfPages {
         const root = this.root
         const pagesEntry = root.content.get('Pages')
-        if (!pagesEntry) return null
-        const pagesRef = pagesEntry.as(PdfObjectReference)?.resolve()
-        if (!pagesRef) return null
-        return pagesRef.becomes(PdfPages)
+        if (pagesEntry) {
+            const pagesRef = pagesEntry.as(PdfObjectReference)?.resolve()
+            if (pagesRef) return pagesRef.becomes(PdfPages)
+        }
+
+        const pages = new PdfPages()
+        this.add(pages)
+        root.content.set('Pages', pages.reference)
+        return pages
     }
 
     get header(): PdfComment | undefined {
@@ -576,6 +583,14 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                         continue
                     }
                     if (obj.isModified()) {
+                        // Pre-register any new objects referenced by obj before
+                        // cloning so the clone gets correct object numbers.
+                        // Without this, proxy references (objectNumber = -1) get
+                        // frozen into the clone as "-1 0 R" — a dangling reference.
+                        const missing = this.collectMissingReferences(obj)
+                        if (missing.length > 0) {
+                            this.add(...missing)
+                        }
                         const adding = obj.clone()
                         this.add(adding)
                         adding.setModified(false)
@@ -741,25 +756,27 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             )
         }
 
-        const objectStreamIndirect = this.findUncompressedObject({
-            objectNumber: xrefEntry.objectStreamNumber.value,
-        })?.clone()
+        const streamNumber = xrefEntry.objectStreamNumber.value
 
-        if (!objectStreamIndirect) {
-            throw new Error(
-                `Cannot find object stream ${xrefEntry.objectStreamNumber.value} for object ${options.objectNumber}`,
-            )
+        let objectStream = this._objStreamCache.get(streamNumber)
+        if (!objectStream) {
+            const objectStreamIndirect = this.findUncompressedObject({
+                objectNumber: streamNumber,
+            })
+
+            if (!objectStreamIndirect) {
+                throw new Error(
+                    `Cannot find object stream ${streamNumber} for object ${options.objectNumber}`,
+                )
+            }
+
+            objectStream = objectStreamIndirect.content
+                .as(PdfStream)
+                .parseAs(PdfObjStream)
+            this._objStreamCache.set(streamNumber, objectStream)
         }
 
-        const objectStream = objectStreamIndirect.content
-            .as(PdfStream)
-            .parseAs(PdfObjStream)
-
-        const decompressedObject = objectStream.getObject({
-            objectNumber: options.objectNumber,
-        })
-
-        return decompressedObject
+        return objectStream.getObject({ objectNumber: options.objectNumber })
     }
 
     /**
@@ -988,8 +1005,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     ): PdfIndirectObject[] {
         const seen = new Set<PdfObject>()
         const missing: PdfIndirectObject[] = []
-        const walk = (obj: PdfObject) => {
-            if (seen.has(obj)) return
+        const queue: PdfObject[] = [...objects]
+        while (queue.length > 0) {
+            const obj = queue.pop()!
+            if (seen.has(obj)) continue
             seen.add(obj)
 
             if (
@@ -1004,25 +1023,24 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                             !resolved.inPdf()
                         ) {
                             missing.push(resolved)
-                            walk(resolved)
+                            queue.push(resolved)
                         }
                     } catch {
                         // Skip unresolvable references
                     }
                 }
             } else if (obj instanceof PdfStream) {
-                walk(obj.header)
+                queue.push(obj.header)
             } else if (obj instanceof PdfDictionary) {
                 for (const [, value] of obj.entries()) {
-                    if (value) walk(value)
+                    if (value) queue.push(value)
                 }
             } else if (obj instanceof PdfArray) {
-                for (const item of obj.items) walk(item)
+                for (const item of obj.items) queue.push(item)
             } else if (obj instanceof PdfIndirectObject) {
-                walk(obj.content)
+                queue.push(obj.content)
             }
         }
-        for (const obj of objects) walk(obj)
         return missing
     }
 
@@ -1123,20 +1141,26 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * Performs a full update cycle to ensure all revisions are consistent and offsets are correct.
      */
     private update(): void {
-        this.commitIncrementalUpdates()
-        this.flushResolvedCache()
-        this.registerNewReferences()
-        this.calculateOffsets()
-        this.updateRevisions()
-        // Second pass: xref binary may have changed size (e.g. FlateDecode removed
-        // from xref stream), shifting objects that follow it. Recalculate so entry
-        // byteOffset refs hold the new positions, then rebuild the xref binary once
-        // more so the baked bytes match those positions.
-        this.calculateOffsets()
-        this.updateRevisions()
-        // Third pass: confirm positions are stable (xref binary size should not
-        // change again because W widths and entry count are the same).
-        this.calculateOffsets()
+        if (this._updating) return
+        this._updating = true
+        try {
+            this.commitIncrementalUpdates()
+            this.flushResolvedCache()
+            this.registerNewReferences()
+            this.calculateOffsets()
+            this.updateRevisions()
+            // Second pass: xref binary may have changed size (e.g. FlateDecode removed
+            // from xref stream), shifting objects that follow it. Recalculate so entry
+            // byteOffset refs hold the new positions, then rebuild the xref binary once
+            // more so the baked bytes match those positions.
+            this.calculateOffsets()
+            this.updateRevisions()
+            // Third pass: confirm positions are stable (xref binary size should not
+            // change again because W widths and entry count are the same).
+            this.calculateOffsets()
+        } finally {
+            this._updating = false
+        }
     }
 
     /**
@@ -1154,9 +1178,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     private flushResolvedCache(): void {
+        const existing = new Set(this.objects)
         for (const [, obj] of this._resolvedCache) {
-            if (obj.isModified() && !this.objects.includes(obj)) {
+            if (obj.isModified() && !existing.has(obj)) {
                 this.add(obj)
+                existing.add(obj)
             }
         }
     }

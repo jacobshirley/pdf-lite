@@ -10,15 +10,15 @@
 
 - [`PdfObject`](../../pdf-object/classes/PdfObject.md)
 
-## Extended by
-
-- [`PdfXfaForm`](../../../../acroform/xfa/pdf-xfa-form/classes/PdfXfaForm.md)
-
 ## Type Parameters
 
 ### T
 
 `T` _extends_ [`PdfObject`](../../pdf-object/classes/PdfObject.md) = [`PdfObject`](../../pdf-object/classes/PdfObject.md)
+
+## Implements
+
+- `Iterable`\<`T`\>
 
 ## Constructors
 
@@ -41,6 +41,18 @@
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`constructor`](../../pdf-object/classes/PdfObject.md#constructor)
 
 ## Properties
+
+### cachedTokens?
+
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
+
+Cached byte representation of the object, if available
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`cachedTokens`](../../pdf-object/classes/PdfObject.md#cachedtokens)
+
+---
 
 ### immutable
 
@@ -102,6 +114,26 @@ Optional tokens to prepend or append during serialization
 
 ## Accessors
 
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Overrides
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`isTrailingDelimited`](../../pdf-object/classes/PdfObject.md#istrailingdelimited)
+
+---
+
 ### length
 
 #### Get Signature
@@ -131,6 +163,20 @@ The type of this PDF object
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`objectType`](../../pdf-object/classes/PdfObject.md#objecttype)
 
 ## Methods
+
+### \[iterator\]()
+
+> **\[iterator\]**(): `Iterator`\<`T`\>
+
+#### Returns
+
+`Iterator`\<`T`\>
+
+#### Implementation of
+
+`Iterable.[iterator]`
+
+---
 
 ### as()
 
@@ -262,6 +308,16 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ---
 
+### refs()
+
+> **refs**(): `PdfArray`\<[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\>\>\>
+
+#### Returns
+
+`PdfArray`\<[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\>\>\>
+
+---
+
 ### setImmutable()
 
 > **setImmutable**(`immutable?`): `void`
@@ -286,23 +342,41 @@ Sets the immutable state of the object
 
 ### setModified()
 
-> **setModified**(`modified`): `void`
+> **setModified**(`modified?`): `void`
 
 Sets the modified state of the object. Override this method if the modified state is determined differently
 
 #### Parameters
 
-##### modified
+##### modified?
 
-`boolean` = `true`
+`boolean`
 
 #### Returns
 
 `void`
 
-#### Inherited from
+#### Overrides
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`setModified`](../../pdf-object/classes/PdfObject.md#setmodified)
+
+---
+
+### toBase64()
+
+> **toBase64**(): `string`
+
+Serializes the document to a Base64-encoded string.
+
+#### Returns
+
+`string`
+
+A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toBase64`](../../pdf-object/classes/PdfObject.md#tobase64)
 
 ---
 
@@ -373,3 +447,19 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toTokens`](../../pdf-object/classes/PdfObject.md#totokens)
+
+---
+
+### refs()
+
+> `static` **refs**(`items`): `PdfArray`\<[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\>\>\>
+
+#### Parameters
+
+##### items
+
+[`PdfIndirectObject`](../../pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\>[]
+
+#### Returns
+
+`PdfArray`\<[`PdfObjectReference`](../../pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../pdf-object/classes/PdfObject.md)\>\>\>

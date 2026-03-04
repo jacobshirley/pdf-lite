@@ -9,3 +9,7 @@
 ## Classes
 
 - [PdfObjectReference](classes/PdfObjectReference.md)
+
+## Interfaces
+
+- [IPdfObjectResolver](interfaces/IPdfObjectResolver.md)

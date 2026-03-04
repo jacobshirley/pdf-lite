@@ -1,6 +1,6 @@
 {
     "name": "pdf-lite-monorepo",
-    "version": "1.5.0",
+    "version": "1.6.1",
     "private": true,
     "type": "module",
     "description": "A lightweight PDF library for Node.js and the browser",
@@ -44,7 +44,7 @@
         "url": "https://github.com/jacobshirley/pdf-lite/issues"
     },
     "homepage": "https://jacobshirley.github.io/pdf-lite",
-    "packageManager": "pnpm@10.30.2",
+    "packageManager": "pnpm@10.30.3",
     "lint-staged": {
         "*.{js,ts,json,md}": "pnpm format"
     },
@@ -75,6 +75,6 @@
         "typescript": "5.9.3"
     },
     "dependencies": {
-        "pdf-lite": "1.5.0"
+        "pdf-lite": "1.6.1"
     }
 }

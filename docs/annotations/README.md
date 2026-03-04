@@ -20,12 +20,6 @@ Re-exports [PdfAnnotationFlags](pdf-annotation-flags/classes/PdfAnnotationFlags.
 
 ---
 
-### PdfAnnotationWriter
-
-Re-exports [PdfAnnotationWriter](pdf-annotation-writer/classes/PdfAnnotationWriter.md)
-
----
-
 ### PdfAppearanceStreamDictionary
 
 Re-exports [PdfAppearanceStreamDictionary](pdf-annotation/type-aliases/PdfAppearanceStreamDictionary.md)

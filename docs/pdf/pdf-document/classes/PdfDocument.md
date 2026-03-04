@@ -27,6 +27,10 @@ await document.commit()
 
 - [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)
 
+## Implements
+
+- [`IPdfObjectResolver`](../../../core/objects/pdf-object-reference/interfaces/IPdfObjectResolver.md)
+
 ## Constructors
 
 ### Constructor
@@ -87,15 +91,15 @@ PDF version string (e.g., '1.7', '2.0') or version comment
 
 ## Properties
 
-### acroForm
+### cachedTokens?
 
-> `readonly` **acroForm**: [`PdfAcroFormManager`](../../../acroform/manager/classes/PdfAcroFormManager.md)
+> `protected` `optional` **cachedTokens**: [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[]
 
----
+Cached byte representation of the object, if available
 
-### fonts
+#### Inherited from
 
-> `readonly` **fonts**: [`PdfFontManager`](../../../fonts/manager/classes/PdfFontManager.md)
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`cachedTokens`](../../../core/objects/pdf-object/classes/PdfObject.md#cachedtokens)
 
 ---
 
@@ -171,6 +175,18 @@ Signer instance for digital signature operations
 
 ## Accessors
 
+### acroform
+
+#### Get Signature
+
+> **get** **acroform**(): [`PdfAcroForm`](../../../acroform/pdf-acro-form/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`
+
+##### Returns
+
+[`PdfAcroForm`](../../../acroform/pdf-acro-form/classes/PdfAcroForm.md)\<`Record`\<`string`, `string`\>\> \| `null`
+
+---
+
 ### encryptionDictionary
 
 #### Get Signature
@@ -217,6 +233,26 @@ The encryption dictionary object or undefined if not encrypted
 
 ---
 
+### isTrailingDelimited
+
+#### Get Signature
+
+> **get** **isTrailingDelimited**(): `boolean`
+
+Returns true if this object's serialized form ends with a self-delimiting
+character (e.g., `)`, `>`, `]`, `>>`). Such objects do not require trailing
+whitespace before the next token.
+
+##### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`isTrailingDelimited`](../../../core/objects/pdf-object/classes/PdfObject.md#istrailingdelimited)
+
+---
+
 ### latestRevision
 
 #### Get Signature
@@ -241,13 +277,13 @@ The latest PdfRevision
 
 #### Get Signature
 
-> **get** **metadataStreamReference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) \| `undefined`
+> **get** **metadataStreamReference**(): [`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\> \| `undefined`
 
 Gets the reference to the metadata stream from the document catalog.
 
 ##### Returns
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) \| `undefined`
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\> \| `undefined`
 
 The metadata stream reference or undefined if not present
 
@@ -284,6 +320,18 @@ The type of this PDF object
 #### Inherited from
 
 [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`objectType`](../../../core/objects/pdf-object/classes/PdfObject.md#objecttype)
+
+---
+
+### pages
+
+#### Get Signature
+
+> **get** **pages**(): [`PdfPages`](../../pdf-pages/classes/PdfPages.md)
+
+##### Returns
+
+[`PdfPages`](../../pdf-pages/classes/PdfPages.md)
 
 ---
 
@@ -463,24 +511,13 @@ A cloned PdfDocument instance
 
 ---
 
-### commit()
+### commitIncrementalUpdates()
 
-> **commit**(...`newObjects`): `Promise`\<`void`\>
-
-Commits pending objects to the document.
-Adds objects, applies encryption if configured, and updates the document structure.
-
-#### Parameters
-
-##### newObjects
-
-...[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)[]
-
-Additional objects to add before committing
+> **commitIncrementalUpdates**(): `void`
 
 #### Returns
 
-`Promise`\<`void`\>
+`void`
 
 ---
 
@@ -497,9 +534,24 @@ Removes the security handler and encryption dictionary after decryption.
 
 ---
 
+### decryptObjects()
+
+> **decryptObjects**(): `Promise`\<`void`\>
+
+Decrypts all encrypted object data in-place without removing
+the encryption infrastructure. Useful in incremental mode where
+the original (encrypted) bytes are preserved via cached tokens
+but the live object data needs to be readable.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+---
+
 ### deleteObject()
 
-> **deleteObject**(`obj`): `Promise`\<`void`\>
+> **deleteObject**(`obj`): `void`
 
 Deletes an object from all revisions in the document.
 
@@ -513,7 +565,7 @@ The PDF object to delete
 
 #### Returns
 
-`Promise`\<`void`\>
+`void`
 
 ---
 
@@ -521,8 +573,9 @@ The PDF object to delete
 
 > **encrypt**(): `Promise`\<`void`\>
 
-Encrypts all objects in the document using the security handler.
-Creates and adds an encryption dictionary to all revisions.
+Encrypts all encryptable objects using the security handler.
+Re-uses the existing encryption dictionary or creates one if needed,
+propagating it to all revisions.
 
 #### Returns
 
@@ -552,9 +605,22 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### finalize()
+
+> **finalize**(): `Promise`\<`void`\>
+
+Re-encrypts all objects and updates the document structure.
+No-op if the document has no security handler (unencrypted document).
+
+#### Returns
+
+`Promise`\<`void`\>
+
+---
+
 ### findCompressedObject()
 
-> **findCompressedObject**(`options`): `Promise`\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\> \| `undefined`\>
+> **findCompressedObject**(`options`): [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\> \| `undefined`
 
 Finds a compressed object by its object number within an object stream.
 
@@ -564,17 +630,40 @@ Finds a compressed object by its object number within an object stream.
 
 Object identifier with objectNumber and optional generationNumber
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) | \{ `generationNumber?`: `number`; `objectNumber`: `number`; \}
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\> | \{ `generationNumber?`: `number`; `objectNumber`: `number`; \}
 
 #### Returns
 
-`Promise`\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\> \| `undefined`\>
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\> \| `undefined`
 
 The found indirect object or undefined if not found
 
 #### Throws
 
 Error if the object cannot be found in the expected object stream
+
+---
+
+### findRevisionForObject()
+
+> **findRevisionForObject**(`obj`): [`PdfRevision`](../../pdf-revision/classes/PdfRevision.md) \| `undefined`
+
+Finds the revision that contains a given PDF object.
+Useful for determining the origin of an object across multiple revisions.
+
+#### Parameters
+
+##### obj
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)
+
+The PDF object to find the revision for
+
+#### Returns
+
+[`PdfRevision`](../../pdf-revision/classes/PdfRevision.md) \| `undefined`
+
+The PdfRevision that contains the object, or undefined if not found in any revision
 
 ---
 
@@ -590,7 +679,7 @@ Finds an uncompressed indirect object by its object number.
 
 Object identifier with objectNumber and optional generationNumber
 
-[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md) | \{ `generationNumber?`: `number`; `objectNumber`: `number`; \}
+[`PdfObjectReference`](../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md)\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\> | \{ `generationNumber?`: `number`; `objectNumber`: `number`; \}
 
 #### Returns
 
@@ -623,6 +712,22 @@ The PDF object to check
 `boolean`
 
 True if the object exists in the document
+
+---
+
+### hasObjectInLatestRevision()
+
+> **hasObjectInLatestRevision**(`obj`): `boolean`
+
+#### Parameters
+
+##### obj
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)
+
+#### Returns
+
+`boolean`
 
 ---
 
@@ -674,7 +779,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ### readObject()
 
-> **readObject**(`options`): `Promise`\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\> \| `undefined`\>
+> **readObject**(`options`): [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\> \| `undefined`
 
 Reads and optionally decrypts an object by its object number.
 Handles both compressed and uncompressed objects.
@@ -691,6 +796,10 @@ Object lookup options
 
 If true, searches unindexed objects as fallback
 
+###### cloned?
+
+`boolean`
+
 ###### generationNumber?
 
 `number`
@@ -705,34 +814,43 @@ The object number to find
 
 #### Returns
 
-`Promise`\<[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\> \| `undefined`\>
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\> \| `undefined`
 
 A cloned and decrypted copy of the object, or undefined if not found
 
 ---
 
-### setDocumentSecurityStore()
+### resetSecurityHandler()
 
-> **setDocumentSecurityStore**(`dss`): `Promise`\<`void`\>
-
-Sets the Document Security Store (DSS) for the document.
-Used for long-term validation of digital signatures.
-
-#### Parameters
-
-##### dss
-
-[`PdfDocumentSecurityStoreObject`](../../../signing/document-security-store/classes/PdfDocumentSecurityStoreObject.md)
-
-The Document Security Store object to set
+> **resetSecurityHandler**(): `void`
 
 #### Returns
 
-`Promise`\<`void`\>
+`void`
 
-#### Throws
+---
 
-Error if the document has no root dictionary
+### resolve()
+
+> **resolve**(`objectNumber`, `generationNumber`): [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)
+
+#### Parameters
+
+##### objectNumber
+
+`number`
+
+##### generationNumber
+
+`number`
+
+#### Returns
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)
+
+#### Implementation of
+
+[`IPdfObjectResolver`](../../../core/objects/pdf-object-reference/interfaces/IPdfObjectResolver.md).[`resolve`](../../../core/objects/pdf-object-reference/interfaces/IPdfObjectResolver.md#resolve)
 
 ---
 
@@ -873,6 +991,16 @@ Error if attempting to change version after objects have been added in increment
 
 ---
 
+### sign()
+
+> **sign**(): `Promise`\<`void`\>
+
+#### Returns
+
+`Promise`\<`void`\>
+
+---
+
 ### startNewRevision()
 
 > **startNewRevision**(): `PdfDocument`
@@ -899,6 +1027,10 @@ Serializes the document to a Base64-encoded string.
 `string`
 
 A promise that resolves to the PDF document as a Base64 string
+
+#### Inherited from
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`toBase64`](../../../core/objects/pdf-object/classes/PdfObject.md#tobase64)
 
 ---
 
@@ -999,7 +1131,7 @@ A promise that resolves to the verification result
 
 ### fromBytes()
 
-> `static` **fromBytes**(`input`): `Promise`\<`PdfDocument`\>
+> `static` **fromBytes**(`input`, `options?`): `Promise`\<`PdfDocument`\>
 
 Creates a PdfDocument from a byte stream.
 
@@ -1010,6 +1142,20 @@ Creates a PdfDocument from a byte stream.
 Async or sync iterable of byte arrays
 
 `Iterable`\<[`ByteArray`](../../../types/type-aliases/ByteArray.md), `any`, `any`\> | `AsyncIterable`\<[`ByteArray`](../../../types/type-aliases/ByteArray.md), `any`, `any`\>
+
+##### options?
+
+###### incremental?
+
+`boolean`
+
+###### ownerPassword?
+
+`string`
+
+###### password?
+
+`string`
 
 #### Returns
 

@@ -11,6 +11,13 @@ import { PdfAcroForm } from '../../src/acroform/pdf-acro-form'
 import { PdfDocument } from '../../src/pdf/pdf-document'
 import { server } from 'vitest/browser'
 import { ByteArray } from '../../src/types'
+import { PdfJavaScriptEngine } from '../../src/acroform/js/pdf-js-engine-impl'
+import {
+    createBuiltins,
+    printd,
+    scand,
+    printf,
+} from '../../src/acroform/js/pdf-js-builtins'
 import type {
     PdfJsEngine,
     PdfJsEvent,
@@ -36,7 +43,7 @@ describe('PdfJavaScriptAction', () => {
         dict.set('S', new PdfName('JavaScript'))
         dict.set('JS', new PdfString('event.value = "hello";'))
 
-        const action = new PdfJavaScriptAction({ dict })
+        const action = new PdfJavaScriptAction(dict)
         expect(action.code).toBe('event.value = "hello";')
     })
 
@@ -48,7 +55,7 @@ describe('PdfJavaScriptAction', () => {
         dict.set('S', new PdfName('JavaScript'))
         dict.set('JS', stream)
 
-        const action = new PdfJavaScriptAction({ dict })
+        const action = new PdfJavaScriptAction(dict)
         expect(action.code).toBe(jsCode)
     })
 
@@ -56,7 +63,7 @@ describe('PdfJavaScriptAction', () => {
         const dict = new PdfDictionary()
         dict.set('S', new PdfName('JavaScript'))
 
-        const action = new PdfJavaScriptAction({ dict })
+        const action = new PdfJavaScriptAction(dict)
         expect(action.code).toBeNull()
     })
 
@@ -72,7 +79,7 @@ describe('PdfJavaScriptAction', () => {
         dict.set('S', new PdfName('JavaScript'))
         dict.set('JS', new PdfString('event.value = "test";'))
 
-        const action = new PdfJavaScriptAction({ dict, engine })
+        const action = new PdfJavaScriptAction(dict, { engine })
         const event: PdfJsEvent = {
             fieldName: 'MyField',
             value: 'original',
@@ -89,7 +96,7 @@ describe('PdfJavaScriptAction', () => {
         const dict = new PdfDictionary()
         dict.set('JS', new PdfString('some code'))
 
-        const action = new PdfJavaScriptAction({ dict })
+        const action = new PdfJavaScriptAction(dict)
         const event: PdfJsEvent = {
             fieldName: 'F',
             value: '',
@@ -107,7 +114,7 @@ describe('PdfJavaScriptAction', () => {
         }
 
         const dict = new PdfDictionary()
-        const action = new PdfJavaScriptAction({ dict, engine })
+        const action = new PdfJavaScriptAction(dict, { engine })
         const event: PdfJsEvent = {
             fieldName: 'F',
             value: '',
@@ -115,6 +122,33 @@ describe('PdfJavaScriptAction', () => {
         }
         action.execute(event)
         expect(calls).toHaveLength(0)
+    })
+
+    it('dict.becomes(PdfJavaScriptAction) returns action with correct code', () => {
+        const dict = new PdfDictionary()
+        dict.set('S', new PdfName('JavaScript'))
+        dict.set('JS', new PdfString('event.value = "hi";'))
+
+        const action = dict.becomes(PdfJavaScriptAction)
+        expect(action).toBeInstanceOf(PdfJavaScriptAction)
+        expect(action.code).toBe('event.value = "hi";')
+    })
+
+    it('dict.becomes(PdfJavaScriptAction, { engine }) threads engine', () => {
+        const calls: string[] = []
+        const engine: PdfJsEngine = {
+            execute(code) {
+                calls.push(code)
+            },
+        }
+
+        const dict = new PdfDictionary()
+        dict.set('S', new PdfName('JavaScript'))
+        dict.set('JS', new PdfString('x = 1;'))
+
+        const action = dict.becomes(PdfJavaScriptAction, { engine })
+        action.execute({ fieldName: 'F', value: '', rc: true })
+        expect(calls).toEqual(['x = 1;'])
     })
 })
 
@@ -134,7 +168,7 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         aa.set('V', makeActionDict('/* validate */'))
 
-        const actions = new PdfFieldActions({ dict: aa })
+        const actions = new PdfFieldActions(aa)
         expect(actions.validate).not.toBeNull()
         expect(actions.validate!.code).toBe('/* validate */')
     })
@@ -143,7 +177,7 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         aa.set('K', makeActionDict('/* keystroke */'))
 
-        const actions = new PdfFieldActions({ dict: aa })
+        const actions = new PdfFieldActions(aa)
         expect(actions.keystroke).not.toBeNull()
         expect(actions.keystroke!.code).toBe('/* keystroke */')
     })
@@ -152,7 +186,7 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         aa.set('C', makeActionDict('/* calculate */'))
 
-        const actions = new PdfFieldActions({ dict: aa })
+        const actions = new PdfFieldActions(aa)
         expect(actions.calculate).not.toBeNull()
         expect(actions.calculate!.code).toBe('/* calculate */')
     })
@@ -161,14 +195,14 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         aa.set('F', makeActionDict('/* format */'))
 
-        const actions = new PdfFieldActions({ dict: aa })
+        const actions = new PdfFieldActions(aa)
         expect(actions.format).not.toBeNull()
         expect(actions.format!.code).toBe('/* format */')
     })
 
     it('returns null for absent action keys', () => {
         const aa = new PdfDictionary()
-        const actions = new PdfFieldActions({ dict: aa })
+        const actions = new PdfFieldActions(aa)
 
         expect(actions.validate).toBeNull()
         expect(actions.keystroke).toBeNull()
@@ -181,7 +215,7 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         const a = makeActionDict('/* activate */')
 
-        const actions = new PdfFieldActions({ dict: aa, activateDict: a })
+        const actions = new PdfFieldActions(aa, { activateDict: a })
         expect(actions.activate).not.toBeNull()
         expect(actions.activate!.code).toBe('/* activate */')
     })
@@ -352,6 +386,37 @@ describe('PdfAcroForm jsEngine integration', () => {
 })
 
 // ---------------------------------------------------------------------------
+// PdfJavaScriptEngine
+// ---------------------------------------------------------------------------
+
+describe('PdfJavaScriptEngine', () => {
+    it('executes code that mutates event.value', () => {
+        const engine = new PdfJavaScriptEngine()
+        const event: PdfJsEvent = {
+            fieldName: 'Name',
+            value: 'hello',
+            rc: true,
+        }
+        engine.execute('event.value = event.value.toUpperCase()', event)
+        expect(event.value).toBe('HELLO')
+    })
+
+    it('provides a frozen app object', () => {
+        const engine = new PdfJavaScriptEngine()
+        const event: PdfJsEvent = {
+            fieldName: 'F',
+            value: '',
+            rc: true,
+        }
+        // Frozen object — assignment silently fails in sloppy mode,
+        // but app.alert must still be the original no-op function
+        engine.execute('app.alert = "replaced"', event)
+        engine.execute('event.value = typeof app.alert', event)
+        expect(event.value).toBe('function')
+    })
+})
+
+// ---------------------------------------------------------------------------
 // Integration: protectedAdobeLivecycle.pdf
 // ---------------------------------------------------------------------------
 
@@ -436,6 +501,45 @@ describe('LiveCycle PDF JS actions', () => {
         }
     })
 
+    it('template.pdf toUpperCase validate action via becomes()', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroForm = document.acroform!
+
+        const field = acroForm.fields.find((f) => f.name === 'Client Name')!
+        expect(field).toBeDefined()
+
+        const actions = field.actions!
+        expect(actions).not.toBeNull()
+        expect(actions.validate).not.toBeNull()
+        expect(actions.validate!.code).toBe(
+            'event.value = event.value.toUpperCase()',
+        )
+    })
+
+    it('template.pdf executes toUpperCase action via PdfJavaScriptEngine', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroForm = document.acroform!
+
+        acroForm.jsEngine = new PdfJavaScriptEngine()
+
+        acroForm.setValues({ 'Client Name': 'hello world' })
+
+        const field = acroForm.fields.find((f) => f.name === 'Client Name')!
+        expect(field.value).toBe('HELLO WORLD')
+    })
+
     it('action.execute() works when engine is threaded through form', () => {
         const calls: { code: string; event: PdfJsEvent }[] = []
         const engine: PdfJsEngine = {
@@ -467,5 +571,249 @@ describe('LiveCycle PDF JS actions', () => {
         expect(calls).toHaveLength(1)
         expect(calls[0].code).toBe('/* direct validate */')
         expect(calls[0].event.fieldName).toBe('Direct')
+    })
+})
+
+// ---------------------------------------------------------------------------
+// util builtins
+// ---------------------------------------------------------------------------
+
+describe('util.printd', () => {
+    const date = new Date(2025, 0, 15, 14, 30, 5) // Jan 15, 2025 14:30:05
+
+    it('formats mm/dd/yyyy', () => {
+        expect(printd('mm/dd/yyyy', date)).toBe('01/15/2025')
+    })
+
+    it('formats d-mmm-yy', () => {
+        expect(printd('d-mmm-yy', date)).toBe('15-Jan-25')
+    })
+
+    it('formats with full month and day names', () => {
+        expect(printd('dddd, mmmm dd, yyyy', date)).toBe(
+            'Wednesday, January 15, 2025',
+        )
+    })
+
+    it('formats 24-hour time', () => {
+        expect(printd('HH:MM:ss', date)).toBe('14:30:05')
+    })
+
+    it('formats 12-hour time with AM/PM', () => {
+        expect(printd('hh:MM tt', date)).toBe('02:30 PM')
+    })
+})
+
+describe('util.scand', () => {
+    it('parses mm/dd/yyyy', () => {
+        const d = scand('mm/dd/yyyy', '01/15/2025')
+        expect(d).not.toBeNull()
+        expect(d!.getFullYear()).toBe(2025)
+        expect(d!.getMonth()).toBe(0)
+        expect(d!.getDate()).toBe(15)
+    })
+
+    it('parses dd-mmm-yyyy', () => {
+        const d = scand('dd-mmm-yyyy', '15-Jan-2025')
+        expect(d).not.toBeNull()
+        expect(d!.getMonth()).toBe(0)
+        expect(d!.getDate()).toBe(15)
+    })
+
+    it('returns null for non-matching string', () => {
+        expect(scand('mm/dd/yyyy', 'not-a-date')).toBeNull()
+    })
+})
+
+describe('util.printf', () => {
+    it('formats float with precision', () => {
+        expect(printf('%.2f', 3.1)).toBe('3.10')
+    })
+
+    it('formats integer', () => {
+        expect(printf('%d', 42)).toBe('42')
+    })
+
+    it('formats string', () => {
+        expect(printf('Hello %s!', 'world')).toBe('Hello world!')
+    })
+
+    it('formats with width padding', () => {
+        expect(printf('%05d', 42)).toBe('00042')
+    })
+
+    it('handles %% escape', () => {
+        expect(printf('%d%%', 100)).toBe('100%')
+    })
+})
+
+// ---------------------------------------------------------------------------
+// AF* builtins
+// ---------------------------------------------------------------------------
+
+describe('AFNumber_Format', () => {
+    it('formats number with currency and commas', () => {
+        const event: PdfJsEvent = { fieldName: 'F', value: '1234.5', rc: true }
+        const builtins = createBuiltins(event)
+        const fn = builtins.AFNumber_Format as Function
+        fn(2, 0, 0, 0, '$', true)
+        expect(event.value).toBe('$1,234.50')
+    })
+
+    it('formats negative with parentheses (negStyle=2)', () => {
+        const event: PdfJsEvent = { fieldName: 'F', value: '-500', rc: true }
+        const builtins = createBuiltins(event)
+        const fn = builtins.AFNumber_Format as Function
+        fn(2, 0, 2, 0, '', false)
+        expect(event.value).toBe('(500.00)')
+    })
+
+    it('formats without thousand separator (sepStyle=1)', () => {
+        const event: PdfJsEvent = { fieldName: 'F', value: '1234567', rc: true }
+        const builtins = createBuiltins(event)
+        const fn = builtins.AFNumber_Format as Function
+        fn(0, 1, 0, 0, '', false)
+        expect(event.value).toBe('1234567')
+    })
+})
+
+describe('AFDate_FormatEx', () => {
+    it('reformats a date string', () => {
+        const event: PdfJsEvent = {
+            fieldName: 'F',
+            value: '2025-01-15',
+            rc: true,
+        }
+        const builtins = createBuiltins(event)
+        const fn = builtins.AFDate_FormatEx as Function
+        fn('mm/dd/yyyy')
+        expect(event.value).toBe('01/15/2025')
+    })
+})
+
+describe('AFSimple_Calculate', () => {
+    it('computes SUM from field values', () => {
+        const event: PdfJsEvent = { fieldName: 'Total', value: '', rc: true }
+        const resolver = (name: string) => {
+            const vals: Record<string, string> = { A: '10', B: '20.5' }
+            return vals[name] ?? '0'
+        }
+        const builtins = createBuiltins(event, resolver)
+        const fn = builtins.AFSimple_Calculate as Function
+        fn('SUM', ['A', 'B'])
+        expect(event.value).toBe('30.5')
+    })
+
+    it('computes AVG', () => {
+        const event: PdfJsEvent = { fieldName: 'Avg', value: '', rc: true }
+        const resolver = (name: string) => {
+            const vals: Record<string, string> = { A: '10', B: '20' }
+            return vals[name] ?? '0'
+        }
+        const builtins = createBuiltins(event, resolver)
+        const fn = builtins.AFSimple_Calculate as Function
+        fn('AVG', ['A', 'B'])
+        expect(event.value).toBe('15')
+    })
+
+    it('computes PRD', () => {
+        const event: PdfJsEvent = { fieldName: 'P', value: '', rc: true }
+        const resolver = (name: string) => {
+            const vals: Record<string, string> = { A: '3', B: '4' }
+            return vals[name] ?? '0'
+        }
+        const builtins = createBuiltins(event, resolver)
+        const fn = builtins.AFSimple_Calculate as Function
+        fn('PRD', ['A', 'B'])
+        expect(event.value).toBe('12')
+    })
+
+    it('computes MIN and MAX', () => {
+        const resolver = (name: string) => {
+            const vals: Record<string, string> = { A: '5', B: '3', C: '8' }
+            return vals[name] ?? '0'
+        }
+        const eventMin: PdfJsEvent = { fieldName: 'Min', value: '', rc: true }
+        const bMin = createBuiltins(eventMin, resolver)
+        ;(bMin.AFSimple_Calculate as Function)('MIN', ['A', 'B', 'C'])
+        expect(eventMin.value).toBe('3')
+
+        const eventMax: PdfJsEvent = { fieldName: 'Max', value: '', rc: true }
+        const bMax = createBuiltins(eventMax, resolver)
+        ;(bMax.AFSimple_Calculate as Function)('MAX', ['A', 'B', 'C'])
+        expect(eventMax.value).toBe('8')
+    })
+})
+
+describe('AFSpecial_Format', () => {
+    it('formats phone number (psf=2)', () => {
+        const event: PdfJsEvent = {
+            fieldName: 'F',
+            value: '1234567890',
+            rc: true,
+        }
+        const builtins = createBuiltins(event)
+        const fn = builtins.AFSpecial_Format as Function
+        fn(2)
+        expect(event.value).toBe('(123) 456-7890')
+    })
+
+    it('formats SSN (psf=1)', () => {
+        const event: PdfJsEvent = {
+            fieldName: 'F',
+            value: '123456789',
+            rc: true,
+        }
+        const builtins = createBuiltins(event)
+        const fn = builtins.AFSpecial_Format as Function
+        fn(1)
+        expect(event.value).toBe('123-45-6789')
+    })
+
+    it('formats zip code (psf=0)', () => {
+        const event: PdfJsEvent = { fieldName: 'F', value: '12345', rc: true }
+        const builtins = createBuiltins(event)
+        const fn = builtins.AFSpecial_Format as Function
+        fn(0)
+        expect(event.value).toBe('12345')
+    })
+})
+
+// ---------------------------------------------------------------------------
+// Integration: engine executes AFNumber_Format code
+// ---------------------------------------------------------------------------
+
+describe('PdfJavaScriptEngine with builtins', () => {
+    it('executes AFNumber_Format via engine', () => {
+        const engine = new PdfJavaScriptEngine()
+        const event: PdfJsEvent = {
+            fieldName: 'Amount',
+            value: '1234.5',
+            rc: true,
+        }
+        engine.execute('AFNumber_Format(2, 0, 0, 0, "$", true)', event)
+        expect(event.value).toBe('$1,234.50')
+    })
+
+    it('executes util.printd via engine', () => {
+        const engine = new PdfJavaScriptEngine()
+        const event: PdfJsEvent = { fieldName: 'F', value: '', rc: true }
+        engine.execute(
+            'event.value = util.printd("mm/dd/yyyy", new Date(2025, 0, 15))',
+            event,
+        )
+        expect(event.value).toBe('01/15/2025')
+    })
+
+    it('AFSimple_Calculate works with getFieldValue', () => {
+        const engine = new PdfJavaScriptEngine({
+            getFieldValue: (name) => {
+                const vals: Record<string, string> = { A: '10', B: '20' }
+                return vals[name] ?? '0'
+            },
+        })
+        const event: PdfJsEvent = { fieldName: 'Total', value: '', rc: true }
+        engine.execute('AFSimple_Calculate("SUM", ["A", "B"])', event)
+        expect(event.value).toBe('30')
     })
 })

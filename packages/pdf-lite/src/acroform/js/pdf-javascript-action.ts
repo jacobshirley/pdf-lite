@@ -12,10 +12,10 @@ export class PdfJavaScriptAction extends PdfDictionary<{
 }> {
     engine?: PdfJsEngine
 
-    constructor(options: { dict: PdfDictionary; engine?: PdfJsEngine }) {
+    constructor(dict: PdfDictionary, options?: { engine?: PdfJsEngine }) {
         super()
-        this.copyFrom(options.dict)
-        this.engine = options.engine
+        this.copyFrom(dict)
+        this.engine = options?.engine
     }
 
     get code(): string | null {

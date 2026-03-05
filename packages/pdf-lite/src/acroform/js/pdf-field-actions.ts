@@ -7,15 +7,17 @@ export class PdfFieldActions extends PdfDictionary {
     private readonly activateDict?: PdfDictionary
     readonly engine?: PdfJsEngine
 
-    constructor(options: {
-        dict: PdfDictionary
-        activateDict?: PdfDictionary
-        engine?: PdfJsEngine
-    }) {
+    constructor(
+        dict: PdfDictionary,
+        options?: {
+            activateDict?: PdfDictionary
+            engine?: PdfJsEngine
+        },
+    ) {
         super()
-        this.copyFrom(options.dict)
-        this.activateDict = options.activateDict
-        this.engine = options.engine
+        this.copyFrom(dict)
+        this.activateDict = options?.activateDict
+        this.engine = options?.engine
     }
 
     private _resolve(key: string): PdfJavaScriptAction | null {
@@ -31,8 +33,7 @@ export class PdfFieldActions extends PdfDictionary {
             actionDict = entry
         }
         if (!actionDict) return null
-        return new PdfJavaScriptAction({
-            dict: actionDict,
+        return actionDict.becomes(PdfJavaScriptAction, {
             engine: this.engine,
         })
     }
@@ -55,8 +56,7 @@ export class PdfFieldActions extends PdfDictionary {
 
     get activate(): PdfJavaScriptAction | null {
         if (!this.activateDict) return null
-        return new PdfJavaScriptAction({
-            dict: this.activateDict,
+        return this.activateDict.becomes(PdfJavaScriptAction, {
             engine: this.engine,
         })
     }

@@ -158,9 +158,9 @@ export class PdfAcroForm<
         for (const field of this.fields) {
             const name = field.name
             if (name in values && values[name] !== undefined) {
-                const newValue = values[name]
-                if (!this._fireValidate(field, newValue)) continue
-                field.value = newValue
+                const result = this._fireValidate(field, values[name])
+                if (!result.rc) continue
+                field.value = result.value
             }
         }
         this._fireCalculate()
@@ -170,17 +170,20 @@ export class PdfAcroForm<
         for (const field of this.fields) {
             const name = field.name
             if (name && name in fields) {
-                const newValue = fields[name]
-                if (!this._fireValidate(field, newValue)) continue
-                field.value = newValue
+                const result = this._fireValidate(field, fields[name])
+                if (!result.rc) continue
+                field.value = result.value
             }
         }
         this._fireCalculate()
     }
 
-    private _fireValidate(field: PdfFormField, value: string): boolean {
+    private _fireValidate(
+        field: PdfFormField,
+        value: string,
+    ): { rc: boolean; value: string } {
         const validateAction = field.actions?.validate
-        if (!validateAction?.code) return true
+        if (!validateAction?.code) return { rc: true, value }
         const event: PdfJsEvent = {
             fieldName: field.name,
             value,
@@ -188,7 +191,7 @@ export class PdfAcroForm<
             rc: true,
         }
         validateAction.execute(event)
-        return event.rc
+        return { rc: event.rc, value: event.value }
     }
 
     private _fireCalculate(): void {

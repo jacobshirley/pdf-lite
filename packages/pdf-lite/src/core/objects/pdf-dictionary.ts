@@ -168,6 +168,22 @@ export class PdfDictionary<
         ]
     }
 
+    /** Factory-style type conversion: constructs a new instance passing `this` as the first argument */
+    becomes<U extends PdfDictionary, A extends unknown[]>(
+        cls: new (source: PdfDictionary, ...args: A) => U,
+        ...args: A
+    ): U {
+        if (this instanceof cls) return this as unknown as U
+        const donor = new cls(this, ...args)
+        Object.setPrototypeOf(this, cls.prototype)
+        for (const key of Object.getOwnPropertyNames(donor)) {
+            if (!Object.prototype.hasOwnProperty.call(this, key)) {
+                ;(this as any)[key] = (donor as any)[key]
+            }
+        }
+        return this as unknown as U
+    }
+
     copyFrom(other: PdfDictionary<any>) {
         for (const [key, value] of other.#entries) {
             this.#entries.set(key, value)

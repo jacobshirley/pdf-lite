@@ -580,8 +580,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             aDict = a
         }
 
-        return new PdfFieldActions({
-            dict: aaDict,
+        return aaDict.becomes(PdfFieldActions, {
             activateDict: aDict,
             engine: this._form?.jsEngine,
         })
@@ -599,8 +598,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             aDict = a
         }
         if (!aDict) return null
-        return new PdfJavaScriptAction({
-            dict: aDict,
+        return aDict.becomes(PdfJavaScriptAction, {
             engine: this._form?.jsEngine,
         })
     }

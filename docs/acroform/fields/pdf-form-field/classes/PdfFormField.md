@@ -257,6 +257,21 @@ Optional tokens to prepend or append during serialization
 
 ---
 
+### appearanceStates
+
+#### Get Signature
+
+> **get** **appearanceStates**(): `string`[]
+
+Returns the list of appearance state names from the normal appearance
+dictionary (e.g. ["Yes", "Off"] for a checkbox).
+
+##### Returns
+
+`string`[]
+
+---
+
 ### appearanceStreamDict
 
 #### Get Signature

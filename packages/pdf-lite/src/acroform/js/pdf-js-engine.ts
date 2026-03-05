@@ -1,0 +1,11 @@
+export interface PdfJsEvent {
+    fieldName: string
+    value: string
+    willCommit?: boolean
+    rc: boolean
+    changeEx?: string
+}
+
+export interface PdfJsEngine {
+    execute(code: string, event: PdfJsEvent): void
+}

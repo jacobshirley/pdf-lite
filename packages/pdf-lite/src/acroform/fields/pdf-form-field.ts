@@ -16,6 +16,8 @@ import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
 import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-resources.js'
 import type { PdfAcroForm } from '../pdf-acro-form.js'
 import { PdfPage } from '../../pdf/pdf-page.js'
+import { PdfFieldActions } from '../js/pdf-field-actions.js'
+import { PdfJavaScriptAction } from '../js/pdf-javascript-action.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -551,6 +553,37 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
         const kidsArray = new PdfArray<PdfObjectReference>(kids)
         this.content.set('Kids', kidsArray)
+    }
+
+    private _resolveActionDict(key: 'AA' | 'A'): PdfDictionary | undefined {
+        const entry = this.content.get(key)
+        if (entry instanceof PdfObjectReference) {
+            const resolved = entry.resolve()
+            if (resolved?.content instanceof PdfDictionary) {
+                return resolved.content
+            }
+        } else if (entry instanceof PdfDictionary) {
+            return entry
+        }
+        return undefined
+    }
+
+    get actions(): PdfFieldActions | null {
+        const aaDict = this._resolveActionDict('AA')
+        if (!aaDict) return null
+
+        return aaDict.becomes(PdfFieldActions, {
+            activateDict: this._resolveActionDict('A'),
+            engine: this._form?.jsEngine,
+        })
+    }
+
+    get activateAction(): PdfJavaScriptAction | null {
+        const aDict = this._resolveActionDict('A')
+        if (!aDict) return null
+        return aDict.becomes(PdfJavaScriptAction, {
+            engine: this._form?.jsEngine,
+        })
     }
 
     abstract generateAppearance(options?: {

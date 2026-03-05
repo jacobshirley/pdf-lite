@@ -198,12 +198,17 @@ export class PdfAcroForm<
         const co = this.content.get('CO')
         if (!(co instanceof PdfArray)) return
         const allFields = this.fields
-        for (const ref of co.items as PdfObjectReference[]) {
-            const resolved = ref.resolve()
+        const fieldsByObjNum = new Map<number, PdfFormField>()
+        for (const field of allFields) {
+            if (field.objectNumber != null) {
+                fieldsByObjNum.set(field.objectNumber, field)
+            }
+        }
+        for (const item of co.items) {
+            if (!(item instanceof PdfObjectReference)) continue
+            const resolved = item.resolve()
             if (!resolved) continue
-            const field = allFields.find(
-                (f) => f.objectNumber === resolved.objectNumber,
-            )
+            const field = fieldsByObjNum.get(resolved.objectNumber)
             if (!field) continue
             const calcAction = field.actions?.calculate
             if (!calcAction?.code) continue

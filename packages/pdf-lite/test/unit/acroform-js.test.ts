@@ -490,6 +490,7 @@ describe('LiveCycle PDF JS actions', () => {
         const textField = acroForm.fields.find(
             (f) => f.fieldType === 'Text' && f.name,
         )
+        // Fixture may not have a named text field — skip the rest if so
         if (!textField) return
 
         // Setting a value should not throw, even if no JS actions exist

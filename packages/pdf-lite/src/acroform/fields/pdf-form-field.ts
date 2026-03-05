@@ -555,48 +555,31 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         this.content.set('Kids', kidsArray)
     }
 
-    get actions(): PdfFieldActions | null {
-        const aa = this.content.get('AA')
-        let aaDict: PdfDictionary | undefined
-        if (aa instanceof PdfObjectReference) {
-            const resolved = aa.resolve()
+    private _resolveActionDict(key: 'AA' | 'A'): PdfDictionary | undefined {
+        const entry = this.content.get(key)
+        if (entry instanceof PdfObjectReference) {
+            const resolved = entry.resolve()
             if (resolved?.content instanceof PdfDictionary) {
-                aaDict = resolved.content
+                return resolved.content
             }
-        } else if (aa instanceof PdfDictionary) {
-            aaDict = aa
+        } else if (entry instanceof PdfDictionary) {
+            return entry
         }
+        return undefined
+    }
+
+    get actions(): PdfFieldActions | null {
+        const aaDict = this._resolveActionDict('AA')
         if (!aaDict) return null
 
-        // Also resolve the /A (activate) action dict
-        const a = this.content.get('A')
-        let aDict: PdfDictionary | undefined
-        if (a instanceof PdfObjectReference) {
-            const resolved = a.resolve()
-            if (resolved?.content instanceof PdfDictionary) {
-                aDict = resolved.content
-            }
-        } else if (a instanceof PdfDictionary) {
-            aDict = a
-        }
-
         return aaDict.becomes(PdfFieldActions, {
-            activateDict: aDict,
+            activateDict: this._resolveActionDict('A'),
             engine: this._form?.jsEngine,
         })
     }
 
     get activateAction(): PdfJavaScriptAction | null {
-        const a = this.content.get('A')
-        let aDict: PdfDictionary | undefined
-        if (a instanceof PdfObjectReference) {
-            const resolved = a.resolve()
-            if (resolved?.content instanceof PdfDictionary) {
-                aDict = resolved.content
-            }
-        } else if (a instanceof PdfDictionary) {
-            aDict = a
-        }
+        const aDict = this._resolveActionDict('A')
         if (!aDict) return null
         return aDict.becomes(PdfJavaScriptAction, {
             engine: this._form?.jsEngine,

@@ -14,6 +14,8 @@
 
 - [`PdfDefaultResourcesDictionary`](../../../../annotations/pdf-default-resources/classes/PdfDefaultResourcesDictionary.md)
 - [`PdfDocumentSecurityStoreDictionary`](../../../../signing/document-security-store/classes/PdfDocumentSecurityStoreDictionary.md)
+- [`PdfFieldActions`](../../../../acroform/js/pdf-field-actions/classes/PdfFieldActions.md)
+- [`PdfJavaScriptAction`](../../../../acroform/js/pdf-javascript-action/classes/PdfJavaScriptAction.md)
 - [`PdfStreamPredictor`](../../pdf-stream/classes/PdfStreamPredictor.md)
 - [`PdfSignatureDictionary`](../../../../signing/signatures/base/classes/PdfSignatureDictionary.md)
 
@@ -186,6 +188,38 @@ Attempts to cast the object to a specific PdfObject subclass
 #### Inherited from
 
 [`PdfObject`](../../pdf-object/classes/PdfObject.md).[`as`](../../pdf-object/classes/PdfObject.md#as)
+
+---
+
+### becomes()
+
+> **becomes**\<`U`, `A`\>(`cls`, ...`args`): `U`
+
+Factory-style type conversion: constructs a new instance passing `this` as the first argument
+
+#### Type Parameters
+
+##### U
+
+`U` _extends_ `PdfDictionary`\<[`PdfDictionaryEntries`](../type-aliases/PdfDictionaryEntries.md)\>
+
+##### A
+
+`A` _extends_ `unknown`[]
+
+#### Parameters
+
+##### cls
+
+(`source`, ...`args`) => `U`
+
+##### args
+
+...`A`
+
+#### Returns
+
+`U`
 
 ---
 

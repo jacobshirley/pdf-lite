@@ -2,36 +2,39 @@
 
 ---
 
-[pdf-lite](../../../../README.md) / [signing/signatures/base](../README.md) / PdfSignatureDictionary
+[pdf-lite](../../../../README.md) / [acroform/js/pdf-field-actions](../README.md) / PdfFieldActions
 
-# Class: PdfSignatureDictionary
-
-PDF signature dictionary containing all signature-related entries.
-Manages the ByteRange and Contents fields with appropriate placeholder sizing.
+# Class: PdfFieldActions
 
 ## Extends
 
-- [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)\>
+- [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new PdfSignatureDictionary**(`entries`): `PdfSignatureDictionary`
-
-Creates a new signature dictionary.
+> **new PdfFieldActions**(`dict`, `options?`): `PdfFieldActions`
 
 #### Parameters
 
-##### entries
+##### dict
 
-`Omit`\<[`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md), `"Contents"` \| `"ByteRange"`\> & `object`
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)
 
-The signature dictionary entries, ByteRange and Contents are auto-populated if not provided.
+##### options?
+
+###### activateDict?
+
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>
+
+###### engine?
+
+[`PdfJsEngine`](../../pdf-js-engine/interfaces/PdfJsEngine.md)
 
 #### Returns
 
-`PdfSignatureDictionary`
+`PdfFieldActions`
 
 #### Overrides
 
@@ -48,6 +51,12 @@ Cached byte representation of the object, if available
 #### Inherited from
 
 [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`cachedTokens`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#cachedtokens)
+
+---
+
+### engine?
+
+> `readonly` `optional` **engine**: [`PdfJsEngine`](../../pdf-js-engine/interfaces/PdfJsEngine.md)
 
 ---
 
@@ -109,6 +118,42 @@ Optional tokens to prepend or append during serialization
 
 ## Accessors
 
+### activate
+
+#### Get Signature
+
+> **get** **activate**(): [`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+##### Returns
+
+[`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+---
+
+### calculate
+
+#### Get Signature
+
+> **get** **calculate**(): [`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+##### Returns
+
+[`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+---
+
+### format
+
+#### Get Signature
+
+> **get** **format**(): [`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+##### Returns
+
+[`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+---
+
 ### isTrailingDelimited
 
 #### Get Signature
@@ -129,6 +174,18 @@ whitespace before the next token.
 
 ---
 
+### keystroke
+
+#### Get Signature
+
+> **get** **keystroke**(): [`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+##### Returns
+
+[`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+---
+
 ### objectType
 
 #### Get Signature
@@ -144,6 +201,18 @@ The type of this PDF object
 #### Inherited from
 
 [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`objectType`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#objecttype)
+
+---
+
+### validate
+
+#### Get Signature
+
+> **get** **validate**(): [`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+##### Returns
+
+[`PdfJavaScriptAction`](../../pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
 
 ---
 
@@ -287,7 +356,7 @@ Creates a deep clone of the object. Override this method in subclasses to ensure
 
 ##### K
 
-`K` _extends_ keyof [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)
+`K` _extends_ `string`
 
 #### Parameters
 
@@ -346,13 +415,13 @@ Compares this object to another for equality based on their token representation
 
 ### get()
 
-> **get**\<`K`\>(`key`): [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)\[`K`\] \| `undefined`
+> **get**\<`K`\>(`key`): [`PdfDictionaryEntry`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntry.md)
 
 #### Type Parameters
 
 ##### K
 
-`K` _extends_ keyof [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)
+`K` _extends_ `string`
 
 #### Parameters
 
@@ -362,7 +431,7 @@ Compares this object to another for equality based on their token representation
 
 #### Returns
 
-[`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)\[`K`\] \| `undefined`
+[`PdfDictionaryEntry`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntry.md)
 
 #### Inherited from
 
@@ -378,7 +447,7 @@ Compares this object to another for equality based on their token representation
 
 ##### K
 
-`K` _extends_ keyof [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)
+`K` _extends_ `string`
 
 #### Parameters
 
@@ -436,7 +505,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### K
 
-`K` _extends_ keyof [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)
+`K` _extends_ `string`
 
 #### Parameters
 
@@ -446,7 +515,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### value
 
-[`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)\[`K`\]
+[`PdfDictionaryEntry`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntry.md)
 
 #### Returns
 

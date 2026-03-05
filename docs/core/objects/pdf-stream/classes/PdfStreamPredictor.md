@@ -342,6 +342,42 @@ Attempts to cast the object to a specific PdfObject subclass
 
 ---
 
+### becomes()
+
+> **becomes**\<`U`, `A`\>(`cls`, ...`args`): `U`
+
+Factory-style type conversion: constructs a new instance passing `this` as the first argument
+
+#### Type Parameters
+
+##### U
+
+`U` _extends_ [`PdfDictionary`](../../pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>
+
+##### A
+
+`A` _extends_ `unknown`[]
+
+#### Parameters
+
+##### cls
+
+(`source`, ...`args`) => `U`
+
+##### args
+
+...`A`
+
+#### Returns
+
+`U`
+
+#### Inherited from
+
+[`PdfDictionary`](../../pdf-dictionary/classes/PdfDictionary.md).[`becomes`](../../pdf-dictionary/classes/PdfDictionary.md#becomes)
+
+---
+
 ### clone()
 
 > **clone**(): `this`

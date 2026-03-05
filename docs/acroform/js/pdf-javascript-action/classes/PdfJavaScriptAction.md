@@ -2,36 +2,35 @@
 
 ---
 
-[pdf-lite](../../../../README.md) / [signing/signatures/base](../README.md) / PdfSignatureDictionary
+[pdf-lite](../../../../README.md) / [acroform/js/pdf-javascript-action](../README.md) / PdfJavaScriptAction
 
-# Class: PdfSignatureDictionary
-
-PDF signature dictionary containing all signature-related entries.
-Manages the ByteRange and Contents fields with appropriate placeholder sizing.
+# Class: PdfJavaScriptAction
 
 ## Extends
 
-- [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)\>
+- [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<\{ `JS?`: [`PdfString`](../../../../core/objects/pdf-string/classes/PdfString.md) \| [`PdfStream`](../../../../core/objects/pdf-stream/classes/PdfStream.md) \| [`PdfObjectReference`](../../../../core/objects/pdf-object-reference/classes/PdfObjectReference.md); `S?`: [`PdfName`](../../../../core/objects/pdf-name/classes/PdfName.md); \}\>
 
 ## Constructors
 
 ### Constructor
 
-> **new PdfSignatureDictionary**(`entries`): `PdfSignatureDictionary`
-
-Creates a new signature dictionary.
+> **new PdfJavaScriptAction**(`dict`, `options?`): `PdfJavaScriptAction`
 
 #### Parameters
 
-##### entries
+##### dict
 
-`Omit`\<[`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md), `"Contents"` \| `"ByteRange"`\> & `object`
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)
 
-The signature dictionary entries, ByteRange and Contents are auto-populated if not provided.
+##### options?
+
+###### engine?
+
+[`PdfJsEngine`](../../pdf-js-engine/interfaces/PdfJsEngine.md)
 
 #### Returns
 
-`PdfSignatureDictionary`
+`PdfJavaScriptAction`
 
 #### Overrides
 
@@ -48,6 +47,12 @@ Cached byte representation of the object, if available
 #### Inherited from
 
 [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`cachedTokens`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#cachedtokens)
+
+---
+
+### engine?
+
+> `optional` **engine**: [`PdfJsEngine`](../../pdf-js-engine/interfaces/PdfJsEngine.md)
 
 ---
 
@@ -108,6 +113,18 @@ Optional tokens to prepend or append during serialization
 [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`preTokens`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#pretokens)
 
 ## Accessors
+
+### code
+
+#### Get Signature
+
+> **get** **code**(): `string` \| `null`
+
+##### Returns
+
+`string` \| `null`
+
+---
 
 ### isTrailingDelimited
 
@@ -287,7 +304,7 @@ Creates a deep clone of the object. Override this method in subclasses to ensure
 
 ##### K
 
-`K` _extends_ keyof [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)
+`K` _extends_ `"S"` \| `"JS"`
 
 #### Parameters
 
@@ -344,15 +361,31 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### execute()
+
+> **execute**(`event`): `void`
+
+#### Parameters
+
+##### event
+
+[`PdfJsEvent`](../../pdf-js-engine/interfaces/PdfJsEvent.md)
+
+#### Returns
+
+`void`
+
+---
+
 ### get()
 
-> **get**\<`K`\>(`key`): [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)\[`K`\] \| `undefined`
+> **get**\<`K`\>(`key`): `object`\[`K`\] \| `undefined`
 
 #### Type Parameters
 
 ##### K
 
-`K` _extends_ keyof [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)
+`K` _extends_ `"S"` \| `"JS"`
 
 #### Parameters
 
@@ -362,7 +395,7 @@ Compares this object to another for equality based on their token representation
 
 #### Returns
 
-[`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)\[`K`\] \| `undefined`
+`object`\[`K`\] \| `undefined`
 
 #### Inherited from
 
@@ -378,7 +411,7 @@ Compares this object to another for equality based on their token representation
 
 ##### K
 
-`K` _extends_ keyof [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)
+`K` _extends_ `"S"` \| `"JS"`
 
 #### Parameters
 
@@ -436,7 +469,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### K
 
-`K` _extends_ keyof [`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)
+`K` _extends_ `"S"` \| `"JS"`
 
 #### Parameters
 
@@ -446,7 +479,7 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ##### value
 
-[`PdfSignatureDictionaryEntries`](../../../types/type-aliases/PdfSignatureDictionaryEntries.md)\[`K`\]
+`object`\[`K`\]
 
 #### Returns
 

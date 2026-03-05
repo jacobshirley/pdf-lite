@@ -108,6 +108,12 @@ Indicates whether the object is immutable (cannot be modified)
 
 ---
 
+### jsEngine?
+
+> `optional` **jsEngine**: [`PdfJsEngine`](../../js/pdf-js-engine/interfaces/PdfJsEngine.md)
+
+---
+
 ### modified
 
 > `protected` **modified**: `boolean` = `true`

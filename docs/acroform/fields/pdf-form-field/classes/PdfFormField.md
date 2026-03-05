@@ -197,6 +197,30 @@ Optional tokens to prepend or append during serialization
 
 ## Accessors
 
+### actions
+
+#### Get Signature
+
+> **get** **actions**(): [`PdfFieldActions`](../../../js/pdf-field-actions/classes/PdfFieldActions.md) \| `null`
+
+##### Returns
+
+[`PdfFieldActions`](../../../js/pdf-field-actions/classes/PdfFieldActions.md) \| `null`
+
+---
+
+### activateAction
+
+#### Get Signature
+
+> **get** **activateAction**(): [`PdfJavaScriptAction`](../../../js/pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+##### Returns
+
+[`PdfJavaScriptAction`](../../../js/pdf-javascript-action/classes/PdfJavaScriptAction.md) \| `null`
+
+---
+
 ### annotationFlags
 
 #### Get Signature

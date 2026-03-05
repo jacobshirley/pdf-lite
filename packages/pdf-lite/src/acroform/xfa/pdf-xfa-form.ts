@@ -2,6 +2,7 @@ import { PdfArray } from '../../core/objects/pdf-array.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { PdfXfaData } from './pdf-xfa-data.js'
 
 /**
@@ -40,5 +41,16 @@ export class PdfXfaForm {
             return null
         }
         return datasetsRef.becomes(PdfXfaData)
+    }
+
+    get template(): string | null {
+        const templateObj = this.components['template']
+        if (!templateObj) return null
+
+        const stream = templateObj.content
+        if (!(stream instanceof PdfStream)) return null
+
+        const decoded = stream.decode()
+        return new TextDecoder().decode(decoded)
     }
 }

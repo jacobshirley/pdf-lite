@@ -1,18 +1,25 @@
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfJavaScriptAction } from './pdf-javascript-action.js'
+import type { PdfJsEngine } from './pdf-js-engine.js'
 
-export class PdfFieldActions {
-    private readonly dict: PdfDictionary
+export class PdfFieldActions extends PdfDictionary {
     private readonly activateDict?: PdfDictionary
+    readonly engine?: PdfJsEngine
 
-    constructor(dict: PdfDictionary, activateDict?: PdfDictionary) {
-        this.dict = dict
-        this.activateDict = activateDict
+    constructor(options: {
+        dict: PdfDictionary
+        activateDict?: PdfDictionary
+        engine?: PdfJsEngine
+    }) {
+        super()
+        this.copyFrom(options.dict)
+        this.activateDict = options.activateDict
+        this.engine = options.engine
     }
 
     private _resolve(key: string): PdfJavaScriptAction | null {
-        const entry = this.dict.get(key)
+        const entry = this.get(key)
         if (!entry) return null
         let actionDict: PdfDictionary | undefined
         if (entry instanceof PdfObjectReference) {
@@ -24,7 +31,10 @@ export class PdfFieldActions {
             actionDict = entry
         }
         if (!actionDict) return null
-        return new PdfJavaScriptAction(actionDict)
+        return new PdfJavaScriptAction({
+            dict: actionDict,
+            engine: this.engine,
+        })
     }
 
     get keystroke(): PdfJavaScriptAction | null {
@@ -45,6 +55,9 @@ export class PdfFieldActions {
 
     get activate(): PdfJavaScriptAction | null {
         if (!this.activateDict) return null
-        return new PdfJavaScriptAction(this.activateDict)
+        return new PdfJavaScriptAction({
+            dict: this.activateDict,
+            engine: this.engine,
+        })
     }
 }

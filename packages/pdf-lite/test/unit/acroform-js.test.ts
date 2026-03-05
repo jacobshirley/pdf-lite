@@ -36,7 +36,7 @@ describe('PdfJavaScriptAction', () => {
         dict.set('S', new PdfName('JavaScript'))
         dict.set('JS', new PdfString('event.value = "hello";'))
 
-        const action = new PdfJavaScriptAction(dict)
+        const action = new PdfJavaScriptAction({ dict })
         expect(action.code).toBe('event.value = "hello";')
     })
 
@@ -48,7 +48,7 @@ describe('PdfJavaScriptAction', () => {
         dict.set('S', new PdfName('JavaScript'))
         dict.set('JS', stream)
 
-        const action = new PdfJavaScriptAction(dict)
+        const action = new PdfJavaScriptAction({ dict })
         expect(action.code).toBe(jsCode)
     })
 
@@ -56,8 +56,65 @@ describe('PdfJavaScriptAction', () => {
         const dict = new PdfDictionary()
         dict.set('S', new PdfName('JavaScript'))
 
-        const action = new PdfJavaScriptAction(dict)
+        const action = new PdfJavaScriptAction({ dict })
         expect(action.code).toBeNull()
+    })
+
+    it('execute() calls engine with correct code and event', () => {
+        const calls: { code: string; event: PdfJsEvent }[] = []
+        const engine: PdfJsEngine = {
+            execute(code, event) {
+                calls.push({ code, event: { ...event } })
+            },
+        }
+
+        const dict = new PdfDictionary()
+        dict.set('S', new PdfName('JavaScript'))
+        dict.set('JS', new PdfString('event.value = "test";'))
+
+        const action = new PdfJavaScriptAction({ dict, engine })
+        const event: PdfJsEvent = {
+            fieldName: 'MyField',
+            value: 'original',
+            rc: true,
+        }
+        action.execute(event)
+
+        expect(calls).toHaveLength(1)
+        expect(calls[0].code).toBe('event.value = "test";')
+        expect(calls[0].event.fieldName).toBe('MyField')
+    })
+
+    it('execute() is a no-op without engine', () => {
+        const dict = new PdfDictionary()
+        dict.set('JS', new PdfString('some code'))
+
+        const action = new PdfJavaScriptAction({ dict })
+        const event: PdfJsEvent = {
+            fieldName: 'F',
+            value: '',
+            rc: true,
+        }
+        expect(() => action.execute(event)).not.toThrow()
+    })
+
+    it('execute() is a no-op without code', () => {
+        const calls: string[] = []
+        const engine: PdfJsEngine = {
+            execute(code) {
+                calls.push(code)
+            },
+        }
+
+        const dict = new PdfDictionary()
+        const action = new PdfJavaScriptAction({ dict, engine })
+        const event: PdfJsEvent = {
+            fieldName: 'F',
+            value: '',
+            rc: true,
+        }
+        action.execute(event)
+        expect(calls).toHaveLength(0)
     })
 })
 
@@ -77,7 +134,7 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         aa.set('V', makeActionDict('/* validate */'))
 
-        const actions = new PdfFieldActions(aa)
+        const actions = new PdfFieldActions({ dict: aa })
         expect(actions.validate).not.toBeNull()
         expect(actions.validate!.code).toBe('/* validate */')
     })
@@ -86,7 +143,7 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         aa.set('K', makeActionDict('/* keystroke */'))
 
-        const actions = new PdfFieldActions(aa)
+        const actions = new PdfFieldActions({ dict: aa })
         expect(actions.keystroke).not.toBeNull()
         expect(actions.keystroke!.code).toBe('/* keystroke */')
     })
@@ -95,7 +152,7 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         aa.set('C', makeActionDict('/* calculate */'))
 
-        const actions = new PdfFieldActions(aa)
+        const actions = new PdfFieldActions({ dict: aa })
         expect(actions.calculate).not.toBeNull()
         expect(actions.calculate!.code).toBe('/* calculate */')
     })
@@ -104,14 +161,14 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         aa.set('F', makeActionDict('/* format */'))
 
-        const actions = new PdfFieldActions(aa)
+        const actions = new PdfFieldActions({ dict: aa })
         expect(actions.format).not.toBeNull()
         expect(actions.format!.code).toBe('/* format */')
     })
 
     it('returns null for absent action keys', () => {
         const aa = new PdfDictionary()
-        const actions = new PdfFieldActions(aa)
+        const actions = new PdfFieldActions({ dict: aa })
 
         expect(actions.validate).toBeNull()
         expect(actions.keystroke).toBeNull()
@@ -124,7 +181,7 @@ describe('PdfFieldActions', () => {
         const aa = new PdfDictionary()
         const a = makeActionDict('/* activate */')
 
-        const actions = new PdfFieldActions(aa, a)
+        const actions = new PdfFieldActions({ dict: aa, activateDict: a })
         expect(actions.activate).not.toBeNull()
         expect(actions.activate!.code).toBe('/* activate */')
     })
@@ -377,5 +434,38 @@ describe('LiveCycle PDF JS actions', () => {
         if (textField.actions?.validate) {
             expect(executedCodes.length).toBeGreaterThan(0)
         }
+    })
+
+    it('action.execute() works when engine is threaded through form', () => {
+        const calls: { code: string; event: PdfJsEvent }[] = []
+        const engine: PdfJsEngine = {
+            execute(code, event) {
+                calls.push({ code, event: { ...event } })
+            },
+        }
+
+        const acroForm = new PdfAcroForm()
+        acroForm.jsEngine = engine
+
+        const field = new PdfTextFormField({ form: acroForm })
+        field.fieldType = 'Text'
+        field.name = 'Direct'
+        field.defaultAppearance = '/Helv 12 Tf 0 g'
+        const aa = new PdfDictionary()
+        aa.set('V', makeActionDict('/* direct validate */'))
+        field.content.set('AA', aa)
+        acroForm.addField(field)
+
+        const action = field.actions!.validate!
+        const event: PdfJsEvent = {
+            fieldName: 'Direct',
+            value: '42',
+            rc: true,
+        }
+        action.execute(event)
+
+        expect(calls).toHaveLength(1)
+        expect(calls[0].code).toBe('/* direct validate */')
+        expect(calls[0].event.fieldName).toBe('Direct')
     })
 })

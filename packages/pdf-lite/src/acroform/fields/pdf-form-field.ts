@@ -580,7 +580,11 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             aDict = a
         }
 
-        return new PdfFieldActions(aaDict, aDict)
+        return new PdfFieldActions({
+            dict: aaDict,
+            activateDict: aDict,
+            engine: this._form?.jsEngine,
+        })
     }
 
     get activateAction(): PdfJavaScriptAction | null {
@@ -595,7 +599,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             aDict = a
         }
         if (!aDict) return null
-        return new PdfJavaScriptAction(aDict)
+        return new PdfJavaScriptAction({
+            dict: aDict,
+            engine: this._form?.jsEngine,
+        })
     }
 
     abstract generateAppearance(options?: {

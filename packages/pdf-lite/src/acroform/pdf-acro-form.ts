@@ -179,22 +179,19 @@ export class PdfAcroForm<
     }
 
     private _fireValidate(field: PdfFormField, value: string): boolean {
-        if (!this.jsEngine) return true
         const validateAction = field.actions?.validate
-        const code = validateAction?.code
-        if (!code) return true
+        if (!validateAction?.code) return true
         const event: PdfJsEvent = {
             fieldName: field.name,
             value,
             willCommit: true,
             rc: true,
         }
-        this.jsEngine.execute(code, event)
+        validateAction.execute(event)
         return event.rc
     }
 
     private _fireCalculate(): void {
-        if (!this.jsEngine) return
         const co = this.content.get('CO')
         if (!(co instanceof PdfArray)) return
         const allFields = this.fields
@@ -206,14 +203,13 @@ export class PdfAcroForm<
             )
             if (!field) continue
             const calcAction = field.actions?.calculate
-            const code = calcAction?.code
-            if (!code) continue
+            if (!calcAction?.code) continue
             const event: PdfJsEvent = {
                 fieldName: field.name,
                 value: field.value,
                 rc: true,
             }
-            this.jsEngine.execute(code, event)
+            calcAction.execute(event)
             if (event.rc && event.value !== field.value) {
                 field.value = event.value
             }

@@ -52,7 +52,7 @@ import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
 import { PdfNumber } from 'pdf-lite/core/objects/pdf-number'
 
 // Create the document
-const document = new PdfDocument()
+const doc = new PdfDocument()
 
 // Create content stream
 const contentStream = new PdfIndirectObject({
@@ -62,12 +62,12 @@ const contentStream = new PdfIndirectObject({
     }),
 })
 
-// Create and commit objects
-document.commit(contentStream)
+// Create and add objects
+doc.add(contentStream)
 // ... create pages, catalog, etc.
 
 // Output the PDF
-console.log(document.toString())
+console.log(doc.toString())
 ```
 
 ### Working with Encryption
@@ -113,7 +113,7 @@ form.setValues({
 
 // Or work with individual fields
 const field = form.fields.find((f) => f.name === 'name')
-field.value = 'Jane Doe'
+if (field) field.value = 'Jane Doe'
 
 // Export all current values
 const values = form.exportData()
@@ -127,6 +127,14 @@ await writeFile('filled.pdf', doc.toBytes())
 Appearance streams control how form fields render visually. The library can automatically generate them when field values are set, or you can generate them manually.
 
 ```typescript
+import { PdfButtonFormField } from 'pdf-lite/acroform/fields/pdf-button-form-field'
+import { PdfChoiceFormField } from 'pdf-lite/acroform/fields/pdf-choice-form-field'
+import { PdfAcroForm } from 'pdf-lite/acroform/pdf-acro-form'
+import { PdfTextFormField } from 'pdf-lite/acroform/fields/pdf-text-form-field'
+
+declare const form: PdfAcroForm
+declare const field: PdfTextFormField
+
 // Auto-generate appearances when setting values (default behavior)
 field.value = 'Hello' // appearance is generated automatically
 
@@ -138,12 +146,16 @@ field.fontSize = 14
 field.fontName = 'Helv'
 
 // For checkbox fields
-const checkbox = form.fields.find((f) => f.name === 'agree')
+const checkbox = form.fields.find(
+    (f) => f.name === 'agree',
+) as PdfButtonFormField
 checkbox.checked = true
 checkbox.generateAppearance()
 
 // For choice fields (dropdowns/listboxes)
-const dropdown = form.fields.find((f) => f.name === 'country')
+const dropdown = form.fields.find(
+    (f) => f.name === 'country',
+) as PdfChoiceFormField
 dropdown.value = 'US'
 dropdown.generateAppearance()
 ```
@@ -152,6 +164,8 @@ dropdown.generateAppearance()
 
 ```typescript
 import { PdfFont } from 'pdf-lite'
+import { PdfDocument } from 'pdf-lite/pdf/pdf-document'
+import { readFileSync } from 'fs'
 
 // Standard PDF fonts (built into all PDF readers)
 const helvetica = PdfFont.fromStandardFont('Helvetica')
@@ -159,7 +173,6 @@ const timesBold = PdfFont.fromStandardFont('Times-Bold')
 const courier = PdfFont.fromStandardFont('Courier')
 
 // Embed custom fonts from file bytes (auto-detects TTF, OTF, WOFF)
-import { readFileSync } from 'fs'
 const fontData = readFileSync('MyFont.ttf')
 const customFont = PdfFont.fromBytes(fontData)
 
@@ -170,7 +183,8 @@ const font = PdfFont.HELVETICA_BOLD
 customFont.resourceName = 'F1'
 
 // Add to document
-document.add(customFont)
+const doc = new PdfDocument()
+doc.add(customFont)
 ```
 
 **Standard font names:** Helvetica, Helvetica-Bold, Helvetica-Oblique, Helvetica-BoldOblique, Times-Roman, Times-Bold, Times-Italic, Times-BoldItalic, Courier, Courier-Bold, Courier-Oblique, Courier-BoldOblique, Symbol, ZapfDingbats
@@ -288,6 +302,16 @@ Supports reading, filling, and creating AcroForm fields within PDF documents.
 - [x] Import/export field values (`importData`, `exportData`, `setValues`)
 - [x] Read individual field properties (name, value, type, flags)
 - [x] Hierarchical field support (parent/child/sibling fields)
+
+**JavaScript actions:**
+
+- [x] JavaScript action execution via `PdfJavaScriptEngine`
+- [x] Validate, keystroke, calculate, and format action triggers
+- [x] Built-in Acrobat JS functions: `util.printd`, `util.scand`, `util.printf`
+- [x] `AFNumber_Format` / `AFNumber_Keystroke` — number formatting and validation
+- [x] `AFDate_FormatEx` / `AFDate_KeystrokeEx` — date formatting and validation
+- [x] `AFSimple_Calculate` — SUM, AVG, PRD, MIN, MAX across fields
+- [x] `AFSpecial_Format` / `AFSpecial_Keystroke` — zip, SSN, phone formatting
 
 ### Appearance Streams
 

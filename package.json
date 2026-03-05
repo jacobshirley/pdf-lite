@@ -7,9 +7,10 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "compile": "pnpm -r run compile && pnpm compile:examples && pnpm compile:test",
+        "compile": "pnpm -r run compile && pnpm compile:examples && pnpm compile:test && pnpm compile:readme",
         "compile:examples": "tsx ./scripts/build-examples.ts && prettier --write EXAMPLES.md",
         "compile:test": "tsc --noEmit",
+        "compile:readme": "tsx ./scripts/validate-readme.ts",
         "prepublish": "pnpm -r run compile",
         "test": "pnpm -r --no-sort run test",
         "prepare": "husky || true",

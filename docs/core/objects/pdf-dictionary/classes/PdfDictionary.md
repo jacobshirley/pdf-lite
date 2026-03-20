@@ -404,6 +404,16 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ---
 
+### keys()
+
+> **keys**(): [`PdfName`](../../pdf-name/classes/PdfName.md)\<`string`\>[]
+
+#### Returns
+
+[`PdfName`](../../pdf-name/classes/PdfName.md)\<`string`\>[]
+
+---
+
 ### set()
 
 > **set**\<`K`\>(`key`, `value`): `void`

@@ -428,6 +428,20 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ---
 
+### keys()
+
+> **keys**(): [`PdfName`](../../../../core/objects/pdf-name/classes/PdfName.md)\<`string`\>[]
+
+#### Returns
+
+[`PdfName`](../../../../core/objects/pdf-name/classes/PdfName.md)\<`string`\>[]
+
+#### Inherited from
+
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`keys`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#keys)
+
+---
+
 ### set()
 
 > **set**\<`K`\>(`key`, `value`): `void`

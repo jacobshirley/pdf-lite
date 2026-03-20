@@ -27,6 +27,10 @@ export class PdfDictionary<
         }
     }
 
+    keys(): PdfName[] {
+        return Array.from(this.#entries.keys())
+    }
+
     get<K extends Extract<keyof T, string>>(
         key: PdfName<K> | K,
     ): T[K] | undefined {

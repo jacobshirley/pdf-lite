@@ -40,7 +40,7 @@ export class PdfButtonFormField extends PdfFormField {
         } else if (strVal === 'Off' || strVal === 'No') {
             resolved = 'Off'
         } else {
-            resolved = states.find((s) => s !== 'Off') ?? 'Yes'
+            resolved = states.find((s) => s !== 'Off') ?? strVal
         }
         this.content.set('V', new PdfName(resolved))
         fieldParent?.content.set('V', new PdfName(resolved))

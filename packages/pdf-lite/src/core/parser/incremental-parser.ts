@@ -166,13 +166,21 @@ export abstract class IncrementalParser<I, O> extends Parser<I, O> {
     }
 
     /**
-     * Override to customize when to compact the buffer
-     * By default, compacts when more than 1000 items have been consumed
+     * Override to customize when to compact the buffer.
+     * Compacts when more than 1000 items have been consumed AND we've consumed
+     * at least half the buffer. The second condition prevents O(n²) behaviour
+     * when a single large chunk is fed all at once: without it, compact() is
+     * called O(n/1000) times, each copying O(n) elements → O(n²) total.
+     * By requiring bufferIndex ≥ buffer.length/2 we ensure at most O(log n)
+     * compactions, for O(n) total copies.
      *
      * @returns boolean indicating whether to compact the buffer
      */
     protected canCompact(): boolean {
-        return this.bufferIndex > 1000
+        return (
+            this.bufferIndex >= 1000 &&
+            this.bufferIndex >= this.buffer.length >> 1
+        )
     }
 
     /**

@@ -20,12 +20,15 @@ export function* bytesToPdfObjects(
     for (const chunk of bytes) {
         tokeniser.feedBytes(chunk)
 
+        // Feed all tokens from this chunk first, then drain completed objects
+        // once. Draining after every token is O(n²) because each failed parse
+        // attempt re-reads all accumulated tokens for the current partial object.
         for (const token of tokeniser.nextItems()) {
             decoder.feed(token)
+        }
 
-            for (const obj of decoder.nextItems()) {
-                yield obj
-            }
+        for (const obj of decoder.nextItems()) {
+            yield obj
         }
     }
 
@@ -106,12 +109,15 @@ export async function* pdfDecoderAsync(
     for await (const chunk of input) {
         tokeniser.feedBytes(chunk)
 
+        // Feed all tokens from this chunk first, then drain completed objects
+        // once. Draining after every token is O(n²) because each failed parse
+        // attempt re-reads all accumulated tokens for the current partial object.
         for (const token of tokeniser.nextItems()) {
             decoder.feed(token)
+        }
 
-            for (const obj of decoder.nextItems()) {
-                yield obj
-            }
+        for (const obj of decoder.nextItems()) {
+            yield obj
         }
     }
 

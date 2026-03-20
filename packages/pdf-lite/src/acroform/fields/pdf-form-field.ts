@@ -617,7 +617,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     get appearanceStates(): string[] {
         const n = this.appearanceStreamDict?.get('N')
         if (n instanceof PdfDictionary) {
-            return Array.from(n.entries(), ([key]) => key)
+            return n.keys().map((k) => k.value)
         }
         return []
     }

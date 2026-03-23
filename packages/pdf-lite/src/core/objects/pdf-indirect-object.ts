@@ -205,6 +205,9 @@ export class PdfIndirectObject<
         const savedGenerationNumber = this.generationNumber
         const savedOffset = this.offset
         const savedContent = this.content
+        const savedModified = this.modified
+        const savedEncryptable = this.encryptable
+        const savedCompressed = this.compressed
         const newObject = new cls(this)
         Object.setPrototypeOf(this, cls.prototype)
         Object.assign(this, newObject)
@@ -212,6 +215,9 @@ export class PdfIndirectObject<
         this.generationNumber = savedGenerationNumber
         this.offset = savedOffset
         this.content = savedContent
+        this.modified = savedModified
+        this.encryptable = savedEncryptable
+        this.compressed = savedCompressed
         return this as unknown as T
     }
 

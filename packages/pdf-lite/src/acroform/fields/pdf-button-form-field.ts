@@ -20,40 +20,10 @@ export class PdfButtonFormField extends PdfFormField {
         fieldParent: PdfFormField | undefined,
     ): boolean {
         const strVal = val instanceof PdfString ? val.value : val
-        if (strVal.trim() === '') {
-            this.content.delete('V')
-            fieldParent?.content.delete('V')
-            this.content.delete('AS')
-            for (const child of this.children) {
-                child.content.set('AS', new PdfName('Off'))
-            }
-            return false
-        }
-        // Check if the value matches an existing appearance state;
-        // otherwise map truthy values to the widget's "on" state (the
-        // first state that isn't "Off"), falling back to "Yes".
-        // For parent fields with no AP of their own (separated field/widget
-        // structure), derive the available states from the child widgets.
-        let states = this.appearanceStates
-        if (states.length === 0) {
-            const kidOnStates = this.children
-                .flatMap((child) => child.appearanceStates)
-                .filter((s) => s !== 'Off')
-            if (kidOnStates.length > 0) {
-                states = [...new Set(kidOnStates), 'Off']
-            }
-        }
-        let resolved: string
-        if (states.includes(strVal)) {
-            resolved = strVal
-        } else if (strVal === 'Off') {
-            resolved = 'Off'
-        } else {
-            resolved = states.find((s) => s !== 'Off') ?? strVal
-        }
-        this.content.set('V', new PdfName(resolved))
-        fieldParent?.content.set('V', new PdfName(resolved))
-        this.content.set('AS', new PdfName(resolved))
+        this.content.set('V', new PdfName(strVal))
+        fieldParent?.content.set('V', new PdfName(strVal))
+        this.content.set('AS', new PdfName(strVal))
+
         // For parent fields with a separated widget structure (kids have the
         // actual Rect/AP), update each kid's AS to reflect the new value.
         // If the kids already have AP streams, skip generating new ones so
@@ -61,17 +31,18 @@ export class PdfButtonFormField extends PdfFormField {
         // preserved.
         const kids = this.children
         if (kids.length > 0) {
+            // Separated field/widget structure: update each kid's AS and
+            // skip appearance generation if they already have AP streams.
             let kidsHaveAP = false
             for (const child of kids) {
-                const childStates = child.appearanceStates
-                if (childStates.includes(resolved)) {
-                    child.content.set('AS', new PdfName(resolved))
-                } else {
-                    child.content.set('AS', new PdfName('Off'))
-                }
+                child.value = strVal
                 if (child.content.get('AP')) kidsHaveAP = true
             }
             if (kidsHaveAP) return false
+        } else if (this.appearanceStates.includes(strVal)) {
+            // Standalone field already has an appearance for this state —
+            // preserve it rather than overwriting with a generated one.
+            return false
         }
         return true
     }
@@ -120,8 +91,9 @@ export class PdfButtonFormField extends PdfFormField {
         })
 
         const onState = this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
+        const as = this.content.get('AS')?.value || onState
         this.setAppearanceStream({
-            [onState]: yesAppearance,
+            [as]: yesAppearance,
             Off: noAppearance,
         })
 

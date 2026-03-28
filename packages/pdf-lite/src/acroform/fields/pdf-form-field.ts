@@ -40,18 +40,31 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         this._form = f
     }
 
+    static getFieldType(
+        other: PdfIndirectObject,
+    ): 'Btn' | 'Sig' | 'Tx' | 'Ch' | null {
+        if (!(other.content instanceof PdfDictionary)) return null
+        const ft = other.content.get('FT')?.as(PdfName)?.value
+        if (ft) return ft
+        const parentRef = other.content.get('Parent')
+        if (parentRef instanceof PdfObjectReference) {
+            const parentResolved = parentRef.resolve()
+            if (parentResolved?.content instanceof PdfDictionary) {
+                return (
+                    parentResolved.content.get('FT')?.as(PdfName)?.value ?? null
+                )
+            }
+        }
+        return null
+    }
+
     static create(other?: PdfIndirectObject): PdfFormField {
         if (!(other?.content instanceof PdfDictionary))
             throw new Error('Invalid form field object')
 
-        const ft = other?.content.get('FT')?.as(PdfName)?.value as
-            | 'Sig'
-            | 'Btn'
-            | 'Tx'
-            | 'Ch'
-            | undefined
-
+        const ft = PdfFormField.getFieldType(other)
         const cls = ft ? PdfFormField._registry.get(ft) : undefined
+
         if (!cls) {
             if (PdfFormField._fallbackCtor) {
                 return other.becomes(PdfFormField._fallbackCtor)
@@ -86,8 +99,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const result: PdfFormField[] = []
         for (const ref of kids) {
             const resolved = ref.resolve()
-            if (!resolved || !(resolved.content instanceof PdfDictionary))
-                continue
             result.push(PdfFormField.create(resolved))
         }
         return result
@@ -188,9 +199,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     get fieldType(): PdfFieldType | null {
-        const ft =
-            this.content.get('FT')?.as(PdfName)?.value ??
-            this.parent?.content.get('FT')?.as(PdfName)?.value
+        const ft = PdfFormField.getFieldType(this)
         switch (ft) {
             case 'Tx':
                 return 'Text'
@@ -257,13 +266,13 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     set value(val: string | PdfString) {
-        if (this.value === val) return
+        //if (this.value === val) return
 
         const fieldParent = this.parent?.content.get('FT')
             ? this.parent
             : undefined
-        const generateAppearance = this._storeValue(val, fieldParent)
-        if (generateAppearance && this.defaultGenerateAppearance) {
+        const shouldGenerateAppearance = this._storeValue(val, fieldParent)
+        if (shouldGenerateAppearance && this.defaultGenerateAppearance) {
             this.generateAppearance()
             for (const sibling of this.siblings) {
                 if (
@@ -614,7 +623,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
      * Returns the list of appearance state names from the normal appearance
      * dictionary (e.g. ["Yes", "Off"] for a checkbox).
      */
-    get appearanceStates(): string[] {
+    get appearanceStates(): ReadonlyArray<string> {
         const n = this.appearanceStreamDict?.get('N')
         if (n instanceof PdfDictionary) {
             return n.keys().map((k) => k.value)

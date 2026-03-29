@@ -1,5 +1,6 @@
 import { Ref } from '../ref.js'
 import { PdfStartXRefToken } from '../tokens/start-xref-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
 import { PdfNumber } from './pdf-number.js'
 import { PdfObject } from './pdf-object.js'
@@ -21,7 +22,7 @@ export class PdfStartXRef extends PdfObject {
         return { type: 'start-xref', offset: this.offset.value }
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         const whiteSpaceTokens = this.offset.preTokens
             ? []
             : [PdfWhitespaceToken.NEWLINE]

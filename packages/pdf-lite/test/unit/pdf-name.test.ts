@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PdfName } from '../../src/core/objects/pdf-name'
+import { PdfNameToken } from '../../src/core/tokens/name-token'
 
 describe('PdfName', () => {
     describe('escapeName', () => {
@@ -158,14 +159,14 @@ describe('PdfName', () => {
             const tokens = name['tokenize']()
             expect(tokens).toHaveLength(1)
             // The token should contain the escaped version with spaces escaped
-            expect(tokens[0].name).toBe('test#20value')
+            expect((tokens[0] as PdfNameToken).name).toBe('test#20value')
         })
 
         it('should tokenize special characters with escaping', () => {
             const name = new PdfName('value(1)')
             const tokens = name['tokenize']()
             expect(tokens).toHaveLength(1)
-            expect(tokens[0].name).toBe('value#281#29')
+            expect((tokens[0] as PdfNameToken).name).toBe('value#281#29')
         })
 
         it('should clone correctly', () => {

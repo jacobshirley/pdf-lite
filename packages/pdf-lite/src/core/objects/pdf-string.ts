@@ -5,6 +5,7 @@ import { encodeToPDFDocEncoding } from '../../utils/encodeToPDFDocEncoding.js'
 import { decodeFromUTF16BE } from '../../utils/decodeFromUTF16BE.js'
 import { decodeFromPDFDocEncoding } from '../../utils/decodeFromPDFDocEncoding.js'
 import { PdfStringToken } from '../tokens/string-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfObject } from './pdf-object.js'
 
 export class PdfString extends PdfObject {
@@ -84,7 +85,7 @@ export class PdfString extends PdfObject {
         return true
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [new PdfStringToken(this.raw, this._originalBytes)]
     }
 

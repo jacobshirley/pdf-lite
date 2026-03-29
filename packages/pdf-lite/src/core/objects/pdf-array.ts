@@ -2,6 +2,7 @@ import { needsCentralWhitespace } from '../../utils/needsCentralWhitespace.js'
 import { PdfObjectReference } from '../index.js'
 import { PdfEndArrayToken } from '../tokens/end-array-token.js'
 import { PdfStartArrayToken } from '../tokens/start-array-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
 import { PdfIndirectObject } from './pdf-indirect-object.js'
 import { PdfObject } from './pdf-object.js'
@@ -38,7 +39,7 @@ export class PdfArray<T extends PdfObject = PdfObject>
         return true
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         const items = this.items.flatMap((item, index) => {
             const tokens = item.toTokens()
 

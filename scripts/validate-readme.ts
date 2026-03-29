@@ -75,6 +75,7 @@ const tsconfig = {
             'pdf-lite': [path.join(ROOT, 'packages/pdf-lite/src/index.ts')],
             'pdf-lite/*': [path.join(ROOT, 'packages/pdf-lite/src/*.ts')],
         },
+        types: ['node'],
     },
     include: ['*.ts'],
 }

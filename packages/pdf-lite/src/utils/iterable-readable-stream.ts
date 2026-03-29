@@ -20,11 +20,18 @@ export class IterableReadableStream<T> extends ReadableStream<T> {
      */
     [Symbol.asyncIterator]() {
         const reader = this.getReader()
-        return {
+        const iterator = {
             async next(): Promise<IteratorResult<T>> {
                 const result = await reader.read()
                 return result as IteratorResult<T>
             },
+            [Symbol.asyncIterator]() {
+                return iterator
+            },
+            async [Symbol.asyncDispose]() {
+                reader.releaseLock()
+            },
         }
+        return iterator
     }
 }

@@ -542,7 +542,7 @@ export class PdfStream<
         return instance
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [
             ...this.header.toTokens(),
             PdfStartStreamToken.withTrailingWhitespace(

@@ -146,7 +146,7 @@ export class PdfDictionary<
         return true
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         let index = 0
 
         const entries = Array.from(this.#entries.entries()).flatMap(

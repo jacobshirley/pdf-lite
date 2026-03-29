@@ -1,5 +1,6 @@
 import { Ref } from '../ref.js'
 import { PdfNumberToken } from '../tokens/number-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfObject } from './pdf-object.js'
 
 export class PdfNumber extends PdfObject {
@@ -76,7 +77,7 @@ export class PdfNumber extends PdfObject {
         })
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [this.toToken()]
     }
 

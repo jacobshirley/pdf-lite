@@ -1,5 +1,6 @@
 import { Ref } from '../ref.js'
 import { PdfByteOffsetToken } from '../tokens/byte-offset-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
 import { PdfXRefTableEntryToken } from '../tokens/xref-table-entry-token.js'
 import { PdfXRefTableSectionStartToken } from '../tokens/xref-table-section-start-token.js'
@@ -42,7 +43,7 @@ export class PdfXRefTableEntry extends PdfObject {
         this.inUse = options.inUse
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [
             new PdfXRefTableEntryToken(
                 this.byteOffset.toToken(),
@@ -95,7 +96,7 @@ export class PdfXRefTableSectionHeader extends PdfObject {
         this.entryCount = new PdfNumber(options.entryCount)
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [
             new PdfXRefTableSectionStartToken(
                 this.startObjectNumber.value,
@@ -179,7 +180,7 @@ export class PdfXRefTable extends PdfObject {
         return this.sections[this.sections.length - 1]
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         const innerTokens = this.sortEntriesIntoSections().flatMap(
             ({ section, entries }) => [
                 ...section.toTokens(),

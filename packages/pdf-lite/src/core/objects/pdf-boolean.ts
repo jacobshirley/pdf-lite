@@ -1,4 +1,5 @@
 import { PdfBooleanToken } from '../tokens/boolean-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfObject } from './pdf-object.js'
 
 export class PdfBoolean extends PdfObject {
@@ -9,7 +10,7 @@ export class PdfBoolean extends PdfObject {
         this.value = value
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [new PdfBooleanToken(this.value)]
     }
 

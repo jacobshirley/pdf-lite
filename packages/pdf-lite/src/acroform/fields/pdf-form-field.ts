@@ -92,6 +92,24 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         if (field instanceof PdfFormField) {
             field.children = [...field.children, this]
         }
+
+        // Auto-add widget to page's Annots array
+        const page = this.page
+        if (page) {
+            const annots = page.annotations
+            const ref = this.reference
+            const self = this
+            const alreadyPresent = annots.items.some((r) => {
+                try {
+                    return r.resolve() === self
+                } catch {
+                    return false
+                }
+            })
+            if (!alreadyPresent) {
+                annots.items.push(ref)
+            }
+        }
     }
 
     get children(): PdfFormField[] {

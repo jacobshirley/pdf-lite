@@ -1,5 +1,6 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfButtonAppearanceStream } from '../appearance/pdf-button-appearance-stream.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
 
@@ -25,16 +26,14 @@ export class PdfButtonFormField extends PdfFormField {
 
     override set value(val: string | PdfString) {
         const strVal = val instanceof PdfString ? val.value : val
-        const fieldParent = this.parent?.content.get('FT')
-            ? this.parent
-            : undefined
+        const fieldParent = this.parent?.fieldType ? this.parent : undefined
 
         if (strVal === 'Off') {
             this.content.set('V', new PdfName('Off'))
             fieldParent?.content.set('V', new PdfName('Off'))
-            this.content.set('AS', new PdfName('Off'))
+            this.appearanceState = 'Off'
             for (const child of this.children) {
-                child.content.set('AS', new PdfName('Off'))
+                child.appearanceState = 'Off'
             }
             this._form?.xfa?.datasets?.updateField(this.name, this.value)
             return
@@ -47,28 +46,47 @@ export class PdfButtonFormField extends PdfFormField {
 
         if (this.isGroup) {
             // Check the first child, uncheck the rest.
-            // AS is set to the child's existing AP on-state, not the raw value.
-            let first = true
+            // Each child in a radio group MUST have a unique on-state name so
+            // PDF viewers can distinguish them (e.g. "0", "1", "2", …).
             let needsGeneration = false
-            for (const child of this.children) {
-                const onState = child.appearanceStates.find((s) => s !== 'Off')
-                if (first) {
-                    child.content.set(
-                        'AS',
-                        new PdfName(onState ?? (strVal || 'Yes')),
-                    )
-                    if (!onState) needsGeneration = true
-                    first = false
+            const children = this.children
+            // Resolve each child's unique on-state name
+            const onStates: string[] = []
+            for (let i = 0; i < children.length; i++) {
+                const existing = children[i].appearanceStates.find(
+                    (s) => s !== 'Off',
+                )
+                if (existing) {
+                    onStates.push(existing)
                 } else {
-                    child.content.set('AS', new PdfName('Off'))
+                    onStates.push(String(i))
+                    needsGeneration = true
                 }
             }
 
+            // First child is selected; set AS to its on-state.
+            // All other children get AS = Off.
+            for (let i = 0; i < children.length; i++) {
+                children[i].appearanceState = i === 0 ? onStates[i] : 'Off'
+            }
+
+            // V must match the selected child's on-state for Acrobat to
+            // correlate which widget is active.
+            const selectedOnState = onStates[0]
+            this.content.set('V', new PdfName(strVal || selectedOnState))
+            fieldParent?.content.set(
+                'V',
+                new PdfName(strVal || selectedOnState),
+            )
+
             if (needsGeneration && this.defaultGenerateAppearance) {
-                for (const child of this.children) {
+                for (let i = 0; i < children.length; i++) {
+                    const child = children[i]
                     if (child.rect && child.defaultGenerateAppearance) {
                         if (this._form) child.form = this._form
-                        child.generateAppearance()
+                        child.generateAppearance({
+                            onStateName: onStates[i],
+                        })
                     }
                 }
             }
@@ -76,7 +94,7 @@ export class PdfButtonFormField extends PdfFormField {
             const onState =
                 this.appearanceStates.find((s) => s !== 'Off') ??
                 (strVal || 'Yes')
-            this.content.set('AS', new PdfName(onState))
+            this.appearanceState = onState
             if (
                 !this.appearanceStates.includes(onState) &&
                 this.defaultGenerateAppearance
@@ -99,14 +117,17 @@ export class PdfButtonFormField extends PdfFormField {
             const onState =
                 this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
             target.content.set('V', new PdfName(onState))
-            this.content.set('AS', new PdfName(onState))
+            this.appearanceState = onState
         } else {
             target.content.set('V', new PdfName('Off'))
-            this.content.set('AS', new PdfName('Off'))
+            this.appearanceState = 'Off'
         }
     }
 
-    generateAppearance(options?: { makeReadOnly?: boolean }): boolean {
+    generateAppearance(options?: {
+        makeReadOnly?: boolean
+        onStateName?: string
+    }): boolean {
         const rect = this.rect
         if (!rect || rect.length !== 4) return false
 
@@ -131,12 +152,23 @@ export class PdfButtonFormField extends PdfFormField {
             contentStream: '',
         })
 
-        const onState = this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
-        const as = this.content.get('AS')?.value || onState
+        const existingOnState = this.appearanceStates.find((s) => s !== 'Off')
+        const as = this.appearanceState
+        const onKey =
+            options?.onStateName ??
+            existingOnState ??
+            (as && as !== 'Off' ? as : 'Yes')
         this.appearanceStream = {
-            [as]: yesAppearance,
+            [onKey]: yesAppearance,
             Off: noAppearance,
         }
+
+        // Also set the Down (D) appearance so Acrobat doesn't synthesize
+        // an oversized one from the DA string during click/focus.
+        const downDict = new PdfDictionary()
+        downDict.set(onKey, yesAppearance.reference)
+        downDict.set('Off', noAppearance.reference)
+        this.appearanceStreamDict!.set('D', downDict)
 
         if (options?.makeReadOnly) {
             this.readOnly = true

@@ -284,9 +284,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     set value(val: string | PdfString) {
-        const fieldParent = this.parent?.content.get('FT')
-            ? this.parent
-            : undefined
+        const fieldParent = this.parent?.fieldType ? this.parent : undefined
 
         const shouldGenerateAppearance = this._storeValue(val, fieldParent)
         if (shouldGenerateAppearance && this.defaultGenerateAppearance) {
@@ -622,6 +620,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     abstract generateAppearance(options?: {
         makeReadOnly?: boolean
         textYOffset?: number
+        onStateName?: string
     }): boolean
 
     set appearanceStream(
@@ -676,10 +675,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
                 return resolved as PdfIndirectObject<PdfStream>
             }
         } else if (n instanceof PdfDictionary) {
-            const key =
-                setting ??
-                this.content.get('AS')?.as(PdfName)?.value ??
-                undefined
+            const key = setting ?? this.appearanceState ?? undefined
             if (key) {
                 const entry = n.get(key)
                 if (entry instanceof PdfObjectReference) {

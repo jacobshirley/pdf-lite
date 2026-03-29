@@ -1861,14 +1861,12 @@ describe('AcroForm Appearance Stream Font Resources', () => {
 
         field.checked = true
 
-        const v = field.content.get('V') as PdfName
-        const as = field.content.get('AS') as PdfName
-        expect(v.value).toBe('CustomOn')
-        expect(as.value).toBe('CustomOn')
+        expect(field.value).toBe('CustomOn')
+        expect(field.appearanceState).toBe('CustomOn')
 
         field.checked = false
-        expect((field.content.get('V') as PdfName).value).toBe('Off')
-        expect((field.content.get('AS') as PdfName).value).toBe('Off')
+        expect(field.value).toBe('Off')
+        expect(field.appearanceState).toBe('Off')
     })
 
     it('should preserve custom appearance state names in generateAppearance', () => {
@@ -1931,7 +1929,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
                 const onState = childOnStates[i]
                 const child = new PdfButtonFormField()
                 child.rect = [100 + i * 80, 500, 110 + i * 80, 510]
-                child.content.set('AS', new PdfName('Off'))
+                child.appearanceState = 'Off'
                 child.content.set('V', new PdfName('Off'))
 
                 const checkmarkContent = new TextEncoder().encode(
@@ -1952,9 +1950,11 @@ describe('AcroForm Appearance Stream Font Resources', () => {
 
             parent.value = ''
 
-            expect(parent.content.get('V')?.value).toBe('')
-            expect(children[0].content.get('AS')?.value).toBe('2')
-            expect(children[1].content.get('AS')?.value).toBe('Off')
+            // V is updated to the selected child's on-state so Acrobat
+            // can correlate the active widget.
+            expect(parent.value).toBe('2')
+            expect(children[0].appearanceState).toBe('2')
+            expect(children[1].appearanceState).toBe('Off')
         })
 
         it('should check first child when value does not match any AP on-state', () => {
@@ -1962,22 +1962,22 @@ describe('AcroForm Appearance Stream Font Resources', () => {
 
             parent.value = 'No'
 
-            expect(parent.content.get('V')?.value).toBe('No')
-            expect(children[0].content.get('AS')?.value).toBe('2')
-            expect(children[1].content.get('AS')?.value).toBe('Off')
+            expect(parent.value).toBe('No')
+            expect(children[0].appearanceState).toBe('2')
+            expect(children[1].appearanceState).toBe('Off')
         })
 
         it('should uncheck all children when value is Off', () => {
             const { parent, children } = createButtonGroup(['2', '1'])
 
             parent.value = ''
-            expect(children[0].content.get('AS')?.value).toBe('2')
+            expect(children[0].appearanceState).toBe('2')
 
             parent.value = 'Off'
 
-            expect(parent.content.get('V')?.value).toBe('Off')
-            expect(children[0].content.get('AS')?.value).toBe('Off')
-            expect(children[1].content.get('AS')?.value).toBe('Off')
+            expect(parent.value).toBe('Off')
+            expect(children[0].appearanceState).toBe('Off')
+            expect(children[1].appearanceState).toBe('Off')
         })
 
         it('should preserve raw V value while AS uses existing AP on-state', () => {
@@ -1985,9 +1985,9 @@ describe('AcroForm Appearance Stream Font Resources', () => {
 
             parent.value = 'SomeArbitraryValue'
 
-            expect(parent.content.get('V')?.value).toBe('SomeArbitraryValue')
-            expect(children[0].content.get('AS')?.value).toBe('Yes')
-            expect(children[1].content.get('AS')?.value).toBe('Off')
+            expect(parent.value).toBe('SomeArbitraryValue')
+            expect(children[0].appearanceState).toBe('Yes')
+            expect(children[1].appearanceState).toBe('Off')
         })
 
         it('should not destroy existing AP streams when setting value', () => {
@@ -2017,7 +2017,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
 
             field.value = ''
 
-            expect(field.content.get('V')?.value).toBe('')
+            expect(field.value).toBe('')
             expect(field.appearanceState).toBe('No')
         })
 
@@ -2027,7 +2027,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
 
             const child = new PdfButtonFormField()
             child.rect = [0, 0, 10, 10]
-            child.content.set('AS', new PdfName('Off'))
+            child.appearanceState = 'Off'
             child.parent = parent
 
             parent.value = 'Yes'
@@ -2148,17 +2148,17 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             // Set value on group — blank means "checked" → first child selected
             groupParent.value = ''
 
-            // Verify state
-            expect(groupParent.content.get('V')?.value).toBe('')
+            // Verify state — V is set to the first child's on-state
+            expect(groupParent.value).toBe('0')
             expect(groupParent.isGroup).toBe(true)
 
             const kids = groupParent.children
             expect(kids.length).toBe(2)
 
             // First child should be checked (AS matches generated on-state)
-            expect(kids[0].content.get('AS')?.value).not.toBe('Off')
+            expect(kids[0].appearanceState).not.toBe('Off')
             // Second child should be unchecked
-            expect(kids[1].content.get('AS')?.value).toBe('Off')
+            expect(kids[1].appearanceState).toBe('Off')
 
             // Both children should have appearance streams
             expect(kids[0].getAppearanceStream()).toBeDefined()

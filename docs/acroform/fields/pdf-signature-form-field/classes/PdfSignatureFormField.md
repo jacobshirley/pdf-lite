@@ -292,18 +292,40 @@ Optional tokens to prepend or append during serialization
 
 #### Get Signature
 
-> **get** **appearanceStates**(): `string`[]
+> **get** **appearanceStates**(): readonly `string`[]
 
 Returns the list of appearance state names from the normal appearance
 dictionary (e.g. ["Yes", "Off"] for a checkbox).
 
 ##### Returns
 
-`string`[]
+readonly `string`[]
 
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`appearanceStates`](../../pdf-form-field/classes/PdfFormField.md#appearancestates)
+
+---
+
+### appearanceStream
+
+#### Set Signature
+
+> **set** **appearanceStream**(`stream`): `void`
+
+##### Parameters
+
+###### stream
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\> | \{\[`key`: `string`\]: [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>; \}
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`appearanceStream`](../../pdf-form-field/classes/PdfFormField.md#appearancestream)
 
 ---
 
@@ -620,6 +642,28 @@ dictionary (e.g. ["Yes", "Off"] for a checkbox).
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`doNotSpellCheck`](../../pdf-form-field/classes/PdfFormField.md#donotspellcheck)
+
+---
+
+### downAppearanceStream
+
+#### Set Signature
+
+> **set** **downAppearanceStream**(`stream`): `void`
+
+##### Parameters
+
+###### stream
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\> | \{\[`key`: `string`\]: [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>; \}
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`downAppearanceStream`](../../pdf-form-field/classes/PdfFormField.md#downappearancestream)
 
 ---
 
@@ -1299,6 +1343,52 @@ The type of this PDF object
 
 ---
 
+### onState
+
+#### Get Signature
+
+> **get** **onState**(): `string` \| `null`
+
+##### Returns
+
+`string` \| `null`
+
+#### Set Signature
+
+> **set** **onState**(`state`): `void`
+
+##### Parameters
+
+###### state
+
+`string`
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`onState`](../../pdf-form-field/classes/PdfFormField.md#onstate)
+
+---
+
+### onStates
+
+#### Get Signature
+
+> **get** **onStates**(): `string`[]
+
+##### Returns
+
+`string`[]
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`onStates`](../../pdf-form-field/classes/PdfFormField.md#onstates)
+
+---
+
 ### page
 
 #### Get Signature
@@ -1707,34 +1797,6 @@ The type of this PDF object
 
 ## Methods
 
-### \_storeValue()
-
-> `protected` **\_storeValue**(`val`, `fieldParent`): `boolean`
-
-Writes the value to the dictionary. Returns true if appearance generation
-should proceed, false to skip it (e.g. when value was cleared).
-Override in subclasses to change the stored representation.
-
-#### Parameters
-
-##### val
-
-`string` | [`PdfString`](../../../../core/objects/pdf-string/classes/PdfString.md)
-
-##### fieldParent
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md) | `undefined`
-
-#### Returns
-
-`boolean`
-
-#### Inherited from
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`_storeValue`](../../pdf-form-field/classes/PdfFormField.md#_storevalue)
-
----
-
 ### as()
 
 > **as**\<`T`\>(`ctor`): `T`
@@ -1921,6 +1983,26 @@ Compares this object to another for equality based on their token representation
 
 ---
 
+### hasAppearanceStream()
+
+> **hasAppearanceStream**(`setting`): `boolean`
+
+#### Parameters
+
+##### setting
+
+`string`
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`hasAppearanceStream`](../../pdf-form-field/classes/PdfFormField.md#hasappearancestream)
+
+---
+
 ### inPdf()
 
 > **inPdf**(): `boolean`
@@ -2041,26 +2123,6 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ---
 
-### setAppearanceStream()
-
-> **setAppearanceStream**(`stream`): `void`
-
-#### Parameters
-
-##### stream
-
-[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\> | \{\[`key`: `string`\]: [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>; \}
-
-#### Returns
-
-`void`
-
-#### Inherited from
-
-[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`setAppearanceStream`](../../pdf-form-field/classes/PdfFormField.md#setappearancestream)
-
----
-
 ### setImmutable()
 
 > **setImmutable**(`immutable?`): `void`
@@ -2105,6 +2167,26 @@ Sets the modified state of the object. Override this method if the modified stat
 
 ---
 
+### setRawValue()
+
+> `protected` **setRawValue**(`val`): `void`
+
+#### Parameters
+
+##### val
+
+`string` | [`PdfString`](../../../../core/objects/pdf-string/classes/PdfString.md)
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`setRawValue`](../../pdf-form-field/classes/PdfFormField.md#setrawvalue)
+
+---
+
 ### toBase64()
 
 > **toBase64**(): `string`
@@ -2142,6 +2224,36 @@ Converts the object to a ByteArray, optionally padding to a specified length
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`toBytes`](../../pdf-form-field/classes/PdfFormField.md#tobytes)
+
+---
+
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### content
+
+> **content**: `object`
+
+##### generationNumber
+
+> **generationNumber**: `number`
+
+##### objectNumber
+
+> **objectNumber**: `number`
+
+##### type
+
+> **type**: `string` = `'indirect-object'`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`toJSON`](../../pdf-form-field/classes/PdfFormField.md#tojson)
 
 ---
 
@@ -2244,6 +2356,26 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`createPlaceholder`](../../pdf-form-field/classes/PdfFormField.md#createplaceholder)
+
+---
+
+### getFieldType()
+
+> `static` **getFieldType**(`other`): `"Sig"` \| `"Tx"` \| `"Btn"` \| `"Ch"` \| `null`
+
+#### Parameters
+
+##### other
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)
+
+#### Returns
+
+`"Sig"` \| `"Tx"` \| `"Btn"` \| `"Ch"` \| `null`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`getFieldType`](../../pdf-form-field/classes/PdfFormField.md#getfieldtype)
 
 ---
 

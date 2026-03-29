@@ -268,6 +268,16 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 ---
 
+### toJSON()
+
+> `abstract` **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+---
+
 ### tokenize()
 
 > `abstract` `protected` **tokenize**(): [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]

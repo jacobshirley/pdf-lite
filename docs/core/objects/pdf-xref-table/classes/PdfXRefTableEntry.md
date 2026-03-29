@@ -366,15 +366,49 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 ---
 
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### byteOffset
+
+> **byteOffset**: `number`
+
+##### generationNumber
+
+> **generationNumber**: `number`
+
+##### inUse
+
+> **inUse**: `boolean`
+
+##### objectNumber
+
+> **objectNumber**: `number`
+
+##### type
+
+> **type**: `string` = `'xref-entry'`
+
+#### Overrides
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toJSON`](../../pdf-object/classes/PdfObject.md#tojson)
+
+---
+
 ### tokenize()
 
-> `protected` **tokenize**(): [`PdfXRefTableEntryToken`](../../../tokens/xref-table-entry-token/classes/PdfXRefTableEntryToken.md)[]
+> `protected` **tokenize**(): [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
 
 Tokenizes the object into an array of PdfTokens
 
 #### Returns
 
-[`PdfXRefTableEntryToken`](../../../tokens/xref-table-entry-token/classes/PdfXRefTableEntryToken.md)[]
+[`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
 
 #### Overrides
 

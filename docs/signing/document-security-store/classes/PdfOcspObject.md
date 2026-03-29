@@ -576,6 +576,36 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 ---
 
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### content
+
+> **content**: `object`
+
+##### generationNumber
+
+> **generationNumber**: `number`
+
+##### objectNumber
+
+> **objectNumber**: `number`
+
+##### type
+
+> **type**: `string` = `'indirect-object'`
+
+#### Inherited from
+
+[`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md).[`toJSON`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md#tojson)
+
+---
+
 ### tokenize()
 
 > `protected` **tokenize**(): [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[]

@@ -223,6 +223,22 @@ UTF-16BE strings start with the byte order mark 0xFE 0xFF.
 
 ---
 
+### length
+
+#### Get Signature
+
+> **get** **length**(): `number`
+
+##### Returns
+
+`number`
+
+#### Inherited from
+
+[`PdfString`](../../../../core/objects/pdf-string/classes/PdfString.md).[`length`](../../../../core/objects/pdf-string/classes/PdfString.md#length)
+
+---
+
 ### objectType
 
 #### Get Signature
@@ -499,15 +515,37 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 ---
 
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### type
+
+> **type**: `string` = `'string'`
+
+##### value
+
+> **value**: `string`
+
+#### Inherited from
+
+[`PdfString`](../../../../core/objects/pdf-string/classes/PdfString.md).[`toJSON`](../../../../core/objects/pdf-string/classes/PdfString.md#tojson)
+
+---
+
 ### tokenize()
 
-> `protected` **tokenize**(): [`PdfStringToken`](../../../../core/tokens/string-token/classes/PdfStringToken.md)[]
+> `protected` **tokenize**(): [`PdfToken`](../../../../core/tokens/token/classes/PdfToken.md)[]
 
 Tokenizes the object into an array of PdfTokens
 
 #### Returns
 
-[`PdfStringToken`](../../../../core/tokens/string-token/classes/PdfStringToken.md)[]
+[`PdfToken`](../../../../core/tokens/token/classes/PdfToken.md)[]
 
 #### Inherited from
 
@@ -544,6 +582,20 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfString`](../../../../core/objects/pdf-string/classes/PdfString.md).[`toTokens`](../../../../core/objects/pdf-string/classes/PdfString.md#totokens)
+
+---
+
+### trim()
+
+> **trim**(): `string`
+
+#### Returns
+
+`string`
+
+#### Inherited from
+
+[`PdfString`](../../../../core/objects/pdf-string/classes/PdfString.md).[`trim`](../../../../core/objects/pdf-string/classes/PdfString.md#trim)
 
 ---
 

@@ -629,6 +629,36 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ---
 
+### move()
+
+> **move**\<`K`\>(`fromKey`, `toKey`): `void`
+
+#### Type Parameters
+
+##### K
+
+`K` _extends_ `"Predictor"` \| `"Columns"` \| `"Colors"` \| `"BitsPerComponent"`
+
+#### Parameters
+
+##### fromKey
+
+`K` | [`PdfName`](../../pdf-name/classes/PdfName.md)\<`K`\>
+
+##### toKey
+
+`K` | [`PdfName`](../../pdf-name/classes/PdfName.md)\<`K`\>
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfDictionary`](../../pdf-dictionary/classes/PdfDictionary.md).[`move`](../../pdf-dictionary/classes/PdfDictionary.md#move)
+
+---
+
 ### set()
 
 > **set**\<`K`\>(`key`, `value`): `void`
@@ -750,6 +780,28 @@ Converts the object to a ByteArray, optionally padding to a specified length
 #### Returns
 
 [`DecodeParms`](../../../../types/type-aliases/DecodeParms.md)
+
+---
+
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### entries
+
+> **entries**: `Record`\<`string`, `object`\>
+
+##### type
+
+> **type**: `string` = `'dictionary'`
+
+#### Inherited from
+
+[`PdfDictionary`](../../pdf-dictionary/classes/PdfDictionary.md).[`toJSON`](../../pdf-dictionary/classes/PdfDictionary.md#tojson)
 
 ---
 

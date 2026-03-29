@@ -340,6 +340,36 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 ---
 
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### dict
+
+> **dict**: `object`
+
+###### dict.entries
+
+> **entries**: `Record`\<`string`, `object`\>
+
+###### dict.type
+
+> **type**: `string` = `'dictionary'`
+
+##### type
+
+> **type**: `string` = `'trailer'`
+
+#### Overrides
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toJSON`](../../pdf-object/classes/PdfObject.md#tojson)
+
+---
+
 ### tokenize()
 
 > `protected` **tokenize**(): [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]

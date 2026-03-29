@@ -56,6 +56,22 @@ Returns an async iterator for the stream.
 
 An async iterator that yields chunks from the stream.
 
+##### \[asyncDispose\]()
+
+> **\[asyncDispose\]**(): `Promise`\<`void`\>
+
+###### Returns
+
+`Promise`\<`void`\>
+
+##### \[asyncIterator\]()
+
+> **\[asyncIterator\]**(): \{ next(): Promise\<IteratorResult\<PdfObject, any\>\>; \[Symbol.asyncIterator\](): ...; \[Symbol.asyncDispose\](): Promise\<...\>; \}
+
+###### Returns
+
+\{ next(): Promise\<IteratorResult\<PdfObject, any\>\>; \[Symbol.asyncIterator\](): ...; \[Symbol.asyncDispose\](): Promise\<...\>; \}
+
 ##### next()
 
 > **next**(): `Promise`\<`IteratorResult`\<[`PdfObject`](../../../objects/pdf-object/classes/PdfObject.md), `any`\>\>

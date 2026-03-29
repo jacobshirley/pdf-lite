@@ -334,15 +334,37 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 ---
 
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### type
+
+> **type**: `string` = `'boolean'`
+
+##### value
+
+> **value**: `boolean`
+
+#### Overrides
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toJSON`](../../pdf-object/classes/PdfObject.md#tojson)
+
+---
+
 ### tokenize()
 
-> `protected` **tokenize**(): [`PdfBooleanToken`](../../../tokens/boolean-token/classes/PdfBooleanToken.md)[]
+> `protected` **tokenize**(): [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
 
 Tokenizes the object into an array of PdfTokens
 
 #### Returns
 
-[`PdfBooleanToken`](../../../tokens/boolean-token/classes/PdfBooleanToken.md)[]
+[`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
 
 #### Overrides
 

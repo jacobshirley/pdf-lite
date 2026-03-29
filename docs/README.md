@@ -179,3 +179,4 @@
 - [utils/stringToBytes](utils/stringToBytes/README.md)
 - [utils/stringToHexBytes](utils/stringToHexBytes/README.md)
 - [utils/unescapeString](utils/unescapeString/README.md)
+- [utils/xml](utils/xml/README.md)

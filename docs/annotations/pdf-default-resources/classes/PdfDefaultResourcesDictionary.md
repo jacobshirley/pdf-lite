@@ -435,6 +435,36 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ---
 
+### move()
+
+> **move**\<`K`\>(`fromKey`, `toKey`): `void`
+
+#### Type Parameters
+
+##### K
+
+`K` _extends_ `"Font"` \| `"ProcSet"` \| `"ExtGState"` \| `"ColorSpace"` \| `"Pattern"` \| `"Shading"` \| `"XObject"`
+
+#### Parameters
+
+##### fromKey
+
+`K` | [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`K`\>
+
+##### toKey
+
+`K` | [`PdfName`](../../../core/objects/pdf-name/classes/PdfName.md)\<`K`\>
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`move`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#move)
+
+---
+
 ### set()
 
 > **set**\<`K`\>(`key`, `value`): `void`
@@ -546,6 +576,28 @@ Converts the object to a ByteArray, optionally padding to a specified length
 #### Inherited from
 
 [`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`toBytes`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#tobytes)
+
+---
+
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### entries
+
+> **entries**: `Record`\<`string`, `object`\>
+
+##### type
+
+> **type**: `string` = `'dictionary'`
+
+#### Inherited from
+
+[`PdfDictionary`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md).[`toJSON`](../../../core/objects/pdf-dictionary/classes/PdfDictionary.md#tojson)
 
 ---
 

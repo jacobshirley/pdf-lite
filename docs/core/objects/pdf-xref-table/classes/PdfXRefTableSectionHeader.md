@@ -346,15 +346,41 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 ---
 
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### entryCount
+
+> **entryCount**: `number`
+
+##### startObjectNumber
+
+> **startObjectNumber**: `number`
+
+##### type
+
+> **type**: `string` = `'xref-section-header'`
+
+#### Overrides
+
+[`PdfObject`](../../pdf-object/classes/PdfObject.md).[`toJSON`](../../pdf-object/classes/PdfObject.md#tojson)
+
+---
+
 ### tokenize()
 
-> `protected` **tokenize**(): [`PdfXRefTableSectionStartToken`](../../../tokens/xref-table-section-start-token/classes/PdfXRefTableSectionStartToken.md)[]
+> `protected` **tokenize**(): [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
 
 Tokenizes the object into an array of PdfTokens
 
 #### Returns
 
-[`PdfXRefTableSectionStartToken`](../../../tokens/xref-table-section-start-token/classes/PdfXRefTableSectionStartToken.md)[]
+[`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
 
 #### Overrides
 

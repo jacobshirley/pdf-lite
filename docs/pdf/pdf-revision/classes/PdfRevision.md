@@ -386,13 +386,11 @@ Creates a deep clone of the object
 
 > **cloneImpl**(): `this`
 
-Creates a deep copy of this revision.
+Creates a deep clone of the object. Override this method in subclasses to ensure all properties are cloned correctly
 
 #### Returns
 
 `this`
-
-A cloned PdfRevision instance
 
 #### Overrides
 
@@ -646,6 +644,32 @@ Converts the object to a ByteArray, optionally padding to a specified length
 #### Inherited from
 
 [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`toBytes`](../../../core/objects/pdf-object/classes/PdfObject.md#tobytes)
+
+---
+
+### toJSON()
+
+> **toJSON**(): `object`
+
+Creates a deep copy of this revision.
+
+#### Returns
+
+`object`
+
+A cloned PdfRevision instance
+
+##### objects
+
+> **objects**: `object`[]
+
+##### type
+
+> **type**: `string` = `'revision'`
+
+#### Overrides
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`toJSON`](../../../core/objects/pdf-object/classes/PdfObject.md#tojson)
 
 ---
 

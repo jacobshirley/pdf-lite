@@ -1052,6 +1052,28 @@ The PDF document as a Uint8Array
 
 ---
 
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### revisions
+
+> **revisions**: `object`[]
+
+##### type
+
+> **type**: `string` = `'document'`
+
+#### Overrides
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`toJSON`](../../../core/objects/pdf-object/classes/PdfObject.md#tojson)
+
+---
+
 ### tokenize()
 
 > `protected` **tokenize**(): [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[]

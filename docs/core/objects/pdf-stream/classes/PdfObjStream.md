@@ -734,6 +734,40 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 ---
 
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### dataLength
+
+> **dataLength**: `number`
+
+##### header
+
+> **header**: `object`
+
+###### header.entries
+
+> **entries**: `Record`\<`string`, `object`\>
+
+###### header.type
+
+> **type**: `string` = `'dictionary'`
+
+##### type
+
+> **type**: `string` = `'stream'`
+
+#### Inherited from
+
+[`PdfStream`](PdfStream.md).[`toJSON`](PdfStream.md#tojson)
+
+---
+
 ### tokenize()
 
 > `protected` **tokenize**(): [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]

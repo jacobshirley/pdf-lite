@@ -94,6 +94,22 @@ Returns an async iterator for the stream.
 
 An async iterator that yields chunks from the stream.
 
+##### \[asyncDispose\]()
+
+> **\[asyncDispose\]**(): `Promise`\<`void`\>
+
+###### Returns
+
+`Promise`\<`void`\>
+
+##### \[asyncIterator\]()
+
+> **\[asyncIterator\]**(): \{ next(): Promise\<IteratorResult\<T, any\>\>; \[Symbol.asyncIterator\](): ...; \[Symbol.asyncDispose\](): Promise\<void\>; \}
+
+###### Returns
+
+\{ next(): Promise\<IteratorResult\<T, any\>\>; \[Symbol.asyncIterator\](): ...; \[Symbol.asyncDispose\](): Promise\<void\>; \}
+
 ##### next()
 
 > **next**(): `Promise`\<`IteratorResult`\<`T`, `any`\>\>
@@ -101,3 +117,7 @@ An async iterator that yields chunks from the stream.
 ###### Returns
 
 `Promise`\<`IteratorResult`\<`T`, `any`\>\>
+
+#### Overrides
+
+`ReadableStream.[asyncIterator]`

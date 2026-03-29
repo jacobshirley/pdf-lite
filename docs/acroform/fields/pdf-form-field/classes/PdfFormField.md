@@ -275,7 +275,7 @@ Optional tokens to prepend or append during serialization
 
 `void`
 
-#### Inherited from
+#### Overrides
 
 [`PdfWidgetAnnotation`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md).[`appearanceState`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md#appearancestate)
 
@@ -285,14 +285,32 @@ Optional tokens to prepend or append during serialization
 
 #### Get Signature
 
-> **get** **appearanceStates**(): `string`[]
+> **get** **appearanceStates**(): readonly `string`[]
 
 Returns the list of appearance state names from the normal appearance
 dictionary (e.g. ["Yes", "Off"] for a checkbox).
 
 ##### Returns
 
-`string`[]
+readonly `string`[]
+
+---
+
+### appearanceStream
+
+#### Set Signature
+
+> **set** **appearanceStream**(`stream`): `void`
+
+##### Parameters
+
+###### stream
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\> | \{\[`key`: `string`\]: [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>; \}
+
+##### Returns
+
+`void`
 
 ---
 
@@ -565,6 +583,24 @@ dictionary (e.g. ["Yes", "Off"] for a checkbox).
 ###### v
 
 `boolean`
+
+##### Returns
+
+`void`
+
+---
+
+### downAppearanceStream
+
+#### Set Signature
+
+> **set** **downAppearanceStream**(`stream`): `void`
+
+##### Parameters
+
+###### stream
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\> | \{\[`key`: `string`\]: [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>; \}
 
 ##### Returns
 
@@ -852,7 +888,7 @@ whitespace before the next token.
 
 #### Inherited from
 
-[`PdfWidgetAnnotation`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md).[`isWidget`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md#iswidget)
+[`PdfSignatureFormField`](../../pdf-signature-form-field/classes/PdfSignatureFormField.md).[`isWidget`](../../pdf-signature-form-field/classes/PdfSignatureFormField.md#iswidget)
 
 ---
 
@@ -1192,6 +1228,44 @@ The type of this PDF object
 
 ---
 
+### onState
+
+#### Get Signature
+
+> **get** **onState**(): `string` \| `null`
+
+##### Returns
+
+`string` \| `null`
+
+#### Set Signature
+
+> **set** **onState**(`state`): `void`
+
+##### Parameters
+
+###### state
+
+`string`
+
+##### Returns
+
+`void`
+
+---
+
+### onStates
+
+#### Get Signature
+
+> **get** **onStates**(): `string`[]
+
+##### Returns
+
+`string`[]
+
+---
+
 ### page
 
 #### Get Signature
@@ -1450,7 +1524,7 @@ The type of this PDF object
 
 #### Inherited from
 
-[`PdfWidgetAnnotation`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md).[`rect`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md#rect)
+[`PdfSignatureFormField`](../../pdf-signature-form-field/classes/PdfSignatureFormField.md).[`rect`](../../pdf-signature-form-field/classes/PdfSignatureFormField.md#rect)
 
 ---
 
@@ -1559,30 +1633,6 @@ The type of this PDF object
 `void`
 
 ## Methods
-
-### \_storeValue()
-
-> `protected` **\_storeValue**(`val`, `fieldParent`): `boolean`
-
-Writes the value to the dictionary. Returns true if appearance generation
-should proceed, false to skip it (e.g. when value was cleared).
-Override in subclasses to change the stored representation.
-
-#### Parameters
-
-##### val
-
-`string` | [`PdfString`](../../../../core/objects/pdf-string/classes/PdfString.md)
-
-##### fieldParent
-
-`PdfFormField` | `undefined`
-
-#### Returns
-
-`boolean`
-
----
 
 ### as()
 
@@ -1744,6 +1794,10 @@ Compares this object to another for equality based on their token representation
 
 `boolean`
 
+###### onStateName?
+
+`string`
+
 ###### textYOffset?
 
 `number`
@@ -1767,6 +1821,22 @@ Compares this object to another for equality based on their token representation
 #### Returns
 
 [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfStream`](../../../../core/objects/pdf-stream/classes/PdfStream.md)\<[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>\>\> \| `null`
+
+---
+
+### hasAppearanceStream()
+
+> **hasAppearanceStream**(`setting`): `boolean`
+
+#### Parameters
+
+##### setting
+
+`string`
+
+#### Returns
+
+`boolean`
 
 ---
 
@@ -1890,22 +1960,6 @@ Indicates whether the object has been modified. Override this method if the modi
 
 ---
 
-### setAppearanceStream()
-
-> **setAppearanceStream**(`stream`): `void`
-
-#### Parameters
-
-##### stream
-
-[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\> | \{\[`key`: `string`\]: [`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>; \}
-
-#### Returns
-
-`void`
-
----
-
 ### setImmutable()
 
 > **setImmutable**(`immutable?`): `void`
@@ -1950,6 +2004,22 @@ Sets the modified state of the object. Override this method if the modified stat
 
 ---
 
+### setRawValue()
+
+> `protected` **setRawValue**(`val`): `void`
+
+#### Parameters
+
+##### val
+
+`string` | [`PdfString`](../../../../core/objects/pdf-string/classes/PdfString.md)
+
+#### Returns
+
+`void`
+
+---
+
 ### toBase64()
 
 > **toBase64**(): `string`
@@ -1987,6 +2057,36 @@ Converts the object to a ByteArray, optionally padding to a specified length
 #### Inherited from
 
 [`PdfWidgetAnnotation`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md).[`toBytes`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md#tobytes)
+
+---
+
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### content
+
+> **content**: `object`
+
+##### generationNumber
+
+> **generationNumber**: `number`
+
+##### objectNumber
+
+> **objectNumber**: `number`
+
+##### type
+
+> **type**: `string` = `'indirect-object'`
+
+#### Inherited from
+
+[`PdfWidgetAnnotation`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md).[`toJSON`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md#tojson)
 
 ---
 
@@ -2085,6 +2185,22 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfWidgetAnnotation`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md).[`createPlaceholder`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md#createplaceholder)
+
+---
+
+### getFieldType()
+
+> `static` **getFieldType**(`other`): `"Sig"` \| `"Tx"` \| `"Btn"` \| `"Ch"` \| `null`
+
+#### Parameters
+
+##### other
+
+[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)
+
+#### Returns
+
+`"Sig"` \| `"Tx"` \| `"Btn"` \| `"Ch"` \| `null`
 
 ---
 

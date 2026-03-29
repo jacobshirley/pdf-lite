@@ -424,15 +424,37 @@ Converts the object to a ByteArray, optionally padding to a specified length
 
 ---
 
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### type
+
+> **type**: `string` = `'number'`
+
+##### value
+
+> **value**: `number`
+
+#### Inherited from
+
+[`PdfNumber`](PdfNumber.md).[`toJSON`](PdfNumber.md#tojson)
+
+---
+
 ### tokenize()
 
-> `protected` **tokenize**(): [`PdfNumberToken`](../../../tokens/number-token/classes/PdfNumberToken.md)[]
+> `protected` **tokenize**(): [`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
 
 Tokenizes the object into an array of PdfTokens
 
 #### Returns
 
-[`PdfNumberToken`](../../../tokens/number-token/classes/PdfNumberToken.md)[]
+[`PdfToken`](../../../tokens/token/classes/PdfToken.md)[]
 
 #### Inherited from
 

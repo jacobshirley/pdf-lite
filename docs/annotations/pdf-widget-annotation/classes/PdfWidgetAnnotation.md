@@ -629,7 +629,7 @@ The type of this PDF object
 
 #### Inherited from
 
-[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`rect`](../../pdf-annotation/classes/PdfAnnotation.md#rect)
+[`PdfSignatureFormField`](../../../acroform/fields/pdf-signature-form-field/classes/PdfSignatureFormField.md).[`rect`](../../../acroform/fields/pdf-signature-form-field/classes/PdfSignatureFormField.md#rect)
 
 ---
 
@@ -978,6 +978,36 @@ Converts the object to a ByteArray, optionally padding to a specified length
 #### Inherited from
 
 [`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`toBytes`](../../pdf-annotation/classes/PdfAnnotation.md#tobytes)
+
+---
+
+### toJSON()
+
+> **toJSON**(): `object`
+
+#### Returns
+
+`object`
+
+##### content
+
+> **content**: `object`
+
+##### generationNumber
+
+> **generationNumber**: `number`
+
+##### objectNumber
+
+> **objectNumber**: `number`
+
+##### type
+
+> **type**: `string` = `'indirect-object'`
+
+#### Inherited from
+
+[`PdfAnnotation`](../../pdf-annotation/classes/PdfAnnotation.md).[`toJSON`](../../pdf-annotation/classes/PdfAnnotation.md#tojson)
 
 ---
 

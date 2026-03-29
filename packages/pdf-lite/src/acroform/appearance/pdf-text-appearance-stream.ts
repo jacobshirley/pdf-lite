@@ -128,8 +128,8 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
 
             g.beginText()
             for (let i = 0; i < chars.length && i < ctx.maxLen; i++) {
-                const cellX =
-                    cellWidth * i + cellWidth / 2 - finalFontSize * 0.3
+                const charWidth = g.measureTextWidth(chars[i])
+                const cellX = cellWidth * i + (cellWidth - charWidth) / 2
                 g.moveTo(cellX, textY)
                 g.showText(chars[i], isUnicode, reverseEncodingMap)
                 g.moveTo(-cellX, -textY)

@@ -56,8 +56,8 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         // ── Determine font size ──────────────────────────────────────
         let finalFontSize: number
 
-        if (autoSize) {
-            // Acrobat auto-size: default to 12pt with wrapping, then
+        if (autoSize && ctx.multiline) {
+            // Multiline auto-size: default to 12pt with wrapping, then
             // shrink only if the wrapped text still doesn't fit.
             finalFontSize = DEFAULT_FONT_SIZE
             const testLines = g.wrapTextToLines(value, availableWidth)
@@ -67,6 +67,25 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     availableWidth,
                     availableHeight,
                     1.2,
+                )
+            }
+            finalFontSize = Math.max(finalFontSize, 0.5)
+        } else if (autoSize) {
+            // Single-line auto-size: fit to available height, then
+            // shrink further if text overflows the width.
+            finalFontSize = Math.min(DEFAULT_FONT_SIZE, availableHeight)
+            g.setDefaultAppearance(
+                new PdfDefaultAppearance(
+                    ctx.da.fontName,
+                    finalFontSize,
+                    ctx.da.colorOp,
+                ),
+            )
+            const textWidth = g.measureTextWidth(value)
+            if (textWidth > availableWidth) {
+                finalFontSize = g.calculateFittingFontSize(
+                    value,
+                    availableWidth,
                 )
             }
             finalFontSize = Math.max(finalFontSize, 0.5)
@@ -135,7 +154,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                 g.moveTo(-cellX, -textY)
             }
             g.endText()
-        } else if (ctx.multiline || autoSize) {
+        } else if (ctx.multiline) {
             if (!autoSize) {
                 const testLines = g.wrapTextToLines(value, availableWidth)
                 const lineHeight = finalFontSize * 1.2

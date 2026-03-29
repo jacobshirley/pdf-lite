@@ -336,8 +336,12 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
 
         // Separated field/widget structure: field has no Rect but its Kids
-        // are widget annotations that do. Generate appearances for them.
+        // are widget annotations that do. Clear stale V entries on children
+        // so they inherit the parent's value, then generate appearances.
         for (const child of this.children) {
+            if (child.content.has('V')) {
+                child.content.delete('V')
+            }
             if (child.defaultGenerateAppearance) {
                 if (this._form) child.form = this._form
                 child.generateAppearance()

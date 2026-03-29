@@ -1822,6 +1822,56 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         const tjCount = (content.match(/\bTj\b/g) || []).length
         expect(tjCount).toBe(8)
     })
+
+    it('should update child widget appearances when parent value changes', () => {
+        const { document: doc, pageRef: pRef } = createDocumentWithAcroForm()
+        const acroform = doc.acroform!
+
+        // Create a separated field (no rect) with two child widgets
+        const field = new PdfTextFormField({ form: acroform })
+        field.fieldType = 'Text'
+        field.name = 'SeparatedField'
+        field.defaultAppearance = '/Helv 0 Tf 0 g'
+        // No rect on the parent — separated field/widget structure
+        acroform.addField(field)
+
+        const child1 = new PdfTextFormField({ form: acroform })
+        child1.rect = [100, 700, 300, 720]
+        child1.defaultAppearance = '/Helv 12 Tf 0 g'
+        child1.isWidget = true
+        child1.parentRef = pRef
+        // Simulate a stale V on the child (as found in real PDFs)
+        child1.content.set('V', new PdfString('OLD_VALUE'))
+        doc.add(child1)
+
+        const child2 = new PdfTextFormField({ form: acroform })
+        child2.rect = [100, 650, 300, 670]
+        child2.defaultAppearance = '/Helv 12 Tf 0 g'
+        child2.isWidget = true
+        child2.parentRef = pRef
+        child2.content.set('V', new PdfString('OLD_VALUE'))
+        doc.add(child2)
+
+        field.children = [child1, child2]
+
+        // Set new value on the parent field
+        field.value = 'NEW_VALUE'
+
+        // Children should inherit the new value, not keep stale V
+        expect(child1.value).toBe('NEW_VALUE')
+        expect(child2.value).toBe('NEW_VALUE')
+
+        // Children's appearances should contain the new value
+        const ap1 = child1.getAppearanceStream()
+        expect(ap1).toBeDefined()
+        expect(ap1!.content.dataAsString).toContain('NEW_VALUE')
+        expect(ap1!.content.dataAsString).not.toContain('OLD_VALUE')
+
+        const ap2 = child2.getAppearanceStream()
+        expect(ap2).toBeDefined()
+        expect(ap2!.content.dataAsString).toContain('NEW_VALUE')
+        expect(ap2!.content.dataAsString).not.toContain('OLD_VALUE')
+    })
 })
 
 describe('AcroForm Appearance Stream Font Resources', () => {

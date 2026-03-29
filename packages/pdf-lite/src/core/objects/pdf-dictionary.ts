@@ -45,6 +45,17 @@ export class PdfDictionary<
         }
     }
 
+    move<K extends Extract<keyof T, string>>(
+        fromKey: PdfName<K> | K,
+        toKey: PdfName<K> | K,
+    ): void {
+        const value = this.get(fromKey)
+        if (value !== undefined) {
+            this.set(toKey, value)
+            this.delete(fromKey)
+        }
+    }
+
     set<K extends Extract<keyof T, string>>(key: PdfName<K> | K, value: T[K]) {
         const currentValue = this.get(key)
         if (currentValue !== value && !currentValue?.equals(value)) {

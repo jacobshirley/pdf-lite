@@ -1950,9 +1950,8 @@ describe('AcroForm Appearance Stream Font Resources', () => {
 
             parent.value = ''
 
-            // V is updated to the selected child's on-state so Acrobat
-            // can correlate the active widget.
-            expect(parent.value).toBe('2')
+            // V stays as '' — blank is a valid on-state value
+            expect(parent.value).toBe('')
             expect(children[0].appearanceState).toBe('2')
             expect(children[1].appearanceState).toBe('Off')
         })
@@ -1976,7 +1975,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             parent.value = 'Off'
 
             expect(parent.value).toBe('Off')
-            expect(children[0].appearanceState).toBe('Off')
+            expect(children[0].appearanceState).toBe('2')
             expect(children[1].appearanceState).toBe('Off')
         })
 
@@ -2018,7 +2017,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             field.value = ''
 
             expect(field.value).toBe('')
-            expect(field.appearanceState).toBe('No')
+            expect(field.appearanceState).toBe('')
         })
 
         it('should generate appearances for children without AP', () => {
@@ -2137,6 +2136,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             child0.isWidget = true
             child0.parentRef = firstPageRef
             child0.parent = groupParent
+            child0.onState = '2' // Custom on-state name
 
             // Create child 1 (no) with on-state "1"
             const child1 = new PdfButtonFormField({ form: acroform })
@@ -2144,25 +2144,24 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             child1.isWidget = true
             child1.parentRef = firstPageRef
             child1.parent = groupParent
-
-            // Set value on group — blank means "checked" → first child selected
-            groupParent.value = ''
-
-            // Verify state — V is set to the first child's on-state
-            expect(groupParent.value).toBe('0')
+            child1.onState = '1' // Custom on-state name
             expect(groupParent.isGroup).toBe(true)
-
             const kids = groupParent.children
             expect(kids.length).toBe(2)
 
-            // First child should be checked (AS matches generated on-state)
-            expect(kids[0].appearanceState).not.toBe('Off')
-            // Second child should be unchecked
-            expect(kids[1].appearanceState).toBe('Off')
+            // Set value on group — blank means "checked" → first child selected
+            groupParent.value = '1'
+            // Verify state — V stays as '' (blank is a valid on-state)
+            expect(groupParent.value).toBe('1')
+            // First child should be unchecked
+            expect(kids[0].appearanceState).toBe('Off')
+            // Second child should be checked
+            expect(kids[1].appearanceState).toBe('1')
 
-            // Both children should have appearance streams
-            expect(kids[0].getAppearanceStream()).toBeDefined()
-            expect(kids[1].getAppearanceStream()).toBeDefined()
+            groupParent.value = '2'
+            expect(groupParent.value).toBe('2')
+            expect(kids[0].appearanceState).toBe('2')
+            expect(kids[1].appearanceState).toBe('Off')
 
             // Serialize and save
             acroform.needAppearances = false

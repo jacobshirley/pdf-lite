@@ -1,8 +1,8 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfButtonAppearanceStream } from '../appearance/pdf-button-appearance-stream.js'
-import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
-import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
+import { PdfAcroForm } from '../index.js'
+import { PdfIndirectObject } from '../../index.js'
 
 /**
  * Button form field subtype (checkboxes, radio buttons, push buttons).
@@ -12,8 +12,26 @@ export class PdfButtonFormField extends PdfFormField {
         PdfFormField.registerFieldType('Btn', PdfButtonFormField)
     }
 
-    override set defaultValue(val: string) {
-        this.content.set('DV', new PdfName(val))
+    constructor(other?: PdfIndirectObject | { form?: PdfAcroForm }) {
+        super(other)
+        if (this.isWidget) {
+            this.initWidget()
+        }
+    }
+
+    private initWidget() {
+        this.rect ||= [0, 0, 50, 50]
+        this.generateAppearance({
+            onStateName: this.onState ?? 'Yes',
+        })
+        this.appearanceState ??= 'Off'
+    }
+
+    override set isWidget(val: boolean) {
+        super.isWidget = val
+        if (val && !this.appearanceStream) {
+            this.initWidget()
+        }
     }
 
     get isGroup(): boolean {
@@ -26,101 +44,41 @@ export class PdfButtonFormField extends PdfFormField {
 
     override set value(val: string | PdfString) {
         const strVal = val instanceof PdfString ? val.value : val
-        const fieldParent = this.parent?.fieldType ? this.parent : undefined
-
-        if (strVal === 'Off') {
-            this.content.set('V', new PdfName('Off'))
-            fieldParent?.content.set('V', new PdfName('Off'))
-            this.appearanceState = 'Off'
-            for (const child of this.children) {
-                child.appearanceState = 'Off'
-            }
-            this._form?.xfa?.datasets?.updateField(this.name, this.value)
-            return
-        }
-
-        // Any non-"Off" value (including blank) means "checked".
-        // V stores the raw value; AS uses the existing on-state from AP.
-        this.content.set('V', new PdfName(strVal))
-        fieldParent?.content.set('V', new PdfName(strVal))
+        this.setRawValue(new PdfString(strVal))
 
         if (this.isGroup) {
-            // Check the first child, uncheck the rest.
-            // Each child in a radio group MUST have a unique on-state name so
-            // PDF viewers can distinguish them (e.g. "0", "1", "2", …).
-            let needsGeneration = false
             const children = this.children
-            // Resolve each child's unique on-state name
-            const onStates: string[] = []
+
+            let wasSet = false
             for (let i = 0; i < children.length; i++) {
-                const existing = children[i].appearanceStates.find(
-                    (s) => s !== 'Off',
-                )
-                if (existing) {
-                    onStates.push(existing)
-                } else {
-                    onStates.push(String(i))
-                    needsGeneration = true
+                const foundState = children[i].onStates.includes(strVal)
+                if (!wasSet && foundState) {
+                    wasSet = true
                 }
+                const child = children[i]
+                const stateName = foundState ? strVal : 'Off'
+                child.appearanceState = stateName
+                if (this._form) child.form = this._form
             }
 
-            // First child is selected; set AS to its on-state.
-            // All other children get AS = Off.
-            for (let i = 0; i < children.length; i++) {
-                children[i].appearanceState = i === 0 ? onStates[i] : 'Off'
-            }
-
-            // V must match the selected child's on-state for Acrobat to
-            // correlate which widget is active.
-            const selectedOnState = onStates[0]
-            this.content.set('V', new PdfName(strVal || selectedOnState))
-            fieldParent?.content.set(
-                'V',
-                new PdfName(strVal || selectedOnState),
-            )
-
-            if (needsGeneration && this.defaultGenerateAppearance) {
-                for (let i = 0; i < children.length; i++) {
-                    const child = children[i]
-                    if (child.rect && child.defaultGenerateAppearance) {
-                        if (this._form) child.form = this._form
-                        child.generateAppearance({
-                            onStateName: onStates[i],
-                        })
-                    }
-                }
+            if (!wasSet && children.length > 0) {
+                // If value doesn't match any on-state, check first child by default
+                children[0].appearanceState = children[0].onStates[0] ?? 'Off'
             }
         } else {
-            const onState =
-                this.appearanceStates.find((s) => s !== 'Off') ??
-                (strVal || 'Yes')
-            this.appearanceState = onState
-            if (
-                !this.appearanceStates.includes(onState) &&
-                this.defaultGenerateAppearance
-            ) {
-                this.generateAppearance()
-            }
+            this.appearanceState = strVal
         }
-
-        this._form?.xfa?.datasets?.updateField(this.name, this.value)
     }
 
     get checked(): boolean {
-        const v = this.content.get('V') ?? this.parent?.content.get('V')
-        return v instanceof PdfName && v.value !== 'Off'
+        return !(this.appearanceState === 'Off' || this.value === 'Off')
     }
 
     set checked(isChecked: boolean) {
-        const target = this.parent ?? this
         if (isChecked) {
-            const onState =
-                this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
-            target.content.set('V', new PdfName(onState))
-            this.appearanceState = onState
+            this.value = this.onState ?? 'Yes'
         } else {
-            target.content.set('V', new PdfName('Off'))
-            this.appearanceState = 'Off'
+            this.value = 'Off'
         }
     }
 
@@ -152,23 +110,27 @@ export class PdfButtonFormField extends PdfFormField {
             contentStream: '',
         })
 
-        const existingOnState = this.appearanceStates.find((s) => s !== 'Off')
+        const existingOnState = this.onState
         const as = this.appearanceState
         const onKey =
             options?.onStateName ??
-            existingOnState ??
-            (as && as !== 'Off' ? as : 'Yes')
+            (as && as !== 'Off' ? as : (existingOnState ?? 'Yes'))
+
+        if (onKey === 'Off') {
+            throw new Error(
+                "Invalid on-state name 'Off' for button field appearance stream",
+            )
+        }
+
         this.appearanceStream = {
             [onKey]: yesAppearance,
             Off: noAppearance,
         }
 
-        // Also set the Down (D) appearance so Acrobat doesn't synthesize
-        // an oversized one from the DA string during click/focus.
-        const downDict = new PdfDictionary()
-        downDict.set(onKey, yesAppearance.reference)
-        downDict.set('Off', noAppearance.reference)
-        this.appearanceStreamDict!.set('D', downDict)
+        this.downAppearanceStream = {
+            [onKey]: yesAppearance,
+            Off: noAppearance,
+        }
 
         if (options?.makeReadOnly) {
             this.readOnly = true

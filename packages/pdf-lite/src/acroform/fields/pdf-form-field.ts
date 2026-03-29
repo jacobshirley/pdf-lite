@@ -264,6 +264,29 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         this.content.set('DV', new PdfString(val))
     }
 
+    get onStates(): string[] {
+        return this.appearanceStates.filter((s) => s !== 'Off')
+    }
+
+    get onState(): string | null {
+        return this.appearanceStates.find((s) => s !== 'Off') || null
+    }
+
+    set onState(state: string) {
+        if (!this.appearanceStates.includes(state)) {
+            const currentOnState = this.onState
+            if (currentOnState) {
+                this.appearanceStreamDict
+                    ?.get('N')
+                    ?.as(PdfDictionary)
+                    ?.move(currentOnState, state)
+            } else {
+                // No existing on-state; generate a new appearance stream for the new state
+                this.generateAppearance({ onStateName: state })
+            }
+        }
+    }
+
     get value(): string {
         const v = this.content.get('V') ?? this.parent?.content.get('V')
         if (v instanceof PdfString) {
@@ -283,58 +306,49 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return ''
     }
 
-    set value(val: string | PdfString) {
-        const fieldParent = this.parent?.fieldType ? this.parent : undefined
+    protected setRawValue(val: string | PdfString) {
+        const targets: PdfFormField[] = [this]
+        const parent = this.parent
+        if (parent?.fieldType) {
+            targets.push(parent)
+        }
 
-        const shouldGenerateAppearance = this._storeValue(val, fieldParent)
-        if (shouldGenerateAppearance && this.defaultGenerateAppearance) {
-            this.generateAppearance()
-            for (const sibling of this.siblings) {
-                if (
-                    sibling !== this &&
-                    sibling.rect &&
-                    sibling.defaultGenerateAppearance
-                ) {
-                    sibling.generateAppearance()
-                }
+        for (const target of targets) {
+            const pdfVal = val instanceof PdfString ? val : new PdfString(val)
+            if (pdfVal.length === 0) {
+                target.content.delete('V')
+                target.appearanceState = null
+                target._form?.xfa?.datasets?.updateField(this.name, '')
+                return
             }
-            // Separated field/widget structure: field has no Rect but its Kids
-            // are widget annotations that do. Generate appearances for them.
-            if (!this.rect) {
-                for (const child of this.children) {
-                    if (child.rect && child.defaultGenerateAppearance) {
-                        if (this._form) child.form = this._form
-                        child.generateAppearance()
-                    }
-                }
+
+            target.content.set('V', pdfVal)
+        }
+
+        if (this.defaultGenerateAppearance) {
+            this.generateAppearance()
+        }
+
+        for (const sibling of this.siblings) {
+            if (sibling !== this && sibling.defaultGenerateAppearance) {
+                sibling.generateAppearance()
+            }
+        }
+
+        // Separated field/widget structure: field has no Rect but its Kids
+        // are widget annotations that do. Generate appearances for them.
+        for (const child of this.children) {
+            if (child.defaultGenerateAppearance) {
+                if (this._form) child.form = this._form
+                child.generateAppearance()
             }
         }
 
         this._form?.xfa?.datasets?.updateField(this.name, this.value)
     }
 
-    /**
-     * Writes the value to the dictionary. Returns true if appearance generation
-     * should proceed, false to skip it (e.g. when value was cleared).
-     * Override in subclasses to change the stored representation.
-     */
-    protected _storeValue(
-        val: string | PdfString,
-        fieldParent: PdfFormField | undefined,
-    ): boolean {
-        const pdfVal = val instanceof PdfString ? val : new PdfString(val)
-        if (pdfVal.trim() === '') {
-            this.content.delete('V')
-            fieldParent?.content.delete('V')
-            // Clear AS to reset to default appearance when value is cleared
-            this.content.delete('AS')
-            fieldParent?.content.delete('AS')
-            this._form?.xfa?.datasets?.updateField(this.name, '')
-            return true
-        }
-        this.content.set('V', pdfVal)
-        fieldParent?.content.set('V', pdfVal)
-        return true
+    set value(val: string | PdfString) {
+        this.setRawValue(val)
     }
 
     get fontSize(): number | null {
@@ -642,6 +656,25 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
     }
 
+    set downAppearanceStream(
+        stream:
+            | PdfIndirectObject
+            | {
+                  [key: string]: PdfIndirectObject
+              },
+    ) {
+        this.appearanceStreamDict ||= new PdfDictionary()
+        const downDict = new PdfDictionary()
+        if (stream instanceof PdfIndirectObject) {
+            downDict.set('D', stream.reference)
+        } else {
+            for (const key in stream) {
+                downDict.set(key, stream[key].reference)
+            }
+        }
+        this.appearanceStreamDict.set('D', downDict)
+    }
+
     get appearanceState(): string | null {
         return this.content.get('AS')?.as(PdfName)?.value ?? null
     }
@@ -649,8 +682,16 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     set appearanceState(state: string | null) {
         if (state === null) {
             this.content.delete('AS')
+            return
         } else {
             this.content.set('AS', new PdfName(state))
+        }
+
+        if (
+            this.defaultGenerateAppearance &&
+            !this.hasAppearanceStream(state)
+        ) {
+            this.generateAppearance()
         }
     }
 
@@ -687,6 +728,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             }
         }
         return null
+    }
+
+    hasAppearanceStream(setting: string): boolean {
+        return this.appearanceStates.includes(setting)
     }
 
     private static _fallbackCtor?: new (

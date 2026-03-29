@@ -1,6 +1,7 @@
 import { ByteArray } from '../../types.js'
 import { stringToBytes } from '../../utils/stringToBytes.js'
 import { PdfCommentToken } from '../tokens/comment-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
 import { PdfObject } from './pdf-object.js'
 
@@ -44,7 +45,7 @@ export class PdfComment extends PdfObject {
         return { type: 'comment', value: this.asString() }
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [new PdfCommentToken(this.raw)]
     }
 

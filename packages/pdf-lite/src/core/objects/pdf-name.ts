@@ -1,4 +1,5 @@
 import { PdfNameToken } from '../tokens/name-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfObject } from './pdf-object.js'
 
 export class PdfName<T extends string = string> extends PdfObject {
@@ -9,7 +10,7 @@ export class PdfName<T extends string = string> extends PdfObject {
         this.value = PdfName.unescapeName(value) as T
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [new PdfNameToken(PdfName.escapeName(this.value))]
     }
 

@@ -4,6 +4,7 @@ import { bytesToString } from '../../utils/bytesToString.js'
 import { hexBytesToBytes } from '../../utils/hexBytesToBytes.js'
 import { stringToBytes } from '../../utils/stringToBytes.js'
 import { PdfHexadecimalToken } from '../tokens/hexadecimal-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfObject } from './pdf-object.js'
 
 export class PdfHexadecimal extends PdfObject {
@@ -74,7 +75,7 @@ export class PdfHexadecimal extends PdfObject {
         return true
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [new PdfHexadecimalToken(this.raw, this._originalBytes)]
     }
 

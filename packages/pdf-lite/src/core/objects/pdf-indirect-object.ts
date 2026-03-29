@@ -1,5 +1,6 @@
 import { PdfEndObjectToken } from '../tokens/end-object-token.js'
 import { PdfStartObjectToken } from '../tokens/start-object-token.js'
+import { PdfToken } from '../tokens/token.js'
 import { PdfWhitespaceToken } from '../tokens/whitespace-token.js'
 import { PdfNull } from './pdf-null.js'
 import { PdfObject } from './pdf-object.js'
@@ -137,7 +138,7 @@ export class PdfIndirectObject<
         )
     }
 
-    protected tokenize() {
+    protected tokenize(): PdfToken[] {
         return [
             new PdfByteOffsetToken(this.offset),
             new PdfStartObjectToken(this.objectNumber, this.generationNumber),

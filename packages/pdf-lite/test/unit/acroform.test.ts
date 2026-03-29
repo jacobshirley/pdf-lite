@@ -1614,82 +1614,85 @@ describe('AcroForm Field DA Inheritance from Form Level', () => {
     })
 })
 
+function createDocumentWithAcroForm() {
+    const document = new PdfDocument()
+
+    const font = new PdfIndirectObject({
+        content: (() => {
+            const d = new PdfDictionary()
+            d.set('Type', new PdfName('Font'))
+            d.set('Subtype', new PdfName('Type1'))
+            d.set('BaseFont', new PdfName('Helvetica'))
+            return d
+        })(),
+    })
+    document.add(font)
+
+    const contentStream = new PdfIndirectObject({
+        content: new PdfStream({
+            header: new PdfDictionary(),
+            original: '',
+        }),
+    })
+    document.add(contentStream)
+
+    const pageDict = new PdfDictionary()
+    pageDict.set('Type', new PdfName('Page'))
+    pageDict.set(
+        'MediaBox',
+        new PdfArray([
+            new PdfNumber(0),
+            new PdfNumber(0),
+            new PdfNumber(612),
+            new PdfNumber(792),
+        ]),
+    )
+    pageDict.set('Contents', contentStream.reference)
+    const resourcesDict = new PdfDictionary()
+    const fontDict = new PdfDictionary()
+    fontDict.set('Helv', font.reference)
+    resourcesDict.set('Font', fontDict)
+    pageDict.set('Resources', resourcesDict)
+    const page = new PdfIndirectObject({ content: pageDict })
+    document.add(page)
+
+    const pagesDict = new PdfDictionary()
+    pagesDict.set('Type', new PdfName('Pages'))
+    pagesDict.set('Kids', new PdfArray([page.reference]))
+    pagesDict.set('Count', new PdfNumber(1))
+    const pages = new PdfIndirectObject({ content: pagesDict })
+    page.content.set('Parent', pages.reference)
+    document.add(pages)
+
+    const catalogDict = new PdfDictionary()
+    catalogDict.set('Type', new PdfName('Catalog'))
+    catalogDict.set('Pages', pages.reference)
+    const catalog = new PdfIndirectObject({ content: catalogDict })
+
+    const acroFormDict = new PdfDictionary()
+    acroFormDict.set('Fields', new PdfArray([]))
+    const formFontDict = new PdfDictionary()
+    formFontDict.set('Helv', font.reference)
+    const formResources = new PdfDictionary()
+    formResources.set('Font', formFontDict)
+    acroFormDict.set('DR', formResources)
+    acroFormDict.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+    const acroFormObj = new PdfIndirectObject({ content: acroFormDict })
+    document.add(acroFormObj)
+    catalogDict.set('AcroForm', acroFormObj.reference)
+
+    document.add(catalog)
+    document.trailerDict.set('Root', catalog.reference)
+
+    return { document, pageRef: page.reference }
+}
+
 describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
+    const { document, pageRef } = createDocumentWithAcroForm()
+
     it('should write a PDF demonstrating word wrap and font scaling', async () => {
-        const document = new PdfDocument()
-
-        // Font object
-        const font = new PdfIndirectObject({
-            content: (() => {
-                const d = new PdfDictionary()
-                d.set('Type', new PdfName('Font'))
-                d.set('Subtype', new PdfName('Type1'))
-                d.set('BaseFont', new PdfName('Helvetica'))
-                return d
-            })(),
-        })
-        document.add(font)
-
-        const contentStream = new PdfIndirectObject({
-            content: new PdfStream({
-                header: new PdfDictionary(),
-                original: '',
-            }),
-        })
-        document.add(contentStream)
-
-        const pageDict = new PdfDictionary()
-        pageDict.set('Type', new PdfName('Page'))
-        pageDict.set(
-            'MediaBox',
-            new PdfArray([
-                new PdfNumber(0),
-                new PdfNumber(0),
-                new PdfNumber(612),
-                new PdfNumber(792),
-            ]),
-        )
-        pageDict.set('Contents', contentStream.reference)
-        const resourcesDict = new PdfDictionary()
-        const fontDict = new PdfDictionary()
-        fontDict.set('Helv', font.reference)
-        resourcesDict.set('Font', fontDict)
-        pageDict.set('Resources', resourcesDict)
-        const page = new PdfIndirectObject({ content: pageDict })
-        document.add(page)
-
-        const pagesDict = new PdfDictionary()
-        pagesDict.set('Type', new PdfName('Pages'))
-        pagesDict.set('Kids', new PdfArray([page.reference]))
-        pagesDict.set('Count', new PdfNumber(1))
-        const pages = new PdfIndirectObject({ content: pagesDict })
-        page.content.set('Parent', pages.reference)
-        document.add(pages)
-
-        const catalogDict = new PdfDictionary()
-        catalogDict.set('Type', new PdfName('Catalog'))
-        catalogDict.set('Pages', pages.reference)
-        const catalog = new PdfIndirectObject({ content: catalogDict })
-
-        const acroFormDict = new PdfDictionary()
-        acroFormDict.set('Fields', new PdfArray([]))
-        const formFontDict = new PdfDictionary()
-        formFontDict.set('Helv', font.reference)
-        const formResources = new PdfDictionary()
-        formResources.set('Font', formFontDict)
-        acroFormDict.set('DR', formResources)
-        acroFormDict.set('DA', new PdfString('/Helv 12 Tf 0 g'))
-        const acroFormObj = new PdfIndirectObject({ content: acroFormDict })
-        document.add(acroFormObj)
-        catalogDict.set('AcroForm', acroFormObj.reference)
-
-        document.add(catalog)
-        document.trailerDict.set('Root', catalog.reference)
-
         const acroform = document.acroform
         if (!acroform) throw new Error('No AcroForm found')
-
-        const pageRef = page.reference
 
         // 1. Baseline: short text, wide field — no scaling, no wrap
         const baseline = new PdfTextFormField({ form: acroform })
@@ -1762,6 +1765,62 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
             bytesToBase64(document.toBytes()),
             { encoding: 'base64' },
         )
+    })
+
+    it('single-line auto-size should not shrink text by wrapping', () => {
+        const acroform = document.acroform
+        if (!acroform) throw new Error('No AcroForm found')
+
+        // Single-line, auto-size (fontSize=0), long text in a short-height field
+        const field = new PdfTextFormField({ form: acroform })
+        field.fieldType = 'Text'
+        field.name = 'AutoSizeAddress'
+        field.rect = [34, 657, 290, 667]
+        field.defaultAppearance = '/Helv 0 Tf 0 g'
+        field.isWidget = true
+        field.parentRef = pageRef
+        field.value = '28, Flat 3 Brunswick Road, Brighton, BN3 1DG, GB'
+        acroform.addField(field)
+
+        expect(field.generateAppearance()).toBe(true)
+
+        const stream = field.getAppearanceStream()
+        expect(stream).toBeDefined()
+        const content = stream!.content.dataAsString
+        // Should render as a single Tj (not multiple lines)
+        const tjCount = (content.match(/\bTj\b/g) || []).length
+        expect(tjCount).toBe(1)
+        // Font size should be reasonable (not shrunk below ~4pt)
+        const tfMatch = content.match(/\/Helv\s+([\d.]+)\s+Tf/)
+        expect(tfMatch).toBeDefined()
+        const fontSize = parseFloat(tfMatch![1])
+        expect(fontSize).toBeGreaterThanOrEqual(4)
+    })
+
+    it('auto-size comb fields should distribute characters across cells', () => {
+        const acroform = document.acroform
+        if (!acroform) throw new Error('No AcroForm found')
+
+        const field = new PdfTextFormField({ form: acroform })
+        field.fieldType = 'Text'
+        field.name = 'AutoSizeDate'
+        field.rect = [195, 626, 363, 648]
+        field.defaultAppearance = '/Helv 0 Tf 0 g'
+        field.combField = true
+        field.maxLen = 8
+        field.isWidget = true
+        field.parentRef = pageRef
+        field.value = '01012000'
+        acroform.addField(field)
+
+        expect(field.generateAppearance()).toBe(true)
+
+        const stream = field.getAppearanceStream()
+        expect(stream).toBeDefined()
+        const content = stream!.content.dataAsString
+        // Each character should be a separate Tj
+        const tjCount = (content.match(/\bTj\b/g) || []).length
+        expect(tjCount).toBe(8)
     })
 })
 

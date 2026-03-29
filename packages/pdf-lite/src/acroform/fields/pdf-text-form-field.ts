@@ -31,19 +31,17 @@ export class PdfTextFormField extends PdfFormField {
         const isUnicode = font?.isUnicode ?? false
         const reverseEncodingMap = font?.reverseEncodingMap
 
-        this.setAppearanceStream(
-            new PdfTextAppearanceStream({
-                rect: rect,
-                value: this.value,
-                da: parsed,
-                multiline: this.multiline,
-                comb: this.comb,
-                maxLen: this.maxLen,
-                fontResources,
-                isUnicode,
-                reverseEncodingMap,
-            }),
-        )
+        this.appearanceStream = new PdfTextAppearanceStream({
+            rect: rect,
+            value: this.value,
+            da: parsed,
+            multiline: this.multiline,
+            comb: this.comb,
+            maxLen: this.maxLen,
+            fontResources,
+            isUnicode,
+            reverseEncodingMap,
+        })
 
         if (options?.makeReadOnly) {
             this.readOnly = true

@@ -1,5 +1,6 @@
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 import { PdfStream } from '../../core/objects/pdf-stream.js'
+import { Xml } from '../../utils/xml.js'
 
 export interface XfaFieldData {
     name: string
@@ -38,18 +39,9 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
     }
 
     getFieldValue(name: string): string | null {
-        const xml = this.xml
-        const segments = name.split('.')
-        const leafSegment = segments[segments.length - 1]
-        const leafName = leafSegment.replace(/\[\d+\]$/, '')
-
-        if (leafName.startsWith('#')) return null
-
-        const contentRegex = new RegExp(
-            `<${PdfXfaData.escapeRegex(leafName)}(?:\\s[^>]*)?>([\\s\\S]*?)</${PdfXfaData.escapeRegex(leafName)}\\s*>`,
-        )
-        const match = xml.match(contentRegex)
-        return match ? match[1] : null
+        const leafName = PdfXfaData.leafName(name)
+        if (!leafName) return null
+        return Xml.getElementContent(this.xml, leafName)
     }
 
     importData(fields: Record<string, string | undefined>): void {
@@ -65,40 +57,46 @@ export class PdfXfaData extends PdfIndirectObject<PdfStream> {
         fieldName: string,
         value: string,
     ): string {
-        const segments = fieldName.split('.')
-        const leafSegment = segments[segments.length - 1]
-        const leafName = leafSegment.replace(/\[\d+\]$/, '')
+        const leaf = PdfXfaData.leafName(fieldName)
+        if (!leaf) return xml
 
-        if (leafName.startsWith('#')) return xml
+        const escapedValue = Xml.escapeValue(value)
 
-        const escapedValue = value
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&apos;')
+        // Try updating an existing element
+        const updated = Xml.setElementContent(xml, leaf, escapedValue)
+        if (updated !== xml) return updated
 
-        const selfClosingRegex = new RegExp(
-            `<${PdfXfaData.escapeRegex(leafName)}\\s*/>`,
-        )
-        if (selfClosingRegex.test(xml)) {
-            return xml.replace(
-                selfClosingRegex,
-                `<${leafName}>${escapedValue}</${leafName}>`,
-            )
+        // Element doesn't exist — create the missing hierarchy
+        const segments = PdfXfaData.cleanSegments(fieldName)
+        if (segments.length === 0) return xml
+
+        // Find the deepest existing ancestor (skip the leaf itself)
+        let insertAt = -1
+        for (let i = segments.length - 2; i >= 0; i--) {
+            if (Xml.hasElement(xml, segments[i])) {
+                insertAt = i
+                break
+            }
         }
+        if (insertAt === -1) return xml
 
-        const contentRegex = new RegExp(
-            `(<${PdfXfaData.escapeRegex(leafName)}(?:\\s[^>]*)?>)[\\s\\S]*?(</${PdfXfaData.escapeRegex(leafName)}\\s*>)`,
+        const childXml = Xml.wrapInElements(
+            escapedValue,
+            segments.slice(insertAt + 1),
         )
-        if (contentRegex.test(xml)) {
-            return xml.replace(contentRegex, `$1${escapedValue}$2`)
-        }
-
-        return xml
+        return Xml.insertChild(xml, segments[insertAt], childXml)
     }
 
-    private static escapeRegex(str: string): string {
-        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    private static leafName(fieldName: string): string | null {
+        const segments = fieldName.split('.')
+        const leaf = segments[segments.length - 1].replace(/\[\d+\]$/, '')
+        return leaf.startsWith('#') ? null : leaf
+    }
+
+    private static cleanSegments(fieldName: string): string[] {
+        return fieldName
+            .split('.')
+            .map((s) => s.replace(/\[\d+\]$/, ''))
+            .filter((s) => !s.startsWith('#'))
     }
 }

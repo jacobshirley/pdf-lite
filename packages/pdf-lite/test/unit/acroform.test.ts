@@ -1614,82 +1614,84 @@ describe('AcroForm Field DA Inheritance from Form Level', () => {
     })
 })
 
+function createDocumentWithAcroForm() {
+    const document = new PdfDocument()
+
+    const font = new PdfIndirectObject({
+        content: (() => {
+            const d = new PdfDictionary()
+            d.set('Type', new PdfName('Font'))
+            d.set('Subtype', new PdfName('Type1'))
+            d.set('BaseFont', new PdfName('Helvetica'))
+            return d
+        })(),
+    })
+    document.add(font)
+
+    const contentStream = new PdfIndirectObject({
+        content: new PdfStream({
+            header: new PdfDictionary(),
+            original: '',
+        }),
+    })
+    document.add(contentStream)
+
+    const pageDict = new PdfDictionary()
+    pageDict.set('Type', new PdfName('Page'))
+    pageDict.set(
+        'MediaBox',
+        new PdfArray([
+            new PdfNumber(0),
+            new PdfNumber(0),
+            new PdfNumber(612),
+            new PdfNumber(792),
+        ]),
+    )
+    pageDict.set('Contents', contentStream.reference)
+    const resourcesDict = new PdfDictionary()
+    const fontDict = new PdfDictionary()
+    fontDict.set('Helv', font.reference)
+    resourcesDict.set('Font', fontDict)
+    pageDict.set('Resources', resourcesDict)
+    const page = new PdfIndirectObject({ content: pageDict })
+    document.add(page)
+
+    const pagesDict = new PdfDictionary()
+    pagesDict.set('Type', new PdfName('Pages'))
+    pagesDict.set('Kids', new PdfArray([page.reference]))
+    pagesDict.set('Count', new PdfNumber(1))
+    const pages = new PdfIndirectObject({ content: pagesDict })
+    page.content.set('Parent', pages.reference)
+    document.add(pages)
+
+    const catalogDict = new PdfDictionary()
+    catalogDict.set('Type', new PdfName('Catalog'))
+    catalogDict.set('Pages', pages.reference)
+    const catalog = new PdfIndirectObject({ content: catalogDict })
+
+    const acroFormDict = new PdfDictionary()
+    acroFormDict.set('Fields', new PdfArray([]))
+    const formFontDict = new PdfDictionary()
+    formFontDict.set('Helv', font.reference)
+    const formResources = new PdfDictionary()
+    formResources.set('Font', formFontDict)
+    acroFormDict.set('DR', formResources)
+    acroFormDict.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+    const acroFormObj = new PdfIndirectObject({ content: acroFormDict })
+    document.add(acroFormObj)
+    catalogDict.set('AcroForm', acroFormObj.reference)
+
+    document.add(catalog)
+    document.trailerDict.set('Root', catalog.reference)
+
+    return { document, pageRef: page.reference }
+}
+
 describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
     it('should write a PDF demonstrating word wrap and font scaling', async () => {
-        const document = new PdfDocument()
-
-        // Font object
-        const font = new PdfIndirectObject({
-            content: (() => {
-                const d = new PdfDictionary()
-                d.set('Type', new PdfName('Font'))
-                d.set('Subtype', new PdfName('Type1'))
-                d.set('BaseFont', new PdfName('Helvetica'))
-                return d
-            })(),
-        })
-        document.add(font)
-
-        const contentStream = new PdfIndirectObject({
-            content: new PdfStream({
-                header: new PdfDictionary(),
-                original: '',
-            }),
-        })
-        document.add(contentStream)
-
-        const pageDict = new PdfDictionary()
-        pageDict.set('Type', new PdfName('Page'))
-        pageDict.set(
-            'MediaBox',
-            new PdfArray([
-                new PdfNumber(0),
-                new PdfNumber(0),
-                new PdfNumber(612),
-                new PdfNumber(792),
-            ]),
-        )
-        pageDict.set('Contents', contentStream.reference)
-        const resourcesDict = new PdfDictionary()
-        const fontDict = new PdfDictionary()
-        fontDict.set('Helv', font.reference)
-        resourcesDict.set('Font', fontDict)
-        pageDict.set('Resources', resourcesDict)
-        const page = new PdfIndirectObject({ content: pageDict })
-        document.add(page)
-
-        const pagesDict = new PdfDictionary()
-        pagesDict.set('Type', new PdfName('Pages'))
-        pagesDict.set('Kids', new PdfArray([page.reference]))
-        pagesDict.set('Count', new PdfNumber(1))
-        const pages = new PdfIndirectObject({ content: pagesDict })
-        page.content.set('Parent', pages.reference)
-        document.add(pages)
-
-        const catalogDict = new PdfDictionary()
-        catalogDict.set('Type', new PdfName('Catalog'))
-        catalogDict.set('Pages', pages.reference)
-        const catalog = new PdfIndirectObject({ content: catalogDict })
-
-        const acroFormDict = new PdfDictionary()
-        acroFormDict.set('Fields', new PdfArray([]))
-        const formFontDict = new PdfDictionary()
-        formFontDict.set('Helv', font.reference)
-        const formResources = new PdfDictionary()
-        formResources.set('Font', formFontDict)
-        acroFormDict.set('DR', formResources)
-        acroFormDict.set('DA', new PdfString('/Helv 12 Tf 0 g'))
-        const acroFormObj = new PdfIndirectObject({ content: acroFormDict })
-        document.add(acroFormObj)
-        catalogDict.set('AcroForm', acroFormObj.reference)
-
-        document.add(catalog)
-        document.trailerDict.set('Root', catalog.reference)
-
+        const { document, pageRef } = createDocumentWithAcroForm()
         const acroform = document.acroform
         if (!acroform) throw new Error('No AcroForm found')
-
-        const pageRef = page.reference
 
         // 1. Baseline: short text, wide field — no scaling, no wrap
         const baseline = new PdfTextFormField({ form: acroform })
@@ -1762,6 +1764,114 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
             bytesToBase64(document.toBytes()),
             { encoding: 'base64' },
         )
+    })
+
+    it('single-line auto-size should not shrink text by wrapping', () => {
+        const { document: doc, pageRef: pRef } = createDocumentWithAcroForm()
+        const acroform = doc.acroform
+        if (!acroform) throw new Error('No AcroForm found')
+
+        // Single-line, auto-size (fontSize=0), long text in a short-height field
+        const field = new PdfTextFormField({ form: acroform })
+        field.fieldType = 'Text'
+        field.name = 'AutoSizeAddress'
+        field.rect = [34, 657, 290, 667]
+        field.defaultAppearance = '/Helv 0 Tf 0 g'
+        field.isWidget = true
+        field.parentRef = pRef
+        field.value = '28, Flat 3 Brunswick Road, Brighton, BN3 1DG, GB'
+        acroform.addField(field)
+
+        expect(field.generateAppearance()).toBe(true)
+
+        const stream = field.getAppearanceStream()
+        expect(stream).toBeDefined()
+        const content = stream!.content.dataAsString
+        // Should render as a single Tj (not multiple lines)
+        const tjCount = (content.match(/\bTj\b/g) || []).length
+        expect(tjCount).toBe(1)
+        // Font size should be reasonable (not shrunk below ~4pt)
+        const tfMatch = content.match(/\/Helv\s+([\d.]+)\s+Tf/)
+        expect(tfMatch).toBeDefined()
+        const fontSize = parseFloat(tfMatch![1])
+        expect(fontSize).toBeGreaterThanOrEqual(4)
+    })
+
+    it('auto-size comb fields should distribute characters across cells', () => {
+        const { document: doc, pageRef: pRef } = createDocumentWithAcroForm()
+        const acroform = doc.acroform
+        if (!acroform) throw new Error('No AcroForm found')
+
+        const field = new PdfTextFormField({ form: acroform })
+        field.fieldType = 'Text'
+        field.name = 'AutoSizeDate'
+        field.rect = [195, 626, 363, 648]
+        field.defaultAppearance = '/Helv 0 Tf 0 g'
+        field.combField = true
+        field.maxLen = 8
+        field.isWidget = true
+        field.parentRef = pRef
+        field.value = '01012000'
+        acroform.addField(field)
+
+        expect(field.generateAppearance()).toBe(true)
+
+        const stream = field.getAppearanceStream()
+        expect(stream).toBeDefined()
+        const content = stream!.content.dataAsString
+        // Each character should be a separate Tj
+        const tjCount = (content.match(/\bTj\b/g) || []).length
+        expect(tjCount).toBe(8)
+    })
+
+    it('should update child widget appearances when parent value changes', () => {
+        const { document: doc, pageRef: pRef } = createDocumentWithAcroForm()
+        const acroform = doc.acroform!
+
+        // Create a separated field (no rect) with two child widgets
+        const field = new PdfTextFormField({ form: acroform })
+        field.fieldType = 'Text'
+        field.name = 'SeparatedField'
+        field.defaultAppearance = '/Helv 0 Tf 0 g'
+        // No rect on the parent — separated field/widget structure
+        acroform.addField(field)
+
+        const child1 = new PdfTextFormField({ form: acroform })
+        child1.rect = [100, 700, 300, 720]
+        child1.defaultAppearance = '/Helv 12 Tf 0 g'
+        child1.isWidget = true
+        child1.parentRef = pRef
+        // Simulate a stale V on the child (as found in real PDFs)
+        child1.content.set('V', new PdfString('OLD_VALUE'))
+        doc.add(child1)
+
+        const child2 = new PdfTextFormField({ form: acroform })
+        child2.rect = [100, 650, 300, 670]
+        child2.defaultAppearance = '/Helv 12 Tf 0 g'
+        child2.isWidget = true
+        child2.parentRef = pRef
+        child2.content.set('V', new PdfString('OLD_VALUE'))
+        doc.add(child2)
+
+        field.children = [child1, child2]
+
+        // Set new value on the parent field
+        field.value = 'NEW_VALUE'
+
+        // Children should inherit the new value, not keep stale V
+        expect(child1.value).toBe('NEW_VALUE')
+        expect(child2.value).toBe('NEW_VALUE')
+
+        // Children's appearances should contain the new value
+        const ap1 = child1.getAppearanceStream()
+        expect(ap1).toBeDefined()
+        expect(ap1!.content.dataAsString).toContain('NEW_VALUE')
+        expect(ap1!.content.dataAsString).not.toContain('OLD_VALUE')
+
+        const ap2 = child2.getAppearanceStream()
+        expect(ap2).toBeDefined()
+        expect(ap2!.content.dataAsString).toContain('NEW_VALUE')
+        expect(ap2!.content.dataAsString).not.toContain('OLD_VALUE')
     })
 })
 
@@ -1854,21 +1964,19 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         // Simulate a widget whose "on" state is a custom name
         const onStream = new PdfIndirectObject(new PdfStream(''))
         const offStream = new PdfIndirectObject(new PdfStream(''))
-        field.setAppearanceStream({
+        field.appearanceStream = {
             CustomOn: onStream,
             Off: offStream,
-        })
+        }
 
         field.checked = true
 
-        const v = field.content.get('V') as PdfName
-        const as = field.content.get('AS') as PdfName
-        expect(v.value).toBe('CustomOn')
-        expect(as.value).toBe('CustomOn')
+        expect(field.value).toBe('CustomOn')
+        expect(field.appearanceState).toBe('CustomOn')
 
         field.checked = false
-        expect((field.content.get('V') as PdfName).value).toBe('Off')
-        expect((field.content.get('AS') as PdfName).value).toBe('Off')
+        expect(field.value).toBe('Off')
+        expect(field.appearanceState).toBe('Off')
     })
 
     it('should preserve custom appearance state names in generateAppearance', () => {
@@ -1879,10 +1987,10 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         // Pre-set a custom on-state
         const onStream = new PdfIndirectObject(new PdfStream(''))
         const offStream = new PdfIndirectObject(new PdfStream(''))
-        field.setAppearanceStream({
+        field.appearanceStream = {
             Oui: onStream,
             Off: offStream,
-        })
+        }
 
         field.generateAppearance()
 
@@ -1911,5 +2019,267 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         const fontDict = resources!.get('Font')?.as(PdfDictionary)
         expect(fontDict).toBeDefined()
         expect(fontDict!.get('ZaDb')).toBeDefined()
+    })
+
+    describe('button group value handling', () => {
+        /**
+         * Creates a button group matching real-world PDF structure:
+         * - Parent field with FT=Btn, no Rect (separated field/widget)
+         * - Children are widget annotations with Rect, AP/N containing
+         *   only their on-state key (no "Off" entry), and AS=/Off.
+         * This mirrors e.g. AT_Verf19E_EU.pdf's Checkbox016c_02 where
+         * child 0 (yes) has on-state "2" and child 1 (no) has on-state "1".
+         */
+        function createButtonGroup(childOnStates: string[]) {
+            const parent = new PdfButtonFormField()
+            parent.fieldType = 'Button'
+
+            const children: PdfButtonFormField[] = []
+            for (let i = 0; i < childOnStates.length; i++) {
+                const onState = childOnStates[i]
+                const child = new PdfButtonFormField()
+                child.rect = [100 + i * 80, 500, 110 + i * 80, 510]
+                child.appearanceState = 'Off'
+                child.content.set('V', new PdfName('Off'))
+
+                const checkmarkContent = new TextEncoder().encode(
+                    'q\n1 1 8 6 re\nW\nn\n3 6 m\n7 2 l\n7 6 m\n3 2 l\ns\nQ\n',
+                )
+                const stream = new PdfStream(checkmarkContent)
+                const streamObj = new PdfIndirectObject(stream)
+                child.appearanceStream = { [onState]: streamObj }
+
+                child.parent = parent
+                children.push(child)
+            }
+            return { parent, children }
+        }
+
+        it('should check first child and use its AP on-state when value is blank', () => {
+            const { parent, children } = createButtonGroup(['2', '1'])
+
+            parent.value = ''
+
+            // V stays as '' — blank is a valid on-state value
+            expect(parent.value).toBe('')
+            expect(children[0].appearanceState).toBe('2')
+            expect(children[1].appearanceState).toBe('Off')
+        })
+
+        it('should check first child when value does not match any AP on-state', () => {
+            const { parent, children } = createButtonGroup(['2', '1'])
+
+            parent.value = 'No'
+
+            expect(parent.value).toBe('No')
+            expect(children[0].appearanceState).toBe('2')
+            expect(children[1].appearanceState).toBe('Off')
+        })
+
+        it('should uncheck all children when value is Off', () => {
+            const { parent, children } = createButtonGroup(['2', '1'])
+
+            parent.value = ''
+            expect(children[0].appearanceState).toBe('2')
+
+            parent.value = 'Off'
+
+            expect(parent.value).toBe('Off')
+            expect(children[0].appearanceState).toBe('Off')
+            expect(children[1].appearanceState).toBe('Off')
+        })
+
+        it('should preserve raw V value while AS uses existing AP on-state', () => {
+            const { parent, children } = createButtonGroup(['Yes', 'No'])
+
+            parent.value = 'SomeArbitraryValue'
+
+            expect(parent.value).toBe('SomeArbitraryValue')
+            expect(children[0].appearanceState).toBe('Yes')
+            expect(children[1].appearanceState).toBe('Off')
+        })
+
+        it('should not destroy existing AP streams when setting value', () => {
+            const { parent, children } = createButtonGroup(['2', '1'])
+
+            const child0AP = children[0].content.get('AP')
+            const child1AP = children[1].content.get('AP')
+
+            parent.value = ''
+
+            expect(children[0].content.get('AP')).toBe(child0AP)
+            expect(children[1].content.get('AP')).toBe(child1AP)
+        })
+
+        it('should set AS on standalone field using existing AP on-state', () => {
+            const field = new PdfButtonFormField()
+            field.fieldType = 'Button'
+            field.rect = [0, 0, 10, 10]
+
+            const stream1 = new PdfIndirectObject(
+                new PdfStream(new Uint8Array(0)),
+            )
+            const stream2 = new PdfIndirectObject(
+                new PdfStream(new Uint8Array(0)),
+            )
+            field.appearanceStream = { No: stream1, Off: stream2 }
+
+            field.value = ''
+
+            expect(field.value).toBe('')
+            expect(field.appearanceState).toBe('')
+        })
+
+        it('should generate appearances for children without AP', () => {
+            const parent = new PdfButtonFormField()
+            parent.fieldType = 'Button'
+
+            const child = new PdfButtonFormField()
+            child.rect = [0, 0, 10, 10]
+            child.appearanceState = 'Off'
+            child.parent = parent
+
+            parent.value = 'Yes'
+
+            expect(child.getAppearanceStream()).toBeDefined()
+        })
+
+        it('should create a full PDF with button group, select a field, and save', async () => {
+            const document = new PdfDocument()
+
+            // Create font
+            const font = new PdfIndirectObject({
+                content: (() => {
+                    const fontDict = new PdfDictionary()
+                    fontDict.set('Type', new PdfName('Font'))
+                    fontDict.set('Subtype', new PdfName('Type1'))
+                    fontDict.set('BaseFont', new PdfName('Helvetica'))
+                    return fontDict
+                })(),
+            })
+            document.add(font)
+
+            // Create empty content stream
+            const contentStream = new PdfIndirectObject({
+                content: new PdfStream({
+                    header: new PdfDictionary(),
+                    original: '',
+                }),
+            })
+            document.add(contentStream)
+
+            // Create page
+            const pageDict = new PdfDictionary()
+            pageDict.set('Type', new PdfName('Page'))
+            pageDict.set(
+                'MediaBox',
+                new PdfArray([
+                    new PdfNumber(0),
+                    new PdfNumber(0),
+                    new PdfNumber(612),
+                    new PdfNumber(792),
+                ]),
+            )
+            pageDict.set('Contents', contentStream.reference)
+            const resourcesDict = new PdfDictionary()
+            const fontDict = new PdfDictionary()
+            fontDict.set('Helv', font.reference)
+            resourcesDict.set('Font', fontDict)
+            pageDict.set('Resources', resourcesDict)
+            const page = new PdfIndirectObject({ content: pageDict })
+            document.add(page)
+
+            // Create pages collection
+            const pagesDict = new PdfDictionary()
+            pagesDict.set('Type', new PdfName('Pages'))
+            pagesDict.set('Kids', new PdfArray([page.reference]))
+            pagesDict.set('Count', new PdfNumber(1))
+            const pages = new PdfIndirectObject({ content: pagesDict })
+            page.content.set('Parent', pages.reference)
+            document.add(pages)
+
+            // Create catalog
+            const catalogDict = new PdfDictionary()
+            catalogDict.set('Type', new PdfName('Catalog'))
+            catalogDict.set('Pages', pages.reference)
+            const catalog = new PdfIndirectObject({ content: catalogDict })
+
+            // Create AcroForm
+            const acroForm = new PdfDictionary()
+            acroForm.set('Fields', new PdfArray([]))
+            const formResources = new PdfDictionary()
+            const formFontDict = new PdfDictionary()
+            const helveticaFont = new PdfDictionary()
+            helveticaFont.set('Type', new PdfName('Font'))
+            helveticaFont.set('Subtype', new PdfName('Type1'))
+            helveticaFont.set('BaseFont', new PdfName('Helvetica'))
+            const helveticaFontObj = new PdfIndirectObject({
+                content: helveticaFont,
+            })
+            document.add(helveticaFontObj)
+            formFontDict.set('Helv', helveticaFontObj.reference)
+            formResources.set('Font', formFontDict)
+            acroForm.set('DR', formResources)
+            acroForm.set('DA', new PdfString('/Helv 12 Tf 0 g'))
+
+            const acroFormObj = new PdfIndirectObject({ content: acroForm })
+            document.add(acroFormObj)
+            catalog.content.set('AcroForm', acroFormObj.reference)
+            document.add(catalog)
+            document.trailerDict.set('Root', catalog.reference)
+
+            const acroform = document.acroform
+            expect(acroform).toBeDefined()
+            if (!acroform) throw new Error('No AcroForm')
+
+            const firstPageRef = page.reference
+
+            // Create button group parent (no Rect — separated field/widget)
+            const groupParent = new PdfButtonFormField({ form: acroform })
+            groupParent.fieldType = 'Button'
+            groupParent.name = 'YesNoGroup'
+            acroform.addField(groupParent)
+
+            // Create child 0 (yes) with on-state "2"
+            const child0 = new PdfButtonFormField({ form: acroform })
+            child0.rect = [50, 700, 70, 720]
+            child0.isWidget = true
+            child0.parentRef = firstPageRef
+            child0.parent = groupParent
+            child0.onState = '2' // Custom on-state name
+
+            // Create child 1 (no) with on-state "1"
+            const child1 = new PdfButtonFormField({ form: acroform })
+            child1.rect = [100, 700, 120, 720]
+            child1.isWidget = true
+            child1.parentRef = firstPageRef
+            child1.parent = groupParent
+            child1.onState = '1' // Custom on-state name
+            expect(groupParent.isGroup).toBe(true)
+            const kids = groupParent.children
+            expect(kids.length).toBe(2)
+
+            // Set value on group — blank means "checked" → first child selected
+            groupParent.value = '1'
+            // Verify state — V stays as '' (blank is a valid on-state)
+            expect(groupParent.value).toBe('1')
+            // First child should be unchecked
+            expect(kids[0].appearanceState).toBe('Off')
+            // Second child should be checked
+            expect(kids[1].appearanceState).toBe('1')
+
+            groupParent.value = '2'
+            expect(groupParent.value).toBe('2')
+            expect(kids[0].appearanceState).toBe('2')
+            expect(kids[1].appearanceState).toBe('Off')
+
+            // Serialize and save
+            acroform.needAppearances = false
+            await server.commands.writeFile(
+                './test/unit/tmp/button-group.pdf',
+                bytesToBase64(document.toBytes()),
+                { encoding: 'base64' },
+            )
+        })
     })
 })

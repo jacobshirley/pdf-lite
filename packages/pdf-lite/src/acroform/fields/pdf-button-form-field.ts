@@ -1,11 +1,8 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfButtonAppearanceStream } from '../appearance/pdf-button-appearance-stream.js'
-import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
-import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
-import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
-import type { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js'
-import type { PdfStream } from '../../core/objects/pdf-stream.js'
+import type { PdfAcroForm } from '../pdf-acro-form.js'
+import type { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 
 /**
  * Button form field subtype (checkboxes, radio buttons, push buttons).
@@ -15,58 +12,94 @@ export class PdfButtonFormField extends PdfFormField {
         PdfFormField.registerFieldType('Btn', PdfButtonFormField)
     }
 
-    override set defaultValue(val: string) {
-        this.content.set('DV', new PdfName(val))
+    constructor(other?: PdfIndirectObject | { form?: PdfAcroForm }) {
+        super(other)
+        if (this.isWidget && this.appearanceStates.length === 0) {
+            this.initWidget()
+        }
     }
 
-    protected override _storeValue(
-        val: string | PdfString,
-        fieldParent: PdfFormField | undefined,
-    ): boolean {
+    private initWidget() {
+        this.rect ||= [0, 0, 50, 50]
+        this.generateAppearance({
+            onStateName: this.onState ?? 'Yes',
+        })
+        this.appearanceState ??= 'Off'
+    }
+
+    override set isWidget(val: boolean) {
+        super.isWidget = val
+        // Only initialize the widget if it has no existing appearances.
+        // `appearanceStream` is write-only on PdfFormField, so instead check
+        // the underlying appearance data structures.
+        if (
+            val &&
+            !this.appearanceStreamDict &&
+            this.appearanceStates.length === 0
+        ) {
+            this.initWidget()
+        }
+    }
+
+    get isGroup(): boolean {
+        return this.children.length > 0
+    }
+
+    override get value(): string {
+        return super.value
+    }
+
+    override set value(val: string | PdfString) {
         const strVal = val instanceof PdfString ? val.value : val
-        if (strVal.trim() === '') {
-            this.content.delete('V')
-            fieldParent?.content.delete('V')
-            this.content.delete('AS')
-            return false
-        }
-        // Check if the value matches an existing appearance state;
-        // otherwise map truthy values to the widget's "on" state (the
-        // first state that isn't "Off"), falling back to "Yes".
-        const states = this.appearanceStates
-        let resolved: string
-        if (states.includes(strVal)) {
-            resolved = strVal
-        } else if (strVal === 'Off' || strVal === 'No') {
-            resolved = 'Off'
+        this.setRawValue(new PdfString(strVal))
+
+        if (this.isGroup) {
+            const children = this.children
+
+            // 'Off' means explicitly uncheck all children
+            if (strVal === 'Off') {
+                for (const child of children) {
+                    child.appearanceState = 'Off'
+                    if (this._form) child.form = this._form
+                }
+            } else {
+                let wasSet = false
+                for (const child of children) {
+                    const foundState = child.onStates.includes(strVal)
+                    if (!wasSet && foundState) {
+                        wasSet = true
+                    }
+                    child.appearanceState = foundState ? strVal : 'Off'
+                    if (this._form) child.form = this._form
+                }
+
+                if (!wasSet && children.length > 0) {
+                    // If value doesn't match any on-state, check first child by default
+                    children[0].appearanceState =
+                        children[0].onStates[0] ?? 'Off'
+                }
+            }
         } else {
-            resolved = states.find((s) => s !== 'Off') ?? strVal
+            this.appearanceState = strVal
         }
-        this.content.set('V', new PdfName(resolved))
-        fieldParent?.content.set('V', new PdfName(resolved))
-        this.content.set('AS', new PdfName(resolved))
-        return true
     }
 
     get checked(): boolean {
-        const v = this.content.get('V') ?? this.parent?.content.get('V')
-        return v instanceof PdfName && v.value !== 'Off'
+        return !(this.appearanceState === 'Off' || this.value === 'Off')
     }
 
     set checked(isChecked: boolean) {
-        const target = this.parent ?? this
         if (isChecked) {
-            const onState =
-                this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
-            target.content.set('V', new PdfName(onState))
-            this.content.set('AS', new PdfName(onState))
+            this.value = this.onState ?? 'Yes'
         } else {
-            target.content.set('V', new PdfName('Off'))
-            this.content.set('AS', new PdfName('Off'))
+            this.value = 'Off'
         }
     }
 
-    generateAppearance(options?: { makeReadOnly?: boolean }): boolean {
+    generateAppearance(options?: {
+        makeReadOnly?: boolean
+        onStateName?: string
+    }): boolean {
         const rect = this.rect
         if (!rect || rect.length !== 4) return false
 
@@ -91,11 +124,27 @@ export class PdfButtonFormField extends PdfFormField {
             contentStream: '',
         })
 
-        const onState = this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
-        this.setAppearanceStream({
-            [onState]: yesAppearance,
+        const existingOnState = this.onState
+        const as = this.appearanceState
+        const onKey =
+            options?.onStateName ??
+            (as && as !== 'Off' ? as : (existingOnState ?? 'Yes'))
+
+        if (onKey === 'Off') {
+            throw new Error(
+                "Invalid on-state name 'Off' for button field appearance stream",
+            )
+        }
+
+        this.appearanceStream = {
+            [onKey]: yesAppearance,
             Off: noAppearance,
-        })
+        }
+
+        this.downAppearanceStream = {
+            [onKey]: yesAppearance,
+            Off: noAppearance,
+        }
 
         if (options?.makeReadOnly) {
             this.readOnly = true

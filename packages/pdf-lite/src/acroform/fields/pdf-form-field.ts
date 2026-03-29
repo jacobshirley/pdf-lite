@@ -40,18 +40,31 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         this._form = f
     }
 
+    static getFieldType(
+        other: PdfIndirectObject,
+    ): 'Btn' | 'Sig' | 'Tx' | 'Ch' | null {
+        if (!(other.content instanceof PdfDictionary)) return null
+        const ft = other.content.get('FT')?.as(PdfName)?.value
+        if (ft) return ft
+        const parentRef = other.content.get('Parent')
+        if (parentRef instanceof PdfObjectReference) {
+            const parentResolved = parentRef.resolve()
+            if (parentResolved?.content instanceof PdfDictionary) {
+                return (
+                    parentResolved.content.get('FT')?.as(PdfName)?.value ?? null
+                )
+            }
+        }
+        return null
+    }
+
     static create(other?: PdfIndirectObject): PdfFormField {
         if (!(other?.content instanceof PdfDictionary))
             throw new Error('Invalid form field object')
 
-        const ft = other?.content.get('FT')?.as(PdfName)?.value as
-            | 'Sig'
-            | 'Btn'
-            | 'Tx'
-            | 'Ch'
-            | undefined
-
+        const ft = PdfFormField.getFieldType(other)
         const cls = ft ? PdfFormField._registry.get(ft) : undefined
+
         if (!cls) {
             if (PdfFormField._fallbackCtor) {
                 return other.becomes(PdfFormField._fallbackCtor)
@@ -79,6 +92,20 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         if (field instanceof PdfFormField) {
             field.children = [...field.children, this]
         }
+
+        // Auto-add widget to page's Annots array
+        const page = this.page
+        if (page) {
+            const annots = page.annotations
+            const ref = this.reference
+            const key = ref.key
+            const alreadyPresent = annots.items.some(
+                (r) => r instanceof PdfObjectReference && r.key === key,
+            )
+            if (!alreadyPresent) {
+                annots.items.push(ref)
+            }
+        }
     }
 
     get children(): PdfFormField[] {
@@ -86,8 +113,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const result: PdfFormField[] = []
         for (const ref of kids) {
             const resolved = ref.resolve()
-            if (!resolved || !(resolved.content instanceof PdfDictionary))
-                continue
             result.push(PdfFormField.create(resolved))
         }
         return result
@@ -188,9 +213,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     get fieldType(): PdfFieldType | null {
-        const ft =
-            this.content.get('FT')?.as(PdfName)?.value ??
-            this.parent?.content.get('FT')?.as(PdfName)?.value
+        const ft = PdfFormField.getFieldType(this)
         switch (ft) {
             case 'Tx':
                 return 'Text'
@@ -237,6 +260,29 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         this.content.set('DV', new PdfString(val))
     }
 
+    get onStates(): string[] {
+        return this.appearanceStates.filter((s) => s !== 'Off')
+    }
+
+    get onState(): string | null {
+        return this.appearanceStates.find((s) => s !== 'Off') || null
+    }
+
+    set onState(state: string) {
+        if (!this.appearanceStates.includes(state)) {
+            const currentOnState = this.onState
+            if (currentOnState) {
+                this.appearanceStreamDict
+                    ?.get('N')
+                    ?.as(PdfDictionary)
+                    ?.move(currentOnState, state)
+            } else {
+                // No existing on-state; generate a new appearance stream for the new state
+                this.generateAppearance({ onStateName: state })
+            }
+        }
+    }
+
     get value(): string {
         const v = this.content.get('V') ?? this.parent?.content.get('V')
         if (v instanceof PdfString) {
@@ -256,54 +302,57 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return ''
     }
 
-    set value(val: string | PdfString) {
-        if (this.value === val) return
+    protected setRawValue(val: string | PdfString) {
+        const targets: PdfFormField[] = [this]
+        const parent = this.parent
+        if (parent?.fieldType) {
+            targets.push(parent)
+        }
 
-        const fieldParent = this.parent?.content.get('FT')
-            ? this.parent
-            : undefined
-        const generateAppearance = this._storeValue(val, fieldParent)
-        if (generateAppearance && this.defaultGenerateAppearance) {
+        const pdfVal = val instanceof PdfString ? val : new PdfString(val)
+        const isEmpty = pdfVal.length === 0
+
+        for (const target of targets) {
+            if (isEmpty) {
+                target.content.delete('V')
+                target.appearanceState = null
+            } else {
+                target.content.set('V', pdfVal)
+            }
+        }
+
+        if (isEmpty) {
+            this._form?.xfa?.datasets?.updateField(this.name, '')
+        }
+
+        if (this.defaultGenerateAppearance) {
             this.generateAppearance()
-            for (const sibling of this.siblings) {
-                if (
-                    sibling !== this &&
-                    sibling.rect &&
-                    sibling.defaultGenerateAppearance
-                ) {
-                    sibling.generateAppearance()
-                }
-            }
-            // Separated field/widget structure: field has no Rect but its Kids
-            // are widget annotations that do. Generate appearances for them.
-            if (!this.rect) {
-                for (const child of this.children) {
-                    if (child.rect && child.defaultGenerateAppearance) {
-                        if (this._form) child.form = this._form
-                        child.generateAppearance()
-                    }
-                }
+        }
+
+        for (const sibling of this.siblings) {
+            if (sibling !== this && sibling.defaultGenerateAppearance) {
+                sibling.generateAppearance()
             }
         }
 
-        if (this._form) {
-            this._form.xfa?.datasets?.updateField(this.name, this.value)
+        // Separated field/widget structure: field has no Rect but its Kids
+        // are widget annotations that do. Clear stale V entries on children
+        // so they inherit the parent's value, then generate appearances.
+        for (const child of this.children) {
+            if (child.content.has('V')) {
+                child.content.delete('V')
+            }
+            if (child.defaultGenerateAppearance) {
+                if (this._form) child.form = this._form
+                child.generateAppearance()
+            }
         }
+
+        this._form?.xfa?.datasets?.updateField(this.name, this.value)
     }
 
-    /**
-     * Writes the value to the dictionary. Returns true if appearance generation
-     * should proceed, false to skip it (e.g. when value was cleared).
-     * Override in subclasses to change the stored representation.
-     */
-    protected _storeValue(
-        val: string | PdfString,
-        fieldParent: PdfFormField | undefined,
-    ): boolean {
-        const pdfVal = val instanceof PdfString ? val : new PdfString(val)
-        this.content.set('V', pdfVal)
-        fieldParent?.content.set('V', pdfVal)
-        return true
+    set value(val: string | PdfString) {
+        this.setRawValue(val)
     }
 
     get fontSize(): number | null {
@@ -589,9 +638,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     abstract generateAppearance(options?: {
         makeReadOnly?: boolean
         textYOffset?: number
+        onStateName?: string
     }): boolean
 
-    setAppearanceStream(
+    set appearanceStream(
         stream:
             | PdfIndirectObject
             | {
@@ -610,11 +660,50 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
     }
 
+    set downAppearanceStream(
+        stream:
+            | PdfIndirectObject
+            | {
+                  [key: string]: PdfIndirectObject
+              },
+    ) {
+        this.appearanceStreamDict ||= new PdfDictionary()
+        if (stream instanceof PdfIndirectObject) {
+            this.appearanceStreamDict.set('D', stream.reference)
+        } else {
+            const dict = new PdfDictionary()
+            for (const key in stream) {
+                dict.set(key, stream[key].reference)
+            }
+            this.appearanceStreamDict.set('D', dict)
+        }
+    }
+
+    get appearanceState(): string | null {
+        return this.content.get('AS')?.as(PdfName)?.value ?? null
+    }
+
+    set appearanceState(state: string | null) {
+        if (state === null) {
+            this.content.delete('AS')
+            return
+        } else {
+            this.content.set('AS', new PdfName(state))
+        }
+
+        if (
+            this.defaultGenerateAppearance &&
+            !this.hasAppearanceStream(state)
+        ) {
+            this.generateAppearance()
+        }
+    }
+
     /**
      * Returns the list of appearance state names from the normal appearance
      * dictionary (e.g. ["Yes", "Off"] for a checkbox).
      */
-    get appearanceStates(): string[] {
+    get appearanceStates(): ReadonlyArray<string> {
         const n = this.appearanceStreamDict?.get('N')
         if (n instanceof PdfDictionary) {
             return n.keys().map((k) => k.value)
@@ -631,10 +720,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
                 return resolved as PdfIndirectObject<PdfStream>
             }
         } else if (n instanceof PdfDictionary) {
-            const key =
-                setting ??
-                this.content.get('AS')?.as(PdfName)?.value ??
-                undefined
+            const key = setting ?? this.appearanceState ?? undefined
             if (key) {
                 const entry = n.get(key)
                 if (entry instanceof PdfObjectReference) {
@@ -646,6 +732,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             }
         }
         return null
+    }
+
+    hasAppearanceStream(setting: string): boolean {
+        return this.appearanceStates.includes(setting)
     }
 
     private static _fallbackCtor?: new (

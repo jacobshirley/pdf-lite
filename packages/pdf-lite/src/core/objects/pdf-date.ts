@@ -21,6 +21,10 @@ export class PdfDate extends PdfString {
         super(dateString)
     }
 
+    override toJSON() {
+        return { type: 'date', value: this.date.toISOString() }
+    }
+
     get date(): Date {
         const str = new TextDecoder().decode(this.raw)
         const match =

@@ -56,8 +56,8 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         // ── Determine font size ──────────────────────────────────────
         let finalFontSize: number
 
-        if (autoSize) {
-            // Acrobat auto-size: default to 12pt with wrapping, then
+        if (autoSize && ctx.multiline) {
+            // Multiline auto-size: default to 12pt with wrapping, then
             // shrink only if the wrapped text still doesn't fit.
             finalFontSize = DEFAULT_FONT_SIZE
             const testLines = g.wrapTextToLines(value, availableWidth)
@@ -67,6 +67,25 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     availableWidth,
                     availableHeight,
                     1.2,
+                )
+            }
+            finalFontSize = Math.max(finalFontSize, 0.5)
+        } else if (autoSize) {
+            // Single-line auto-size: fit to available height, then
+            // shrink further if text overflows the width.
+            finalFontSize = Math.min(DEFAULT_FONT_SIZE, availableHeight)
+            g.setDefaultAppearance(
+                new PdfDefaultAppearance(
+                    ctx.da.fontName,
+                    finalFontSize,
+                    ctx.da.colorOp,
+                ),
+            )
+            const textWidth = g.measureTextWidth(value)
+            if (textWidth > availableWidth) {
+                finalFontSize = g.calculateFittingFontSize(
+                    value,
+                    availableWidth,
                 )
             }
             finalFontSize = Math.max(finalFontSize, 0.5)
@@ -84,7 +103,58 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
 
         let lines: string[] = []
 
-        if (ctx.multiline || autoSize) {
+        if (ctx.comb && ctx.maxLen) {
+            const cellWidth = width / ctx.maxLen
+            const chars = [...value]
+
+            // For auto-size comb, fit font to cell height
+            if (autoSize) {
+                finalFontSize = Math.min(height - 2 * padding, cellWidth)
+                g.setDefaultAppearance(
+                    new PdfDefaultAppearance(
+                        ctx.da.fontName,
+                        finalFontSize,
+                        ctx.da.colorOp,
+                    ),
+                )
+            }
+
+            let maxCharWidth = 0
+            let widestChar = chars[0] ?? ''
+            for (const char of chars) {
+                const charWidth = g.measureTextWidth(char)
+                if (charWidth > maxCharWidth) {
+                    maxCharWidth = charWidth
+                    widestChar = char
+                }
+            }
+
+            if (maxCharWidth > cellWidth) {
+                finalFontSize = g.calculateFittingFontSize(
+                    widestChar,
+                    cellWidth,
+                )
+                g.setDefaultAppearance(
+                    new PdfDefaultAppearance(
+                        ctx.da.fontName,
+                        finalFontSize,
+                        ctx.da.colorOp,
+                    ),
+                )
+            }
+
+            const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
+
+            g.beginText()
+            for (let i = 0; i < chars.length && i < ctx.maxLen; i++) {
+                const charWidth = g.measureTextWidth(chars[i])
+                const cellX = cellWidth * i + (cellWidth - charWidth) / 2
+                g.moveTo(cellX, textY)
+                g.showText(chars[i], isUnicode, reverseEncodingMap)
+                g.moveTo(-cellX, -textY)
+            }
+            g.endText()
+        } else if (ctx.multiline) {
             if (!autoSize) {
                 const testLines = g.wrapTextToLines(value, availableWidth)
                 const lineHeight = finalFontSize * 1.2
@@ -121,45 +191,6 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     isUnicode,
                     reverseEncodingMap,
                 )
-            }
-            g.endText()
-        } else if (ctx.comb && ctx.maxLen) {
-            const cellWidth = width / ctx.maxLen
-            const chars = [...value]
-
-            let maxCharWidth = 0
-            let widestChar = chars[0] ?? ''
-            for (const char of chars) {
-                const charWidth = g.measureTextWidth(char)
-                if (charWidth > maxCharWidth) {
-                    maxCharWidth = charWidth
-                    widestChar = char
-                }
-            }
-
-            if (maxCharWidth > cellWidth) {
-                finalFontSize = g.calculateFittingFontSize(
-                    widestChar,
-                    cellWidth,
-                )
-                g.setDefaultAppearance(
-                    new PdfDefaultAppearance(
-                        ctx.da.fontName,
-                        finalFontSize,
-                        ctx.da.colorOp,
-                    ),
-                )
-            }
-
-            const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
-
-            g.beginText()
-            for (let i = 0; i < chars.length && i < ctx.maxLen; i++) {
-                const cellX =
-                    cellWidth * i + cellWidth / 2 - finalFontSize * 0.3
-                g.moveTo(cellX, textY)
-                g.showText(chars[i], isUnicode, reverseEncodingMap)
-                g.moveTo(-cellX, -textY)
             }
             g.endText()
         } else {

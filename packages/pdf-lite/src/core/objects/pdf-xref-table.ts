@@ -62,6 +62,16 @@ export class PdfXRefTableEntry extends PdfObject {
         }) as this
     }
 
+    toJSON() {
+        return {
+            type: 'xref-entry',
+            objectNumber: this.objectNumber.value,
+            generationNumber: this.generationNumber.value,
+            byteOffset: this.byteOffset.value,
+            inUse: this.inUse,
+        }
+    }
+
     isModified(): boolean {
         return (
             super.isModified() ||
@@ -99,6 +109,14 @@ export class PdfXRefTableSectionHeader extends PdfObject {
             startObjectNumber: this.startObjectNumber.clone(),
             entryCount: this.entryCount.clone(),
         }) as this
+    }
+
+    toJSON() {
+        return {
+            type: 'xref-section-header',
+            startObjectNumber: this.startObjectNumber.value,
+            entryCount: this.entryCount.value,
+        }
     }
 }
 
@@ -260,5 +278,13 @@ export class PdfXRefTable extends PdfObject {
             entries: this.entries.map((e) => e.clone()),
             offset: new Ref(this.offset.resolve()),
         }) as this
+    }
+
+    toJSON() {
+        return {
+            type: 'xref-table',
+            sections: this.sections.map((s) => s.toJSON()),
+            entries: this.entries.map((e) => e.toJSON()),
+        }
     }
 }

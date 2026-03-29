@@ -1224,6 +1224,13 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }) as this
     }
 
+    toJSON() {
+        return {
+            type: 'document',
+            revisions: this.revisions.map((rev) => rev.toJSON()),
+        }
+    }
+
     /**
      * Creates a PdfDocument from a byte stream.
      *

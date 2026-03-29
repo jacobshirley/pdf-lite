@@ -97,4 +97,16 @@ export class PdfString extends PdfObject {
         ) as this
         return cloned
     }
+
+    toJSON() {
+        return { type: 'string', value: this.value }
+    }
+
+    trim(): string {
+        return this.value.trim()
+    }
+
+    get length(): number {
+        return this.value.length
+    }
 }

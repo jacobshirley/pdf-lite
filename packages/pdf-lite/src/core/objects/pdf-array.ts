@@ -30,6 +30,10 @@ export class PdfArray<T extends PdfObject = PdfObject>
         this.items.push(item)
     }
 
+    toJSON() {
+        return { type: 'array', items: this.items.map((item) => item.toJSON()) }
+    }
+
     override get isTrailingDelimited(): boolean {
         return true
     }

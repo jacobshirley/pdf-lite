@@ -37,6 +37,14 @@ export class PdfObjectReference<
         return cloned
     }
 
+    toJSON() {
+        return {
+            type: 'reference',
+            objectNumber: this.objectNumber,
+            generationNumber: this.generationNumber,
+        }
+    }
+
     resolve<U extends PdfIndirectObject = T>(
         cls?: new (options: PdfIndirectObject) => U,
     ): U {

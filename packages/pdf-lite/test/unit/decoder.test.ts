@@ -398,56 +398,79 @@ describe('PDF decoder', () => {
         const object = stringToPdfObject(pdfString, 0, false)
         expect(object.toString()).toBe(pdfString)
         expect(object).toMatchInlineSnapshot(`
-          PdfDictionary {
-            "cachedTokens": undefined,
-            "immutable": false,
-            "innerTokens": [
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  10,
-                ],
+          {
+            "entries": {
+              "Filter": {
+                "type": "name",
+                "value": "Adobe.PPKLite",
               },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  32,
+              "Reference": {
+                "items": [
+                  {
+                    "entries": {
+                      "TransformMethod": {
+                        "type": "name",
+                        "value": "UR3",
+                      },
+                      "TransformParams": {
+                        "entries": {
+                          "Annots": {
+                            "items": [
+                              {
+                                "type": "name",
+                                "value": "Create",
+                              },
+                              {
+                                "type": "name",
+                                "value": "Delete",
+                              },
+                              {
+                                "type": "name",
+                                "value": "Modify",
+                              },
+                            ],
+                            "type": "array",
+                          },
+                          "Document": {
+                            "items": [
+                              {
+                                "type": "name",
+                                "value": "FullSave",
+                              },
+                            ],
+                            "type": "array",
+                          },
+                          "Type": {
+                            "type": "name",
+                            "value": "TransformParams",
+                          },
+                          "V": {
+                            "type": "number",
+                            "value": 2.2,
+                          },
+                        },
+                        "type": "dictionary",
+                      },
+                      "Type": {
+                        "type": "name",
+                        "value": "SigRef",
+                      },
+                    },
+                    "type": "dictionary",
+                  },
                 ],
+                "type": "array",
               },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  32,
-                ],
+              "SubFilter": {
+                "type": "name",
+                "value": "adbe.pkcs7.detached",
               },
-            ],
-            "modified": true,
-            "postTokens": [
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  32,
-                ],
+              "Type": {
+                "type": "name",
+                "value": "Sig",
               },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  32,
-                ],
-              },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  32,
-                ],
-              },
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  10,
-                ],
-              },
-            ],
-            "preTokens": [
-              PdfWhitespaceToken {
-                "rawBytes": Uint8Array [
-                  10,
-                ],
-              },
-            ],
+            },
+            "type": "dictionary",
           }
         `)
     })

@@ -553,6 +553,14 @@ export class PdfStream<
         ]
     }
 
+    toJSON() {
+        return {
+            type: 'stream',
+            header: this.header.toJSON(),
+            dataLength: this.raw.length,
+        }
+    }
+
     isType(name: string): boolean {
         const type = this.header.get('Type')
         return type instanceof PdfName && type.value === name

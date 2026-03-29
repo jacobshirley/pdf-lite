@@ -89,6 +89,10 @@ export class PdfNumber extends PdfObject {
         return cloned
     }
 
+    toJSON() {
+        return { type: 'number', value: this.value }
+    }
+
     setModified(modified?: boolean): void {
         super.setModified(modified)
         this.#value.setModified(modified)

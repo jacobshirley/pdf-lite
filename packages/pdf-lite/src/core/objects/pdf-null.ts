@@ -12,4 +12,8 @@ export class PdfNull extends PdfObject {
         const cloned = new PdfNull() as this
         return cloned
     }
+
+    toJSON() {
+        return { type: 'null' }
+    }
 }

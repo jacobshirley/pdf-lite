@@ -35,7 +35,7 @@ export class PdfAnnotation extends PdfIndirectObject<
         Kids: PdfArray<PdfObjectReference>
         Rect: PdfArray<PdfNumber>
         F: PdfNumber
-        AP?: PdfAppearanceStreamDictionary
+        AP?: PdfAppearanceStreamDictionary | PdfObjectReference
         P?: PdfObjectReference
         Parent?: PdfObjectReference<PdfPage>
         A?: PdfDictionary<{
@@ -167,9 +167,23 @@ export class PdfAnnotation extends PdfIndirectObject<
     }
 
     get appearanceStreamDict(): PdfAppearanceStreamDictionary | null {
-        const apDict = this.content.get('AP')?.as(PdfDictionary)
+        const apDict = this.content.get('AP')
         if (!apDict) return null
-        return apDict
+
+        if (apDict instanceof PdfObjectReference) {
+            const resolved = apDict.resolve()
+            if (resolved.content instanceof PdfDictionary) {
+                return resolved.content as PdfAppearanceStreamDictionary
+            } else {
+                throw new Error('Invalid AP reference: not a dictionary')
+            }
+        } else if (apDict instanceof PdfDictionary) {
+            return apDict as PdfAppearanceStreamDictionary
+        } else {
+            throw new Error(
+                'Invalid AP entry: must be a dictionary or reference',
+            )
+        }
     }
 
     set appearanceStreamDict(dict: PdfAppearanceStreamDictionary | null) {

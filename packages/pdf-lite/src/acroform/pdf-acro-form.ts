@@ -141,12 +141,25 @@ export class PdfAcroForm<
         }
         for (const field of fields) {
             fieldsArray.items.push(field.reference)
+            this._addWidgetToPage(field)
 
-            // Auto-add to the page's Annots array
-            const page = field.page
-            if (page) {
-                page.annotations.items.push(field.reference)
+            // Also register any child widgets (e.g. radio button group kids)
+            for (const child of field.children) {
+                this._addWidgetToPage(child)
             }
+        }
+    }
+
+    private _addWidgetToPage(field: PdfFormField): void {
+        const page = field.page
+        if (!page) return
+        const ref = field.reference
+        const key = ref.key
+        const alreadyPresent = page.annotations.items.some(
+            (r) => r instanceof PdfObjectReference && r.key === key,
+        )
+        if (!alreadyPresent) {
+            page.annotations.items.push(ref)
         }
     }
 

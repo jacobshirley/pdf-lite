@@ -98,14 +98,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         if (page) {
             const annots = page.annotations
             const ref = this.reference
-            const self = this
-            const alreadyPresent = annots.items.some((r) => {
-                try {
-                    return r.resolve() === self
-                } catch {
-                    return false
-                }
-            })
+            const key = ref.key
+            const alreadyPresent = annots.items.some(
+                (r) => r instanceof PdfObjectReference && r.key === key,
+            )
             if (!alreadyPresent) {
                 annots.items.push(ref)
             }
@@ -313,16 +309,20 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             targets.push(parent)
         }
 
+        const pdfVal = val instanceof PdfString ? val : new PdfString(val)
+        const isEmpty = pdfVal.length === 0
+
         for (const target of targets) {
-            const pdfVal = val instanceof PdfString ? val : new PdfString(val)
-            if (pdfVal.length === 0) {
+            if (isEmpty) {
                 target.content.delete('V')
                 target.appearanceState = null
-                target._form?.xfa?.datasets?.updateField(this.name, '')
-                return
+            } else {
+                target.content.set('V', pdfVal)
             }
+        }
 
-            target.content.set('V', pdfVal)
+        if (isEmpty) {
+            this._form?.xfa?.datasets?.updateField(this.name, '')
         }
 
         if (this.defaultGenerateAppearance) {
@@ -668,15 +668,15 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
               },
     ) {
         this.appearanceStreamDict ||= new PdfDictionary()
-        const downDict = new PdfDictionary()
         if (stream instanceof PdfIndirectObject) {
-            downDict.set('D', stream.reference)
+            this.appearanceStreamDict.set('D', stream.reference)
         } else {
+            const dict = new PdfDictionary()
             for (const key in stream) {
-                downDict.set(key, stream[key].reference)
+                dict.set(key, stream[key].reference)
             }
+            this.appearanceStreamDict.set('D', dict)
         }
-        this.appearanceStreamDict.set('D', downDict)
     }
 
     get appearanceState(): string | null {

@@ -154,13 +154,10 @@ export class PdfAcroForm<
         const page = field.page
         if (!page) return
         const ref = field.reference
-        const alreadyPresent = page.annotations.items.some((r) => {
-            try {
-                return r.resolve() === field
-            } catch {
-                return false
-            }
-        })
+        const key = ref.key
+        const alreadyPresent = page.annotations.items.some(
+            (r) => r instanceof PdfObjectReference && r.key === key,
+        )
         if (!alreadyPresent) {
             page.annotations.items.push(ref)
         }

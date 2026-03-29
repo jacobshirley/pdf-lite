@@ -1688,9 +1688,8 @@ function createDocumentWithAcroForm() {
 }
 
 describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
-    const { document, pageRef } = createDocumentWithAcroForm()
-
     it('should write a PDF demonstrating word wrap and font scaling', async () => {
+        const { document, pageRef } = createDocumentWithAcroForm()
         const acroform = document.acroform
         if (!acroform) throw new Error('No AcroForm found')
 
@@ -1768,7 +1767,8 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
     })
 
     it('single-line auto-size should not shrink text by wrapping', () => {
-        const acroform = document.acroform
+        const { document: doc, pageRef: pRef } = createDocumentWithAcroForm()
+        const acroform = doc.acroform
         if (!acroform) throw new Error('No AcroForm found')
 
         // Single-line, auto-size (fontSize=0), long text in a short-height field
@@ -1778,7 +1778,7 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         field.rect = [34, 657, 290, 667]
         field.defaultAppearance = '/Helv 0 Tf 0 g'
         field.isWidget = true
-        field.parentRef = pageRef
+        field.parentRef = pRef
         field.value = '28, Flat 3 Brunswick Road, Brighton, BN3 1DG, GB'
         acroform.addField(field)
 
@@ -1798,7 +1798,8 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
     })
 
     it('auto-size comb fields should distribute characters across cells', () => {
-        const acroform = document.acroform
+        const { document: doc, pageRef: pRef } = createDocumentWithAcroForm()
+        const acroform = doc.acroform
         if (!acroform) throw new Error('No AcroForm found')
 
         const field = new PdfTextFormField({ form: acroform })
@@ -1809,7 +1810,7 @@ describe('AcroForm Word Wrap and Font Scaling (visual)', () => {
         field.combField = true
         field.maxLen = 8
         field.isWidget = true
-        field.parentRef = pageRef
+        field.parentRef = pRef
         field.value = '01012000'
         acroform.addField(field)
 
@@ -2084,7 +2085,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             parent.value = 'Off'
 
             expect(parent.value).toBe('Off')
-            expect(children[0].appearanceState).toBe('2')
+            expect(children[0].appearanceState).toBe('Off')
             expect(children[1].appearanceState).toBe('Off')
         })
 

@@ -1,8 +1,8 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfButtonAppearanceStream } from '../appearance/pdf-button-appearance-stream.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
-import { PdfAcroForm } from '../index.js'
-import { PdfIndirectObject } from '../../index.js'
+import type { PdfAcroForm } from '../pdf-acro-form.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 
 /**
  * Button form field subtype (checkboxes, radio buttons, push buttons).
@@ -14,7 +14,7 @@ export class PdfButtonFormField extends PdfFormField {
 
     constructor(other?: PdfIndirectObject | { form?: PdfAcroForm }) {
         super(other)
-        if (this.isWidget) {
+        if (this.isWidget && this.appearanceStates.length === 0) {
             this.initWidget()
         }
     }
@@ -29,7 +29,7 @@ export class PdfButtonFormField extends PdfFormField {
 
     override set isWidget(val: boolean) {
         super.isWidget = val
-        if (val && !this.appearanceStream) {
+        if (val && this.appearanceStates.length === 0) {
             this.initWidget()
         }
     }
@@ -49,21 +49,28 @@ export class PdfButtonFormField extends PdfFormField {
         if (this.isGroup) {
             const children = this.children
 
-            let wasSet = false
-            for (let i = 0; i < children.length; i++) {
-                const foundState = children[i].onStates.includes(strVal)
-                if (!wasSet && foundState) {
-                    wasSet = true
+            // 'Off' means explicitly uncheck all children
+            if (strVal === 'Off') {
+                for (const child of children) {
+                    child.appearanceState = 'Off'
+                    if (this._form) child.form = this._form
                 }
-                const child = children[i]
-                const stateName = foundState ? strVal : 'Off'
-                child.appearanceState = stateName
-                if (this._form) child.form = this._form
-            }
+            } else {
+                let wasSet = false
+                for (const child of children) {
+                    const foundState = child.onStates.includes(strVal)
+                    if (!wasSet && foundState) {
+                        wasSet = true
+                    }
+                    child.appearanceState = foundState ? strVal : 'Off'
+                    if (this._form) child.form = this._form
+                }
 
-            if (!wasSet && children.length > 0) {
-                // If value doesn't match any on-state, check first child by default
-                children[0].appearanceState = children[0].onStates[0] ?? 'Off'
+                if (!wasSet && children.length > 0) {
+                    // If value doesn't match any on-state, check first child by default
+                    children[0].appearanceState =
+                        children[0].onStates[0] ?? 'Off'
+                }
             }
         } else {
             this.appearanceState = strVal

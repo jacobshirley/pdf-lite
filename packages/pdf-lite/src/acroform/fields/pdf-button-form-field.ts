@@ -1,8 +1,8 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfButtonAppearanceStream } from '../appearance/pdf-button-appearance-stream.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
-import { PdfAcroForm } from '../index.js'
-import { PdfIndirectObject } from '../../index.js'
+import type { PdfAcroForm } from '../pdf-acro-form.js'
+import type { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 
 /**
  * Button form field subtype (checkboxes, radio buttons, push buttons).

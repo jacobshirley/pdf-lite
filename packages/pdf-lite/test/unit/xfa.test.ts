@@ -108,4 +108,43 @@ describe('XFA', () => {
 
         rereadDocument.toString() // Ensure no errors on toString
     })
+
+    it('should insert XFA dataset entries when fields do not exist in XML', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile('./test/unit/fixtures/ca_gst.pdf', {
+                encoding: 'base64',
+            }),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = document.acroform!
+        const xfa = acroform.xfa!
+
+        // Initial XFA datasets is empty (just <form1></form1>)
+        const initialXml = xfa.datasets!.xml
+        expect(initialXml).toContain('<form1')
+        expect(initialXml).not.toContain('P1_bsnss_nm')
+
+        // Setting a field value should create the missing XML hierarchy
+        const fields = acroform.fields
+        const businessName = fields.find((f) => f.name.includes('P1_bsnss_nm'))!
+        businessName.value = 'Test Corp'
+
+        const updatedXml = xfa.datasets!.xml
+        expect(updatedXml).toContain('<P1_bsnss_nm>Test Corp</P1_bsnss_nm>')
+
+        // Setting a second field should reuse existing ancestors
+        const firmName = fields.find((f) => f.name.includes('P1_frm_nm'))!
+        firmName.value = 'My Firm Ltd'
+
+        const finalXml = xfa.datasets!.xml
+        expect(finalXml).toContain('<P1_frm_nm>My Firm Ltd</P1_frm_nm>')
+        expect(finalXml).toContain('<P1_bsnss_nm>Test Corp</P1_bsnss_nm>')
+
+        // Values survive save and reload
+        const reloaded = await PdfDocument.fromBytes([document.toBytes()])
+        const reloadedXml = reloaded.acroform!.xfa!.datasets!.xml
+        expect(reloadedXml).toContain('Test Corp')
+        expect(reloadedXml).toContain('My Firm Ltd')
+    })
 })

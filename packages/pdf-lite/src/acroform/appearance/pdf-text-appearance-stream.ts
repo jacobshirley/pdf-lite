@@ -84,7 +84,58 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
 
         let lines: string[] = []
 
-        if (ctx.multiline || autoSize) {
+        if (ctx.comb && ctx.maxLen) {
+            const cellWidth = width / ctx.maxLen
+            const chars = [...value]
+
+            // For auto-size comb, fit font to cell height
+            if (autoSize) {
+                finalFontSize = Math.min(height - 2 * padding, cellWidth)
+                g.setDefaultAppearance(
+                    new PdfDefaultAppearance(
+                        ctx.da.fontName,
+                        finalFontSize,
+                        ctx.da.colorOp,
+                    ),
+                )
+            }
+
+            let maxCharWidth = 0
+            let widestChar = chars[0] ?? ''
+            for (const char of chars) {
+                const charWidth = g.measureTextWidth(char)
+                if (charWidth > maxCharWidth) {
+                    maxCharWidth = charWidth
+                    widestChar = char
+                }
+            }
+
+            if (maxCharWidth > cellWidth) {
+                finalFontSize = g.calculateFittingFontSize(
+                    widestChar,
+                    cellWidth,
+                )
+                g.setDefaultAppearance(
+                    new PdfDefaultAppearance(
+                        ctx.da.fontName,
+                        finalFontSize,
+                        ctx.da.colorOp,
+                    ),
+                )
+            }
+
+            const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
+
+            g.beginText()
+            for (let i = 0; i < chars.length && i < ctx.maxLen; i++) {
+                const cellX =
+                    cellWidth * i + cellWidth / 2 - finalFontSize * 0.3
+                g.moveTo(cellX, textY)
+                g.showText(chars[i], isUnicode, reverseEncodingMap)
+                g.moveTo(-cellX, -textY)
+            }
+            g.endText()
+        } else if (ctx.multiline || autoSize) {
             if (!autoSize) {
                 const testLines = g.wrapTextToLines(value, availableWidth)
                 const lineHeight = finalFontSize * 1.2
@@ -121,45 +172,6 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     isUnicode,
                     reverseEncodingMap,
                 )
-            }
-            g.endText()
-        } else if (ctx.comb && ctx.maxLen) {
-            const cellWidth = width / ctx.maxLen
-            const chars = [...value]
-
-            let maxCharWidth = 0
-            let widestChar = chars[0] ?? ''
-            for (const char of chars) {
-                const charWidth = g.measureTextWidth(char)
-                if (charWidth > maxCharWidth) {
-                    maxCharWidth = charWidth
-                    widestChar = char
-                }
-            }
-
-            if (maxCharWidth > cellWidth) {
-                finalFontSize = g.calculateFittingFontSize(
-                    widestChar,
-                    cellWidth,
-                )
-                g.setDefaultAppearance(
-                    new PdfDefaultAppearance(
-                        ctx.da.fontName,
-                        finalFontSize,
-                        ctx.da.colorOp,
-                    ),
-                )
-            }
-
-            const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
-
-            g.beginText()
-            for (let i = 0; i < chars.length && i < ctx.maxLen; i++) {
-                const cellX =
-                    cellWidth * i + cellWidth / 2 - finalFontSize * 0.3
-                g.moveTo(cellX, textY)
-                g.showText(chars[i], isUnicode, reverseEncodingMap)
-                g.moveTo(-cellX, -textY)
             }
             g.endText()
         } else {

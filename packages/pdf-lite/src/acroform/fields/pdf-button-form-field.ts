@@ -2,7 +2,7 @@ import { PdfFormField } from './pdf-form-field.js'
 import { PdfButtonAppearanceStream } from '../appearance/pdf-button-appearance-stream.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
 import type { PdfAcroForm } from '../pdf-acro-form.js'
-import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+import type { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 
 /**
  * Button form field subtype (checkboxes, radio buttons, push buttons).
@@ -29,7 +29,14 @@ export class PdfButtonFormField extends PdfFormField {
 
     override set isWidget(val: boolean) {
         super.isWidget = val
-        if (val && this.appearanceStates.length === 0) {
+        // Only initialize the widget if it has no existing appearances.
+        // `appearanceStream` is write-only on PdfFormField, so instead check
+        // the underlying appearance data structures.
+        if (
+            val &&
+            !this.appearanceStreamDict &&
+            this.appearanceStates.length === 0
+        ) {
             this.initWidget()
         }
     }

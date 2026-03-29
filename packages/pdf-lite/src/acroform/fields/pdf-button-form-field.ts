@@ -29,7 +29,10 @@ export class PdfButtonFormField extends PdfFormField {
 
     override set isWidget(val: boolean) {
         super.isWidget = val
-        if (val && !this.appearanceStream) {
+        // Only initialize the widget if it has no existing appearances.
+        // `appearanceStream` is write-only on PdfFormField, so instead check
+        // the underlying appearance data structures.
+        if (val && !this.appearanceStreamDict && this.appearanceStates.length === 0) {
             this.initWidget()
         }
     }

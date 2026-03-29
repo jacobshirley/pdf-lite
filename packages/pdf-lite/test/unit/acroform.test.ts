@@ -2084,7 +2084,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             parent.value = 'Off'
 
             expect(parent.value).toBe('Off')
-            expect(children[0].appearanceState).toBe('2')
+            expect(children[0].appearanceState).toBe('Off')
             expect(children[1].appearanceState).toBe('Off')
         })
 

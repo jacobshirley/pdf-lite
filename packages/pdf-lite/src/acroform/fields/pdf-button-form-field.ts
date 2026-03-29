@@ -32,7 +32,11 @@ export class PdfButtonFormField extends PdfFormField {
         // Only initialize the widget if it has no existing appearances.
         // `appearanceStream` is write-only on PdfFormField, so instead check
         // the underlying appearance data structures.
-        if (val && !this.appearanceStreamDict && this.appearanceStates.length === 0) {
+        if (
+            val &&
+            !this.appearanceStreamDict &&
+            this.appearanceStates.length === 0
+        ) {
             this.initWidget()
         }
     }
@@ -64,8 +68,8 @@ export class PdfButtonFormField extends PdfFormField {
                 if (this._form) child.form = this._form
             }
 
-            if (!wasSet && children.length > 0) {
-                // If value doesn't match any on-state, check first child by default
+            if (!wasSet && strVal !== 'Off' && children.length > 0) {
+                // If value doesn't match any on-state (and isn't 'Off'), check first child by default
                 children[0].appearanceState = children[0].onStates[0] ?? 'Off'
             }
         } else {

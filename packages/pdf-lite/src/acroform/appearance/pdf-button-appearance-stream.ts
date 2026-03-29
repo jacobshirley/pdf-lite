@@ -76,7 +76,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
             g.fill()
             g.restore()
         } else {
-            const checkSize = size * 0.8
+            const checkSize = size * 0.65
             const offset = (size - checkSize) / 2
 
             g.save()

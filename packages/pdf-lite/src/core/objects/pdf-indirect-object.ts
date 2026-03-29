@@ -167,6 +167,15 @@ export class PdfIndirectObject<
         }) as this
     }
 
+    toJSON() {
+        return {
+            type: 'indirect-object',
+            objectNumber: this.objectNumber,
+            generationNumber: this.generationNumber,
+            content: this.content.toJSON(),
+        }
+    }
+
     order(): number {
         return this.orderIndex ?? 0
     }

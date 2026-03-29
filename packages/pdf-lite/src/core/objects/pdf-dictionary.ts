@@ -121,6 +121,16 @@ export class PdfDictionary<
         return entries[Symbol.iterator]()
     }
 
+    toJSON() {
+        const entries: Record<string, object> = {}
+        for (const [key, value] of this.entries()) {
+            if (value) {
+                entries[key] = value.toJSON()
+            }
+        }
+        return { type: 'dictionary', entries }
+    }
+
     override get isTrailingDelimited(): boolean {
         return true
     }

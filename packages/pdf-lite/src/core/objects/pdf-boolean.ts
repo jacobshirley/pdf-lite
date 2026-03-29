@@ -17,4 +17,8 @@ export class PdfBoolean extends PdfObject {
         const cloned = new PdfBoolean(this.value) as this
         return cloned
     }
+
+    toJSON() {
+        return { type: 'boolean', value: this.value }
+    }
 }

@@ -40,6 +40,10 @@ export class PdfComment extends PdfObject {
         return comment
     }
 
+    toJSON() {
+        return { type: 'comment', value: this.asString() }
+    }
+
     protected tokenize() {
         return [new PdfCommentToken(this.raw)]
     }

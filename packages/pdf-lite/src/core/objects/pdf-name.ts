@@ -18,6 +18,10 @@ export class PdfName<T extends string = string> extends PdfObject {
         return cloned
     }
 
+    toJSON() {
+        return { type: 'name', value: this.value }
+    }
+
     /**
      * Escapes a PDF name according to PDF specification.
      * PDF names can't contain spaces or certain special chars except # for escaping.

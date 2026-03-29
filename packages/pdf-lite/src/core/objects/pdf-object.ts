@@ -162,4 +162,6 @@ export abstract class PdfObject {
         }
         return btoa(binary)
     }
+
+    abstract toJSON(): object
 }

@@ -34,6 +34,10 @@ export class PdfTrailer extends PdfObject {
                 : new PdfDictionary(entries)
     }
 
+    toJSON() {
+        return { type: 'trailer', dict: this.dict.toJSON() }
+    }
+
     protected tokenize(): PdfToken[] {
         return [
             new PdfByteOffsetToken(this.offset),

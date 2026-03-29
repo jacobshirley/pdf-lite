@@ -17,6 +17,10 @@ export class PdfStartXRef extends PdfObject {
         this.offset.isByteOffset = true
     }
 
+    toJSON() {
+        return { type: 'start-xref', offset: this.offset.value }
+    }
+
     protected tokenize() {
         const whiteSpaceTokens = this.offset.preTokens
             ? []

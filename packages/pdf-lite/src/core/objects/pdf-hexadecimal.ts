@@ -66,6 +66,10 @@ export class PdfHexadecimal extends PdfObject {
         return bytesToString(this.toHexBytes())
     }
 
+    toJSON() {
+        return { type: 'hexadecimal', value: this.toHexString() }
+    }
+
     override get isTrailingDelimited(): boolean {
         return true
     }

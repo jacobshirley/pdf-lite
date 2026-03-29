@@ -117,19 +117,17 @@ export class PdfChoiceFormField extends PdfFormField {
         const isUnicode = font?.isUnicode ?? false
         const reverseEncodingMap = font?.reverseEncodingMap
 
-        this.setAppearanceStream(
-            new PdfChoiceAppearanceStream({
-                rect: rect as [number, number, number, number],
-                value,
-                da: parsed,
-                flags: this.flags,
-                fontResources,
-                isUnicode,
-                reverseEncodingMap,
-                displayOptions: this.options.map((opt) => opt.label),
-                selectedIndex: this.selectedIndex,
-            }),
-        )
+        this.appearanceStream = new PdfChoiceAppearanceStream({
+            rect: rect as [number, number, number, number],
+            value,
+            da: parsed,
+            flags: this.flags,
+            fontResources,
+            isUnicode,
+            reverseEncodingMap,
+            displayOptions: this.options.map((opt) => opt.label),
+            selectedIndex: this.selectedIndex,
+        })
 
         if (options?.makeReadOnly) {
             this.readOnly = true

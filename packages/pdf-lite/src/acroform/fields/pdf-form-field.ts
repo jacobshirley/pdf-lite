@@ -266,11 +266,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     set value(val: string | PdfString) {
-        //if (this.value === val) return
-
         const fieldParent = this.parent?.content.get('FT')
             ? this.parent
             : undefined
+
         const shouldGenerateAppearance = this._storeValue(val, fieldParent)
         if (shouldGenerateAppearance && this.defaultGenerateAppearance) {
             this.generateAppearance()
@@ -295,9 +294,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             }
         }
 
-        if (this._form) {
-            this._form.xfa?.datasets?.updateField(this.name, this.value)
-        }
+        this._form?.xfa?.datasets?.updateField(this.name, this.value)
     }
 
     /**
@@ -310,6 +307,15 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         fieldParent: PdfFormField | undefined,
     ): boolean {
         const pdfVal = val instanceof PdfString ? val : new PdfString(val)
+        if (pdfVal.trim() === '') {
+            this.content.delete('V')
+            fieldParent?.content.delete('V')
+            // Clear AS to reset to default appearance when value is cleared
+            this.content.delete('AS')
+            fieldParent?.content.delete('AS')
+            this._form?.xfa?.datasets?.updateField(this.name, '')
+            return true
+        }
         this.content.set('V', pdfVal)
         fieldParent?.content.set('V', pdfVal)
         return true
@@ -600,7 +606,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         textYOffset?: number
     }): boolean
 
-    setAppearanceStream(
+    set appearanceStream(
         stream:
             | PdfIndirectObject
             | {
@@ -616,6 +622,18 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
                 dict.set(key, stream[key].reference)
             }
             this.appearanceStreamDict.set('N', dict)
+        }
+    }
+
+    get appearanceState(): string | null {
+        return this.content.get('AS')?.as(PdfName)?.value ?? null
+    }
+
+    set appearanceState(state: string | null) {
+        if (state === null) {
+            this.content.delete('AS')
+        } else {
+            this.content.set('AS', new PdfName(state))
         }
     }
 

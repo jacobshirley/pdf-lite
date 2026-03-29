@@ -294,6 +294,13 @@ export class PdfRevision extends PdfObject {
      *
      * @returns A cloned PdfRevision instance
      */
+    toJSON() {
+        return {
+            type: 'revision',
+            objects: this._objects.map((obj) => obj.toJSON()),
+        }
+    }
+
     cloneImpl(): this {
         const clonedObjects = this.objects.map((obj) => obj.clone())
         return new PdfRevision({ objects: clonedObjects }) as this

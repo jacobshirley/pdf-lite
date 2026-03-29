@@ -15,36 +15,77 @@ export class PdfButtonFormField extends PdfFormField {
         this.content.set('DV', new PdfName(val))
     }
 
-    protected override _storeValue(
-        val: string | PdfString,
-        fieldParent: PdfFormField | undefined,
-    ): boolean {
+    get isGroup(): boolean {
+        return this.children.length > 0
+    }
+
+    override get value(): string {
+        return super.value
+    }
+
+    override set value(val: string | PdfString) {
         const strVal = val instanceof PdfString ? val.value : val
+        const fieldParent = this.parent?.content.get('FT')
+            ? this.parent
+            : undefined
+
+        if (strVal === 'Off') {
+            this.content.set('V', new PdfName('Off'))
+            fieldParent?.content.set('V', new PdfName('Off'))
+            this.content.set('AS', new PdfName('Off'))
+            for (const child of this.children) {
+                child.content.set('AS', new PdfName('Off'))
+            }
+            this._form?.xfa?.datasets?.updateField(this.name, this.value)
+            return
+        }
+
+        // Any non-"Off" value (including blank) means "checked".
+        // V stores the raw value; AS uses the existing on-state from AP.
         this.content.set('V', new PdfName(strVal))
         fieldParent?.content.set('V', new PdfName(strVal))
-        this.content.set('AS', new PdfName(strVal))
 
-        // For parent fields with a separated widget structure (kids have the
-        // actual Rect/AP), update each kid's AS to reflect the new value.
-        // If the kids already have AP streams, skip generating new ones so
-        // the original appearance content (e.g. custom checkmark styles) is
-        // preserved.
-        const kids = this.children
-        if (kids.length > 0) {
-            // Separated field/widget structure: update each kid's AS and
-            // skip appearance generation if they already have AP streams.
-            let kidsHaveAP = false
-            for (const child of kids) {
-                child.value = strVal
-                if (child.content.get('AP')) kidsHaveAP = true
+        if (this.isGroup) {
+            // Check the first child, uncheck the rest.
+            // AS is set to the child's existing AP on-state, not the raw value.
+            let first = true
+            let needsGeneration = false
+            for (const child of this.children) {
+                const onState = child.appearanceStates.find((s) => s !== 'Off')
+                if (first) {
+                    child.content.set(
+                        'AS',
+                        new PdfName(onState ?? (strVal || 'Yes')),
+                    )
+                    if (!onState) needsGeneration = true
+                    first = false
+                } else {
+                    child.content.set('AS', new PdfName('Off'))
+                }
             }
-            if (kidsHaveAP) return false
-        } else if (this.appearanceStates.includes(strVal)) {
-            // Standalone field already has an appearance for this state —
-            // preserve it rather than overwriting with a generated one.
-            return false
+
+            if (needsGeneration && this.defaultGenerateAppearance) {
+                for (const child of this.children) {
+                    if (child.rect && child.defaultGenerateAppearance) {
+                        if (this._form) child.form = this._form
+                        child.generateAppearance()
+                    }
+                }
+            }
+        } else {
+            const onState =
+                this.appearanceStates.find((s) => s !== 'Off') ??
+                (strVal || 'Yes')
+            this.content.set('AS', new PdfName(onState))
+            if (
+                !this.appearanceStates.includes(onState) &&
+                this.defaultGenerateAppearance
+            ) {
+                this.generateAppearance()
+            }
         }
-        return true
+
+        this._form?.xfa?.datasets?.updateField(this.name, this.value)
     }
 
     get checked(): boolean {
@@ -92,10 +133,10 @@ export class PdfButtonFormField extends PdfFormField {
 
         const onState = this.appearanceStates.find((s) => s !== 'Off') ?? 'Yes'
         const as = this.content.get('AS')?.value || onState
-        this.setAppearanceStream({
+        this.appearanceStream = {
             [as]: yesAppearance,
             Off: noAppearance,
-        })
+        }
 
         if (options?.makeReadOnly) {
             this.readOnly = true

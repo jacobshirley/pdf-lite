@@ -1,6 +1,7 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
 import { PdfTextAppearanceStream } from '../appearance/pdf-text-appearance-stream.js'
+import { PdfFont } from '../../fonts/pdf-font.js'
 
 /**
  * Text form field subtype.
@@ -26,7 +27,26 @@ export class PdfTextFormField extends PdfFormField {
         if (!parsed) return false
 
         const font = this.font
-        const fontResources = this.buildFontResources(parsed.fontName)
+        const variantNames = this.fontVariantNames
+        const variantFonts = this.resolvedVariantFonts
+
+        const allFontNames = [
+            parsed.fontName,
+            variantNames.bold,
+            variantNames.italic,
+            variantNames.boldItalic,
+        ].filter((n): n is string => !!n)
+
+        const fontResources = this.buildAllFontResources(allFontNames)
+
+        const resolvedFonts = new Map<string, PdfFont>()
+        if (font) resolvedFonts.set(parsed.fontName, font)
+        if (variantFonts.bold)
+            resolvedFonts.set(variantNames.bold!, variantFonts.bold)
+        if (variantFonts.italic)
+            resolvedFonts.set(variantNames.italic!, variantFonts.italic)
+        if (variantFonts.boldItalic)
+            resolvedFonts.set(variantNames.boldItalic!, variantFonts.boldItalic)
 
         const isUnicode = font?.isUnicode ?? false
         const reverseEncodingMap = font?.reverseEncodingMap
@@ -39,9 +59,11 @@ export class PdfTextFormField extends PdfFormField {
             comb: this.comb,
             maxLen: this.maxLen,
             fontResources,
+            resolvedFonts,
             isUnicode,
             reverseEncodingMap,
             markdown: this._markdownValue,
+            fontVariantNames: variantNames,
         })
 
         if (options?.makeReadOnly) {

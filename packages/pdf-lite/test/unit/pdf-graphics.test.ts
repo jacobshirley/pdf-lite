@@ -179,6 +179,95 @@ describe('PdfGraphics', () => {
                 // Verify text actually fits at returned size: 750 * fontSize / 1000 <= 7
                 expect((750 * fontSize) / 1000).toBeLessThanOrEqual(7)
             })
+
+            it('should use bold font metrics when a bold variant is configured', () => {
+                // Bold font has wider glyphs: a-z=650, A-Z=950 (vs regular a-z=500, A-Z=750)
+                const boldFont = new PdfFont('BoldFont')
+                boldFont.firstChar = 32
+                boldFont.lastChar = 126
+                const boldWidths = []
+                for (let i = 32; i <= 126; i++) {
+                    if (i === 32)
+                        boldWidths.push(250) // space unchanged
+                    else if (i >= 65 && i <= 90)
+                        boldWidths.push(950) // A-Z wider
+                    else if (i >= 97 && i <= 122)
+                        boldWidths.push(650) // a-z wider
+                    else boldWidths.push(400)
+                }
+                boldFont.widths = boldWidths
+
+                const g = new PdfGraphics({
+                    resolvedFonts: new Map([
+                        ['TestFont', mockFont],
+                        ['BoldFont', boldFont],
+                    ]),
+                    fontVariantNames: { bold: 'BoldFont' },
+                })
+                const da = PdfDefaultAppearance.parse('/TestFont 12 Tf 0 g')!
+                g.setDefaultAppearance(da)
+
+                // 'Hello' with regular font at 12pt:
+                //   H(750) + e(500) + l(500) + l(500) + o(500) = 2750 * 12/1000 = 33
+                // 'Hello' with bold font at 12pt:
+                //   H(950) + e(650) + l(650) + l(650) + o(650) = 3550 * 12/1000 = 42.6
+                // Use maxWidth=35: fits regular (33 <= 35) but not bold (42.6 > 35)
+                const sizeWithBold = g.calculateFittingFontSize('Hello', 35)
+                const sizeWithoutBold = graphics.calculateFittingFontSize(
+                    'Hello',
+                    35,
+                )
+
+                // Without bold: 12pt fits (regular width = 33 <= 35), returns 12
+                expect(sizeWithoutBold).toBe(12)
+                // With bold: 12pt doesn't fit bold (42.6 > 35), must shrink
+                expect(sizeWithBold).toBeLessThan(12)
+                // Verify bold text actually fits at the returned size
+                const boldWidth = (3550 * sizeWithBold) / 1000
+                expect(boldWidth).toBeLessThanOrEqual(35)
+            })
+
+            it('should use bold font metrics for multiline height fitting', () => {
+                const boldFont = new PdfFont('BoldFont')
+                boldFont.firstChar = 32
+                boldFont.lastChar = 126
+                const boldWidths = []
+                for (let i = 32; i <= 126; i++) {
+                    if (i === 32) boldWidths.push(250)
+                    else if (i >= 65 && i <= 90) boldWidths.push(950)
+                    else if (i >= 97 && i <= 122) boldWidths.push(650)
+                    else boldWidths.push(400)
+                }
+                boldFont.widths = boldWidths
+
+                const g = new PdfGraphics({
+                    resolvedFonts: new Map([
+                        ['TestFont', mockFont],
+                        ['BoldFont', boldFont],
+                    ]),
+                    fontVariantNames: { bold: 'BoldFont' },
+                })
+                const da = PdfDefaultAppearance.parse('/TestFont 12 Tf 0 g')!
+                g.setDefaultAppearance(da)
+
+                // With a narrow maxWidth, bold words wrap to more lines than regular,
+                // so calculateFittingFontSize must shrink further to fit in maxHeight.
+                const sizeWithBold = g.calculateFittingFontSize(
+                    'Hello World',
+                    35, // narrow: bold words won't fit on one line
+                    30, // height allows ~2 lines at 12pt (12 * 1.2 * 2 = 28.8)
+                    1.2,
+                )
+                const sizeWithoutBold = graphics.calculateFittingFontSize(
+                    'Hello World',
+                    35,
+                    30,
+                    1.2,
+                )
+
+                // Bold wraps more aggressively → needs smaller font to fit in height
+                expect(sizeWithBold).toBeLessThanOrEqual(sizeWithoutBold)
+            })
         })
 
         describe('font context tracking', () => {

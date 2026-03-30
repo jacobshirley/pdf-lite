@@ -2438,5 +2438,128 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             )
             expect(f2?.value).toBe('Italic prefix then bold suffix')
         })
+
+        it('should fall back to stroke simulation when no font variants are set', async () => {
+            const pdfBuffer = base64ToBytes(
+                await server.commands.readFile(
+                    './test/unit/fixtures/template.pdf',
+                    { encoding: 'base64' },
+                ),
+            )
+            const document = await PdfDocument.fromBytes([pdfBuffer])
+            const acroform = document.acroform!
+
+            // Load only the regular font — no bold/italic variants
+            const regularData = await loadFont(
+                './test/unit/fixtures/fonts/LiberationSans-Regular.ttf',
+            )
+            const regular = PdfFont.fromFile(regularData, {
+                fontName: 'LiberationSans-Regular',
+            })
+            document.add(regular)
+
+            const field = acroform.fields.find(
+                (f) => f.fieldType === 'Text' && !f.comb && f.rect != null,
+            ) as InstanceType<typeof PdfTextFormField>
+            expect(field).toBeDefined()
+
+            field.font = regular
+            field.markdownValue = 'Normal **bold** *italic* ***both***'
+
+            const apStream = field.getAppearanceStream()
+            expect(apStream).not.toBeNull()
+            const rawContent = new TextDecoder().decode(
+                apStream!.content.decode(),
+            )
+
+            // Bold simulation: fill+stroke rendering mode
+            expect(rawContent).toContain('2 Tr')
+            // Italic simulation: shear in Tm matrix
+            expect(rawContent).toMatch(/1 0 0\.\d+ 1 .* Tm/)
+            // No extra font switches — only the regular font resource name
+            expect(rawContent).not.toContain('LiberationSans-Bold')
+            expect(rawContent).not.toContain('LiberationSans-Italic')
+        })
+
+        it('should use true font variants when fontFamily is set', async () => {
+            const pdfBuffer = base64ToBytes(
+                await server.commands.readFile(
+                    './test/unit/fixtures/template.pdf',
+                    { encoding: 'base64' },
+                ),
+            )
+            const document = await PdfDocument.fromBytes([pdfBuffer])
+            const acroform = document.acroform!
+
+            // Load all four Liberation Sans variants
+            const [regularData, boldData, italicData, boldItalicData] =
+                await Promise.all([
+                    loadFont(
+                        './test/unit/fixtures/fonts/LiberationSans-Regular.ttf',
+                    ),
+                    loadFont(
+                        './test/unit/fixtures/fonts/LiberationSans-Bold.ttf',
+                    ),
+                    loadFont(
+                        './test/unit/fixtures/fonts/LiberationSans-Italic.ttf',
+                    ),
+                    loadFont(
+                        './test/unit/fixtures/fonts/LiberationSans-BoldItalic.ttf',
+                    ),
+                ])
+
+            const regular = PdfFont.fromFile(regularData, {
+                fontName: 'LiberationSans-Regular',
+            })
+            const bold = PdfFont.fromFile(boldData, {
+                fontName: 'LiberationSans-Bold',
+            })
+            const italic = PdfFont.fromFile(italicData, {
+                fontName: 'LiberationSans-Italic',
+            })
+            const boldItalic = PdfFont.fromFile(boldItalicData, {
+                fontName: 'LiberationSans-BoldItalic',
+            })
+
+            // Find a text field and apply the font family
+            const field = acroform.fields.find(
+                (f) => f.fieldType === 'Text' && !f.comb && f.rect != null,
+            ) as InstanceType<typeof PdfTextFormField>
+            expect(field).toBeDefined()
+
+            field.fontFamily = { regular, bold, italic, boldItalic }
+            field.markdownValue = 'Normal **bold** *italic* ***both***'
+
+            expect(field.value).toBe('Normal bold italic both')
+
+            // Appearance stream should exist
+            const apStream = field.getAppearanceStream()
+            expect(apStream).not.toBeNull()
+
+            const rawContent = new TextDecoder().decode(
+                apStream!.content.decode(),
+            )
+
+            // True bold: should switch to bold font resource name, NOT use Tr=2 stroke sim
+            expect(rawContent).toContain(`/${bold.resourceName}`)
+            expect(rawContent).toContain(`/${italic.resourceName}`)
+            expect(rawContent).toContain(`/${boldItalic.resourceName}`)
+
+            // Should NOT contain bold stroke simulation (Tr=2) since true font is available
+            expect(rawContent).not.toContain('2 Tr')
+            // Should NOT contain italic shear since true italic font is available
+            expect(rawContent).not.toMatch(/1 0 0\.\d+ 1 .* Tm/)
+
+            // Resources dict must include all four font variants
+            const resources = apStream!.content.header.get('Resources')
+            expect(resources).toBeDefined()
+
+            acroform.needAppearances = false
+            await server.commands.writeFile(
+                './test/unit/tmp/font-family-markdown.pdf',
+                bytesToBase64(document.toBytes()),
+                { encoding: 'base64' },
+            )
+        })
     })
 })

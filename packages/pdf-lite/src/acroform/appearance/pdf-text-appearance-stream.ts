@@ -2,7 +2,7 @@ import { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
 import { PdfAppearanceStream } from './pdf-appearance-stream.js'
 import type { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import type { PdfFont } from '../../fonts/pdf-font.js'
-import { PdfGraphics } from './pdf-graphics.js'
+import { PdfGraphics, type FontVariantNames } from './pdf-graphics.js'
 
 const DEFAULT_FONT_SIZE = 12
 
@@ -23,6 +23,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         isUnicode?: boolean
         reverseEncodingMap?: Map<string, number>
         markdown?: string
+        fontVariantNames?: FontVariantNames
     }) {
         const [x1, y1, x2, y2] = ctx.rect
         const width = x2 - x1
@@ -40,6 +41,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         // Create graphics with font context for text measurement
         const g = new PdfGraphics({
             resolvedFonts: ctx.resolvedFonts,
+            fontVariantNames: ctx.fontVariantNames,
         })
 
         g.beginMarkedContent()
@@ -82,8 +84,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     ctx.da.colorOp,
                 ),
             )
-            const textWidth = g.measureTextWidth(value)
-            if (textWidth > availableWidth) {
+            if (g.measureTextWidth(value) > availableWidth) {
                 finalFontSize = g.calculateFittingFontSize(
                     value,
                     availableWidth,
@@ -212,8 +213,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         } else {
             // Single line — for non-auto-size, shrink if text overflows
             if (!autoSize) {
-                const textWidth = g.measureTextWidth(value)
-                if (textWidth > availableWidth) {
+                if (g.measureTextWidth(value) > availableWidth) {
                     finalFontSize = g.calculateFittingFontSize(
                         value,
                         availableWidth,

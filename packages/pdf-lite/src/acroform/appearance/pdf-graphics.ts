@@ -7,6 +7,17 @@ import {
 } from '../../utils/parse-markdown-segments.js'
 
 /**
+ * Resource names of font variants to use when rendering styled markdown segments.
+ * When a variant is provided, the appearance stream switches fonts instead of
+ * simulating bold/italic via stroke width or matrix shear.
+ */
+export interface FontVariantNames {
+    bold?: string
+    italic?: string
+    boldItalic?: string
+}
+
+/**
  * Lightweight builder for PDF content streams.
  * Chains PDF operators via a fluent API and emits the final stream with build().
  * Enhanced with text measurement capabilities for layout calculations.
@@ -15,13 +26,16 @@ export class PdfGraphics {
     private lines: string[] = []
     private resolvedFonts?: Map<string, PdfFont>
     private defaultAppearance?: PdfDefaultAppearance
+    private fontVariantNames?: FontVariantNames
 
     constructor(options?: {
         resolvedFonts?: Map<string, PdfFont>
         defaultAppearance?: PdfDefaultAppearance
+        fontVariantNames?: FontVariantNames
     }) {
         this.resolvedFonts = options?.resolvedFonts
         this.defaultAppearance = options?.defaultAppearance
+        this.fontVariantNames = options?.fontVariantNames
     }
 
     save(): this {
@@ -208,8 +222,47 @@ export class PdfGraphics {
     }
 
     /**
-     * Emits styled text segments into the current BT…ET block using PDF
-     * operator simulation: bold via Tr=2 (fill+stroke), italic via Tm shear.
+     * Returns the resource name of the best-matching font variant for the given
+     * bold/italic flags, or undefined if no variant fonts are configured.
+     */
+    private resolveVariantFontName(
+        bold: boolean,
+        italic: boolean,
+    ): string | undefined {
+        if (bold && italic && this.fontVariantNames?.boldItalic)
+            return this.fontVariantNames.boldItalic
+        if (bold && this.fontVariantNames?.bold)
+            return this.fontVariantNames.bold
+        if (italic && this.fontVariantNames?.italic)
+            return this.fontVariantNames.italic
+        return undefined
+    }
+
+    /**
+     * Measures text width using a specific font from resolvedFonts by resource
+     * name, falling back to measureTextWidth (regular font) if not found.
+     */
+    measureTextWidthWithFont(
+        text: string,
+        fontName: string | undefined,
+        fontSize: number,
+    ): number {
+        if (!fontName) return this.measureTextWidth(text, fontSize)
+        const font = this.resolvedFonts?.get(fontName)
+        if (!font) return this.measureTextWidth(text, fontSize)
+        let width = 0
+        for (const char of text) {
+            const w = font.getCharacterWidth(char.charCodeAt(0), fontSize)
+            width += w !== null ? w : fontSize * 0.6
+        }
+        return width
+    }
+
+    /**
+     * Emits styled text segments into the current BT…ET block.
+     * When font variants are configured, switches fonts mid-stream for true
+     * bold/italic rendering. Falls back to stroke simulation / Tm shear when
+     * no variant fonts are provided (backward compatible).
      * Each segment is positioned with an absolute Tm so no prior Td is needed.
      */
     private showSegments(
@@ -220,19 +273,52 @@ export class PdfGraphics {
         startY: number,
         fontSize: number,
     ): this {
+        const regularFontName = this.defaultAppearance!.fontName
         let x = startX
+
         for (const seg of lineSegs) {
-            const shear = seg.italic ? PdfGraphics.ITALIC_SHEAR : 0
-            this.raw(`1 0 ${shear} 1 ${x.toFixed(3)} ${startY.toFixed(3)} Tm`)
-            if (seg.bold) {
-                const sw = (fontSize * PdfGraphics.BOLD_STROKE_RATIO).toFixed(3)
-                this.raw(`${sw} w 2 Tr`)
-            } else {
+            const variantName = this.resolveVariantFontName(
+                seg.bold,
+                seg.italic,
+            )
+
+            if (variantName) {
+                // True font variant — switch font, no simulation needed
+                const variantFont = this.resolvedFonts?.get(variantName)
+                const segIsUnicode = variantFont?.isUnicode ?? isUnicode
+                const segEncMap =
+                    variantFont?.reverseEncodingMap ?? reverseEncodingMap
+
+                this.raw(`1 0 0 1 ${x.toFixed(3)} ${startY.toFixed(3)} Tm`)
+                this.raw(`/${variantName} ${fontSize} Tf`)
                 this.raw(`0 Tr`)
+                this.showText(seg.text, segIsUnicode, segEncMap)
+                x += this.measureTextWidthWithFont(
+                    seg.text,
+                    variantName,
+                    fontSize,
+                )
+            } else {
+                // Fallback simulation (no variant font provided)
+                const shear = seg.italic ? PdfGraphics.ITALIC_SHEAR : 0
+                this.raw(
+                    `1 0 ${shear} 1 ${x.toFixed(3)} ${startY.toFixed(3)} Tm`,
+                )
+                if (seg.bold) {
+                    const sw = (
+                        fontSize * PdfGraphics.BOLD_STROKE_RATIO
+                    ).toFixed(3)
+                    this.raw(`${sw} w 2 Tr`)
+                } else {
+                    this.raw(`0 Tr`)
+                }
+                this.showText(seg.text, isUnicode, reverseEncodingMap)
+                x += this.measureTextWidth(seg.text, fontSize)
             }
-            this.showText(seg.text, isUnicode, reverseEncodingMap)
-            x += this.measureTextWidth(seg.text)
         }
+
+        // Restore regular font and fill-only rendering mode
+        this.raw(`/${regularFontName} ${fontSize} Tf`)
         this.raw(`0 Tr`)
         return this
     }
@@ -352,6 +438,8 @@ export class PdfGraphics {
 
     /**
      * Wrap text to fit within the specified width, breaking at word boundaries.
+     * When a bold font variant is configured, uses its metrics conservatively
+     * to prevent bold glyphs from overflowing field bounds.
      */
     wrapTextToLines(
         text: string,
@@ -362,12 +450,19 @@ export class PdfGraphics {
             throw new Error('No font set - call setDefaultAppearance() first')
         }
 
+        const boldFontName = this.fontVariantNames?.bold
+        const size = fontSize ?? this.currentFont.size
+        const measure = (t: string) =>
+            boldFontName
+                ? this.measureTextWidthWithFont(t, boldFontName, size)
+                : this.measureTextWidth(t, fontSize)
+
         // Handle explicit line breaks first
         const paragraphs = text.split('\n')
         const wrappedLines: string[] = []
 
         for (const paragraph of paragraphs) {
-            if (this.measureTextWidth(paragraph, fontSize) <= maxWidth) {
+            if (measure(paragraph) <= maxWidth) {
                 wrappedLines.push(paragraph)
                 continue
             }
@@ -379,7 +474,7 @@ export class PdfGraphics {
             for (const word of words) {
                 const testLine = currentLine ? `${currentLine} ${word}` : word
 
-                if (this.measureTextWidth(testLine, fontSize) <= maxWidth) {
+                if (measure(testLine) <= maxWidth) {
                     currentLine = testLine
                 } else {
                     if (currentLine) {
@@ -419,6 +514,7 @@ export class PdfGraphics {
             throw new Error('No font set - call setDefaultAppearance() first')
         }
 
+        const boldFontName = this.fontVariantNames?.bold
         const startSize = this.currentFont.size
         const minSize = 0.5
 
@@ -430,7 +526,10 @@ export class PdfGraphics {
                 return lines.length * size * lineHeight <= maxHeight
             }
             // Single-line mode: text must fit within maxWidth.
-            return this.measureTextWidth(text, size) <= maxWidth
+            return boldFontName
+                ? this.measureTextWidthWithFont(text, boldFontName, size) <=
+                      maxWidth
+                : this.measureTextWidth(text, size) <= maxWidth
         }
 
         if (fits(startSize)) return startSize
@@ -452,13 +551,20 @@ export class PdfGraphics {
         maxWidth: number,
         fontSize?: number,
     ): string[] {
+        const boldFontName = this.fontVariantNames?.bold
+        const size = fontSize ?? this.currentFont?.size ?? 12
+        const measure = (t: string) =>
+            boldFontName
+                ? this.measureTextWidthWithFont(t, boldFontName, size)
+                : this.measureTextWidth(t, fontSize)
+
         const lines: string[] = []
         let currentLine = ''
 
         for (const char of word) {
             const testLine = currentLine + char
 
-            if (this.measureTextWidth(testLine, fontSize) <= maxWidth) {
+            if (measure(testLine) <= maxWidth) {
                 currentLine = testLine
             } else {
                 if (currentLine) {

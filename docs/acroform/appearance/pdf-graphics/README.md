@@ -9,3 +9,7 @@
 ## Classes
 
 - [PdfGraphics](classes/PdfGraphics.md)
+
+## Interfaces
+
+- [FontVariantNames](interfaces/FontVariantNames.md)

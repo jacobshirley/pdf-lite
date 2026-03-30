@@ -51,6 +51,14 @@ Subclasses must implement generateAppearance().
 
 ---
 
+### \_markdownValue?
+
+> `protected` `optional` **\_markdownValue**: `string`
+
+Raw markdown string set by markdownValue; cleared by setRawValue.
+
+---
+
 ### cachedTokens?
 
 > `protected` `optional` **cachedTokens**: [`PdfToken`](../../../../core/tokens/token/classes/PdfToken.md)[]
@@ -712,6 +720,32 @@ readonly `string`[]
 
 ---
 
+### fontFamily
+
+#### Get Signature
+
+> **get** **fontFamily**(): [`FontFamily`](../../../../fonts/font-family/interfaces/FontFamily.md) \| `null`
+
+##### Returns
+
+[`FontFamily`](../../../../fonts/font-family/interfaces/FontFamily.md) \| `null`
+
+#### Set Signature
+
+> **set** **fontFamily**(`family`): `void`
+
+##### Parameters
+
+###### family
+
+[`FontFamily`](../../../../fonts/font-family/interfaces/FontFamily.md) | `null`
+
+##### Returns
+
+`void`
+
+---
+
 ### fontName
 
 #### Get Signature
@@ -761,6 +795,30 @@ readonly `string`[]
 ##### Returns
 
 `void`
+
+---
+
+### fontVariantNames
+
+#### Get Signature
+
+> **get** **fontVariantNames**(): `object`
+
+##### Returns
+
+`object`
+
+###### bold?
+
+> `optional` **bold**: `string`
+
+###### boldItalic?
+
+> `optional` **boldItalic**: `string`
+
+###### italic?
+
+> `optional` **italic**: `string`
 
 ---
 
@@ -961,6 +1019,24 @@ whitespace before the next token.
 #### Inherited from
 
 [`PdfWidgetAnnotation`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md).[`locked`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md#locked)
+
+---
+
+### markdownValue
+
+#### Set Signature
+
+> **set** **markdownValue**(`val`): `void`
+
+##### Parameters
+
+###### val
+
+`string`
+
+##### Returns
+
+`void`
 
 ---
 
@@ -1570,6 +1646,30 @@ The type of this PDF object
 
 ---
 
+### resolvedVariantFonts
+
+#### Get Signature
+
+> **get** `protected` **resolvedVariantFonts**(): `object`
+
+##### Returns
+
+`object`
+
+###### bold?
+
+> `optional` **bold**: [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)
+
+###### boldItalic?
+
+> `optional` **boldItalic**: [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)
+
+###### italic?
+
+> `optional` **italic**: [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)
+
+---
+
 ### siblings
 
 #### Get Signature
@@ -1685,6 +1785,26 @@ Attempts to cast the object to a specific PdfObject subclass
 #### Inherited from
 
 [`PdfWidgetAnnotation`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md).[`becomes`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md#becomes)
+
+---
+
+### buildAllFontResources()
+
+> **buildAllFontResources**(`fontNames`): [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\> \| `undefined`
+
+Like buildFontResources but includes multiple font names (regular +
+variant fonts) in a single Resources/Font dictionary. Falls through to
+buildFontResources when only one name is provided.
+
+#### Parameters
+
+##### fontNames
+
+`string`[]
+
+#### Returns
+
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\> \| `undefined`
 
 ---
 

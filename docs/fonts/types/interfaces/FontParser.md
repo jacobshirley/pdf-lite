@@ -63,3 +63,31 @@ Common interface for all font parsers.
 #### Returns
 
 [`TtfFontInfo`](TtfFontInfo.md)
+
+---
+
+### parseCmap()
+
+> **parseCmap**(): `Map`\<`number`, `number`\>
+
+Parses the font's cmap table to extract Unicode to glyph ID mappings.
+
+#### Returns
+
+`Map`\<`number`, `number`\>
+
+A map from Unicode code points to glyph IDs
+
+---
+
+### parseHmtx()
+
+> **parseHmtx**(): `Map`\<`number`, `number`\>
+
+Parses the font's hmtx table to extract glyph advance widths.
+
+#### Returns
+
+`Map`\<`number`, `number`\>
+
+A map from glyph IDs to advance widths (in font units)

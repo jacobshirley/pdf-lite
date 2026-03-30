@@ -124,3 +124,39 @@ Returns true if this is a CFF-based OpenType font.
 #### Returns
 
 `boolean`
+
+---
+
+### parseCmap()
+
+> **parseCmap**(): `Map`\<`number`, `number`\>
+
+Parses the font's cmap table to extract Unicode to glyph ID mappings.
+
+#### Returns
+
+`Map`\<`number`, `number`\>
+
+A map from Unicode code points to glyph IDs
+
+#### Implementation of
+
+[`FontParser`](../../../types/interfaces/FontParser.md).[`parseCmap`](../../../types/interfaces/FontParser.md#parsecmap)
+
+---
+
+### parseHmtx()
+
+> **parseHmtx**(): `Map`\<`number`, `number`\>
+
+Parses the font's hmtx table to extract glyph advance widths.
+
+#### Returns
+
+`Map`\<`number`, `number`\>
+
+A map from glyph IDs to advance widths (in font units)
+
+#### Implementation of
+
+[`FontParser`](../../../types/interfaces/FontParser.md).[`parseHmtx`](../../../types/interfaces/FontParser.md#parsehmtx)

@@ -24,6 +24,10 @@ Enhanced with text measurement capabilities for layout calculations.
 
 [`PdfDefaultAppearance`](../../../fields/pdf-default-appearance/classes/PdfDefaultAppearance.md)
 
+###### fontVariantNames?
+
+[`FontVariantNames`](../interfaces/FontVariantNames.md)
+
 ###### resolvedFonts?
 
 `Map`\<`string`, [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)\>
@@ -31,6 +35,18 @@ Enhanced with text measurement capabilities for layout calculations.
 #### Returns
 
 `PdfGraphics`
+
+## Properties
+
+### BOLD_STROKE_RATIO
+
+> `readonly` `static` **BOLD_STROKE_RATIO**: `0.04` = `0.04`
+
+---
+
+### ITALIC_SHEAR
+
+> `readonly` `static` **ITALIC_SHEAR**: `0.267` = `0.267`
 
 ## Methods
 
@@ -212,6 +228,33 @@ Calculate the width of text using the current font and size.
 
 ---
 
+### measureTextWidthWithFont()
+
+> **measureTextWidthWithFont**(`text`, `fontName`, `fontSize`): `number`
+
+Measures text width using a specific font from resolvedFonts by resource
+name, falling back to measureTextWidth (regular font) if not found.
+
+#### Parameters
+
+##### text
+
+`string`
+
+##### fontName
+
+`string` | `undefined`
+
+##### fontSize
+
+`number`
+
+#### Returns
+
+`number`
+
+---
+
 ### movePath()
 
 > **movePath**(`x`, `y`): `this`
@@ -380,6 +423,55 @@ Calculate the width of text using the current font and size.
 
 ---
 
+### showMarkdown()
+
+> **showMarkdown**(`markdown`, `isUnicode`, `reverseEncodingMap`, `x`, `y`, `fontSize`, `multiline?`): `this`
+
+Parses a markdown string and renders the styled segments into the current
+BT…ET block. Pass `multiline` to wrap across multiple lines.
+
+#### Parameters
+
+##### markdown
+
+`string`
+
+##### isUnicode
+
+`boolean`
+
+##### reverseEncodingMap
+
+`Map`\<`string`, `number`\> | `undefined`
+
+##### x
+
+`number`
+
+##### y
+
+`number`
+
+##### fontSize
+
+`number`
+
+##### multiline?
+
+###### availableWidth
+
+`number`
+
+###### lineHeight
+
+`number`
+
+#### Returns
+
+`this`
+
+---
+
 ### showText()
 
 > **showText**(`text`, `isUnicode`, `reverseEncodingMap?`): `this`
@@ -419,6 +511,8 @@ Calculate the width of text using the current font and size.
 > **wrapTextToLines**(`text`, `maxWidth`, `fontSize?`): `string`[]
 
 Wrap text to fit within the specified width, breaking at word boundaries.
+When a bold font variant is configured, uses its metrics conservatively
+to prevent bold glyphs from overflowing field bounds.
 
 #### Parameters
 

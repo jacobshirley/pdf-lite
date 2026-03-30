@@ -427,6 +427,33 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
         const resourceName = font.resourceName
         const currentSize = this.fontSize ?? 12
+
+        // Add font to field's default resources
+        const dr =
+            (this.content.get('DR') as PdfDictionary) || new PdfDictionary()
+        let fontDict = dr.get('Font') as PdfDictionary
+        if (!fontDict) {
+            fontDict = new PdfDictionary()
+            dr.set('Font', fontDict)
+        }
+        fontDict.set(resourceName, font.reference)
+        this.content.set('DR', dr)
+
+        // Also add to form's default resources if available
+        if (this._form) {
+            const formDr =
+                this._form.defaultResources ||
+                (new PdfDictionary() as PdfDefaultResourcesDictionary)
+            let formFontDict = formDr.get('Font')
+            if (!formFontDict) {
+                formFontDict = new PdfDictionary()
+                formDr.set('Font', formFontDict)
+            }
+            formFontDict.set(resourceName, font.reference)
+            this._form.defaultResources = formDr
+        }
+
+        // Update the DA string to use the font
         const da = this.defaultAppearance || ''
         if (!da) {
             this.content.set(

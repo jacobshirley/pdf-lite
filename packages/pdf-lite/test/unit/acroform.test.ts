@@ -136,18 +136,40 @@ describe('AcroForm', () => {
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
         }
+
+        // Find the field and embed a Unicode-capable font for exotic characters
+        const textField = acroform.fields.find((f) => f.name === 'Client Name')
+        expect(textField).toBeDefined()
+
+        // Load and embed a font - Type0 will be auto-detected since font contains Ę
+        const fontData = await loadFont(
+            './test/unit/fixtures/fonts/helvetica.ttf',
+        )
+        const font = PdfFont.fromFile(fontData, {
+            fontName: 'Helvetica-Unicode',
+        })
+        document.add(font)
+
+        // Set the field to use the Unicode font (now automatically adds to DR)
+        textField!.font = font
+        textField!.fontSize = 12
+
         acroform.importData(exoticValues)
-        acroform.needAppearances = true
+        acroform.needAppearances = false
 
         const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
-        // Read them back to verify
+        // Read them back to verify the value is stored correctly
         const updatedAcroform = newDocument.acroform
         const updatedValues = updatedAcroform?.exportData()!
-        for (const [fieldName, expectedValue] of Object.entries(exoticValues)) {
-            expect(updatedValues[fieldName]).toBe(expectedValue)
-        }
+        expect(updatedValues).toMatchObject(exoticValues)
+
+        await server.commands.writeFile(
+            './test/unit/tmp/exotic_characters.pdf',
+            bytesToBase64(newDocumentBytes),
+            { encoding: 'base64' },
+        )
     })
 
     it('should be able to change field font properties', async () => {
@@ -277,7 +299,9 @@ describe('AcroForm', () => {
 
         // Verify the font was embedded correctly
         expect(font).toBeDefined()
-        expect(font.fontName).toBe('Helvetica-Custom')
+        // Font will be Type0 with Identity-H encoding (auto-detected)
+        // BaseFont includes encoding name for Type0 fonts
+        expect(font.fontName).toBe('Helvetica-Custom-Identity-H')
         expect(font.resourceName).toMatch(/^F\d+$/)
         expect(font.toString()).toBe(font.resourceName)
 

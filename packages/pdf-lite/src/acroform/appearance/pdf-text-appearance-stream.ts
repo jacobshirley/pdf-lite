@@ -3,7 +3,6 @@ import { PdfAppearanceStream } from './pdf-appearance-stream.js'
 import type { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import type { PdfFont } from '../../fonts/pdf-font.js'
 import { PdfGraphics } from './pdf-graphics.js'
-import { parseMarkdownSegments } from '../../utils/parse-markdown-segments.js'
 
 const DEFAULT_FONT_SIZE = 12
 
@@ -32,9 +31,6 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         const value = ctx.value
         const isUnicode = ctx.isUnicode ?? false
         const reverseEncodingMap = ctx.reverseEncodingMap
-        const segments = ctx.markdown
-            ? parseMarkdownSegments(ctx.markdown)
-            : undefined
 
         const padding = 2
         const availableWidth = width - 2 * padding
@@ -188,22 +184,19 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
 
             g.beginText()
 
-            if (segments) {
-                const styledLines = PdfGraphics.splitSegmentsToLines(
-                    segments,
-                    lines,
+            if (ctx.markdown) {
+                g.showMarkdown(
+                    ctx.markdown,
+                    isUnicode,
+                    reverseEncodingMap,
+                    padding,
+                    startY,
+                    finalFontSize,
+                    {
+                        availableWidth,
+                        lineHeight: renderLineHeight,
+                    },
                 )
-                for (let i = 0; i < styledLines.length; i++) {
-                    const lineY = startY - i * renderLineHeight
-                    g.showSegments(
-                        styledLines[i],
-                        isUnicode,
-                        reverseEncodingMap,
-                        padding,
-                        lineY,
-                        finalFontSize,
-                    )
-                }
             } else {
                 g.moveTo(padding, startY)
                 for (let i = 0; i < lines.length; i++) {
@@ -238,9 +231,9 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
 
             g.beginText()
-            if (segments) {
-                g.showSegments(
-                    segments,
+            if (ctx.markdown) {
+                g.showMarkdown(
+                    ctx.markdown,
                     isUnicode,
                     reverseEncodingMap,
                     padding,

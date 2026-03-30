@@ -1,7 +1,10 @@
 import { encodePdfText } from '../../utils/encodePdfText.js'
 import type { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
-import type { StyledSegment } from '../../utils/parse-markdown-segments.js'
+import {
+    parseMarkdownSegments,
+    type StyledSegment,
+} from '../../utils/parse-markdown-segments.js'
 
 /**
  * Lightweight builder for PDF content streams.
@@ -146,7 +149,7 @@ export class PdfGraphics {
      * positions in the flat plain-text. One whitespace character is consumed
      * at each line boundary (space from word-wrap or newline from paragraph).
      */
-    static splitSegmentsToLines(
+    private static splitSegmentsToLines(
         segments: StyledSegment[],
         lines: string[],
     ): StyledSegment[][] {
@@ -209,7 +212,7 @@ export class PdfGraphics {
      * operator simulation: bold via Tr=2 (fill+stroke), italic via Tm shear.
      * Each segment is positioned with an absolute Tm so no prior Td is needed.
      */
-    showSegments(
+    private showSegments(
         lineSegs: StyledSegment[],
         isUnicode: boolean,
         reverseEncodingMap: Map<string, number> | undefined,
@@ -231,6 +234,53 @@ export class PdfGraphics {
             x += this.measureTextWidth(seg.text)
         }
         this.raw(`0 Tr`)
+        return this
+    }
+
+    /**
+     * Parses a markdown string and renders the styled segments into the current
+     * BT…ET block. Pass `multiline` to wrap across multiple lines.
+     */
+    showMarkdown(
+        markdown: string,
+        isUnicode: boolean,
+        reverseEncodingMap: Map<string, number> | undefined,
+        x: number,
+        y: number,
+        fontSize: number,
+        multiline?: { availableWidth: number; lineHeight: number },
+    ): this {
+        const segments = parseMarkdownSegments(markdown)
+        if (multiline) {
+            const plainText = segments.map((s) => s.text).join('')
+            const lines = this.wrapTextToLines(
+                plainText,
+                multiline.availableWidth,
+            )
+            const styledLines = PdfGraphics.splitSegmentsToLines(
+                segments,
+                lines,
+            )
+            for (let i = 0; i < styledLines.length; i++) {
+                this.showSegments(
+                    styledLines[i],
+                    isUnicode,
+                    reverseEncodingMap,
+                    x,
+                    y - i * multiline.lineHeight,
+                    fontSize,
+                )
+            }
+        } else {
+            this.showSegments(
+                segments,
+                isUnicode,
+                reverseEncodingMap,
+                x,
+                y,
+                fontSize,
+            )
+        }
         return this
     }
 

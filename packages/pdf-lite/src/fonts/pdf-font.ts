@@ -895,6 +895,12 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     ): PdfFont {
         // Parse the font to extract metadata
         const parser = parseFont(fontData)
+
+        // Check if CFF-based OTF (not supported)
+        if (parser instanceof OtfParser && parser.isCFFBased()) {
+            throw new Error('CFF-based OTF fonts are not supported yet')
+        }
+
         const info = parser.getFontInfo()
 
         // Auto-generate font name from metadata if not provided

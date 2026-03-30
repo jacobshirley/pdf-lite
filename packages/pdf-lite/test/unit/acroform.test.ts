@@ -2321,10 +2321,10 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             expect(field).toBeDefined()
 
             // Set markdown value with mixed styles
-            field.markdownValue = 'Normal **bold** *italic* ***both***'
+            field.markdownValue = 'Normal **bold** *italic* ***both*** original'
 
             // Plain text stored in V
-            expect(field.value).toBe('Normal bold italic both')
+            expect(field.value).toBe('Normal bold italic both original')
 
             // Appearance stream should exist
             const apStream = field.getAppearanceStream()

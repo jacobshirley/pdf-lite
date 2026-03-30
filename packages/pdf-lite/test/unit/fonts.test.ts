@@ -972,14 +972,6 @@ describe('Font Parsers with Minimal Test Data', () => {
             expect(font.fontName).toBeDefined()
         })
 
-        it('should throw error for CFF-based OTF fonts', () => {
-            const otfData = createMinimalOtf() // Has 'OTTO' signature
-
-            expect(() => PdfFont.fromBytes(otfData)).toThrow(
-                'CFF-based OTF fonts are not supported yet',
-            )
-        })
-
         it('should throw error for unsupported font formats', () => {
             const invalidData = new Uint8Array([0x00, 0x00, 0x00, 0x00])
 

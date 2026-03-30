@@ -311,6 +311,27 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * @returns The raw character width or null if not found
      */
     getRawCharacterWidth(charCode: number): number | null {
+        // For Type0 fonts, check CID widths in descriptor
+        if (this.isUnicode && this._descriptor) {
+            const unicodeDesc = this._descriptor as UnicodeFontDescriptor
+            if (unicodeDesc.cidWidths) {
+                // Find width for this CID (which equals Unicode code point for Identity-H)
+                for (const entry of unicodeDesc.cidWidths) {
+                    if ('width' in entry && entry.cid === charCode) {
+                        return entry.width
+                    } else if ('widths' in entry) {
+                        const offset = charCode - entry.startCid
+                        if (offset >= 0 && offset < entry.widths.length) {
+                            return entry.widths[offset]
+                        }
+                    }
+                }
+                // Not found, use default width
+                return unicodeDesc.defaultWidth ?? 1000
+            }
+        }
+
+        // For Type1/TrueType fonts, use simple widths array
         if (this.widths === undefined || this.firstChar === undefined) {
             return null
         }
@@ -396,8 +417,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * @returns A PdfFont instance ready to be written to the PDF
      */
     static fromBytes(data: ByteArray): PdfFont {
-        const parser = parseFont(data)
-        return PdfFont.fromParser(parser)
+        return PdfFont.fromFile(data)
     }
 
     /**
@@ -790,11 +810,44 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             )
         }
 
-        // CIDToGIDMap
-        cidFontDict.set(
-            'CIDToGIDMap',
-            new PdfName(descriptor.cidToGidMap ?? 'Identity'),
-        )
+        // CIDToGIDMap - Generate binary stream if unicodeMappings provided
+        if (unicodeMappings && unicodeMappings.size > 0) {
+            // Create a binary CIDToGIDMap stream
+            // For Identity-H encoding, CID = Unicode value
+            // We need to map each CID to its GID
+            const maxCid = Math.max(...Array.from(unicodeMappings.keys()))
+            const cidToGidData = new Uint8Array((maxCid + 1) * 2)
+
+            // Initialize all mappings to 0 (missing glyph)
+            for (let i = 0; i < cidToGidData.length; i++) {
+                cidToGidData[i] = 0
+            }
+
+            // Fill in the mappings
+            for (const [unicode, glyphId] of unicodeMappings.entries()) {
+                const offset = unicode * 2
+                // Big-endian 16-bit glyph ID
+                cidToGidData[offset] = (glyphId >> 8) & 0xff
+                cidToGidData[offset + 1] = glyphId & 0xff
+            }
+
+            const cidToGidStream = new PdfStream({
+                header: new PdfDictionary(),
+                original: cidToGidData as ByteArray,
+            })
+            cidToGidStream.addFilter('FlateDecode')
+
+            const cidToGidObject = new PdfIndirectObject({
+                content: cidToGidStream,
+            })
+
+            cidFontDict.set('CIDToGIDMap', cidToGidObject.reference)
+        } else {
+            cidFontDict.set(
+                'CIDToGIDMap',
+                new PdfName(descriptor.cidToGidMap ?? 'Identity'),
+            )
+        }
 
         const cidFontObject = new PdfIndirectObject({
             content: cidFontDict,
@@ -842,6 +895,12 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     ): PdfFont {
         // Parse the font to extract metadata
         const parser = parseFont(fontData)
+
+        // Check if CFF-based OTF (not supported)
+        if (parser instanceof OtfParser && parser.isCFFBased()) {
+            throw new Error('CFF-based OTF fonts are not supported yet')
+        }
+
         const info = parser.getFontInfo()
 
         // Auto-generate font name from metadata if not provided
@@ -851,20 +910,67 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         // Get the appropriate descriptor based on unicode option
         const descriptor = parser.getFontDescriptor(fontName)
 
+        // Auto-detect if Unicode font is needed if not explicitly specified
+        let useUnicode = options?.unicode
+        if (useUnicode === undefined) {
+            // Check if font has glyphs beyond WinAnsiEncoding range (0-255)
+            const cmap = parser.parseCmap()
+            useUnicode = Array.from(cmap.keys()).some(
+                (unicode) => unicode > 0xff,
+            )
+        }
+
         // Embed using the appropriate method and return PdfFont
-        if (options?.unicode) {
+        if (useUnicode) {
+            // Auto-extract cmap if not provided
+            const unicodeMappings =
+                options?.unicodeMappings ?? parser.parseCmap()
+
+            // Extract glyph widths for Unicode characters
+            const hmtx = parser.parseHmtx()
+            const unitsPerEm = info.unitsPerEm
+            const cidWidths: CIDWidth[] = []
+
+            // Build CID widths array from cmap + hmtx
+            for (const [unicode, glyphId] of unicodeMappings.entries()) {
+                const glyphWidth = hmtx.get(glyphId) ?? 0
+                // Scale to 1000-unit em square
+                const scaledWidth = Math.round((glyphWidth * 1000) / unitsPerEm)
+                cidWidths.push({ cid: unicode, width: scaledWidth })
+            }
+
+            // Compute average width for default
+            const avgWidth =
+                cidWidths.length > 0
+                    ? Math.round(
+                          cidWidths.reduce((sum, entry) => {
+                              if ('width' in entry) {
+                                  return sum + entry.width
+                              } else {
+                                  // Average the widths in the range
+                                  const rangeSum = entry.widths.reduce(
+                                      (a, b) => a + b,
+                                      0,
+                                  )
+                                  return sum + rangeSum / entry.widths.length
+                              }
+                          }, 0) / cidWidths.length,
+                      )
+                    : 1000
+
             // For Unicode fonts, we need a UnicodeFontDescriptor
-            // Create one by extending the base descriptor
             const unicodeDescriptor: UnicodeFontDescriptor = {
                 ...descriptor,
-                defaultWidth: 1000,
+                defaultWidth: avgWidth,
+                cidWidths,
                 cidToGidMap: 'Identity',
             }
+
             return PdfFont.fromType0Data(
                 fontData,
                 fontName,
                 unicodeDescriptor,
-                options.unicodeMappings,
+                unicodeMappings,
             )
         } else {
             // Use standard TrueType embedding

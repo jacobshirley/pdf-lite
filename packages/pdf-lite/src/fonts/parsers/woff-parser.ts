@@ -49,6 +49,14 @@ export class WoffParser implements FontParser {
         return this.ttfParser.getCharWidths(firstChar, lastChar)
     }
 
+    parseCmap(): Map<number, number> {
+        return this.ttfParser.parseCmap()
+    }
+
+    parseHmtx(): Map<number, number> {
+        return this.ttfParser.parseHmtx()
+    }
+
     private decompressWoff(woffData: ByteArray): ByteArray {
         const data = new DataView(
             woffData.buffer,

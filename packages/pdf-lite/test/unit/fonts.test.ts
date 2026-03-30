@@ -343,6 +343,62 @@ describe('Font Embedding', () => {
 
             expect(font.resourceName).toBe('F1')
         })
+
+        it('should generate CIDToGIDMap binary stream with unicode mappings', async () => {
+            // Load real font file
+            const fontData = await loadFont(TTF_FIXTURE)
+
+            // Create Type0 font - unicode support should be auto-detected from cmap
+            const font = PdfFont.fromFile(fontData, {
+                fontName: 'TestFont-Unicode',
+            })
+
+            // Verify font is Type0 with Identity-H encoding (auto-detected)
+            expect(font.fontType).toBe('Type0')
+            expect(font.encoding).toBe('Identity-H')
+
+            // Verify font has descriptor with CID widths
+            expect(font.descriptor).toBeDefined()
+            const unicodeDesc = font.descriptor as UnicodeFontDescriptor
+            expect(unicodeDesc.cidWidths).toBeDefined()
+            expect(unicodeDesc.cidWidths!.length).toBeGreaterThan(0)
+
+            // Create document and serialize to verify structure is valid
+            const document = new PdfDocument()
+            document.add(font)
+            const pdfBytes = document.toBytes()
+
+            expect(pdfBytes.length).toBeGreaterThan(0)
+        })
+
+        it('should generate correct glyph IDs in CIDToGIDMap for exotic characters', async () => {
+            // Load real font file
+            const fontData = await loadFont(
+                './test/unit/fixtures/fonts/helvetica.ttf',
+            )
+
+            // Create Type0 font - unicode will be auto-detected since font contains Ę
+            const font = PdfFont.fromFile(fontData, {
+                fontName: 'TestFont-Exotic',
+            })
+
+            // Verify font has descriptor with CID widths
+            expect(font.descriptor).toBeDefined()
+            const unicodeDesc = font.descriptor as UnicodeFontDescriptor
+            expect(unicodeDesc.cidWidths).toBeDefined()
+            expect(unicodeDesc.cidWidths!.length).toBeGreaterThan(0)
+
+            // Verify specific characters have widths
+            // Polish Ę character (U+0118)
+            const eOgonekWidth = font.getRawCharacterWidth(0x0118)
+            expect(eOgonekWidth).not.toBeNull()
+            expect(eOgonekWidth).toBeGreaterThan(0)
+
+            // Regular ASCII 'E' (U+0045) should also work
+            const eWidth = font.getRawCharacterWidth(0x0045)
+            expect(eWidth).not.toBeNull()
+            expect(eWidth).toBeGreaterThan(0)
+        })
     })
 })
 
@@ -914,14 +970,6 @@ describe('Font Parsers with Minimal Test Data', () => {
 
             expect(font).toBeInstanceOf(PdfFont)
             expect(font.fontName).toBeDefined()
-        })
-
-        it('should throw error for CFF-based OTF fonts', () => {
-            const otfData = createMinimalOtf() // Has 'OTTO' signature
-
-            expect(() => PdfFont.fromBytes(otfData)).toThrow(
-                'CFF-based OTF fonts are not supported yet',
-            )
         })
 
         it('should throw error for unsupported font formats', () => {

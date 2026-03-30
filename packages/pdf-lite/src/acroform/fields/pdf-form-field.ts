@@ -6,6 +6,7 @@ import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 import { PdfName } from '../../core/objects/pdf-name.js'
 import { PdfNumber } from '../../core/objects/pdf-number.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
+import type { FontFamily } from '../../fonts/font-family.js'
 import { PdfStream } from '../../core/objects/pdf-stream.js'
 import { decodeWithFontEncoding } from '../../utils/decodeWithFontEncoding.js'
 import { PdfWidgetAnnotation } from '../../annotations/pdf-widget-annotation.js'
@@ -15,9 +16,9 @@ import { PdfFieldType as PdfFieldTypeConst } from './types.js'
 import { PdfFormFieldFlags } from './pdf-form-field-flags.js'
 import { PdfDefaultResourcesDictionary } from '../../annotations/pdf-default-resources.js'
 import type { PdfAcroForm } from '../pdf-acro-form.js'
-import { PdfPage } from '../../pdf/pdf-page.js'
 import { PdfFieldActions } from '../js/pdf-field-actions.js'
 import { PdfJavaScriptAction } from '../js/pdf-javascript-action.js'
+import { parseMarkdownSegments } from '../../utils/parse-markdown-segments.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -26,6 +27,11 @@ import { PdfJavaScriptAction } from '../js/pdf-javascript-action.js'
  */
 export abstract class PdfFormField extends PdfWidgetAnnotation {
     defaultGenerateAppearance: boolean = true
+
+    /** Raw markdown string set by markdownValue; cleared by setRawValue. */
+    protected _markdownValue?: string
+
+    private _fontFamily?: FontFamily
 
     /** @internal */
     _form?: PdfAcroForm
@@ -212,6 +218,41 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return undefined
     }
 
+    /**
+     * Like buildFontResources but includes multiple font names (regular +
+     * variant fonts) in a single Resources/Font dictionary. Falls through to
+     * buildFontResources when only one name is provided.
+     */
+    buildAllFontResources(fontNames: string[]): PdfDictionary | undefined {
+        if (fontNames.length <= 1) return this.buildFontResources(fontNames[0])
+
+        const dr = this.defaultResources
+        const fontRaw = dr?.get('Font')
+        let drFontDict: PdfDictionary | undefined
+        if (fontRaw instanceof PdfObjectReference) {
+            const resolved = fontRaw.resolve()?.content
+            if (resolved instanceof PdfDictionary) drFontDict = resolved
+        } else if (fontRaw instanceof PdfDictionary) {
+            drFontDict = fontRaw
+        }
+
+        const resFontDict = new PdfDictionary()
+        for (const name of fontNames) {
+            if (drFontDict?.get(name)) {
+                resFontDict.set(name, drFontDict.get(name)!)
+            }
+        }
+
+        if (resFontDict.keys().length > 0) {
+            const resources = new PdfDictionary()
+            resources.set('Font', resFontDict)
+            return resources
+        }
+
+        // Fallback to single-font path for the primary font name
+        return this.buildFontResources(fontNames[0])
+    }
+
     get fieldType(): PdfFieldType | null {
         const ft = PdfFormField.getFieldType(this)
         switch (ft) {
@@ -303,6 +344,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     protected setRawValue(val: string | PdfString) {
+        this._markdownValue = undefined
         const targets: PdfFormField[] = [this]
         const parent = this.parent
         if (parent?.fieldType) {
@@ -355,6 +397,25 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         this.setRawValue(val)
     }
 
+    set markdownValue(val: string) {
+        const plainText = parseMarkdownSegments(val)
+            .map((s) => s.text)
+            .join('')
+
+        // Store plain text as V without triggering appearance generation yet
+        const saved = this.defaultGenerateAppearance
+        this.defaultGenerateAppearance = false
+        this.setRawValue(plainText)
+        this.defaultGenerateAppearance = saved
+
+        // setRawValue cleared _markdownValue; store the markdown string now
+        this._markdownValue = val
+
+        if (this.defaultGenerateAppearance) {
+            this.generateAppearance()
+        }
+    }
+
     get fontSize(): number | null {
         const da = this.defaultAppearance || ''
         const parsed = PdfDefaultAppearance.parse(da)
@@ -403,6 +464,10 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
         const resourceName = font.resourceName
         const currentSize = this.fontSize ?? 12
+
+        this._embedFontInDR(font)
+
+        // Update the DA string to use the font
         const da = this.defaultAppearance || ''
         if (!da) {
             this.content.set(
@@ -415,6 +480,76 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         if (parsed) {
             parsed.fontName = resourceName
             this.content.set('DA', parsed)
+        }
+    }
+
+    private _embedFontInDR(font: PdfFont): void {
+        const resourceName = font.resourceName
+
+        // Add font to field's default resources
+        const dr =
+            (this.content.get('DR') as PdfDictionary) || new PdfDictionary()
+        let fontDict = dr.get('Font') as PdfDictionary
+        if (!fontDict) {
+            fontDict = new PdfDictionary()
+            dr.set('Font', fontDict)
+        }
+        fontDict.set(resourceName, font.reference)
+        this.content.set('DR', dr)
+
+        // Also add to form's default resources if available
+        if (this._form) {
+            const formDr =
+                this._form.defaultResources ||
+                (new PdfDictionary() as PdfDefaultResourcesDictionary)
+            let formFontDict = formDr.get('Font')
+            if (!formFontDict) {
+                formFontDict = new PdfDictionary()
+                formDr.set('Font', formFontDict)
+            }
+            formFontDict.set(resourceName, font.reference)
+            this._form.defaultResources = formDr
+        }
+    }
+
+    get fontFamily(): FontFamily | null {
+        return this._fontFamily ?? null
+    }
+
+    set fontFamily(family: FontFamily | null) {
+        if (family === null) {
+            this._fontFamily = undefined
+            return
+        }
+        this._fontFamily = family
+        // Setting regular via the existing setter keeps DA string in sync
+        this.font = family.regular
+        if (family.bold) this._embedFontInDR(family.bold)
+        if (family.italic) this._embedFontInDR(family.italic)
+        if (family.boldItalic) this._embedFontInDR(family.boldItalic)
+    }
+
+    get fontVariantNames(): {
+        bold?: string
+        italic?: string
+        boldItalic?: string
+    } {
+        return {
+            bold: this._fontFamily?.bold?.resourceName,
+            italic: this._fontFamily?.italic?.resourceName,
+            boldItalic: this._fontFamily?.boldItalic?.resourceName,
+        }
+    }
+
+    protected get resolvedVariantFonts(): {
+        bold?: PdfFont
+        italic?: PdfFont
+        boldItalic?: PdfFont
+    } {
+        return {
+            bold: this._fontFamily?.bold,
+            italic: this._fontFamily?.italic,
+            boldItalic: this._fontFamily?.boldItalic,
         }
     }
 

@@ -128,10 +128,6 @@ describe('AcroForm', () => {
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
 
-        const exoticValues: Record<string, string> = {
-            'Client Name': 'PROSZĘ',
-        }
-
         const acroform = document.acroform
         if (!acroform) {
             throw new Error('No AcroForm found in the document')
@@ -154,8 +150,8 @@ describe('AcroForm', () => {
         textField!.font = font
         textField!.fontSize = 12
 
-        acroform.importData(exoticValues)
         acroform.needAppearances = false
+        textField!.markdownValue = '**PROSZĘ** with *italic* text' // Test that markdown value also supports exotic characters
 
         const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
@@ -163,7 +159,7 @@ describe('AcroForm', () => {
         // Read them back to verify the value is stored correctly
         const updatedAcroform = newDocument.acroform
         const updatedValues = updatedAcroform?.exportData()!
-        expect(updatedValues).toMatchObject(exoticValues)
+        expect(updatedValues['Client Name']).toBe('PROSZĘ with italic text')
 
         await server.commands.writeFile(
             './test/unit/tmp/exotic_characters.pdf',

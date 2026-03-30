@@ -2282,4 +2282,141 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             )
         })
     })
+
+    describe('markdownValue', () => {
+        it('should render bold and italic segments in a text field appearance stream', async () => {
+            const pdfBuffer = base64ToBytes(
+                await server.commands.readFile(
+                    './test/unit/fixtures/template.pdf',
+                    { encoding: 'base64' },
+                ),
+            )
+            const document = await PdfDocument.fromBytes([pdfBuffer])
+            const acroform = document.acroform!
+
+            // Find a non-comb text field with a rect (can render an appearance)
+            const field = acroform.fields.find(
+                (f) => f.fieldType === 'Text' && !f.comb && f.rect != null,
+            ) as InstanceType<typeof PdfTextFormField>
+            expect(field).toBeDefined()
+
+            // Set markdown value with mixed styles
+            field.markdownValue = 'Normal **bold** *italic* ***both***'
+
+            // Plain text stored in V
+            expect(field.value).toBe('Normal bold italic both')
+
+            // Appearance stream should exist
+            const apStream = field.getAppearanceStream()
+            expect(apStream).not.toBeNull()
+
+            // Decode the content stream and verify styling operators are present
+            const stream = apStream!.content
+            const rawContent = new TextDecoder().decode(stream.decode())
+
+            // Bold simulation: text rendering mode 2 (fill+stroke)
+            expect(rawContent).toContain('2 Tr')
+            // Italic simulation: shear in text matrix (Tm with non-zero c component)
+            expect(rawContent).toMatch(/1 0 0\.\d+ 1 .* Tm/)
+            // Reset rendering mode
+            expect(rawContent).toContain('0 Tr')
+
+            // Resources dict must include variant fonts
+            const resources = apStream!.content.header.get('Resources')
+            expect(resources).toBeDefined()
+
+            // Write output for visual inspection
+            acroform.needAppearances = false
+            await server.commands.writeFile(
+                './test/unit/tmp/markdown-value.pdf',
+                bytesToBase64(document.toBytes()),
+                { encoding: 'base64' },
+            )
+        })
+
+        it('should store plain text as value and clear styled segments when value is set directly', () => {
+            const field = new PdfTextFormField()
+            field.fieldType = 'Text'
+            field.name = 'Test'
+            field.defaultAppearance = '/Helv 12 Tf 0 g'
+            field.rect = [50, 50, 300, 70]
+            field.defaultGenerateAppearance = false
+
+            field.markdownValue = 'Hello **World**'
+            expect(field.value).toBe('Hello World')
+            // _markdownValue should be set
+            expect((field as any)._markdownValue).toBeDefined()
+
+            // Setting value directly should clear markdown value
+            field.value = 'Plain text'
+            expect((field as any)._markdownValue).toBeUndefined()
+        })
+
+        it('should produce a PDF with styled text fields from scratch', async () => {
+            const pdfBuffer = base64ToBytes(
+                await server.commands.readFile(
+                    './test/unit/fixtures/template.pdf',
+                    { encoding: 'base64' },
+                ),
+            )
+            const document = await PdfDocument.fromBytes([pdfBuffer])
+            const acroform = document.acroform!
+
+            // Get a page reference using the same pattern as other tests
+            const trailerRoot = document.trailerDict
+                .get('Root')
+                ?.as(PdfObjectReference)
+            const rootObj = document.readObject({
+                objectNumber: trailerRoot!.objectNumber,
+                generationNumber: trailerRoot!.generationNumber,
+            })
+            const pagesRef = rootObj!.content
+                .as(PdfDictionary)
+                .get('Pages')
+                ?.as(PdfObjectReference)
+            const pagesObj = document.readObject({
+                objectNumber: pagesRef!.objectNumber,
+                generationNumber: pagesRef!.generationNumber,
+            })
+            const kidsArr = pagesObj!.content
+                .as(PdfDictionary)
+                .get('Kids')!
+                .as(PdfArray<PdfObjectReference>)
+            const firstPageEntry = kidsArr.items[0]
+            const firstPageObj2 = document.readObject({
+                objectNumber: firstPageEntry.objectNumber,
+                generationNumber: firstPageEntry.generationNumber,
+            })
+
+            // Create a new text field with markdown value
+            const field = new PdfTextFormField({ form: acroform })
+            field.fieldType = 'Text'
+            field.name = 'StyledField'
+            field.defaultAppearance = '/Helv 12 Tf 0 g'
+            field.rect = [50, 700, 400, 720]
+            field.isWidget = true
+            if (firstPageObj2) field.parentRef = firstPageObj2.reference
+
+            acroform.addField(field)
+            field.markdownValue = '*Italic prefix* then **bold suffix**'
+
+            expect(field.value).toBe('Italic prefix then bold suffix')
+
+            acroform.needAppearances = false
+
+            const outputBytes = document.toBytes()
+            await server.commands.writeFile(
+                './test/unit/tmp/markdown-styled-field.pdf',
+                bytesToBase64(outputBytes),
+                { encoding: 'base64' },
+            )
+
+            // Read back and verify value round-trips
+            const doc2 = await PdfDocument.fromBytes([outputBytes])
+            const f2 = doc2.acroform?.fields.find(
+                (f) => f.name === 'StyledField',
+            )
+            expect(f2?.value).toBe('Italic prefix then bold suffix')
+        })
+    })
 })

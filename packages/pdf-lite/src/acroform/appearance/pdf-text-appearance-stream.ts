@@ -3,6 +3,7 @@ import { PdfAppearanceStream } from './pdf-appearance-stream.js'
 import type { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import type { PdfFont } from '../../fonts/pdf-font.js'
 import { PdfGraphics } from './pdf-graphics.js'
+import { parseMarkdownSegments } from '../../utils/parse-markdown-segments.js'
 
 const DEFAULT_FONT_SIZE = 12
 
@@ -22,6 +23,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         resolvedFonts?: Map<string, PdfFont>
         isUnicode?: boolean
         reverseEncodingMap?: Map<string, number>
+        markdown?: string
     }) {
         const [x1, y1, x2, y2] = ctx.rect
         const width = x2 - x1
@@ -30,6 +32,9 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         const value = ctx.value
         const isUnicode = ctx.isUnicode ?? false
         const reverseEncodingMap = ctx.reverseEncodingMap
+        const segments = ctx.markdown
+            ? parseMarkdownSegments(ctx.markdown)
+            : undefined
 
         const padding = 2
         const availableWidth = width - 2 * padding
@@ -182,15 +187,33 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             const startY = height - padding - finalFontSize
 
             g.beginText()
-            g.moveTo(padding, startY)
 
-            for (let i = 0; i < lines.length; i++) {
-                if (i > 0) g.moveTo(0, -renderLineHeight)
-                g.showText(
-                    lines[i].replace(/\r/g, ''),
-                    isUnicode,
-                    reverseEncodingMap,
+            if (segments) {
+                const styledLines = PdfGraphics.splitSegmentsToLines(
+                    segments,
+                    lines,
                 )
+                for (let i = 0; i < styledLines.length; i++) {
+                    const lineY = startY - i * renderLineHeight
+                    g.showSegments(
+                        styledLines[i],
+                        isUnicode,
+                        reverseEncodingMap,
+                        padding,
+                        lineY,
+                        finalFontSize,
+                    )
+                }
+            } else {
+                g.moveTo(padding, startY)
+                for (let i = 0; i < lines.length; i++) {
+                    if (i > 0) g.moveTo(0, -renderLineHeight)
+                    g.showText(
+                        lines[i].replace(/\r/g, ''),
+                        isUnicode,
+                        reverseEncodingMap,
+                    )
+                }
             }
             g.endText()
         } else {
@@ -215,8 +238,19 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
 
             g.beginText()
-            g.moveTo(padding, textY)
-            g.showText(value, isUnicode, reverseEncodingMap)
+            if (segments) {
+                g.showSegments(
+                    segments,
+                    isUnicode,
+                    reverseEncodingMap,
+                    padding,
+                    textY,
+                    finalFontSize,
+                )
+            } else {
+                g.moveTo(padding, textY)
+                g.showText(value, isUnicode, reverseEncodingMap)
+            }
             g.endText()
         }
 

@@ -1,6 +1,7 @@
 import { encodePdfText } from '../../utils/encodePdfText.js'
 import type { PdfDefaultAppearance } from '../fields/pdf-default-appearance.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
+import type { StyledSegment } from '../../utils/parse-markdown-segments.js'
 
 /**
  * Lightweight builder for PDF content streams.
@@ -132,6 +133,104 @@ export class PdfGraphics {
 
     closePath(): this {
         this.lines.push('h')
+        return this
+    }
+
+    // Italic shear: ≈ tan(15°), applied as the c component of the Tm matrix.
+    static readonly ITALIC_SHEAR = 0.267
+    // Bold stroke width as a fraction of font size (0.04 × 12pt = 0.48pt stroke).
+    static readonly BOLD_STROKE_RATIO = 0.04
+
+    /**
+     * Re-attributes styled segments to wrapped lines by tracking character
+     * positions in the flat plain-text. One whitespace character is consumed
+     * at each line boundary (space from word-wrap or newline from paragraph).
+     */
+    static splitSegmentsToLines(
+        segments: StyledSegment[],
+        lines: string[],
+    ): StyledSegment[][] {
+        type StyledChar = { char: string; bold: boolean; italic: boolean }
+        const chars: StyledChar[] = []
+        for (const seg of segments) {
+            for (const char of seg.text) {
+                chars.push({ char, bold: seg.bold, italic: seg.italic })
+            }
+        }
+
+        const result: StyledSegment[][] = []
+        let pos = 0
+
+        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+            if (lineIdx > 0 && pos < chars.length) {
+                const c = chars[pos].char
+                if (c === ' ' || c === '\n' || c === '\r') pos++
+            }
+
+            const lineSegs: StyledSegment[] = []
+            let curText = ''
+            let curBold = false
+            let curItalic = false
+            const lineLen = lines[lineIdx].replace(/\r/g, '').length
+
+            for (let j = 0; j < lineLen && pos < chars.length; j++, pos++) {
+                const { char, bold, italic } = chars[pos]
+                if (curText === '') {
+                    curText = char
+                    curBold = bold
+                    curItalic = italic
+                } else if (bold !== curBold || italic !== curItalic) {
+                    lineSegs.push({
+                        text: curText,
+                        bold: curBold,
+                        italic: curItalic,
+                    })
+                    curText = char
+                    curBold = bold
+                    curItalic = italic
+                } else {
+                    curText += char
+                }
+            }
+            if (curText)
+                lineSegs.push({
+                    text: curText,
+                    bold: curBold,
+                    italic: curItalic,
+                })
+            result.push(lineSegs)
+        }
+
+        return result
+    }
+
+    /**
+     * Emits styled text segments into the current BT…ET block using PDF
+     * operator simulation: bold via Tr=2 (fill+stroke), italic via Tm shear.
+     * Each segment is positioned with an absolute Tm so no prior Td is needed.
+     */
+    showSegments(
+        lineSegs: StyledSegment[],
+        isUnicode: boolean,
+        reverseEncodingMap: Map<string, number> | undefined,
+        startX: number,
+        startY: number,
+        fontSize: number,
+    ): this {
+        let x = startX
+        for (const seg of lineSegs) {
+            const shear = seg.italic ? PdfGraphics.ITALIC_SHEAR : 0
+            this.raw(`1 0 ${shear} 1 ${x.toFixed(3)} ${startY.toFixed(3)} Tm`)
+            if (seg.bold) {
+                const sw = (fontSize * PdfGraphics.BOLD_STROKE_RATIO).toFixed(3)
+                this.raw(`${sw} w 2 Tr`)
+            } else {
+                this.raw(`0 Tr`)
+            }
+            this.showText(seg.text, isUnicode, reverseEncodingMap)
+            x += this.measureTextWidth(seg.text)
+        }
+        this.raw(`0 Tr`)
         return this
     }
 

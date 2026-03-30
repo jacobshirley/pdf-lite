@@ -417,8 +417,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * @returns A PdfFont instance ready to be written to the PDF
      */
     static fromBytes(data: ByteArray): PdfFont {
-        const parser = parseFont(data)
-        return PdfFont.fromParser(parser)
+        return PdfFont.fromFile(data)
     }
 
     /**

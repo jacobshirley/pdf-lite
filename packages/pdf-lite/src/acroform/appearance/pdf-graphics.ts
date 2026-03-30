@@ -300,6 +300,8 @@ export class PdfGraphics {
                 )
             } else {
                 // Fallback simulation (no variant font provided)
+                // Always restore regular font in case a variant was active
+                this.raw(`/${regularFontName} ${fontSize} Tf`)
                 const shear = seg.italic ? PdfGraphics.ITALIC_SHEAR : 0
                 this.raw(
                     `1 0 ${shear} 1 ${x.toFixed(3)} ${startY.toFixed(3)} Tm`,

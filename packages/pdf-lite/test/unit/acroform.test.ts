@@ -2528,9 +2528,9 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             expect(field).toBeDefined()
 
             field.fontFamily = { regular, bold, italic, boldItalic }
-            field.markdownValue = 'Normal **bold** *italic* ***both***'
+            field.markdownValue = 'Normal **bold** *italic* ***both*** original'
 
-            expect(field.value).toBe('Normal bold italic both')
+            expect(field.value).toBe('Normal bold italic both original')
 
             // Appearance stream should exist
             const apStream = field.getAppearanceStream()
@@ -2549,6 +2549,18 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             expect(rawContent).not.toContain('2 Tr')
             // Should NOT contain italic shear since true italic font is available
             expect(rawContent).not.toMatch(/1 0 0\.\d+ 1 .* Tm/)
+
+            // After the last styled segment (boldItalic), the regular font must be
+            // restored before rendering "original" — so regular's Tf must appear
+            // after boldItalic's Tf in the stream.
+            const boldItalicTfPos = rawContent.lastIndexOf(
+                `/${boldItalic.resourceName}`,
+            )
+            const regularTfAfterPos = rawContent.indexOf(
+                `/${regular.resourceName}`,
+                boldItalicTfPos,
+            )
+            expect(regularTfAfterPos).toBeGreaterThan(boldItalicTfPos)
 
             // Resources dict must include all four font variants
             const resources = apStream!.content.header.get('Resources')

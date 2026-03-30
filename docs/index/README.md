@@ -332,6 +332,12 @@ Re-exports [FontDescriptor](../fonts/types/interfaces/FontDescriptor.md)
 
 ---
 
+### FontFamily
+
+Re-exports [FontFamily](../fonts/font-family/interfaces/FontFamily.md)
+
+---
+
 ### FontFormat
 
 Re-exports [FontFormat](../fonts/types/type-aliases/FontFormat.md)

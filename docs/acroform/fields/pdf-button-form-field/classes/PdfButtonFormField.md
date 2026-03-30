@@ -46,6 +46,18 @@ Button form field subtype (checkboxes, radio buttons, push buttons).
 
 ---
 
+### \_markdownValue?
+
+> `protected` `optional` **\_markdownValue**: `string`
+
+Raw markdown string set by markdownValue; cleared by setRawValue.
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`_markdownValue`](../../pdf-form-field/classes/PdfFormField.md#_markdownvalue)
+
+---
+
 ### cachedTokens?
 
 > `protected` `optional` **cachedTokens**: [`PdfToken`](../../../../core/tokens/token/classes/PdfToken.md)[]
@@ -813,6 +825,36 @@ readonly `string`[]
 
 ---
 
+### fontFamily
+
+#### Get Signature
+
+> **get** **fontFamily**(): [`FontFamily`](../../../../fonts/font-family/interfaces/FontFamily.md) \| `null`
+
+##### Returns
+
+[`FontFamily`](../../../../fonts/font-family/interfaces/FontFamily.md) \| `null`
+
+#### Set Signature
+
+> **set** **fontFamily**(`family`): `void`
+
+##### Parameters
+
+###### family
+
+[`FontFamily`](../../../../fonts/font-family/interfaces/FontFamily.md) | `null`
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`fontFamily`](../../pdf-form-field/classes/PdfFormField.md#fontfamily)
+
+---
+
 ### fontName
 
 #### Get Signature
@@ -870,6 +912,34 @@ readonly `string`[]
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`fontSize`](../../pdf-form-field/classes/PdfFormField.md#fontsize)
+
+---
+
+### fontVariantNames
+
+#### Get Signature
+
+> **get** **fontVariantNames**(): `object`
+
+##### Returns
+
+`object`
+
+###### bold?
+
+> `optional` **bold**: `string`
+
+###### boldItalic?
+
+> `optional` **boldItalic**: `string`
+
+###### italic?
+
+> `optional` **italic**: `string`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`fontVariantNames`](../../pdf-form-field/classes/PdfFormField.md#fontvariantnames)
 
 ---
 
@@ -1082,6 +1152,28 @@ whitespace before the next token.
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`locked`](../../pdf-form-field/classes/PdfFormField.md#locked)
+
+---
+
+### markdownValue
+
+#### Set Signature
+
+> **set** **markdownValue**(`val`): `void`
+
+##### Parameters
+
+###### val
+
+`string`
+
+##### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`markdownValue`](../../pdf-form-field/classes/PdfFormField.md#markdownvalue)
 
 ---
 
@@ -1751,6 +1843,34 @@ The type of this PDF object
 
 ---
 
+### resolvedVariantFonts
+
+#### Get Signature
+
+> **get** `protected` **resolvedVariantFonts**(): `object`
+
+##### Returns
+
+`object`
+
+###### bold?
+
+> `optional` **bold**: [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)
+
+###### boldItalic?
+
+> `optional` **boldItalic**: [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)
+
+###### italic?
+
+> `optional` **italic**: [`PdfFont`](../../../../fonts/pdf-font/classes/PdfFont.md)
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`resolvedVariantFonts`](../../pdf-form-field/classes/PdfFormField.md#resolvedvariantfonts)
+
+---
+
 ### siblings
 
 #### Get Signature
@@ -1878,6 +1998,30 @@ Attempts to cast the object to a specific PdfObject subclass
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`becomes`](../../pdf-form-field/classes/PdfFormField.md#becomes)
+
+---
+
+### buildAllFontResources()
+
+> **buildAllFontResources**(`fontNames`): [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\> \| `undefined`
+
+Like buildFontResources but includes multiple font names (regular +
+variant fonts) in a single Resources/Font dictionary. Falls through to
+buildFontResources when only one name is provided.
+
+#### Parameters
+
+##### fontNames
+
+`string`[]
+
+#### Returns
+
+[`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\> \| `undefined`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`buildAllFontResources`](../../pdf-form-field/classes/PdfFormField.md#buildallfontresources)
 
 ---
 

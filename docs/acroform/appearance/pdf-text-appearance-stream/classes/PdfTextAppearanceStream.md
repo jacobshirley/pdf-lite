@@ -35,9 +35,17 @@ Enhanced with word wrapping and automatic font scaling.
 
 [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>
 
+###### fontVariantNames?
+
+[`FontVariantNames`](../../pdf-graphics/interfaces/FontVariantNames.md)
+
 ###### isUnicode?
 
 `boolean`
+
+###### markdown?
+
+`string`
 
 ###### maxLen
 

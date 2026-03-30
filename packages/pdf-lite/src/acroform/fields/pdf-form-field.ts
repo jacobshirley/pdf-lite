@@ -18,6 +18,7 @@ import type { PdfAcroForm } from '../pdf-acro-form.js'
 import { PdfPage } from '../../pdf/pdf-page.js'
 import { PdfFieldActions } from '../js/pdf-field-actions.js'
 import { PdfJavaScriptAction } from '../js/pdf-javascript-action.js'
+import { parseMarkdownSegments } from '../../utils/parse-markdown-segments.js'
 
 /**
  * Abstract base form field class. Extends PdfWidgetAnnotation with form-specific properties:
@@ -26,6 +27,9 @@ import { PdfJavaScriptAction } from '../js/pdf-javascript-action.js'
  */
 export abstract class PdfFormField extends PdfWidgetAnnotation {
     defaultGenerateAppearance: boolean = true
+
+    /** Raw markdown string set by markdownValue; cleared by setRawValue. */
+    protected _markdownValue?: string
 
     /** @internal */
     _form?: PdfAcroForm
@@ -303,6 +307,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     protected setRawValue(val: string | PdfString) {
+        this._markdownValue = undefined
         const targets: PdfFormField[] = [this]
         const parent = this.parent
         if (parent?.fieldType) {
@@ -355,6 +360,25 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         this.setRawValue(val)
     }
 
+    set markdownValue(val: string) {
+        const plainText = parseMarkdownSegments(val)
+            .map((s) => s.text)
+            .join('')
+
+        // Store plain text as V without triggering appearance generation yet
+        const saved = this.defaultGenerateAppearance
+        this.defaultGenerateAppearance = false
+        this.setRawValue(plainText)
+        this.defaultGenerateAppearance = saved
+
+        // setRawValue cleared _markdownValue; store the markdown string now
+        this._markdownValue = val
+
+        if (this.defaultGenerateAppearance) {
+            this.generateAppearance()
+        }
+    }
+
     get fontSize(): number | null {
         const da = this.defaultAppearance || ''
         const parsed = PdfDefaultAppearance.parse(da)
@@ -403,6 +427,33 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         }
         const resourceName = font.resourceName
         const currentSize = this.fontSize ?? 12
+
+        // Add font to field's default resources
+        const dr =
+            (this.content.get('DR') as PdfDictionary) || new PdfDictionary()
+        let fontDict = dr.get('Font') as PdfDictionary
+        if (!fontDict) {
+            fontDict = new PdfDictionary()
+            dr.set('Font', fontDict)
+        }
+        fontDict.set(resourceName, font.reference)
+        this.content.set('DR', dr)
+
+        // Also add to form's default resources if available
+        if (this._form) {
+            const formDr =
+                this._form.defaultResources ||
+                (new PdfDictionary() as PdfDefaultResourcesDictionary)
+            let formFontDict = formDr.get('Font')
+            if (!formFontDict) {
+                formFontDict = new PdfDictionary()
+                formDr.set('Font', formFontDict)
+            }
+            formFontDict.set(resourceName, font.reference)
+            this._form.defaultResources = formDr
+        }
+
+        // Update the DA string to use the font
         const da = this.defaultAppearance || ''
         if (!da) {
             this.content.set(

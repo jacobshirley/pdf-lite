@@ -291,7 +291,7 @@ export class TtfParser implements FontParser {
         }
     }
 
-    private parseCmap(): Map<number, number> {
+    parseCmap(): Map<number, number> {
         const table = this.getTable('cmap')
         if (!table) return new Map()
 
@@ -391,7 +391,7 @@ export class TtfParser implements FontParser {
         return charMap
     }
 
-    private parseHmtx(): Map<number, number> {
+    parseHmtx(): Map<number, number> {
         const table = this.getTable('hmtx')
         const hhea = this.parseHhea()
         const maxp = this.parseMaxp()

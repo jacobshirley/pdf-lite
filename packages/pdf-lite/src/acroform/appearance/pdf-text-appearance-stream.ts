@@ -22,6 +22,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         resolvedFonts?: Map<string, PdfFont>
         isUnicode?: boolean
         reverseEncodingMap?: Map<string, number>
+        markdown?: string
     }) {
         const [x1, y1, x2, y2] = ctx.rect
         const width = x2 - x1
@@ -182,15 +183,30 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             const startY = height - padding - finalFontSize
 
             g.beginText()
-            g.moveTo(padding, startY)
 
-            for (let i = 0; i < lines.length; i++) {
-                if (i > 0) g.moveTo(0, -renderLineHeight)
-                g.showText(
-                    lines[i].replace(/\r/g, ''),
+            if (ctx.markdown) {
+                g.showMarkdown(
+                    ctx.markdown,
                     isUnicode,
                     reverseEncodingMap,
+                    padding,
+                    startY,
+                    finalFontSize,
+                    {
+                        availableWidth,
+                        lineHeight: renderLineHeight,
+                    },
                 )
+            } else {
+                g.moveTo(padding, startY)
+                for (let i = 0; i < lines.length; i++) {
+                    if (i > 0) g.moveTo(0, -renderLineHeight)
+                    g.showText(
+                        lines[i].replace(/\r/g, ''),
+                        isUnicode,
+                        reverseEncodingMap,
+                    )
+                }
             }
             g.endText()
         } else {
@@ -215,8 +231,19 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
 
             g.beginText()
-            g.moveTo(padding, textY)
-            g.showText(value, isUnicode, reverseEncodingMap)
+            if (ctx.markdown) {
+                g.showMarkdown(
+                    ctx.markdown,
+                    isUnicode,
+                    reverseEncodingMap,
+                    padding,
+                    textY,
+                    finalFontSize,
+                )
+            } else {
+                g.moveTo(padding, textY)
+                g.showText(value, isUnicode, reverseEncodingMap)
+            }
             g.endText()
         }
 

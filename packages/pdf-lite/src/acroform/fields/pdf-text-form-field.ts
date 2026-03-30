@@ -41,6 +41,7 @@ export class PdfTextFormField extends PdfFormField {
             fontResources,
             isUnicode,
             reverseEncodingMap,
+            markdown: this._markdownValue,
         })
 
         if (options?.makeReadOnly) {

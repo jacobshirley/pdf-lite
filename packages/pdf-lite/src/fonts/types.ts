@@ -9,6 +9,16 @@ export interface FontParser {
     getFontDescriptor(fontName?: string): FontDescriptor
     getCharWidths(firstChar: number, lastChar: number): number[]
     getFontData(): ByteArray
+    /**
+     * Parses the font's cmap table to extract Unicode to glyph ID mappings.
+     * @returns A map from Unicode code points to glyph IDs
+     */
+    parseCmap(): Map<number, number>
+    /**
+     * Parses the font's hmtx table to extract glyph advance widths.
+     * @returns A map from glyph IDs to advance widths (in font units)
+     */
+    parseHmtx(): Map<number, number>
 }
 
 /**

@@ -103,13 +103,17 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const page = this.page
         if (page) {
             const annots = page.annotations
-            const ref = this.reference
-            const key = ref.key
-            const alreadyPresent = annots.items.some(
-                (r) => r instanceof PdfObjectReference && r.key === key,
-            )
+            const widget = this
+            const alreadyPresent = annots.items.some((r) => {
+                if (!(r instanceof PdfObjectReference)) return false
+                try {
+                    return r.resolve() === widget
+                } catch {
+                    return false
+                }
+            })
             if (!alreadyPresent) {
-                annots.items.push(ref)
+                annots.items.push(this.reference)
             }
         }
     }

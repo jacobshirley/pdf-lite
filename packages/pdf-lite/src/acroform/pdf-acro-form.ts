@@ -153,13 +153,19 @@ export class PdfAcroForm<
     private _addWidgetToPage(field: PdfFormField): void {
         const page = field.page
         if (!page) return
-        const ref = field.reference
-        const key = ref.key
-        const alreadyPresent = page.annotations.items.some(
-            (r) => r instanceof PdfObjectReference && r.key === key,
-        )
+        const annots = page.annotations
+        // Unregistered fields all share key "-1/0", so compare by object
+        // identity (via resolve()) rather than by key.
+        const alreadyPresent = annots.items.some((r) => {
+            if (!(r instanceof PdfObjectReference)) return false
+            try {
+                return r.resolve() === field
+            } catch {
+                return false
+            }
+        })
         if (!alreadyPresent) {
-            page.annotations.items.push(ref)
+            annots.items.push(field.reference)
         }
     }
 

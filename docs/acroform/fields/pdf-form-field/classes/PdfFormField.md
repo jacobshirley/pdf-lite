@@ -1024,6 +1024,14 @@ whitespace before the next token.
 
 ### markdownValue
 
+#### Get Signature
+
+> **get** **markdownValue**(): `string` \| `undefined`
+
+##### Returns
+
+`string` \| `undefined`
+
 #### Set Signature
 
 > **set** **markdownValue**(`val`): `void`
@@ -2255,6 +2263,22 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfWidgetAnnotation`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md).[`toTokens`](../../../../annotations/pdf-widget-annotation/classes/PdfWidgetAnnotation.md#totokens)
+
+---
+
+### updateAppearance()
+
+> **updateAppearance**(`cache`): `void`
+
+#### Parameters
+
+##### cache
+
+`Set`\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\> = `...`
+
+#### Returns
+
+`void`
 
 ---
 

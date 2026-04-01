@@ -8,10 +8,10 @@
 
 > **parseMarkdownSegments**(`text`): [`StyledSegment`](../type-aliases/StyledSegment.md)[]
 
-Parses a markdown string with **bold**, _italic_, and **_bold+italic_**
-syntax into an array of styled text segments.
+Parses a markdown string with **bold**, **bold**, _italic_, **_bold+italic_**,
+and ~~strikethrough~~ syntax into an array of styled text segments.
 
-Unrecognized or unmatched asterisks are emitted as plain text.
+Unrecognized or unmatched markers are emitted as plain text.
 
 ## Parameters
 

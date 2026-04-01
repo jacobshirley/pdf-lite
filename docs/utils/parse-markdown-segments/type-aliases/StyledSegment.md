@@ -22,6 +22,12 @@
 
 ---
 
+### strikethrough
+
+> **strikethrough**: `boolean`
+
+---
+
 ### text
 
 > **text**: `string`

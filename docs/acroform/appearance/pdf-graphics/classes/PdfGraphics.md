@@ -427,8 +427,9 @@ name, falling back to measureTextWidth (regular font) if not found.
 
 > **showMarkdown**(`markdown`, `isUnicode`, `reverseEncodingMap`, `x`, `y`, `fontSize`, `multiline?`): `this`
 
-Parses a markdown string and renders the styled segments into the current
-BT…ET block. Pass `multiline` to wrap across multiple lines.
+Parses a markdown string, renders the styled segments inside a BT…ET
+block, then draws strikethrough lines (if any) as path operations after
+the text object. Pass `multiline` to wrap across multiple lines.
 
 #### Parameters
 

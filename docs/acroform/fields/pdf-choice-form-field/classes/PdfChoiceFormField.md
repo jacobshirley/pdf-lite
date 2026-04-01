@@ -1127,6 +1127,14 @@ whitespace before the next token.
 
 ### markdownValue
 
+#### Get Signature
+
+> **get** **markdownValue**(): `string` \| `undefined`
+
+##### Returns
+
+`string` \| `undefined`
+
 #### Set Signature
 
 > **set** **markdownValue**(`val`): `void`
@@ -2492,6 +2500,26 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 #### Inherited from
 
 [`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`toTokens`](../../pdf-form-field/classes/PdfFormField.md#totokens)
+
+---
+
+### updateAppearance()
+
+> **updateAppearance**(`cache`): `void`
+
+#### Parameters
+
+##### cache
+
+`Set`\<[`PdfIndirectObject`](../../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../../core/objects/pdf-object/classes/PdfObject.md)\>\> = `...`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PdfFormField`](../../pdf-form-field/classes/PdfFormField.md).[`updateAppearance`](../../pdf-form-field/classes/PdfFormField.md#updateappearance)
 
 ---
 

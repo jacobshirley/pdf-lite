@@ -167,11 +167,21 @@ export class PdfGraphics {
         segments: StyledSegment[],
         lines: string[],
     ): StyledSegment[][] {
-        type StyledChar = { char: string; bold: boolean; italic: boolean }
+        type StyledChar = {
+            char: string
+            bold: boolean
+            italic: boolean
+            strikethrough: boolean
+        }
         const chars: StyledChar[] = []
         for (const seg of segments) {
             for (const char of seg.text) {
-                chars.push({ char, bold: seg.bold, italic: seg.italic })
+                chars.push({
+                    char,
+                    bold: seg.bold,
+                    italic: seg.italic,
+                    strikethrough: seg.strikethrough,
+                })
             }
         }
 
@@ -188,23 +198,31 @@ export class PdfGraphics {
             let curText = ''
             let curBold = false
             let curItalic = false
+            let curStrikethrough = false
             const lineLen = lines[lineIdx].replace(/\r/g, '').length
 
             for (let j = 0; j < lineLen && pos < chars.length; j++, pos++) {
-                const { char, bold, italic } = chars[pos]
+                const { char, bold, italic, strikethrough } = chars[pos]
                 if (curText === '') {
                     curText = char
                     curBold = bold
                     curItalic = italic
-                } else if (bold !== curBold || italic !== curItalic) {
+                    curStrikethrough = strikethrough
+                } else if (
+                    bold !== curBold ||
+                    italic !== curItalic ||
+                    strikethrough !== curStrikethrough
+                ) {
                     lineSegs.push({
                         text: curText,
                         bold: curBold,
                         italic: curItalic,
+                        strikethrough: curStrikethrough,
                     })
                     curText = char
                     curBold = bold
                     curItalic = italic
+                    curStrikethrough = strikethrough
                 } else {
                     curText += char
                 }
@@ -214,6 +232,7 @@ export class PdfGraphics {
                     text: curText,
                     bold: curBold,
                     italic: curItalic,
+                    strikethrough: curStrikethrough,
                 })
             result.push(lineSegs)
         }
@@ -260,10 +279,8 @@ export class PdfGraphics {
 
     /**
      * Emits styled text segments into the current BT…ET block.
-     * When font variants are configured, switches fonts mid-stream for true
-     * bold/italic rendering. Falls back to stroke simulation / Tm shear when
-     * no variant fonts are provided (backward compatible).
-     * Each segment is positioned with an absolute Tm so no prior Td is needed.
+     * Returns an array of rects for any strikethrough segments so the caller
+     * can draw the lines after closing the text object.
      */
     private showSegments(
         lineSegs: StyledSegment[],
@@ -272,9 +289,10 @@ export class PdfGraphics {
         startX: number,
         startY: number,
         fontSize: number,
-    ): this {
+    ): { x: number; y: number; width: number }[] {
         const regularFontName = this.defaultAppearance!.fontName
         let x = startX
+        const strikethroughRects: { x: number; y: number; width: number }[] = []
 
         for (const seg of lineSegs) {
             const variantName = this.resolveVariantFontName(
@@ -293,11 +311,15 @@ export class PdfGraphics {
                 this.raw(`/${variantName} ${fontSize} Tf`)
                 this.raw(`0 Tr`)
                 this.showText(seg.text, segIsUnicode, segEncMap)
-                x += this.measureTextWidthWithFont(
+                const segWidth = this.measureTextWidthWithFont(
                     seg.text,
                     variantName,
                     fontSize,
                 )
+                if (seg.strikethrough) {
+                    strikethroughRects.push({ x, y: startY, width: segWidth })
+                }
+                x += segWidth
             } else {
                 // Fallback simulation (no variant font provided)
                 // Always restore regular font in case a variant was active
@@ -315,19 +337,24 @@ export class PdfGraphics {
                     this.raw(`0 Tr`)
                 }
                 this.showText(seg.text, isUnicode, reverseEncodingMap)
-                x += this.measureTextWidth(seg.text, fontSize)
+                const segWidth = this.measureTextWidth(seg.text, fontSize)
+                if (seg.strikethrough) {
+                    strikethroughRects.push({ x, y: startY, width: segWidth })
+                }
+                x += segWidth
             }
         }
 
         // Restore regular font and fill-only rendering mode
         this.raw(`/${regularFontName} ${fontSize} Tf`)
         this.raw(`0 Tr`)
-        return this
+        return strikethroughRects
     }
 
     /**
-     * Parses a markdown string and renders the styled segments into the current
-     * BT…ET block. Pass `multiline` to wrap across multiple lines.
+     * Parses a markdown string, renders the styled segments inside a BT…ET
+     * block, then draws strikethrough lines (if any) as path operations after
+     * the text object. Pass `multiline` to wrap across multiple lines.
      */
     showMarkdown(
         markdown: string,
@@ -339,6 +366,10 @@ export class PdfGraphics {
         multiline?: { availableWidth: number; lineHeight: number },
     ): this {
         const segments = parseMarkdownSegments(markdown)
+        const allStrikethroughRects: { x: number; y: number; width: number }[] =
+            []
+
+        this.beginText()
         if (multiline) {
             const plainText = segments.map((s) => s.text).join('')
             const lines = this.wrapTextToLines(
@@ -350,7 +381,7 @@ export class PdfGraphics {
                 lines,
             )
             for (let i = 0; i < styledLines.length; i++) {
-                this.showSegments(
+                const rects = this.showSegments(
                     styledLines[i],
                     isUnicode,
                     reverseEncodingMap,
@@ -358,9 +389,10 @@ export class PdfGraphics {
                     y - i * multiline.lineHeight,
                     fontSize,
                 )
+                allStrikethroughRects.push(...rects)
             }
         } else {
-            this.showSegments(
+            const rects = this.showSegments(
                 segments,
                 isUnicode,
                 reverseEncodingMap,
@@ -368,7 +400,25 @@ export class PdfGraphics {
                 y,
                 fontSize,
             )
+            allStrikethroughRects.push(...rects)
         }
+        this.endText()
+
+        // Draw strikethrough lines outside the text object
+        if (allStrikethroughRects.length > 0) {
+            const lineY = fontSize * 0.35
+            const lineWidth = Math.max(0.5, fontSize * 0.06)
+            this.raw(`q`)
+            this.raw(`${lineWidth.toFixed(3)} w`)
+            for (const rect of allStrikethroughRects) {
+                const sy = (rect.y + lineY).toFixed(3)
+                this.raw(
+                    `${rect.x.toFixed(3)} ${sy} m ${(rect.x + rect.width).toFixed(3)} ${sy} l S`,
+                )
+            }
+            this.raw(`Q`)
+        }
+
         return this
     }
 

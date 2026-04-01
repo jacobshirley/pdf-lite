@@ -2,28 +2,71 @@ export type StyledSegment = {
     text: string
     bold: boolean
     italic: boolean
+    strikethrough: boolean
 }
 
 /**
- * Parses a markdown string with **bold**, *italic*, and ***bold+italic***
- * syntax into an array of styled text segments.
+ * Parses a markdown string with **bold**, __bold__, *italic*, ***bold+italic***,
+ * and ~~strikethrough~~ syntax into an array of styled text segments.
  *
- * Unrecognized or unmatched asterisks are emitted as plain text.
+ * Unrecognized or unmatched markers are emitted as plain text.
  */
 export function parseMarkdownSegments(text: string): StyledSegment[] {
     const segments: StyledSegment[] = []
-    // Match *** before ** before * to handle longest-match first
-    const re = /\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|\*(.+?)\*|([^*]+|\*)/gs
+    // Match longest tokens first: ***…***, **…**, __…__, ~~…~~, *…*, _…_
+    const re =
+        /\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|_(.+?)_|([^*_~]+|[*_~])/gs
     let match: RegExpExecArray | null
     while ((match = re.exec(text)) !== null) {
         if (match[1] !== undefined) {
-            segments.push({ text: match[1], bold: true, italic: true })
+            segments.push({
+                text: match[1],
+                bold: true,
+                italic: true,
+                strikethrough: false,
+            })
         } else if (match[2] !== undefined) {
-            segments.push({ text: match[2], bold: true, italic: false })
+            segments.push({
+                text: match[2],
+                bold: true,
+                italic: false,
+                strikethrough: false,
+            })
         } else if (match[3] !== undefined) {
-            segments.push({ text: match[3], bold: false, italic: true })
-        } else if (match[4] !== undefined && match[4].length > 0) {
-            segments.push({ text: match[4], bold: false, italic: false })
+            segments.push({
+                text: match[3],
+                bold: true,
+                italic: false,
+                strikethrough: false,
+            })
+        } else if (match[4] !== undefined) {
+            segments.push({
+                text: match[4],
+                bold: false,
+                italic: false,
+                strikethrough: true,
+            })
+        } else if (match[5] !== undefined) {
+            segments.push({
+                text: match[5],
+                bold: false,
+                italic: true,
+                strikethrough: false,
+            })
+        } else if (match[6] !== undefined) {
+            segments.push({
+                text: match[6],
+                bold: false,
+                italic: true,
+                strikethrough: false,
+            })
+        } else if (match[7] !== undefined && match[7].length > 0) {
+            segments.push({
+                text: match[7],
+                bold: false,
+                italic: false,
+                strikethrough: false,
+            })
         }
     }
     return segments

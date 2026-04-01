@@ -2573,5 +2573,58 @@ describe('AcroForm Appearance Stream Font Resources', () => {
                 { encoding: 'base64' },
             )
         })
+
+        it('should support __ __ bold, _ _ italic, and ~~ ~~ strikethrough syntax', async () => {
+            const pdfBuffer = base64ToBytes(
+                await server.commands.readFile(
+                    './test/unit/fixtures/template.pdf',
+                    { encoding: 'base64' },
+                ),
+            )
+            const document = await PdfDocument.fromBytes([pdfBuffer])
+            const acroform = document.acroform!
+
+            const field = acroform.fields.find(
+                (f) => f.fieldType === 'Text' && !f.comb && f.rect != null,
+            ) as InstanceType<typeof PdfTextFormField>
+            expect(field).toBeDefined()
+
+            // Use all three new syntax variants in one value
+            field.markdownValue = '__bold__ _italic_ ~~strikethrough~~ normal'
+
+            // Plain text stored in V (markers stripped)
+            expect(field.value).toBe('bold italic strikethrough normal')
+
+            const apStream = field.getAppearanceStream()
+            expect(apStream).not.toBeNull()
+            const rawContent = new TextDecoder().decode(
+                apStream!.content.decode(),
+            )
+
+            // __bold__ → bold simulation (fill+stroke rendering mode)
+            expect(rawContent).toContain('2 Tr')
+
+            // _italic_ → italic shear in Tm matrix
+            expect(rawContent).toMatch(/1 0 0\.\d+ 1 .* Tm/)
+
+            // ~~strikethrough~~ → path drawing operators outside BT/ET
+            // The strikethrough line must appear after ET
+            const etPos = rawContent.lastIndexOf('ET')
+            expect(etPos).toBeGreaterThan(-1)
+            const afterET = rawContent.slice(etPos)
+            // q…Q graphics state save/restore wraps the line
+            expect(afterET).toContain('q')
+            expect(afterET).toContain('Q')
+            // m (moveto) and l (lineto) and S (stroke) path operators
+            expect(afterET).toMatch(/\d+\.\d+ \d+\.\d+ m/)
+            expect(afterET).toMatch(/\d+\.\d+ \d+\.\d+ l S/)
+
+            acroform.needAppearances = false
+            await server.commands.writeFile(
+                './test/unit/tmp/markdown-extended-syntax.pdf',
+                bytesToBase64(document.toBytes()),
+                { encoding: 'base64' },
+            )
+        })
     })
 })

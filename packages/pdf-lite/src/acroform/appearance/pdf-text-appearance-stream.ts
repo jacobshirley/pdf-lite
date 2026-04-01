@@ -183,8 +183,6 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             const renderLineHeight = finalFontSize * 1.2
             const startY = height - padding - finalFontSize
 
-            g.beginText()
-
             if (ctx.markdown) {
                 g.showMarkdown(
                     ctx.markdown,
@@ -199,6 +197,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     },
                 )
             } else {
+                g.beginText()
                 g.moveTo(padding, startY)
                 for (let i = 0; i < lines.length; i++) {
                     if (i > 0) g.moveTo(0, -renderLineHeight)
@@ -208,8 +207,8 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                         reverseEncodingMap,
                     )
                 }
+                g.endText()
             }
-            g.endText()
         } else {
             // Single line — for non-auto-size, shrink if text overflows
             if (!autoSize) {
@@ -230,7 +229,6 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
 
             const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
 
-            g.beginText()
             if (ctx.markdown) {
                 g.showMarkdown(
                     ctx.markdown,
@@ -241,10 +239,11 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                     finalFontSize,
                 )
             } else {
+                g.beginText()
                 g.moveTo(padding, textY)
                 g.showText(value, isUnicode, reverseEncodingMap)
+                g.endText()
             }
-            g.endText()
         }
 
         g.restore()

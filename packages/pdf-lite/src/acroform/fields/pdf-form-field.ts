@@ -103,13 +103,17 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         const page = this.page
         if (page) {
             const annots = page.annotations
-            const ref = this.reference
-            const key = ref.key
-            const alreadyPresent = annots.items.some(
-                (r) => r instanceof PdfObjectReference && r.key === key,
-            )
+            const widget = this
+            const alreadyPresent = annots.items.some((r) => {
+                if (!(r instanceof PdfObjectReference)) return false
+                try {
+                    return r.resolve() === widget
+                } catch {
+                    return false
+                }
+            })
             if (!alreadyPresent) {
-                annots.items.push(ref)
+                annots.items.push(this.reference)
             }
         }
     }
@@ -136,7 +140,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     }
 
     get siblings(): PdfFormField[] {
-        return this.parent?.children ?? []
+        return (this.parent?.children ?? []).filter((sib) => sib !== this)
     }
 
     get font(): PdfFont | null {
@@ -345,6 +349,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
 
     protected setRawValue(val: string | PdfString) {
         this._markdownValue = undefined
+
         const targets: PdfFormField[] = [this]
         const parent = this.parent
         if (parent?.fieldType) {
@@ -363,38 +368,44 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             }
         }
 
-        if (isEmpty) {
-            this._form?.xfa?.datasets?.updateField(this.name, '')
+        for (const child of this.children) {
+            if (child.content.has('V')) {
+                child.content.delete('V')
+            }
         }
+
+        this._form?.xfa?.datasets?.updateField(this.name, this.value)
+
+        this.updateAppearance()
+    }
+
+    updateAppearance(cache: Set<PdfIndirectObject> = new Set()): void {
+        if (cache.has(this)) return
+        cache.add(this)
 
         if (this.defaultGenerateAppearance) {
             this.generateAppearance()
         }
 
         for (const sibling of this.siblings) {
-            if (sibling !== this && sibling.defaultGenerateAppearance) {
-                sibling.generateAppearance()
-            }
+            sibling.updateAppearance(cache)
         }
 
         // Separated field/widget structure: field has no Rect but its Kids
         // are widget annotations that do. Clear stale V entries on children
         // so they inherit the parent's value, then generate appearances.
         for (const child of this.children) {
-            if (child.content.has('V')) {
-                child.content.delete('V')
-            }
-            if (child.defaultGenerateAppearance) {
-                if (this._form) child.form = this._form
-                child.generateAppearance()
-            }
+            if (this._form) child.form = this._form
+            child.updateAppearance(cache)
         }
-
-        this._form?.xfa?.datasets?.updateField(this.name, this.value)
     }
 
     set value(val: string | PdfString) {
         this.setRawValue(val)
+    }
+
+    get markdownValue(): string | undefined {
+        return this._markdownValue ?? this.parent?._markdownValue
     }
 
     set markdownValue(val: string) {
@@ -411,9 +422,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         // setRawValue cleared _markdownValue; store the markdown string now
         this._markdownValue = val
 
-        if (this.defaultGenerateAppearance) {
-            this.generateAppearance()
-        }
+        this.updateAppearance()
     }
 
     get fontSize(): number | null {

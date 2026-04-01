@@ -62,7 +62,7 @@ export class PdfTextFormField extends PdfFormField {
             resolvedFonts,
             isUnicode,
             reverseEncodingMap,
-            markdown: this._markdownValue,
+            markdown: this.markdownValue,
             fontVariantNames: variantNames,
         })
 

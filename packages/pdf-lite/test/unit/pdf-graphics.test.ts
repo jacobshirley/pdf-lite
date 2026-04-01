@@ -341,6 +341,193 @@ describe('PdfGraphics', () => {
             })
         })
 
+        describe('showMarkdown', () => {
+            beforeEach(() => {
+                const da = PdfDefaultAppearance.parse('/TestFont 12 Tf 0 g')!
+                graphics.setDefaultAppearance(da)
+            })
+
+            it('should emit BT and ET internally', () => {
+                graphics.showMarkdown('hello', false, undefined, 10, 20, 12)
+                const content = graphics.build()
+                expect(content).toContain('BT')
+                expect(content).toContain('ET')
+            })
+
+            it('should render plain text without bold/italic operators', () => {
+                graphics.showMarkdown('hello', false, undefined, 10, 20, 12)
+                const content = graphics.build()
+                // No bold stroke simulation
+                expect(content).not.toContain('2 Tr')
+                // No italic shear (c component in Tm should be 0)
+                expect(content).not.toMatch(/1 0 [^0][\d.]+ 1 .* Tm/)
+            })
+
+            it('should emit bold stroke simulation for **bold**', () => {
+                graphics.showMarkdown('**bold**', false, undefined, 10, 20, 12)
+                const content = graphics.build()
+                expect(content).toContain('2 Tr')
+            })
+
+            it('should emit bold stroke simulation for __bold__', () => {
+                graphics.showMarkdown('__bold__', false, undefined, 10, 20, 12)
+                const content = graphics.build()
+                expect(content).toContain('2 Tr')
+            })
+
+            it('should emit italic shear for *italic*', () => {
+                graphics.showMarkdown('*italic*', false, undefined, 10, 20, 12)
+                const content = graphics.build()
+                expect(content).toMatch(/1 0 0\.\d+ 1 .* Tm/)
+            })
+
+            it('should emit italic shear for _italic_', () => {
+                graphics.showMarkdown('_italic_', false, undefined, 10, 20, 12)
+                const content = graphics.build()
+                expect(content).toMatch(/1 0 0\.\d+ 1 .* Tm/)
+            })
+
+            it('should draw strikethrough path after ET for ~~strikethrough~~', () => {
+                graphics.showMarkdown(
+                    '~~strike~~',
+                    false,
+                    undefined,
+                    10,
+                    20,
+                    12,
+                )
+                const content = graphics.build()
+                const etPos = content.lastIndexOf('ET')
+                expect(etPos).toBeGreaterThan(-1)
+                const afterET = content.slice(etPos)
+                // Graphics save/restore wrapping the line
+                expect(afterET).toContain('q')
+                expect(afterET).toContain('Q')
+                // moveto and lineto+stroke
+                expect(afterET).toMatch(/\d+\.\d+ \d+\.\d+ m/)
+                expect(afterET).toMatch(/\d+\.\d+ \d+\.\d+ l S/)
+            })
+
+            it('should not emit path operators when there is no strikethrough', () => {
+                graphics.showMarkdown(
+                    'plain **bold** *italic*',
+                    false,
+                    undefined,
+                    10,
+                    20,
+                    12,
+                )
+                const content = graphics.build()
+                const etPos = content.lastIndexOf('ET')
+                const afterET = content.slice(etPos + 2)
+                // No path drawing after ET
+                expect(afterET).not.toMatch(/\d+\.\d+ \d+\.\d+ m/)
+            })
+
+            it('should handle mixed formatting in one string', () => {
+                graphics.showMarkdown(
+                    'normal **bold** _italic_ ~~strike~~ *italic* __bold__ ***bold-italic***',
+                    false,
+                    undefined,
+                    10,
+                    20,
+                    12,
+                )
+                const content = graphics.build()
+                expect(content).toMatchInlineSnapshot(`
+                  "/TestFont 12 Tf 0 g
+                  BT
+                  /TestFont 12 Tf
+                  1 0 0 1 10.000 20.000 Tm
+                  0 Tr
+                  (normal ) Tj
+                  /TestFont 12 Tf
+                  1 0 0 1 49.000 20.000 Tm
+                  0.480 w 2 Tr
+                  (bold) Tj
+                  /TestFont 12 Tf
+                  1 0 0 1 73.000 20.000 Tm
+                  0 Tr
+                  ( ) Tj
+                  /TestFont 12 Tf
+                  1 0 0.267 1 76.000 20.000 Tm
+                  0 Tr
+                  (italic) Tj
+                  /TestFont 12 Tf
+                  1 0 0 1 112.000 20.000 Tm
+                  0 Tr
+                  ( ) Tj
+                  /TestFont 12 Tf
+                  1 0 0 1 115.000 20.000 Tm
+                  0 Tr
+                  (strike) Tj
+                  /TestFont 12 Tf
+                  1 0 0 1 151.000 20.000 Tm
+                  0 Tr
+                  ( ) Tj
+                  /TestFont 12 Tf
+                  1 0 0.267 1 154.000 20.000 Tm
+                  0 Tr
+                  (italic) Tj
+                  /TestFont 12 Tf
+                  1 0 0 1 190.000 20.000 Tm
+                  0 Tr
+                  ( ) Tj
+                  /TestFont 12 Tf
+                  1 0 0 1 193.000 20.000 Tm
+                  0.480 w 2 Tr
+                  (bold) Tj
+                  /TestFont 12 Tf
+                  1 0 0 1 217.000 20.000 Tm
+                  0 Tr
+                  ( ) Tj
+                  /TestFont 12 Tf
+                  1 0 0.267 1 220.000 20.000 Tm
+                  0.480 w 2 Tr
+                  (bold-italic) Tj
+                  /TestFont 12 Tf
+                  0 Tr
+                  ET
+                  q
+                  0.720 w
+                  115.000 24.200 m 151.000 24.200 l S
+                  Q
+                  "
+                `)
+            })
+
+            it('should render multiple lines for multiline mode', () => {
+                // "AA BB" with availableWidth=20: each word ~2*750*12/1000=18, together ~38.5 > 20
+                graphics.showMarkdown('AA BB', false, undefined, 10, 100, 12, {
+                    availableWidth: 20,
+                    lineHeight: 14.4,
+                })
+                const content = graphics.build()
+                // Two Tm operators at different y positions
+                const tmMatches = [...content.matchAll(/[\d.]+ [\d.]+ Tm/g)]
+                expect(tmMatches.length).toBeGreaterThanOrEqual(2)
+                // Second line y = 100 - 14.4 = 85.6
+                expect(content).toMatch(/10\.000 85\.600 Tm/)
+            })
+
+            it('should position strikethrough at correct y for multiline', () => {
+                graphics.showMarkdown(
+                    'AA\n~~strike~~',
+                    false,
+                    undefined,
+                    10,
+                    100,
+                    12,
+                    { availableWidth: 200, lineHeight: 14.4 },
+                )
+                const content = graphics.build()
+                const etPos = content.lastIndexOf('ET')
+                const afterET = content.slice(etPos)
+                // Strikethrough y should be near second line y (100 - 14.4 + 12*0.35 ≈ 89.8)
+                expect(afterET).toMatch(/\d+\.\d+ \d+\.\d+ m/)
+            })
+        })
+
         describe('path drawing methods', () => {
             it('movePath should emit x y m operator', () => {
                 graphics.movePath(10, 20)

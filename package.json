@@ -50,6 +50,10 @@
         "*.{js,ts,json,md}": "pnpm format"
     },
     "pnpm": {
+        "onlyBuiltDependencies": [
+            "esbuild",
+            "lightningcss"
+        ],
         "overrides": {
             "playwright": "$playwright",
             "typescript": "$typescript"
@@ -58,6 +62,31 @@
             "@vitest/browser": {
                 "peerDependencies": {
                     "@vitest/runner": "*"
+                }
+            },
+            "@storybook/addon-webpack5-compiler-swc": {
+                "dependencies": {
+                    "semver": "*"
+                }
+            },
+            "storybook": {
+                "peerDependencies": {
+                    "react": "*",
+                    "react-dom": "*",
+                    "@storybook/react-vite": "*"
+                }
+            },
+            "@storybook/core": {
+                "dependencies": {
+                    "@storybook/react-vite": "*"
+                }
+            },
+            "react-pdf": {
+                "dependencies": {
+                    "pdfjs-dist": "*"
+                },
+                "peerDependencies": {
+                    "pdfjs-dist": "*"
                 }
             }
         }

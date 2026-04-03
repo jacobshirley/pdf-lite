@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { PdfViewer } from "@/components/PdfViewer";
 import {
   Layers3,
   MousePointer2,
@@ -13,6 +14,8 @@ import {
   Redo2,
   FolderOpen,
   Download,
+  Upload,
+  FileUp,
 } from "lucide-react";
 
 type FieldType = "Text" | "Checkbox";
@@ -297,8 +300,28 @@ function PdfPage({
 
 export function PdfEditor() {
   const [activeTool, setActiveTool] = useState<string>("select");
-  const [selectedField, setSelectedField] = useState<string>("f1");
-  const [showAllLayers, setShowAllLayers] = useState<boolean>(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === "application/pdf") {
+      setUploadedFile(file);
+    } else if (file) {
+      alert("Please upload a PDF file");
+    }
+  };
+
+  const handleOpenClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleClearFile = () => {
+    setUploadedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 text-slate-900">
@@ -343,24 +366,92 @@ export function PdfEditor() {
             <div className="mt-auto grid grid-cols-2 gap-2">
               <ActionButton label="Undo" icon={Undo2} />
               <ActionButton label="Redo" icon={Redo2} />
-              <ActionButton label="Open" icon={FolderOpen} wide />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleOpenClick}
+                className="col-span-2 rounded-xl"
+              >
+                <FolderOpen className="mr-2 h-4 w-4" />
+                Open PDF
+              </Button>
               <ActionButton label="Export" icon={Download} wide />
             </div>
           </CardContent>
         </Card>
 
         <div className="flex min-w-0 flex-col gap-6">
-          {pages.map((page) => (
-            <PdfPage
-              key={page}
-              page={page}
-              activeTool={activeTool}
-              selectedField={selectedField}
-              setSelectedField={setSelectedField}
-              showAllLayers={showAllLayers}
-              setShowAllLayers={setShowAllLayers}
-            />
-          ))}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          
+          {!uploadedFile ? (
+            <Card className="rounded-[24px] border-slate-200 shadow-sm">
+              <CardContent className="flex min-h-[500px] flex-col items-center justify-center p-8">
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <div className="rounded-2xl bg-slate-100 p-6">
+                    <FileUp className="h-12 w-12 text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">No PDF loaded</h3>
+                    <p className="mt-2 text-sm text-slate-500">
+                      Upload a PDF file to start editing form fields and text
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleOpenClick}
+                    className="mt-4 rounded-xl"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload PDF
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="rounded-[24px] border-slate-200 shadow-sm">
+              <div className="flex items-center justify-between border-b bg-slate-50 px-5 py-3">
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary" className="rounded-full">
+                    {uploadedFile.name}
+                  </Badge>
+                  <span className="text-xs text-slate-500">
+                    {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearFile}
+                  className="rounded-full"
+                >
+                  Clear
+                </Button>
+              </div>
+              <CardContent className="p-6">
+                <PdfViewer
+                  file={uploadedFile}
+                  className="w-full"
+                  pageWrapper={(page, context) => (
+                    <div key={context.pageNumber} className="mb-6">
+                      <div className="mb-2 text-sm font-semibold text-slate-600">
+                        Page {context.pageNumber}
+                      </div>
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        {page}
+                      </div>
+                    </div>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

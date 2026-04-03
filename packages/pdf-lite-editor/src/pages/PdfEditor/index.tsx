@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { PdfViewer } from "@/components/PdfViewer";
 import {
-  Layers3,
   MousePointer2,
   Type,
   CheckSquare,
@@ -29,13 +28,6 @@ type MockField = {
   y: number;
   w: number;
   h: number;
-};
-
-type TextLayer = {
-  id: string;
-  original: string;
-  replacement: string;
-  page: number;
 };
 
 type LayerItem = {
@@ -84,12 +76,6 @@ const mockFields: MockField[] = [
   { id: "f3", name: "Approved", type: "Checkbox", page: 2, x: 470, y: 250, w: 28, h: 28 },
 ];
 
-const mockTextLayers: TextLayer[] = [
-  { id: "t1", original: "ACME Incorporated", replacement: "Northwind Ltd.", page: 1 },
-  { id: "t2", original: "Invoice Number", replacement: "Reference Number", page: 1 },
-  { id: "t3", original: "Approved By", replacement: "Reviewed By", page: 2 },
-];
-
 const mockAllLayers: LayerItem[] = [
   { id: "l1", name: "Background PDF", kind: "Base", visible: true },
   { id: "l2", name: "Editable text layer", kind: "Text", visible: true },
@@ -103,13 +89,6 @@ function runSelfChecks(): void {
     fieldIds.add(field.id);
     if (!pages.includes(field.page)) throw new Error(`Field ${field.id} references missing page ${field.page}`);
     if (field.w <= 0 || field.h <= 0) throw new Error(`Field ${field.id} must have positive dimensions`);
-  }
-
-  const textIds = new Set<string>();
-  for (const item of mockTextLayers) {
-    if (textIds.has(item.id)) throw new Error(`Duplicate text layer id: ${item.id}`);
-    textIds.add(item.id);
-    if (!pages.includes(item.page)) throw new Error(`Text replacement ${item.id} references missing page ${item.page}`);
   }
 
   const layerIds = new Set<string>();
@@ -135,7 +114,7 @@ function ToolButton({ label, active, icon: Icon, onClick }: ToolButtonProps) {
       type="button"
       variant={active ? "default" : "ghost"}
       onClick={onClick}
-      className="h-10 w-full justify-start rounded-xl"
+      className="h-10 w-full justify-start rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
     >
       <Icon className="mr-2 h-4 w-4" />
       {label}
@@ -148,7 +127,7 @@ function ActionButton({ label, icon: Icon, wide = false }: ActionButtonProps) {
     <Button
       type="button"
       variant="outline"
-      className={`rounded-xl ${wide ? "col-span-2" : ""}`}
+      className={`rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-slate-400 active:scale-[0.98] ${wide ? "col-span-2" : ""}`}
     >
       <Icon className="mr-2 h-4 w-4" />
       {label}
@@ -166,7 +145,13 @@ function FieldBadge({ children, soft = false }: FieldBadgeProps) {
 
 function LayerListButton({ onClick }: LayerListButtonProps) {
   return (
-    <Button type="button" variant="outline" size="sm" onClick={onClick} className="rounded-full px-3">
+    <Button 
+      type="button" 
+      variant="outline" 
+      size="sm" 
+      onClick={onClick} 
+      className="rounded-full px-3 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-slate-100 active:scale-95"
+    >
       All
     </Button>
   );
@@ -263,10 +248,10 @@ function PdfPage({
                     key={field.id}
                     type="button"
                     onClick={() => setSelectedField(field.id)}
-                    className={`absolute rounded-xl border-2 bg-sky-50/90 text-xs shadow-sm transition ${
+                    className={`absolute rounded-xl border-2 bg-sky-50/90 text-xs shadow-sm transition-all duration-200 cursor-pointer ${
                       isSelected
                         ? "border-sky-500 ring-4 ring-sky-100"
-                        : "border-sky-300 hover:border-sky-400"
+                        : "border-sky-300 hover:border-sky-400 hover:bg-sky-100/90 hover:shadow-md hover:scale-105"
                     }`}
                     style={{
                       left: field.x,
@@ -347,22 +332,6 @@ export function PdfEditor() {
 
             <Separator />
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                <Layers3 className="h-4 w-4" />
-                Text replacements
-              </div>
-              <div className="space-y-2">
-                {mockTextLayers.slice(0, 2).map((item) => (
-                  <div key={item.id} className="rounded-xl bg-white px-3 py-2 text-xs text-slate-600">
-                    <div className="font-medium text-slate-900">Page {item.page}</div>
-                    <div className="truncate">{item.original}</div>
-                    <div className="truncate">→ {item.replacement}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="mt-auto grid grid-cols-2 gap-2">
               <ActionButton label="Undo" icon={Undo2} />
               <ActionButton label="Redo" icon={Redo2} />
@@ -370,7 +339,7 @@ export function PdfEditor() {
                 type="button"
                 variant="outline"
                 onClick={handleOpenClick}
-                className="col-span-2 rounded-xl"
+                className="col-span-2 rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]"
               >
                 <FolderOpen className="mr-2 h-4 w-4" />
                 Open PDF
@@ -405,7 +374,7 @@ export function PdfEditor() {
                   <Button
                     type="button"
                     onClick={handleOpenClick}
-                    className="mt-4 rounded-xl"
+                    className="mt-4 rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95"
                   >
                     <Upload className="mr-2 h-4 w-4" />
                     Upload PDF
@@ -429,7 +398,7 @@ export function PdfEditor() {
                   variant="ghost"
                   size="sm"
                   onClick={handleClearFile}
-                  className="rounded-full"
+                  className="rounded-full cursor-pointer transition-all duration-200 hover:scale-105 hover:bg-red-50 hover:text-red-600 active:scale-95"
                 >
                   Clear
                 </Button>

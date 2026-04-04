@@ -24,8 +24,9 @@ import {
     Settings,
     Trash2,
     Plus,
+    Copy,
 } from 'lucide-react'
-import { PdfDocument, PdfFormField, PdfIndirectObject, PdfStream } from 'pdf-lite'
+import { PdfDocument, PdfFormField, PdfTextFormField, PdfIndirectObject, PdfStream } from 'pdf-lite'
 
 type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
 
@@ -403,25 +404,45 @@ export function PdfEditor() {
     const handleFieldPropertyChange = (property: string, value: any) => {
         if (!selectedFieldId) return
         
-        setExtractedFields(prevFields => 
-            prevFields.map(field => {
-                if (field.id === selectedFieldId && field.fieldRef) {
-                    // Update the underlying PdfFormField
-                    if (property === 'name') {
-                        field.fieldRef.name = value
-                    } else if (property === 'value') {
-                        field.fieldRef.value = value
-                    } else if (property === 'fontSize') {
-                        // Update font size in default appearance
-                        if (field.fieldRef.fontSize !== undefined) {
-                            field.fieldRef.fontSize = parseFloat(value) || 12
-                        }
-                    }
+        setExtractedFields(prevFields => {
+            const selectedField = prevFields.find(f => f.id === selectedFieldId)
+            if (!selectedField?.fieldRef) return prevFields
+            
+            // For widget-only fields, the fieldRef is the widget and we need to update parent for value/name
+            const isWidgetOnly = !!selectedField.fieldRef.parent
+            const targetForValue = isWidgetOnly ? selectedField.fieldRef.parent : selectedField.fieldRef
+            const targetForWidget = selectedField.fieldRef
+            
+            // Update the underlying PdfFormField
+            if (property === 'name' && targetForValue) {
+                targetForValue.name = value
+            } else if (property === 'value' && targetForValue) {
+                targetForValue.value = value
+                // Setting value triggers updateAppearance internally, which regenerates all children
+            } else if (property === 'fontSize') {
+                // Update font size in default appearance
+                if (targetForWidget.fontSize !== undefined) {
+                    targetForWidget.fontSize = parseFloat(value) || 12
+                }
+            }
+            
+            // Update state for all fields that share the same parent (for widget-only fields)
+            return prevFields.map(field => {
+                if (field.id === selectedFieldId) {
                     return { ...field, [property]: value }
                 }
+                
+                // If this is a sibling widget (shares same parent), update its display too
+                if (isWidgetOnly && field.fieldRef?.parent === targetForValue) {
+                    return { ...field, [property]: value }
+                }
+                
                 return field
             })
-        )
+        })
+        
+        // Force PDF re-render to show updated values
+        setPdfVersion(v => v + 1)
     }
 
     const handleFieldPositionChange = (fieldId: string, newRect: [number, number, number, number]) => {
@@ -442,10 +463,16 @@ export function PdfEditor() {
 
     const handleRemoveField = (fieldId: string) => {
         const fieldToRemove = extractedFields.find(f => f.id === fieldId)
-        if (!fieldToRemove || !pdfDoc?.acroform) return
+        if (!fieldToRemove || !pdfDoc?.acroform || !fieldToRemove.fieldRef) return
 
-        pdfDoc.deleteObject(fieldToRemove.fieldRef)
-        //pdfDoc.add(pdfDoc.acroform)
+        // For widget-only fields, remove the parent (which will cascade to remove the widget)
+        // For combined fields, remove the field itself
+        const isWidgetOnly = !!fieldToRemove.fieldRef.parent
+        const targetToDelete = isWidgetOnly ? fieldToRemove.fieldRef.parent : fieldToRemove.fieldRef
+        
+        if (targetToDelete) {
+            pdfDoc.deleteObject(targetToDelete)
+        }
 
         // Remove from state
         setExtractedFields(prevFields => prevFields.filter(f => f.id !== fieldId))
@@ -491,15 +518,18 @@ export function PdfEditor() {
         const fieldName = `${type}Field_${timestamp}`
 
         // Create new PdfFormField based on type
-        let newField: any
+        let newField: PdfFormField | null = null
+
         if (type === 'Text') {
-            const PdfTextFormField = (PdfFormField as any).registry?.get('Tx')
-            if (PdfTextFormField) {
-                newField = new PdfTextFormField()
-                newField.name = fieldName
-                newField.rect = newRect
-                newField.page = page
-            }
+            // Combined pattern: single field with both widget and value properties
+            const combinedField = new PdfTextFormField()
+            combinedField.name = fieldName
+            combinedField.value = ''
+            combinedField.rect = newRect
+            combinedField.page = page
+            combinedField.defaultAppearance = '/Helv 12 Tf 0 g' // Set default appearance
+            
+            newField = combinedField
         }
 
         if (!newField) {
@@ -525,6 +555,143 @@ export function PdfEditor() {
 
         setExtractedFields(prevFields => [...prevFields, newExtractedField])
         setSelectedFieldId(newExtractedField.id)
+    }
+
+    const handleCloneField = (fieldId: string) => {
+        console.log('Clone button clicked for field:', fieldId)
+        
+        const fieldToClone = extractedFields.find(f => f.id === fieldId)
+        if (!fieldToClone) {
+            console.error('Field to clone not found')
+            return
+        }
+        
+        if (!pdfDoc?.acroform) {
+            console.error('No acroform available')
+            return
+        }
+        
+        if (!fieldToClone.fieldRef) {
+            console.error('No fieldRef on field to clone')
+            return
+        }
+        
+        if (!fieldToClone.rect) {
+            console.error('No rect on field to clone')
+            return
+        }
+
+        const page = pdfDoc.pages.toArray()[fieldToClone.page - 1]
+        if (!page) {
+            console.error('Page not found:', fieldToClone.page)
+            return
+        }
+
+        console.log('Cloning field:', fieldToClone)
+
+        try {
+            let parentField: PdfFormField
+            let isFirstClone = false
+            
+            // Check if the original field is already widget-only (has a parent)
+            if (fieldToClone.fieldRef.parent) {
+                // Use the existing parent
+                parentField = fieldToClone.fieldRef.parent
+                console.log('Using existing parent:', parentField.name)
+            } else {
+                // First clone: Convert the original combined field to widget-only
+                // by creating a parent and making the original a child widget
+                isFirstClone = true
+                
+                parentField = new PdfTextFormField()
+                parentField.name = fieldToClone.name // Keep the original name on parent
+                parentField.value = fieldToClone.value // Move value to parent
+                parentField.defaultAppearance = fieldToClone.fieldRef.defaultAppearance || '/Helv 12 Tf 0 g'
+                
+                // Set form reference on parent
+                if (pdfDoc.acroform) {
+                    (parentField as any)._form = pdfDoc.acroform
+                }
+                
+                // Convert the original field to a widget child
+                const originalAsWidget = fieldToClone.fieldRef
+                // Remove name and value from widget (now on parent)
+                originalAsWidget.content.delete('T') // Name
+                originalAsWidget.content.delete('V') // Value
+                
+                // Set the parent relationship
+                originalAsWidget.parent = parentField
+                
+                // Remove the original from acroform fields and add the parent instead
+                const acroformFields = pdfDoc.acroform.fields
+                const originalIndex = acroformFields.findIndex(f => f === originalAsWidget)
+                if (originalIndex !== -1) {
+                    acroformFields.splice(originalIndex, 1)
+                }
+                pdfDoc.acroform.addField(parentField)
+                
+                console.log('Converted original to widget-only with new parent:', parentField.name)
+            }
+            
+            // Create new widget child with slightly offset position for visibility
+            const widget = new PdfTextFormField()
+            const offsetX = 20
+            const offsetY = 20
+            const [x1, y1, x2, y2] = fieldToClone.rect
+            const clonedRect: [number, number, number, number] = [
+                x1 + offsetX,
+                y1 - offsetY,
+                x2 + offsetX,
+                y2 - offsetY
+            ]
+            widget.rect = clonedRect
+            widget.parentRef = page.reference // Set page reference (page is read-only getter)
+            widget.parent = parentField // This auto-adds widget to parent's children
+            
+            // Set form reference on widget
+            if (pdfDoc.acroform) {
+                (widget as any)._form = pdfDoc.acroform
+            }
+            
+            // Generate appearance for the widget to display the parent's value
+            if (widget.generateAppearance) {
+                widget.generateAppearance()
+            }
+            
+            // Add to our state
+            const newExtractedField: ExtractedField = {
+                id: `field_${extractedFields.length}`,
+                name: parentField.name || fieldToClone.name,
+                type: fieldToClone.type,
+                page: fieldToClone.page,
+                rect: clonedRect,
+                value: parentField.value || fieldToClone.value,
+                pageHeight: fieldToClone.pageHeight,
+                pageWidth: fieldToClone.pageWidth,
+                fieldRef: widget // Store the widget for display
+            }
+
+            console.log('Created cloned field:', newExtractedField)
+
+            setExtractedFields(prevFields => {
+                // If first clone, also update the original field to reflect it's now a widget
+                if (isFirstClone) {
+                    return [...prevFields.map(f => 
+                        f.id === fieldId 
+                            ? { ...f, name: parentField.name, value: parentField.value }
+                            : f
+                    ), newExtractedField]
+                }
+                return [...prevFields, newExtractedField]
+            })
+            setSelectedFieldId(newExtractedField.id)
+            setPdfVersion(v => v + 1)
+            
+            console.log('Clone completed successfully')
+        } catch (error) {
+            console.error('Error during clone:', error)
+            alert(`Error cloning field: ${error instanceof Error ? error.message : String(error)}`)
+        }
     }
 
     const handleFileUpload = async (
@@ -572,16 +739,21 @@ export function PdfEditor() {
                         
                         // Add this field if it has a rect (actual widget)
                         if (rect) {
+                            // For widget-only fields, get the name and value from the parent
+                            const isWidgetOnly = !field.name && field.parent
+                            const nameSource = isWidgetOnly ? field.parent : field
+                            const valueSource = isWidgetOnly ? field.parent : field
+                            
                             fields.push({
                                 id: `field_${fieldIndex++}`,
-                                name: field.name || `Unnamed Field ${fieldIndex}`,
+                                name: nameSource?.name || `Unnamed Field ${fieldIndex}`,
                                 type: field.fieldType,
                                 page: pageNumber,
                                 rect: rect,
-                                value: field.value || '',
+                                value: valueSource?.value || '',
                                 pageHeight: pageHeight,
                                 pageWidth: pageWidth,
-                                fieldRef: field, // Store reference to the actual field
+                                fieldRef: field, // Store reference to the actual field (widget or combined)
                             })
                         }
                         
@@ -1045,6 +1217,15 @@ export function PdfEditor() {
                                 <Separator className="my-4" />
 
                                 <div className="space-y-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => handleCloneField(selectedField.id)}
+                                        className="w-full h-10 hover:bg-slate-50"
+                                    >
+                                        <Copy className="mr-2 h-4 w-4" />
+                                        Clone as Widget-Only
+                                    </Button>
                                     <Button
                                         type="button"
                                         variant="outline"

@@ -571,6 +571,42 @@ export function PdfEditor() {
         setPdfVersion(v => v + 1)
     }
 
+    const handleRectChange = (property: 'x' | 'y' | 'width' | 'height', value: string) => {
+        if (!selectedFieldId) return
+        
+        const selectedField = extractedFields.find(f => f.id === selectedFieldId)
+        if (!selectedField?.rect) return
+        
+        const numValue = parseFloat(value)
+        if (isNaN(numValue)) return
+        
+        const [x1, y1, x2, y2] = selectedField.rect
+        let newRect: [number, number, number, number]
+        
+        switch (property) {
+            case 'x':
+                // Move left edge, keep width
+                const width = x2 - x1
+                newRect = [numValue, y1, numValue + width, y2]
+                break
+            case 'y':
+                // Move bottom edge, keep height
+                const height = y2 - y1
+                newRect = [x1, numValue, x2, numValue + height]
+                break
+            case 'width':
+                // Change width, keep x
+                newRect = [x1, y1, x1 + numValue, y2]
+                break
+            case 'height':
+                // Change height, keep y
+                newRect = [x1, y1, x2, y1 + numValue]
+                break
+        }
+        
+        handleFieldPositionChange(selectedFieldId, newRect)
+    }
+
     const handleFieldPositionChange = (fieldId: string, newRect: [number, number, number, number]) => {
         // Update the extractedFields state
         setExtractedFields(prevFields => 
@@ -1457,8 +1493,9 @@ export function PdfEditor() {
                                                     id="pos-x"
                                                     type="number"
                                                     value={selectedField.rect[0].toFixed(2)}
-                                                    disabled
-                                                    className="h-8 text-sm bg-slate-50"
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleRectChange('x', e.target.value)}
+                                                    className="h-8 text-sm"
+                                                    step="1"
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -1469,8 +1506,9 @@ export function PdfEditor() {
                                                     id="pos-y"
                                                     type="number"
                                                     value={selectedField.rect[1].toFixed(2)}
-                                                    disabled
-                                                    className="h-8 text-sm bg-slate-50"
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleRectChange('y', e.target.value)}
+                                                    className="h-8 text-sm"
+                                                    step="1"
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -1481,8 +1519,10 @@ export function PdfEditor() {
                                                     id="width"
                                                     type="number"
                                                     value={(selectedField.rect[2] - selectedField.rect[0]).toFixed(2)}
-                                                    disabled
-                                                    className="h-8 text-sm bg-slate-50"
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleRectChange('width', e.target.value)}
+                                                    className="h-8 text-sm"
+                                                    step="1"
+                                                    min="1"
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -1493,8 +1533,10 @@ export function PdfEditor() {
                                                     id="height"
                                                     type="number"
                                                     value={(selectedField.rect[3] - selectedField.rect[1]).toFixed(2)}
-                                                    disabled
-                                                    className="h-8 text-sm bg-slate-50"
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleRectChange('height', e.target.value)}
+                                                    className="h-8 text-sm"
+                                                    step="1"
+                                                    min="1"
                                                 />
                                             </div>
                                         </div>

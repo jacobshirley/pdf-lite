@@ -268,8 +268,6 @@ function FieldOverlay({ field }: { field: ExtractedField }) {
                     maxWidth: '200px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    opacity: 0,
-                    transition: 'opacity 0.2s ease-in-out',
                 }}
             >
                 {field.name}
@@ -390,6 +388,10 @@ export function PdfEditor() {
     return (
         <div className="min-h-screen bg-slate-100 p-4 text-slate-900">
             <style>{`
+                .field-overlay-label {
+                    opacity: 0;
+                    transition: opacity 0.2s ease-in-out;
+                }
                 .field-overlay-container:hover .field-overlay-label {
                     opacity: 1;
                 }

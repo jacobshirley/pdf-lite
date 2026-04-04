@@ -255,6 +255,9 @@ function FieldOverlay({
     const displayWidth = tempSize ? `${tempSize.width}%` : `${widthPercent}%`
     const displayHeight = tempSize ? `${tempSize.height}%` : `${heightPercent}%`
     
+    // Check if this is a widget-only field (has a parent)
+    const isWidgetOnly = field.fieldRef?.parent !== undefined && field.fieldRef?.parent !== null
+    
     // Map field types to colors
     const colorMap: Record<string, string> = {
         Text: 'rgba(59, 130, 246, 0.3)', // blue
@@ -264,14 +267,16 @@ function FieldOverlay({
         Signature: 'rgba(239, 68, 68, 0.3)', // red
     }
     
-    const backgroundColor = field.type ? colorMap[field.type] : 'rgba(156, 163, 175, 0.3)'
+    // Widget-only fields get green background, otherwise use type-based color
+    const backgroundColor = isWidgetOnly 
+        ? 'rgba(34, 197, 94, 0.35)' // green for widget-only
+        : (field.type ? colorMap[field.type] : 'rgba(156, 163, 175, 0.3)')
     
     const handleMouseDown = (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
         
-        // Select the field on click
-        onSelect(field.id)
+        // Don't select here - let mouseup handle it to avoid interrupting drag
         
         const target = e.currentTarget as HTMLElement
         const parent = target.offsetParent as HTMLElement
@@ -379,6 +384,9 @@ function FieldOverlay({
             
             setIsDragging(false)
             setTempPosition(null)
+            
+            // Select after dragging completes
+            onSelect(field.id)
         } else if (isResizing && tempPosition && tempSize) {
             // Resizing: update both position and size
             const newLeftPercent = tempPosition.left
@@ -400,6 +408,10 @@ function FieldOverlay({
             setIsResizing(null)
             setTempPosition(null)
             setTempSize(null)
+        } else if (isDragging) {
+            // Was a click (no drag movement) - select the field
+            setIsDragging(false)
+            onSelect(field.id)
         } else {
             setIsDragging(false)
             setIsResizing(null)
@@ -429,6 +441,10 @@ function FieldOverlay({
             className="field-overlay-container"
             data-field-id={field.id}
             onMouseDown={handleMouseDown}
+            onClick={(e) => {
+                // Stop click from bubbling to page container (which would deselect)
+                e.stopPropagation()
+            }}
             style={{
                 position: 'absolute',
                 left: displayLeft,
@@ -443,7 +459,7 @@ function FieldOverlay({
                 cursor: isDragging ? 'grabbing' : (isResizing ? `${isResizing}-resize` : 'grab'),
                 boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
             }}
-            title={`${field.name} (${field.type || 'Unknown'})`}
+            title={`${field.name}${isWidgetOnly ? ' (widget)' : ''}`}
         >
             {/* Resize handles - only show when selected */}
             {isSelected && (
@@ -501,6 +517,7 @@ function FieldOverlay({
                     maxWidth: '200px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
+                    pointerEvents: 'none',
                 }}
             >
                 {field.name}
@@ -1331,6 +1348,10 @@ export function PdfEditor() {
                                                     <div 
                                                         ref={(el) => { pageContainerElement = el }}
                                                         className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                                                        onClick={() => {
+                                                            // Deselect field when clicking on page background
+                                                            setSelectedFieldId(null)
+                                                        }}
                                                         onDragOver={(e) => {
                                                             if (draggedFieldType) {
                                                                 e.preventDefault()

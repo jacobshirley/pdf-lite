@@ -22,8 +22,10 @@ import {
     Layers,
     X,
     Settings,
+    Trash2,
+    Plus,
 } from 'lucide-react'
-import { PdfDocument } from 'pdf-lite'
+import { PdfDocument, PdfFormField } from 'pdf-lite'
 
 type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
 
@@ -47,7 +49,7 @@ type ExtractedField = {
     value: string
     pageHeight: number
     pageWidth: number
-    fieldRef?: any // Reference to the actual PdfFormField object
+    fieldRef?: PdfFormField // Reference to the actual PdfFormField object
 }
 
 type LayerItem = {
@@ -435,6 +437,95 @@ export function PdfEditor() {
                 return field
             })
         )
+    }
+
+    const handleRemoveField = (fieldId: string) => {
+        const fieldToRemove = extractedFields.find(f => f.id === fieldId)
+        if (!fieldToRemove || !pdfDoc?.acroform) return
+
+        // Remove from PDF document
+        if (fieldToRemove.fieldRef) {
+            const fieldIndex = pdfDoc.acroform.fields.indexOf(fieldToRemove.fieldRef)
+            if (fieldIndex !== -1) {
+                pdfDoc.acroform.fields.splice(fieldIndex, 1)
+            }
+        }
+
+        // Remove from state
+        setExtractedFields(prevFields => prevFields.filter(f => f.id !== fieldId))
+        
+        // Clear selection if this field was selected
+        if (selectedFieldId === fieldId) {
+            setSelectedFieldId(null)
+        }
+    }
+
+    const handleAddField = (type: FieldType) => {
+        if (!pdfDoc?.acroform) return
+
+        // Get the first page (or create one if none exists)
+        const pages = pdfDoc.pages.toArray()
+        if (pages.length === 0) {
+            alert('No pages in PDF')
+            return
+        }
+
+        const page = pages[0]
+        const pageHeight = page.height
+        const pageWidth = page.width
+
+        // Create a new field with default position and size
+        const defaultX = 100
+        const defaultY = pageHeight - 200 // Near top of page
+        const defaultWidth = 200
+        const defaultHeight = 30
+
+        const newRect: [number, number, number, number] = [
+            defaultX,
+            defaultY - defaultHeight,
+            defaultX + defaultWidth,
+            defaultY
+        ]
+
+        // Create a unique field name
+        const timestamp = Date.now()
+        const fieldName = `${type}Field_${timestamp}`
+
+        // Create new PdfFormField based on type
+        let newField: any
+        if (type === 'Text') {
+            const PdfTextFormField = (PdfFormField as any).registry?.get('Tx')
+            if (PdfTextFormField) {
+                newField = new PdfTextFormField()
+                newField.name = fieldName
+                newField.rect = newRect
+                newField.page = page
+            }
+        }
+
+        if (!newField) {
+            alert(`Creating ${type} fields is not yet fully implemented`)
+            return
+        }
+
+        // Add to AcroForm
+        pdfDoc.acroform.addField(newField)
+
+        // Add to our state
+        const newExtractedField: ExtractedField = {
+            id: `field_${extractedFields.length}`,
+            name: fieldName,
+            type: type,
+            page: 1,
+            rect: newRect,
+            value: '',
+            pageHeight: pageHeight,
+            pageWidth: pageWidth,
+            fieldRef: newField
+        }
+
+        setExtractedFields(prevFields => [...prevFields, newExtractedField])
+        setSelectedFieldId(newExtractedField.id)
     }
 
     const handleFileUpload = async (

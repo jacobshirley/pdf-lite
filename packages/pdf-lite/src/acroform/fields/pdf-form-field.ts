@@ -466,6 +466,8 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             parsed.fontName = fontName
             this.content.set('DA', parsed)
         }
+
+        this.updateAppearance()
     }
 
     set font(font: PdfFont | null) {
@@ -492,6 +494,8 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             parsed.fontName = resourceName
             this.content.set('DA', parsed)
         }
+
+        this.updateAppearance()
     }
 
     private _embedFontInDR(font: PdfFont): void {
@@ -538,6 +542,8 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         if (family.bold) this._embedFontInDR(family.bold)
         if (family.italic) this._embedFontInDR(family.italic)
         if (family.boldItalic) this._embedFontInDR(family.boldItalic)
+
+        this.updateAppearance()
     }
 
     get fontVariantNames(): {

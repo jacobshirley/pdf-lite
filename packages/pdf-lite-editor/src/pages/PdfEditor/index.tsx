@@ -17,10 +17,11 @@ import {
     FileUp,
     FileText,
     Eye,
+    Layers,
 } from 'lucide-react'
-import { PdfDocument, PdfIndirectObject, PdfStream } from 'pdf-lite'
+import { PdfDocument } from 'pdf-lite'
 
-type FieldType = 'Text' | 'Checkbox'
+type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
 
 type MockField = {
     id: string
@@ -31,6 +32,17 @@ type MockField = {
     y: number
     w: number
     h: number
+}
+
+type ExtractedField = {
+    id: string
+    name: string
+    type: FieldType | null
+    page: number
+    rect: [number, number, number, number] | null
+    value: string
+    pageHeight: number
+    pageWidth: number
 }
 
 type LayerItem = {
@@ -196,43 +208,148 @@ function LayerListButton({ onClick }: LayerListButtonProps) {
     )
 }
 
+// Field overlay component to render AcroForm fields as visual overlays
+function FieldOverlay({ field }: { field: ExtractedField }) {
+    if (!field.rect) return null
+    
+    // PDF rect format: [x1, y1, x2, y2] where (x1,y1) is lower-left, (x2,y2) is upper-right
+    const [x1, y1, x2, y2] = field.rect
+    const fieldWidth = x2 - x1
+    const fieldHeight = y2 - y1
+    
+    // Convert PDF coordinates (bottom-left origin) to CSS coordinates (top-left origin)
+    // Use percentage-based positioning so it scales with the rendered page
+    const leftPercent = (x1 / field.pageWidth) * 100
+    const topPercent = ((field.pageHeight - y2) / field.pageHeight) * 100
+    const widthPercent = (fieldWidth / field.pageWidth) * 100
+    const heightPercent = (fieldHeight / field.pageHeight) * 100
+    
+    // Map field types to colors
+    const colorMap: Record<string, string> = {
+        Text: 'rgba(59, 130, 246, 0.3)', // blue
+        Button: 'rgba(147, 51, 234, 0.3)', // purple
+        Checkbox: 'rgba(16, 185, 129, 0.3)', // green
+        Choice: 'rgba(245, 158, 11, 0.3)', // amber
+        Signature: 'rgba(239, 68, 68, 0.3)', // red
+    }
+    
+    const backgroundColor = field.type ? colorMap[field.type] : 'rgba(156, 163, 175, 0.3)'
+    
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                left: `${leftPercent}%`,
+                top: `${topPercent}%`,
+                width: `${widthPercent}%`,
+                height: `${heightPercent}%`,
+                backgroundColor,
+                border: '2px solid rgba(59, 130, 246, 0.6)',
+                borderRadius: '4px',
+                pointerEvents: 'none',
+                zIndex: 10,
+            }}
+            title={`${field.name} (${field.type || 'Unknown'})`}
+        >
+            <div
+                style={{
+                    position: 'absolute',
+                    top: '-20px',
+                    left: '0',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    color: '#1e40af',
+                    backgroundColor: 'white',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '200px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                }}
+            >
+                {field.name}
+            </div>
+        </div>
+    )
+}
+
 export function PdfEditor() {
     const [activeTool, setActiveTool] = useState<string>('select')
     const [uploadedFile, setUploadedFile] = useState<File | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [pdfDoc, setPdfDoc] = useState<PdfDocument | null>(null)
     const [activeView, setActiveView] = useState<'pdf' | 'text'>('pdf')
+    const [extractedFields, setExtractedFields] = useState<ExtractedField[]>([])
+    const [showAcroFormLayer, setShowAcroFormLayer] = useState<boolean>(true)
 
     const handleFileUpload = async (
         event: React.ChangeEvent<HTMLInputElement>,
     ) => {
         const file = event.target.files?.[0]
         if (file && file.type === 'application/pdf') {
-            const document = await PdfDocument.fromBytes([
-                new Uint8Array(await file.arrayBuffer()),
-            ])
-            //await document.decrypt()
+            try {
+                const document = await PdfDocument.fromBytes([
+                    new Uint8Array(await file.arrayBuffer()),
+                ])
+                await document.decrypt()
 
-            const acroform = document.acroform!
-           // console.log('Form fields in PDF:', acroform.exportData())
-            const field = acroform.fields.find((f) => f.name === 'Company Name')
-             document.deleteObject(field)
-             for (const child of field!.children) {
-              document.deleteObject(child)
-             }
-
-             for (const object of document.objects) {
-              if (object instanceof PdfIndirectObject && object.content instanceof PdfStream) {
-                object.content.removeAllFilters()
-              }
-             }
-
-            await document.finalize()
-
-          //  console.log('found', acroform.fields.find((f) => f.name === 'Company Name'))
-
-            setUploadedFile(file)
-            setPdfDoc(document)
+                // Extract AcroForm fields
+                const acroform = document.acroform
+                const fields: ExtractedField[] = []
+                
+                if (acroform) {
+                    const pages = document.pages.toArray()
+                    let fieldIndex = 0
+                    
+                    const extractField = (field: any) => {
+                        const fieldPage = field.page
+                        const rect = field.rect
+                        
+                        // Find the page number (1-indexed) and get page dimensions
+                        let pageNumber = 1
+                        let pageHeight = 792 // Default Letter size height
+                        let pageWidth = 612 // Default Letter size width
+                        
+                        if (fieldPage) {
+                            const pageIndex = pages.findIndex((p: any) => p === fieldPage)
+                            if (pageIndex !== -1) {
+                                pageNumber = pageIndex + 1
+                                pageHeight = fieldPage.height
+                                pageWidth = fieldPage.width
+                            }
+                        }
+                        
+                        // Add this field if it has a rect (actual widget)
+                        if (rect) {
+                            fields.push({
+                                id: `field_${fieldIndex++}`,
+                                name: field.name || `Unnamed Field ${fieldIndex}`,
+                                type: field.fieldType,
+                                page: pageNumber,
+                                rect: rect,
+                                value: field.value || '',
+                                pageHeight: pageHeight,
+                                pageWidth: pageWidth,
+                            })
+                        }
+                        
+                        // Also extract children (for parent fields like "Company Name")
+                        if (field.children && field.children.length > 0) {
+                            field.children.forEach((child: any) => extractField(child))
+                        }
+                    }
+                    
+                    acroform.fields.forEach((field: any) => extractField(field))
+                }
+                
+                setExtractedFields(fields)
+                setUploadedFile(file)
+                setPdfDoc(document)
+            } catch (error) {
+                console.error('Error loading PDF:', error)
+                alert(`Error loading PDF: ${error instanceof Error ? error.message : String(error)}`)
+            }
         } else if (file) {
             alert('Please upload a PDF file')
         }
@@ -245,6 +362,7 @@ export function PdfEditor() {
     const handleClearFile = () => {
         setUploadedFile(null)
         setPdfDoc(null)
+        setExtractedFields([])
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
@@ -428,6 +546,18 @@ export function PdfEditor() {
                                         <FileText className="mr-2 h-3 w-3" />
                                         Text View
                                     </Button>
+                                    {extractedFields.length > 0 && (
+                                        <Button
+                                            type="button"
+                                            variant={showAcroFormLayer ? 'default' : 'ghost'}
+                                            size="sm"
+                                            onClick={() => setShowAcroFormLayer(!showAcroFormLayer)}
+                                            className="rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 ml-auto"
+                                        >
+                                            <Layers className="mr-2 h-3 w-3" />
+                                            Fields ({extractedFields.length})
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                             <CardContent className="p-6">
@@ -435,19 +565,38 @@ export function PdfEditor() {
                                     <PdfViewer
                                         file={pdfDoc?.toBytes()}
                                         className="w-full"
-                                        pageWrapper={(page, context) => (
-                                            <div
-                                                key={context.pageNumber}
-                                                className="mb-6"
-                                            >
-                                                <div className="mb-2 text-sm font-semibold text-slate-600">
-                                                    Page {context.pageNumber}
+                                        pageWrapper={(page, context) => {
+                                            // Filter fields for this page
+                                            const pageFields = extractedFields.filter(
+                                                f => f.page === context.pageNumber
+                                            )
+                                            
+                                            return (
+                                                <div
+                                                    key={context.pageNumber}
+                                                    className="mb-6"
+                                                >
+                                                    <div className="mb-2 flex items-center justify-between">
+                                                        <div className="text-sm font-semibold text-slate-600">
+                                                            Page {context.pageNumber}
+                                                        </div>
+                                                        {pageFields.length > 0 && (
+                                                            <div className="text-xs text-slate-500">
+                                                                {pageFields.length} field{pageFields.length !== 1 ? 's' : ''}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                                        <div className="relative">
+                                                            {page}
+                                                            {showAcroFormLayer && pageFields.map(field => (
+                                                                <FieldOverlay key={field.id} field={field} />
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                                    {page}
-                                                </div>
-                                            </div>
-                                        )}
+                                            )
+                                        }}
                                     />
                                 )}
                                 {pdfDoc && activeView === 'text' && (

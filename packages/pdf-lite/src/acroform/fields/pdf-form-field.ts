@@ -882,6 +882,36 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return this.appearanceStates.includes(setting)
     }
 
+    onDelete(): void {
+        // Clean up widget annotation references in the page's Annots array
+        const page = this.page
+        if (page) {
+            const annots = page.annotations
+            annots.items = annots.items.filter((r) => {
+                if (!(r instanceof PdfObjectReference)) return true
+                try {
+                    return r.resolve() !== this
+                } catch {
+                    return true
+                }
+            })
+        }
+
+        // Clean up from parent/children relationships
+        const parent = this.parent
+        if (parent) {
+            parent.children = parent.children.filter((child) => child !== this)
+        }
+        for (const child of this.children) {
+            child.content.delete('Parent')
+        }
+
+        // Clean up from form's field list if present
+        if (this._form) {
+            this._form.fields = this._form.fields.filter((f) => f !== this)
+        }
+    }
+
     private static _fallbackCtor?: new (
         other?: PdfIndirectObject,
     ) => PdfFormField

@@ -187,7 +187,6 @@ export class PdfRevision extends PdfObject {
         if (this._locked) {
             throw new Error('Cannot add object to locked PDF revision')
         }
-
         if (index === undefined) {
             index =
                 object instanceof PdfIndirectObject
@@ -223,24 +222,30 @@ export class PdfRevision extends PdfObject {
      * @param objects - Objects to remove from the revision
      * @throws Error if the revision is locked
      */
-    deleteObject(...objects: PdfObject[]): void {
+    deleteObject(...objects: PdfObject[]): boolean {
         if (this._locked) {
             throw new Error('Cannot delete object from locked PDF revision')
         }
 
+        let deleted = false
         for (const object of objects) {
             const index = this._objects.indexOf(object)
-            if (index === -1) {
-                return
-            }
-
             this.modified = true
-            this._objects.splice(index, 1)
+
+            if (index !== -1) {
+                this._objects.splice(index, 1)
+            }
 
             if (object instanceof PdfIndirectObject) {
                 this.xref.removeObject(object)
             }
+
+            object.onDelete?.()
+
+            deleted = true
         }
+
+        return deleted
     }
 
     isModified(): boolean {

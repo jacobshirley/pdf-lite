@@ -164,4 +164,6 @@ export abstract class PdfObject {
     }
 
     abstract toJSON(): object
+
+    onDelete?(): void
 }

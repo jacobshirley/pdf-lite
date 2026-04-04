@@ -889,8 +889,18 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     deleteObject(obj: PdfObject | undefined): void {
         if (!obj) return
 
+        let deleted = false
+
         for (const revision of this.revisions) {
-            revision.deleteObject(obj)
+            if (revision.deleteObject(obj)) {
+                deleted = true
+            }
+        }
+
+        if (!deleted) {
+            console.warn(
+                'Attempted to delete object that was not found in any revision',
+            )
         }
 
         this.update()

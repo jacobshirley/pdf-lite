@@ -503,17 +503,23 @@ export class PdfXrefLookup {
      *
      * @param object - The indirect object to remove
      */
-    removeObject(object: PdfIndirectObject): void {
+    removeObject(object: {
+        objectNumber: number
+        generationNumber: number
+    }): void {
         this.entries.delete(object.objectNumber)
+        this.prev?.removeObject(object)
 
         const trailerValues = this.trailerDict.values
         for (const entry of Object.keys(
             trailerValues,
         ) as (keyof PdfTrailerEntries)[]) {
             const value = trailerValues[entry]
+
             if (
                 value instanceof PdfObjectReference &&
-                value.equals(object.reference)
+                value.objectNumber === object.objectNumber &&
+                value.generationNumber === object.generationNumber
             ) {
                 this.trailerDict.delete(entry)
             }

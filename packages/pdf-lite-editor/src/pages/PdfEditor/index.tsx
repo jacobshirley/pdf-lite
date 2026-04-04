@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PdfViewer } from '@/components/PdfViewer'
+import { PdfTextEditor } from '@/components/PdfTextEditor'
 import {
     MousePointer2,
     Type,
@@ -681,31 +682,36 @@ export function PdfEditor() {
             
             // Set form reference
             if (pdfDoc.acroform) {
-                (combinedField as any)._form = pdfDoc.acroform
+                combinedField._form = pdfDoc.acroform
             }
             
-            // Generate initial appearance
-            if (combinedField.generateAppearance) {
-                combinedField.generateAppearance()
-            }
+           combinedField.updateAppearance()
             
             newField = combinedField
         } else if (type === 'Checkbox') {
             // Create checkbox button field
             const checkboxField = new PdfButtonFormField()
-            checkboxField.name = fieldName
+            
             checkboxField.rect = newRect
+            checkboxField.name = fieldName
             checkboxField.parentRef = page.reference
-            
-            // Set form reference
+
+            // Set form reference BEFORE setting other properties
             if (pdfDoc.acroform) {
-                (checkboxField as any)._form = pdfDoc.acroform
+                checkboxField._form = pdfDoc.acroform
             }
             
-            // Generate initial appearance
-            if (checkboxField.generateAppearance) {
-                checkboxField.generateAppearance()
-            }
+            // Mark as widget to ensure it's treated as an annotation
+            checkboxField.isWidget = true
+
+            // Set initial state to unchecked
+            checkboxField.appearanceState = 'Off'
+            
+            // Ensure print flag is set so it appears in PDF viewers
+            checkboxField.print = true
+            
+            // Set border style for visibility
+            checkboxField.borderWidth = 1
             
             newField = checkboxField
         }
@@ -804,10 +810,10 @@ export function PdfEditor() {
                 originalAsWidget.parent = parentField
                 
                 // Remove the original from acroform fields and add the parent instead
-                const acroformFields = pdfDoc.acroform.fields
+                let acroformFields = pdfDoc.acroform.fields
                 const originalIndex = acroformFields.findIndex(f => f === originalAsWidget)
                 if (originalIndex !== -1) {
-                    acroformFields.splice(originalIndex, 1)
+                    pdfDoc.acroform.fields = pdfDoc.acroform.fields.filter((_, i) => i !== originalIndex)
                 }
                 pdfDoc.acroform.addField(parentField)
                 
@@ -884,11 +890,11 @@ export function PdfEditor() {
                 const document = await PdfDocument.fromBytes([
                     new Uint8Array(await file.arrayBuffer()),
                 ])
-                await document.decrypt()
+               // await document.decrypt()
 
                 for (const object of document.objects) {
                   if (object instanceof PdfIndirectObject && object.content instanceof PdfStream) {
-                    object.content.removeAllFilters()
+                    //object.content.removeAllFilters()
                   }
                 }
 
@@ -900,9 +906,10 @@ export function PdfEditor() {
                     const pages = document.pages.toArray()
                     let fieldIndex = 0
                     
-                    const extractField = (field: any) => {
+                    const extractField = (field: PdfFormField) => {
                         const fieldPage = field.page
                         const rect = field.rect
+
                         
                         // Find the page number (1-indexed) and get page dimensions
                         let pageNumber = 1
@@ -917,6 +924,9 @@ export function PdfEditor() {
                                 pageWidth = fieldPage.width
                             }
                         }
+
+                                                console.log(field, rect)
+
                         
                         // Add this field if it has a rect (actual widget)
                         if (rect) {
@@ -943,11 +953,14 @@ export function PdfEditor() {
                             field.children.forEach((child: any) => extractField(child))
                         }
                     }
+
                     
                     acroform.fields.forEach((field: any) => extractField(field))
                 }
                 
                 setExtractedFields(fields)
+                                    console.log(fields)
+
                 setUploadedFile(file)
                 setPdfDoc(document)
             } catch (error) {
@@ -1317,11 +1330,10 @@ export function PdfEditor() {
                                     />
                                 )}
                                 {pdfDoc && activeView === 'text' && (
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                        <pre className="text-xs font-mono overflow-auto whitespace-pre-wrap break-words">
-                                            {pdfDoc.toString()}
-                                        </pre>
-                                    </div>
+                                    <PdfTextEditor
+                                        content={pdfDoc.toString()}
+                                        readOnly={true}
+                                    />
                                 )}
                             </CardContent>
                         </Card>
@@ -1373,17 +1385,46 @@ export function PdfEditor() {
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="field-value" className="text-xs font-semibold text-slate-700">
-                                        Default Value
-                                    </Label>
-                                    <Input
-                                        id="field-value"
-                                        value={selectedField.value}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldPropertyChange('value', e.target.value)}
-                                        className="h-8 text-sm"
-                                    />
-                                </div>
+                                {/* Checkbox-specific properties */}
+                                {selectedField.type === 'Checkbox' && selectedField.fieldRef && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="default-state" className="text-xs font-semibold text-slate-700">
+                                            Default State
+                                        </Label>
+                                        <select
+                                            id="default-state"
+                                            value={selectedField.fieldRef.appearanceState || 'Off'}
+                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                                if (selectedField.fieldRef) {
+                                                    selectedField.fieldRef.appearanceState = e.target.value
+                                                    setPdfVersion(v => v + 1)
+                                                }
+                                            }}
+                                            className="h-8 w-full text-sm rounded-md border border-slate-300 px-3 py-1 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                        >
+                                            {selectedField.fieldRef.appearanceStates?.map((state: string) => (
+                                                <option key={state} value={state}>
+                                                    {state}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Text field properties */}
+                                {selectedField.type !== 'Checkbox' && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="field-value" className="text-xs font-semibold text-slate-700">
+                                            Default Value
+                                        </Label>
+                                        <Input
+                                            id="field-value"
+                                            value={selectedField.value}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldPropertyChange('value', e.target.value)}
+                                            className="h-8 text-sm"
+                                        />
+                                    </div>
+                                )}
 
                                 {selectedField.fieldRef && selectedField.fieldRef.fontSize !== undefined && (
                                     <div className="space-y-2">

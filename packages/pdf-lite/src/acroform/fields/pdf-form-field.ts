@@ -442,6 +442,8 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             parsed.fontSize = size
             this.content.set('DA', parsed)
         }
+
+        this.updateAppearance()
     }
 
     get fontName(): string | null {

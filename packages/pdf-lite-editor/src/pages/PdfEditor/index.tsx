@@ -25,7 +25,7 @@ import {
     Trash2,
     Plus,
 } from 'lucide-react'
-import { PdfDocument, PdfFormField } from 'pdf-lite'
+import { PdfDocument, PdfFormField, PdfIndirectObject, PdfStream } from 'pdf-lite'
 
 type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
 
@@ -392,6 +392,7 @@ export function PdfEditor() {
     const [extractedFields, setExtractedFields] = useState<ExtractedField[]>([])
     const [showAcroFormLayer, setShowAcroFormLayer] = useState<boolean>(true)
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
+    const [pdfVersion, setPdfVersion] = useState<number>(0) // Track PDF modifications
 
     const selectedField = extractedFields.find(f => f.id === selectedFieldId) || null
 
@@ -443,13 +444,8 @@ export function PdfEditor() {
         const fieldToRemove = extractedFields.find(f => f.id === fieldId)
         if (!fieldToRemove || !pdfDoc?.acroform) return
 
-        // Remove from PDF document
-        if (fieldToRemove.fieldRef) {
-            const fieldIndex = pdfDoc.acroform.fields.indexOf(fieldToRemove.fieldRef)
-            if (fieldIndex !== -1) {
-                pdfDoc.acroform.fields.splice(fieldIndex, 1)
-            }
-        }
+        pdfDoc.deleteObject(fieldToRemove.fieldRef)
+        //pdfDoc.add(pdfDoc.acroform)
 
         // Remove from state
         setExtractedFields(prevFields => prevFields.filter(f => f.id !== fieldId))
@@ -458,6 +454,9 @@ export function PdfEditor() {
         if (selectedFieldId === fieldId) {
             setSelectedFieldId(null)
         }
+        
+        // Force PDF viewer to reload by incrementing version
+        setPdfVersion(v => v + 1)
     }
 
     const handleAddField = (type: FieldType) => {
@@ -538,6 +537,12 @@ export function PdfEditor() {
                     new Uint8Array(await file.arrayBuffer()),
                 ])
                 await document.decrypt()
+
+                for (const object of document.objects) {
+                  if (object instanceof PdfIndirectObject && object.content instanceof PdfStream) {
+                    object.content.removeAllFilters()
+                  }
+                }
 
                 // Extract AcroForm fields
                 const acroform = document.acroform
@@ -671,24 +676,38 @@ export function PdfEditor() {
                                     active={activeTool === 'select'}
                                     onClick={() => setActiveTool('select')}
                                 />
-                                <ToolButton
-                                    label="Text Field"
-                                    icon={Type}
-                                    active={activeTool === 'text'}
-                                    onClick={() => setActiveTool('text')}
-                                />
-                                <ToolButton
-                                    label="Checkbox"
-                                    icon={CheckSquare}
-                                    active={activeTool === 'checkbox'}
-                                    onClick={() => setActiveTool('checkbox')}
-                                />
-                                <ToolButton
-                                    label="Rename"
-                                    icon={Wand2}
-                                    active={activeTool === 'rename'}
-                                    onClick={() => setActiveTool('rename')}
-                                />
+                            </div>
+                        </div>
+
+                        <Separator />
+
+                        <div>
+                            <div className="mb-2 text-sm font-semibold text-slate-800">
+                                Add Fields
+                            </div>
+                            <div className="space-y-1">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => handleAddField('Text')}
+                                    disabled={!pdfDoc}
+                                    className="h-10 w-full justify-start rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    <Type className="mr-2 h-4 w-4" />
+                                    Text Field
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => handleAddField('Checkbox')}
+                                    disabled={!pdfDoc}
+                                    className="h-10 w-full justify-start rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    <CheckSquare className="mr-2 h-4 w-4" />
+                                    Checkbox
+                                </Button>
                             </div>
                         </div>
 
@@ -824,6 +843,7 @@ export function PdfEditor() {
                             <CardContent className="p-6">
                                 {pdfDoc && activeView === 'pdf' && (
                                     <PdfViewer
+                                        key={pdfVersion}
                                         file={pdfDoc?.toBytes()}
                                         className="w-full"
                                         pageWrapper={(page, context) => {
@@ -1020,6 +1040,24 @@ export function PdfEditor() {
                                         disabled
                                         className="h-8 text-sm bg-slate-50"
                                     />
+                                </div>
+
+                                <Separator className="my-4" />
+
+                                <div className="space-y-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => {
+                                            if (confirm(`Are you sure you want to delete the field "${selectedField.name}"?`)) {
+                                                handleRemoveField(selectedField.id)
+                                            }
+                                        }}
+                                        className="w-full h-10 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300 hover:border-red-400"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Field
+                                    </Button>
                                 </div>
                             </div>
                         </CardContent>

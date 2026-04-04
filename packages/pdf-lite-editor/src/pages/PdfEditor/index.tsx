@@ -237,6 +237,7 @@ function FieldOverlay({ field }: { field: ExtractedField }) {
     
     return (
         <div
+            className="field-overlay-container"
             style={{
                 position: 'absolute',
                 left: `${leftPercent}%`,
@@ -246,12 +247,13 @@ function FieldOverlay({ field }: { field: ExtractedField }) {
                 backgroundColor,
                 border: '2px solid rgba(59, 130, 246, 0.6)',
                 borderRadius: '4px',
-                pointerEvents: 'none',
+                pointerEvents: 'auto',
                 zIndex: 10,
             }}
             title={`${field.name} (${field.type || 'Unknown'})`}
         >
             <div
+                className="field-overlay-label"
                 style={{
                     position: 'absolute',
                     top: '-20px',
@@ -266,6 +268,8 @@ function FieldOverlay({ field }: { field: ExtractedField }) {
                     maxWidth: '200px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease-in-out',
                 }}
             >
                 {field.name}
@@ -385,6 +389,17 @@ export function PdfEditor() {
 
     return (
         <div className="min-h-screen bg-slate-100 p-4 text-slate-900">
+            <style>{`
+                .field-overlay-container:hover .field-overlay-label {
+                    opacity: 1;
+                }
+                .react-pdf__Page__textContent {
+                    pointer-events: none !important;
+                }
+                .react-pdf__Page__annotations {
+                    pointer-events: none !important;
+                }
+            `}</style>
             <div className="mx-auto grid max-w-[1600px] grid-cols-[240px_minmax(0,1fr)] gap-4 items-start">
                 <Card className="sticky top-6 flex h-[calc(100vh-48px)] flex-col rounded-[24px] border-slate-200 shadow-sm">
                     <CardContent className="flex h-full flex-col gap-4 p-4">

@@ -231,8 +231,10 @@ function FieldOverlay({
     if (!field.rect) return null
     
     const [isDragging, setIsDragging] = useState(false)
+    const [isResizing, setIsResizing] = useState<string | null>(null) // 'se', 'sw', 'ne', 'nw', 'e', 'w', 'n', 's'
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
     const [tempPosition, setTempPosition] = useState<{ left: number; top: number } | null>(null)
+    const [tempSize, setTempSize] = useState<{ width: number; height: number } | null>(null)
     
     // PDF rect format: [x1, y1, x2, y2] where (x1,y1) is lower-left, (x2,y2) is upper-right
     const [x1, y1, x2, y2] = field.rect
@@ -246,9 +248,11 @@ function FieldOverlay({
     const widthPercent = (fieldWidth / field.pageWidth) * 100
     const heightPercent = (fieldHeight / field.pageHeight) * 100
     
-    // Use temp position if dragging, otherwise use calculated position
+    // Use temp position/size if dragging/resizing, otherwise use calculated position
     const displayLeft = tempPosition ? `${tempPosition.left}%` : `${leftPercent}%`
     const displayTop = tempPosition ? `${tempPosition.top}%` : `${topPercent}%`
+    const displayWidth = tempSize ? `${tempSize.width}%` : `${widthPercent}%`
+    const displayHeight = tempSize ? `${tempSize.height}%` : `${heightPercent}%`
     
     // Map field types to colors
     const colorMap: Record<string, string> = {
@@ -281,9 +285,15 @@ function FieldOverlay({
         setIsDragging(true)
     }
     
-    const handleMouseMove = (e: MouseEvent) => {
-        if (!isDragging) return
+    const handleResizeMouseDown = (e: React.MouseEvent, handle: string) => {
+        e.preventDefault()
+        e.stopPropagation()
         
+        onSelect(field.id)
+        setIsResizing(handle)
+    }
+    
+    const handleMouseMove = (e: MouseEvent) => {
         const target = document.querySelector(`[data-field-id="${field.id}"]`) as HTMLElement
         if (!target) return
         
@@ -292,43 +302,111 @@ function FieldOverlay({
         
         const parentRect = parent.getBoundingClientRect()
         
-        // Calculate new position in pixels relative to parent
-        const newLeft = e.clientX - parentRect.left - dragOffset.x
-        const newTop = e.clientY - parentRect.top - dragOffset.y
-        
-        // Convert to percentage
-        const newLeftPercent = (newLeft / parentRect.width) * 100
-        const newTopPercent = (newTop / parentRect.height) * 100
-        
-        setTempPosition({ left: newLeftPercent, top: newTopPercent })
+        if (isDragging) {
+            // Calculate new position in pixels relative to parent
+            const newLeft = e.clientX - parentRect.left - dragOffset.x
+            const newTop = e.clientY - parentRect.top - dragOffset.y
+            
+            // Convert to percentage
+            const newLeftPercent = (newLeft / parentRect.width) * 100
+            const newTopPercent = (newTop / parentRect.height) * 100
+            
+            setTempPosition({ left: newLeftPercent, top: newTopPercent })
+        } else if (isResizing) {
+            // Get current rect in pixels
+            const currentRect = target.getBoundingClientRect()
+            const currentLeft = currentRect.left - parentRect.left
+            const currentTop = currentRect.top - parentRect.top
+            const currentWidth = currentRect.width
+            const currentHeight = currentRect.height
+            
+            let newLeft = currentLeft
+            let newTop = currentTop
+            let newWidth = currentWidth
+            let newHeight = currentHeight
+            
+            const mouseX = e.clientX - parentRect.left
+            const mouseY = e.clientY - parentRect.top
+            
+            // Handle different resize directions
+            if (isResizing.includes('e')) {
+                newWidth = mouseX - currentLeft
+            }
+            if (isResizing.includes('w')) {
+                newWidth = currentWidth + (currentLeft - mouseX)
+                newLeft = mouseX
+            }
+            if (isResizing.includes('s')) {
+                newHeight = mouseY - currentTop
+            }
+            if (isResizing.includes('n')) {
+                newHeight = currentHeight + (currentTop - mouseY)
+                newTop = mouseY
+            }
+            
+            // Enforce minimum size
+            const minWidth = 20
+            const minHeight = 10
+            if (newWidth < minWidth) newWidth = minWidth
+            if (newHeight < minHeight) newHeight = minHeight
+            
+            // Convert to percentage
+            const newLeftPercent = (newLeft / parentRect.width) * 100
+            const newTopPercent = (newTop / parentRect.height) * 100
+            const newWidthPercent = (newWidth / parentRect.width) * 100
+            const newHeightPercent = (newHeight / parentRect.height) * 100
+            
+            setTempPosition({ left: newLeftPercent, top: newTopPercent })
+            setTempSize({ width: newWidthPercent, height: newHeightPercent })
+        }
     }
     
     const handleMouseUp = () => {
-        if (!isDragging || !tempPosition) {
+        if (isDragging && tempPosition) {
+            // Moving: keep same size
+            const newLeftPercent = tempPosition.left
+            const newTopPercent = tempPosition.top
+            
+            // Convert from CSS coords (top-left origin, %) to PDF coords (bottom-left origin, points)
+            const newX1 = (newLeftPercent / 100) * field.pageWidth
+            const newY2 = field.pageHeight - (newTopPercent / 100) * field.pageHeight
+            const newX2 = newX1 + fieldWidth
+            const newY1 = newY2 - fieldHeight
+            
+            const newRect: [number, number, number, number] = [newX1, newY1, newX2, newY2]
+            onPositionChange(field.id, newRect)
+            
             setIsDragging(false)
-            return
+            setTempPosition(null)
+        } else if (isResizing && tempPosition && tempSize) {
+            // Resizing: update both position and size
+            const newLeftPercent = tempPosition.left
+            const newTopPercent = tempPosition.top
+            const newWidthPercent = tempSize.width
+            const newHeightPercent = tempSize.height
+            
+            // Convert from CSS coords (top-left origin, %) to PDF coords (bottom-left origin, points)
+            const newX1 = (newLeftPercent / 100) * field.pageWidth
+            const newY2 = field.pageHeight - (newTopPercent / 100) * field.pageHeight
+            const newWidth = (newWidthPercent / 100) * field.pageWidth
+            const newHeight = (newHeightPercent / 100) * field.pageHeight
+            const newX2 = newX1 + newWidth
+            const newY1 = newY2 - newHeight
+            
+            const newRect: [number, number, number, number] = [newX1, newY1, newX2, newY2]
+            onPositionChange(field.id, newRect)
+            
+            setIsResizing(null)
+            setTempPosition(null)
+            setTempSize(null)
+        } else {
+            setIsDragging(false)
+            setIsResizing(null)
         }
-        
-        // Convert percentage position back to PDF coordinates
-        const newLeftPercent = tempPosition.left
-        const newTopPercent = tempPosition.top
-        
-        // Convert from CSS coords (top-left origin, %) to PDF coords (bottom-left origin, points)
-        const newX1 = (newLeftPercent / 100) * field.pageWidth
-        const newY2 = field.pageHeight - (newTopPercent / 100) * field.pageHeight
-        const newX2 = newX1 + fieldWidth
-        const newY1 = newY2 - fieldHeight
-        
-        const newRect: [number, number, number, number] = [newX1, newY1, newX2, newY2]
-        
-        onPositionChange(field.id, newRect)
-        
-        setIsDragging(false)
-        setTempPosition(null)
     }
     
     React.useEffect(() => {
-        if (isDragging) {
+        if (isDragging || isResizing) {
             window.addEventListener('mousemove', handleMouseMove)
             window.addEventListener('mouseup', handleMouseUp)
             
@@ -337,7 +415,13 @@ function FieldOverlay({
                 window.removeEventListener('mouseup', handleMouseUp)
             }
         }
-    }, [isDragging, dragOffset, tempPosition])
+    }, [isDragging, isResizing, dragOffset, tempPosition, tempSize])
+    
+    const resizeHandleStyle: React.CSSProperties = {
+        position: 'absolute',
+        backgroundColor: 'rgba(59, 130, 246, 1)',
+        border: '1px solid white',
+    }
     
     return (
         <div
@@ -348,18 +432,58 @@ function FieldOverlay({
                 position: 'absolute',
                 left: displayLeft,
                 top: displayTop,
-                width: `${widthPercent}%`,
-                height: `${heightPercent}%`,
+                width: displayWidth,
+                height: displayHeight,
                 backgroundColor,
                 border: isSelected ? '3px solid rgba(59, 130, 246, 1)' : '2px solid rgba(59, 130, 246, 0.6)',
                 borderRadius: '4px',
                 pointerEvents: 'auto',
-                zIndex: isDragging ? 20 : (isSelected ? 15 : 10),
-                cursor: isDragging ? 'grabbing' : 'grab',
+                zIndex: isDragging || isResizing ? 20 : (isSelected ? 15 : 10),
+                cursor: isDragging ? 'grabbing' : (isResizing ? `${isResizing}-resize` : 'grab'),
                 boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
             }}
             title={`${field.name} (${field.type || 'Unknown'})`}
         >
+            {/* Resize handles - only show when selected */}
+            {isSelected && (
+                <>
+                    {/* Corner handles */}
+                    <div
+                        onMouseDown={(e) => handleResizeMouseDown(e, 'nw')}
+                        style={{ ...resizeHandleStyle, top: '-4px', left: '-4px', width: '8px', height: '8px', cursor: 'nw-resize' }}
+                    />
+                    <div
+                        onMouseDown={(e) => handleResizeMouseDown(e, 'ne')}
+                        style={{ ...resizeHandleStyle, top: '-4px', right: '-4px', width: '8px', height: '8px', cursor: 'ne-resize' }}
+                    />
+                    <div
+                        onMouseDown={(e) => handleResizeMouseDown(e, 'sw')}
+                        style={{ ...resizeHandleStyle, bottom: '-4px', left: '-4px', width: '8px', height: '8px', cursor: 'sw-resize' }}
+                    />
+                    <div
+                        onMouseDown={(e) => handleResizeMouseDown(e, 'se')}
+                        style={{ ...resizeHandleStyle, bottom: '-4px', right: '-4px', width: '8px', height: '8px', cursor: 'se-resize' }}
+                    />
+                    {/* Edge handles */}
+                    <div
+                        onMouseDown={(e) => handleResizeMouseDown(e, 'n')}
+                        style={{ ...resizeHandleStyle, top: '-4px', left: '50%', transform: 'translateX(-50%)', width: '20px', height: '8px', cursor: 'n-resize' }}
+                    />
+                    <div
+                        onMouseDown={(e) => handleResizeMouseDown(e, 's')}
+                        style={{ ...resizeHandleStyle, bottom: '-4px', left: '50%', transform: 'translateX(-50%)', width: '20px', height: '8px', cursor: 's-resize' }}
+                    />
+                    <div
+                        onMouseDown={(e) => handleResizeMouseDown(e, 'w')}
+                        style={{ ...resizeHandleStyle, left: '-4px', top: '50%', transform: 'translateY(-50%)', width: '8px', height: '20px', cursor: 'w-resize' }}
+                    />
+                    <div
+                        onMouseDown={(e) => handleResizeMouseDown(e, 'e')}
+                        style={{ ...resizeHandleStyle, right: '-4px', top: '50%', transform: 'translateY(-50%)', width: '8px', height: '20px', cursor: 'e-resize' }}
+                    />
+                </>
+            )}
+            
             <div
                 className="field-overlay-label"
                 style={{
@@ -453,25 +577,48 @@ export function PdfEditor() {
                     // Update the underlying PdfFormField's rect
                     if (field.fieldRef) {
                         field.fieldRef.rect = newRect
+                        // Regenerate appearance to fit new size
+                        if (field.fieldRef.generateAppearance) {
+                            field.fieldRef.generateAppearance()
+                        }
                     }
                     return { ...field, rect: newRect }
                 }
                 return field
             })
         )
+        // Force PDF re-render
+        setPdfVersion(v => v + 1)
     }
 
     const handleRemoveField = (fieldId: string) => {
         const fieldToRemove = extractedFields.find(f => f.id === fieldId)
         if (!fieldToRemove || !pdfDoc?.acroform || !fieldToRemove.fieldRef) return
 
-        // For widget-only fields, remove the parent (which will cascade to remove the widget)
-        // For combined fields, remove the field itself
         const isWidgetOnly = !!fieldToRemove.fieldRef.parent
-        const targetToDelete = isWidgetOnly ? fieldToRemove.fieldRef.parent : fieldToRemove.fieldRef
         
-        if (targetToDelete) {
-            pdfDoc.deleteObject(targetToDelete)
+        if (isWidgetOnly) {
+            const parent = fieldToRemove.fieldRef.parent!
+            const siblings = parent.children.filter(child => child !== fieldToRemove.fieldRef)
+            
+            if (siblings.length > 0) {
+                // There are other widgets sharing this parent, just remove this one widget
+                // Remove from parent's children array
+                parent.children = siblings
+                
+                // Delete just the widget object
+                pdfDoc.deleteObject(fieldToRemove.fieldRef)
+                
+                console.log(`Removed widget from parent. ${siblings.length} sibling(s) remaining.`)
+            } else {
+                // This is the last widget, delete the parent (which cascades to delete this widget)
+                pdfDoc.deleteObject(parent)
+                
+                console.log('Removed last widget and parent field.')
+            }
+        } else {
+            // Combined field, delete the field itself
+            pdfDoc.deleteObject(fieldToRemove.fieldRef)
         }
 
         // Remove from state

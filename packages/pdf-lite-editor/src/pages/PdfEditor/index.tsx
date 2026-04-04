@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { PdfViewer } from '@/components/PdfViewer'
 import {
     MousePointer2,
@@ -18,6 +20,8 @@ import {
     FileText,
     Eye,
     Layers,
+    X,
+    Settings,
 } from 'lucide-react'
 import { PdfDocument } from 'pdf-lite'
 
@@ -43,6 +47,7 @@ type ExtractedField = {
     value: string
     pageHeight: number
     pageWidth: number
+    fieldRef?: any // Reference to the actual PdfFormField object
 }
 
 type LayerItem = {
@@ -209,8 +214,22 @@ function LayerListButton({ onClick }: LayerListButtonProps) {
 }
 
 // Field overlay component to render AcroForm fields as visual overlays
-function FieldOverlay({ field }: { field: ExtractedField }) {
+function FieldOverlay({ 
+    field, 
+    onPositionChange,
+    onSelect,
+    isSelected
+}: { 
+    field: ExtractedField
+    onPositionChange: (fieldId: string, newRect: [number, number, number, number]) => void
+    onSelect: (fieldId: string) => void
+    isSelected: boolean
+}) {
     if (!field.rect) return null
+    
+    const [isDragging, setIsDragging] = useState(false)
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+    const [tempPosition, setTempPosition] = useState<{ left: number; top: number } | null>(null)
     
     // PDF rect format: [x1, y1, x2, y2] where (x1,y1) is lower-left, (x2,y2) is upper-right
     const [x1, y1, x2, y2] = field.rect
@@ -224,6 +243,10 @@ function FieldOverlay({ field }: { field: ExtractedField }) {
     const widthPercent = (fieldWidth / field.pageWidth) * 100
     const heightPercent = (fieldHeight / field.pageHeight) * 100
     
+    // Use temp position if dragging, otherwise use calculated position
+    const displayLeft = tempPosition ? `${tempPosition.left}%` : `${leftPercent}%`
+    const displayTop = tempPosition ? `${tempPosition.top}%` : `${topPercent}%`
+    
     // Map field types to colors
     const colorMap: Record<string, string> = {
         Text: 'rgba(59, 130, 246, 0.3)', // blue
@@ -235,20 +258,102 @@ function FieldOverlay({ field }: { field: ExtractedField }) {
     
     const backgroundColor = field.type ? colorMap[field.type] : 'rgba(156, 163, 175, 0.3)'
     
+    const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        // Select the field on click
+        onSelect(field.id)
+        
+        const target = e.currentTarget as HTMLElement
+        const parent = target.offsetParent as HTMLElement
+        if (!parent) return
+        
+        const rect = target.getBoundingClientRect()
+        
+        setDragOffset({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        })
+        setIsDragging(true)
+    }
+    
+    const handleMouseMove = (e: MouseEvent) => {
+        if (!isDragging) return
+        
+        const target = document.querySelector(`[data-field-id="${field.id}"]`) as HTMLElement
+        if (!target) return
+        
+        const parent = target.offsetParent as HTMLElement
+        if (!parent) return
+        
+        const parentRect = parent.getBoundingClientRect()
+        
+        // Calculate new position in pixels relative to parent
+        const newLeft = e.clientX - parentRect.left - dragOffset.x
+        const newTop = e.clientY - parentRect.top - dragOffset.y
+        
+        // Convert to percentage
+        const newLeftPercent = (newLeft / parentRect.width) * 100
+        const newTopPercent = (newTop / parentRect.height) * 100
+        
+        setTempPosition({ left: newLeftPercent, top: newTopPercent })
+    }
+    
+    const handleMouseUp = () => {
+        if (!isDragging || !tempPosition) {
+            setIsDragging(false)
+            return
+        }
+        
+        // Convert percentage position back to PDF coordinates
+        const newLeftPercent = tempPosition.left
+        const newTopPercent = tempPosition.top
+        
+        // Convert from CSS coords (top-left origin, %) to PDF coords (bottom-left origin, points)
+        const newX1 = (newLeftPercent / 100) * field.pageWidth
+        const newY2 = field.pageHeight - (newTopPercent / 100) * field.pageHeight
+        const newX2 = newX1 + fieldWidth
+        const newY1 = newY2 - fieldHeight
+        
+        const newRect: [number, number, number, number] = [newX1, newY1, newX2, newY2]
+        
+        onPositionChange(field.id, newRect)
+        
+        setIsDragging(false)
+        setTempPosition(null)
+    }
+    
+    React.useEffect(() => {
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove)
+            window.addEventListener('mouseup', handleMouseUp)
+            
+            return () => {
+                window.removeEventListener('mousemove', handleMouseMove)
+                window.removeEventListener('mouseup', handleMouseUp)
+            }
+        }
+    }, [isDragging, dragOffset, tempPosition])
+    
     return (
         <div
             className="field-overlay-container"
+            data-field-id={field.id}
+            onMouseDown={handleMouseDown}
             style={{
                 position: 'absolute',
-                left: `${leftPercent}%`,
-                top: `${topPercent}%`,
+                left: displayLeft,
+                top: displayTop,
                 width: `${widthPercent}%`,
                 height: `${heightPercent}%`,
                 backgroundColor,
-                border: '2px solid rgba(59, 130, 246, 0.6)',
+                border: isSelected ? '3px solid rgba(59, 130, 246, 1)' : '2px solid rgba(59, 130, 246, 0.6)',
                 borderRadius: '4px',
                 pointerEvents: 'auto',
-                zIndex: 10,
+                zIndex: isDragging ? 20 : (isSelected ? 15 : 10),
+                cursor: isDragging ? 'grabbing' : 'grab',
+                boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
             }}
             title={`${field.name} (${field.type || 'Unknown'})`}
         >
@@ -284,6 +389,53 @@ export function PdfEditor() {
     const [activeView, setActiveView] = useState<'pdf' | 'text'>('pdf')
     const [extractedFields, setExtractedFields] = useState<ExtractedField[]>([])
     const [showAcroFormLayer, setShowAcroFormLayer] = useState<boolean>(true)
+    const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
+
+    const selectedField = extractedFields.find(f => f.id === selectedFieldId) || null
+
+    const handleFieldSelect = (fieldId: string) => {
+        setSelectedFieldId(fieldId)
+    }
+
+    const handleFieldPropertyChange = (property: string, value: any) => {
+        if (!selectedFieldId) return
+        
+        setExtractedFields(prevFields => 
+            prevFields.map(field => {
+                if (field.id === selectedFieldId && field.fieldRef) {
+                    // Update the underlying PdfFormField
+                    if (property === 'name') {
+                        field.fieldRef.name = value
+                    } else if (property === 'value') {
+                        field.fieldRef.value = value
+                    } else if (property === 'fontSize') {
+                        // Update font size in default appearance
+                        if (field.fieldRef.fontSize !== undefined) {
+                            field.fieldRef.fontSize = parseFloat(value) || 12
+                        }
+                    }
+                    return { ...field, [property]: value }
+                }
+                return field
+            })
+        )
+    }
+
+    const handleFieldPositionChange = (fieldId: string, newRect: [number, number, number, number]) => {
+        // Update the extractedFields state
+        setExtractedFields(prevFields => 
+            prevFields.map(field => {
+                if (field.id === fieldId) {
+                    // Update the underlying PdfFormField's rect
+                    if (field.fieldRef) {
+                        field.fieldRef.rect = newRect
+                    }
+                    return { ...field, rect: newRect }
+                }
+                return field
+            })
+        )
+    }
 
     const handleFileUpload = async (
         event: React.ChangeEvent<HTMLInputElement>,
@@ -333,6 +485,7 @@ export function PdfEditor() {
                                 value: field.value || '',
                                 pageHeight: pageHeight,
                                 pageWidth: pageWidth,
+                                fieldRef: field, // Store reference to the actual field
                             })
                         }
                         
@@ -402,7 +555,7 @@ export function PdfEditor() {
                     pointer-events: none !important;
                 }
             `}</style>
-            <div className="mx-auto grid max-w-[1600px] grid-cols-[240px_minmax(0,1fr)] gap-4 items-start">
+            <div className={`mx-auto grid ${selectedFieldId ? 'max-w-[2000px] grid-cols-[240px_minmax(0,1fr)_320px]' : 'max-w-[1600px] grid-cols-[240px_minmax(0,1fr)]'} gap-4 items-start`}>
                 <Card className="sticky top-6 flex h-[calc(100vh-48px)] flex-col rounded-[24px] border-slate-200 shadow-sm">
                     <CardContent className="flex h-full flex-col gap-4 p-4">
                         <div>
@@ -607,7 +760,13 @@ export function PdfEditor() {
                                                         <div className="relative">
                                                             {page}
                                                             {showAcroFormLayer && pageFields.map(field => (
-                                                                <FieldOverlay key={field.id} field={field} />
+                                                                <FieldOverlay 
+                                                                    key={field.id} 
+                                                                    field={field} 
+                                                                    onPositionChange={handleFieldPositionChange}
+                                                                    onSelect={handleFieldSelect}
+                                                                    isSelected={field.id === selectedFieldId}
+                                                                />
                                                             ))}
                                                         </div>
                                                     </div>
@@ -627,6 +786,154 @@ export function PdfEditor() {
                         </Card>
                     )}
                 </div>
+
+                {/* Field Configuration Sidebar */}
+                {selectedFieldId && selectedField && (
+                    <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 shadow-sm overflow-hidden">
+                        <CardContent className="flex h-full flex-col p-0">
+                            <div className="flex items-center justify-between p-4 border-b">
+                                <div className="flex items-center gap-2">
+                                    <Settings className="h-4 w-4 text-slate-600" />
+                                    <h2 className="font-semibold text-sm">Field Properties</h2>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedFieldId(null)}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="field-name" className="text-xs font-semibold text-slate-700">
+                                        Field Name
+                                    </Label>
+                                    <Input
+                                        id="field-name"
+                                        value={selectedField.name}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldPropertyChange('name', e.target.value)}
+                                        className="h-8 text-sm"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="field-type" className="text-xs font-semibold text-slate-700">
+                                        Field Type
+                                    </Label>
+                                    <Input
+                                        id="field-type"
+                                        value={selectedField.type || 'Unknown'}
+                                        disabled
+                                        className="h-8 text-sm bg-slate-50"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="field-value" className="text-xs font-semibold text-slate-700">
+                                        Default Value
+                                    </Label>
+                                    <Input
+                                        id="field-value"
+                                        value={selectedField.value}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldPropertyChange('value', e.target.value)}
+                                        className="h-8 text-sm"
+                                    />
+                                </div>
+
+                                {selectedField.fieldRef && selectedField.fieldRef.fontSize !== undefined && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="font-size" className="text-xs font-semibold text-slate-700">
+                                            Font Size
+                                        </Label>
+                                        <Input
+                                            id="font-size"
+                                            type="number"
+                                            value={selectedField.fieldRef.fontSize || 12}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldPropertyChange('fontSize', e.target.value)}
+                                            className="h-8 text-sm"
+                                            min="6"
+                                            max="72"
+                                        />
+                                    </div>
+                                )}
+
+                                {selectedField.rect && (
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold text-slate-700">
+                                            Position & Size
+                                        </Label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div className="space-y-1">
+                                                <Label htmlFor="pos-x" className="text-xs text-slate-600">
+                                                    X
+                                                </Label>
+                                                <Input
+                                                    id="pos-x"
+                                                    type="number"
+                                                    value={selectedField.rect[0].toFixed(2)}
+                                                    disabled
+                                                    className="h-8 text-sm bg-slate-50"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label htmlFor="pos-y" className="text-xs text-slate-600">
+                                                    Y
+                                                </Label>
+                                                <Input
+                                                    id="pos-y"
+                                                    type="number"
+                                                    value={selectedField.rect[1].toFixed(2)}
+                                                    disabled
+                                                    className="h-8 text-sm bg-slate-50"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label htmlFor="width" className="text-xs text-slate-600">
+                                                    Width
+                                                </Label>
+                                                <Input
+                                                    id="width"
+                                                    type="number"
+                                                    value={(selectedField.rect[2] - selectedField.rect[0]).toFixed(2)}
+                                                    disabled
+                                                    className="h-8 text-sm bg-slate-50"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label htmlFor="height" className="text-xs text-slate-600">
+                                                    Height
+                                                </Label>
+                                                <Input
+                                                    id="height"
+                                                    type="number"
+                                                    value={(selectedField.rect[3] - selectedField.rect[1]).toFixed(2)}
+                                                    disabled
+                                                    className="h-8 text-sm bg-slate-50"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="page-num" className="text-xs font-semibold text-slate-700">
+                                        Page Number
+                                    </Label>
+                                    <Input
+                                        id="page-num"
+                                        value={selectedField.page}
+                                        disabled
+                                        className="h-8 text-sm bg-slate-50"
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     )

@@ -7,7 +7,8 @@
     },
     "scripts": {
         "dev": "vite dev --port 3000",
-        "compile": "npx shadcn@latest add badge button card separator -y && vite build",
+        "shadcn": "npx shadcn@latest add badge button card separator input label -y",
+        "compile": "pnpm shadcn && vite build",
         "preview": "vite preview",
         "test": "vitest run",
         "storybook": "storybook dev -p 6006",

@@ -66,9 +66,30 @@ export function PdfViewer(props: PdfViewerProps) {
     const { pageWrapper = (page) => page } = props
     const [numberOfPages, setNumberOfPages] = useState<number>(0)
     const [isDocumentReady, setIsDocumentReady] = useState<boolean>(false)
-
     const containerRef = useRef<HTMLDivElement | null>(null)
     const [containerWidth, setContainerWidth] = useState<number>()
+    const [blobUrl, setBlobUrl] = useState<string | undefined>()
+
+    useEffect(() => {
+        if (props.file instanceof Blob) {
+            const url = URL.createObjectURL(props.file)
+            setBlobUrl(url)
+
+            return () => {
+                URL.revokeObjectURL(url)
+                setBlobUrl(undefined)
+            }
+        } else if (props.file instanceof Uint8Array) {
+            const blob = new Blob([new Uint8Array(props.file)], { type: 'application/pdf' })
+            const url = URL.createObjectURL(blob)
+            setBlobUrl(url)
+
+            return () => {
+                URL.revokeObjectURL(url)
+                setBlobUrl(undefined)
+            }
+        }
+    }, [props.file])
 
     const onResize = useCallback<ResizeObserverCallback>((entries) => {
         const [entry] = entries
@@ -94,13 +115,13 @@ export function PdfViewer(props: PdfViewerProps) {
 
     useResizeObserver(containerRef.current, {}, onResize)
 
-    const fileKey = typeof props.file === 'string' ? props.file : undefined
+    const fileKey = typeof props.file === 'string' ? props.file : blobUrl
 
     const document = useMemo(() => {
         return (
             <Document
                 key={fileKey}
-                file={props.file as any}
+                file={blobUrl ?? (props.file as string | File | Uint8Array)}
                 onLoadError={(error) => {
                     alert('Error while loading PDF:' + error)
                 }}

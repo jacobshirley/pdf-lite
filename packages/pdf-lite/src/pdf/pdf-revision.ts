@@ -240,7 +240,12 @@ export class PdfRevision extends PdfObject {
                 this.xref.removeObject(object)
             }
 
-            object.onDelete?.()
+            const otherObjectsToDelete = object.onDelete?.()
+            if (otherObjectsToDelete) {
+                this.deleteObject(...otherObjectsToDelete)
+            }
+
+            object.setModified(false)
 
             deleted = true
         }

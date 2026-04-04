@@ -890,8 +890,46 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return this.appearanceStates.includes(setting)
     }
 
-    onDelete(): void {
-        // Clean up widget annotation references in the page's Annots array
+    onDelete(): PdfIndirectObject[] {
+        const toBeDeleted = new Set<PdfIndirectObject>()
+
+        // Collect appearance stream objects for deletion
+        const apDict = this.appearanceStreamDict
+        if (apDict) {
+            const n = apDict.get('N')
+            if (n instanceof PdfObjectReference) {
+                const resolved = n.resolve()
+                if (resolved) toBeDeleted.add(resolved)
+            } else if (n instanceof PdfDictionary) {
+                for (const key of n.keys()) {
+                    const entry = n.get(key.value)
+                    if (entry instanceof PdfObjectReference) {
+                        const resolved = entry.resolve()
+                        if (resolved) toBeDeleted.add(resolved)
+                    }
+                }
+            }
+
+            // Also collect down and rollover appearances
+            for (const appearanceKey of ['D', 'R'] as const) {
+                const appearance = apDict.get(appearanceKey)
+                if (appearance instanceof PdfObjectReference) {
+                    const resolved = appearance.resolve()
+                    if (resolved) toBeDeleted.add(resolved)
+                } else if (appearance instanceof PdfDictionary) {
+                    for (const key of appearance.keys()) {
+                        const entry = appearance.get(key.value)
+                        if (entry instanceof PdfObjectReference) {
+                            const resolved = entry.resolve()
+                            if (resolved) toBeDeleted.add(resolved)
+                        }
+                    }
+                }
+            }
+        }
+
+        // FIRST: Remove from page Annots to prevent PDF.js from rendering during cleanup
+        // This must be done BEFORE clearing values/appearances
         const page = this.page
         if (page) {
             const annots = page.annotations
@@ -905,8 +943,57 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
             })
         }
 
-        // Clean up from parent/children relationships
+        // Also remove all children widgets from their pages AND mark them for deletion
+        for (const child of this.children) {
+            // Collect child's appearance streams for deletion
+            const childApDict = child.appearanceStreamDict
+            if (childApDict) {
+                const n = childApDict.get('N')
+                if (n instanceof PdfObjectReference) {
+                    const resolved = n.resolve()
+                    if (resolved) toBeDeleted.add(resolved)
+                } else if (n instanceof PdfDictionary) {
+                    for (const key of n.keys()) {
+                        const entry = n.get(key.value)
+                        if (entry instanceof PdfObjectReference) {
+                            const resolved = entry.resolve()
+                            if (resolved) toBeDeleted.add(resolved)
+                        }
+                    }
+                }
+            }
+
+            const childPage = child.page
+            if (childPage) {
+                const childAnnots = childPage.annotations
+                childAnnots.items = childAnnots.items.filter((r) => {
+                    if (!(r instanceof PdfObjectReference)) return true
+                    try {
+                        return r.resolve() !== child
+                    } catch {
+                        return true
+                    }
+                })
+            }
+            // Clear child appearance streams and values
+            child.content.delete('V')
+            child.content.delete('AP')
+            child.content.delete('AS')
+
+            // CRITICAL: Add the child widget object itself to the deletion set
+            toBeDeleted.add(child)
+        }
+
+        // Clear appearance streams and values to prevent ghosting in PDF viewers
+        this.content.delete('V') // Delete value
+        this.content.delete('AP') // Delete appearance dictionary
+        this.content.delete('AS') // Delete appearance state
+
+        // If this is a child field, also clear appearance from parent
+        // Child fields often share appearance with their parent field
         const parent = this.parent
+
+        // Clean up from parent/children relationships
         if (parent) {
             parent.children = parent.children.filter((child) => child !== this)
         }
@@ -918,6 +1005,8 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         if (this._form) {
             this._form.fields = this._form.fields.filter((f) => f !== this)
         }
+
+        return Array.from(toBeDeleted)
     }
 
     private static _fallbackCtor?: new (

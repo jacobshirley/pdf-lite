@@ -163,7 +163,13 @@ export abstract class PdfObject {
         return btoa(binary)
     }
 
+    /**
+     * Convert the object to a JSON-serializable representation. This is useful for debugging, logging, or any scenario where you want a human-readable representation of the object. Note that this method should not include any circular references and should only include properties that are relevant for understanding the object's state.
+     */
     abstract toJSON(): object
 
-    onDelete?(): void
+    /**
+     * Optional method that can be implemented by subclasses to specify any related objects that should also be deleted when this object is deleted. This is useful for objects that have references to other objects (e.g., a page object that references content streams, resources, etc.)
+     */
+    onDelete?(): PdfObject[]
 }

@@ -69,6 +69,24 @@ export function PdfViewer(props: PdfViewerProps) {
     const containerRef = useRef<HTMLDivElement | null>(null)
     const [containerWidth, setContainerWidth] = useState<number>()
     const [blobUrl, setBlobUrl] = useState<string | undefined>()
+    
+    // Scroll position preservation
+    const savedScrollPosition = useRef<number>(0)
+    const previousFile = useRef<typeof props.file | null>(null)
+    
+    // Save scroll position when file is about to change
+    useEffect(() => {
+        if (previousFile.current && previousFile.current !== props.file) {
+            const scrollContainer = containerRef.current?.parentElement
+            if (scrollContainer) {
+                savedScrollPosition.current = scrollContainer.scrollTop
+            }
+            // Reset document ready state when file changes
+            setIsDocumentReady(false)
+            setNumberOfPages(0)
+        }
+        previousFile.current = props.file
+    }, [props.file])
 
     useEffect(() => {
         if (props.file instanceof Blob) {
@@ -120,7 +138,6 @@ export function PdfViewer(props: PdfViewerProps) {
     const document = useMemo(() => {
         return (
             <Document
-                key={fileKey}
                 file={blobUrl ?? (props.file as string | File | Uint8Array)}
                 onLoadError={(error) => {
                     alert('Error while loading PDF:' + error)
@@ -155,6 +172,24 @@ export function PdfViewer(props: PdfViewerProps) {
         numberOfPages,
         containerWidth,
     ])
+    
+    // Restore scroll position after document renders
+    useEffect(() => {
+        if (isDocumentReady && savedScrollPosition.current > 0) {
+            const scrollContainer = containerRef.current?.parentElement
+            if (scrollContainer) {
+                // Multiple attempts to handle async rendering
+                const restore = () => {
+                    scrollContainer.scrollTop = savedScrollPosition.current
+                }
+                
+                restore()
+                setTimeout(restore, 50)
+                setTimeout(restore, 150)
+                setTimeout(restore, 300)
+            }
+        }
+    }, [isDocumentReady, numberOfPages])
 
     return (
         <div className={props.className} ref={containerRef}>

@@ -14,12 +14,16 @@ export class PdfButtonFormField extends PdfFormField {
 
     constructor(other?: PdfIndirectObject | { form?: PdfAcroForm }) {
         super(other)
-        if (this.isWidget && this.appearanceStates.length === 0) {
+        this.isWidget ??= true
+
+        if (!other || (this.isWidget && this.appearanceStates.length === 0)) {
             this.initWidget()
         }
     }
 
     private initWidget() {
+        this.fieldType ||= 'Button'
+        this.borderWidth ||= 1
         this.rect ||= [0, 0, 50, 50]
         this.generateAppearance({
             onStateName: this.onState ?? 'Yes',
@@ -28,6 +32,8 @@ export class PdfButtonFormField extends PdfFormField {
     }
 
     override set isWidget(val: boolean) {
+        if (this.isWidget === val) return
+
         super.isWidget = val
         // Only initialize the widget if it has no existing appearances.
         // `appearanceStream` is write-only on PdfFormField, so instead check

@@ -26,7 +26,7 @@ import {
     Plus,
     Copy,
 } from 'lucide-react'
-import { PdfDocument, PdfFormField, PdfTextFormField, PdfIndirectObject, PdfStream } from 'pdf-lite'
+import { PdfDocument, PdfFormField, PdfTextFormField, PdfButtonFormField, PdfIndirectObject, PdfStream } from 'pdf-lite'
 
 type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
 
@@ -518,6 +518,7 @@ export function PdfEditor() {
     const [showAcroFormLayer, setShowAcroFormLayer] = useState<boolean>(true)
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
     const [pdfVersion, setPdfVersion] = useState<number>(0) // Track PDF modifications
+    const [draggedFieldType, setDraggedFieldType] = useState<FieldType | null>(null)
 
     const selectedField = extractedFields.find(f => f.id === selectedFieldId) || null
 
@@ -633,25 +634,27 @@ export function PdfEditor() {
         setPdfVersion(v => v + 1)
     }
 
-    const handleAddField = (type: FieldType) => {
+    const handleAddField = (type: FieldType, options?: { pageNumber?: number; x?: number; y?: number; width?: number; height?: number }) => {
         if (!pdfDoc?.acroform) return
 
-        // Get the first page (or create one if none exists)
+        // Get the target page
+        const targetPageNumber = options?.pageNumber || 1
         const pages = pdfDoc.pages.toArray()
         if (pages.length === 0) {
             alert('No pages in PDF')
             return
         }
 
-        const page = pages[0]
+        const page = pages[targetPageNumber - 1] || pages[0]
         const pageHeight = page.height
         const pageWidth = page.width
 
-        // Create a new field with default position and size
-        const defaultX = 100
-        const defaultY = pageHeight - 200 // Near top of page
-        const defaultWidth = 200
-        const defaultHeight = 30
+        // Use provided coordinates or default position
+        // Checkboxes are smaller by default
+        const defaultX = options?.x !== undefined ? options.x : 100
+        const defaultY = options?.y !== undefined ? options.y : pageHeight - 200
+        const defaultWidth = options?.width || (type === 'Checkbox' ? 20 : 200)
+        const defaultHeight = options?.height || (type === 'Checkbox' ? 20 : 30)
 
         const newRect: [number, number, number, number] = [
             defaultX,
@@ -673,10 +676,38 @@ export function PdfEditor() {
             combinedField.name = fieldName
             combinedField.value = ''
             combinedField.rect = newRect
-            combinedField.page = page
+            combinedField.parentRef = page.reference // Set page reference (page is read-only getter)
             combinedField.defaultAppearance = '/Helv 12 Tf 0 g' // Set default appearance
             
+            // Set form reference
+            if (pdfDoc.acroform) {
+                (combinedField as any)._form = pdfDoc.acroform
+            }
+            
+            // Generate initial appearance
+            if (combinedField.generateAppearance) {
+                combinedField.generateAppearance()
+            }
+            
             newField = combinedField
+        } else if (type === 'Checkbox') {
+            // Create checkbox button field
+            const checkboxField = new PdfButtonFormField()
+            checkboxField.name = fieldName
+            checkboxField.rect = newRect
+            checkboxField.parentRef = page.reference
+            
+            // Set form reference
+            if (pdfDoc.acroform) {
+                (checkboxField as any)._form = pdfDoc.acroform
+            }
+            
+            // Generate initial appearance
+            if (checkboxField.generateAppearance) {
+                checkboxField.generateAppearance()
+            }
+            
+            newField = checkboxField
         }
 
         if (!newField) {
@@ -692,7 +723,7 @@ export function PdfEditor() {
             id: `field_${extractedFields.length}`,
             name: fieldName,
             type: type,
-            page: 1,
+            page: targetPageNumber,
             rect: newRect,
             value: '',
             pageHeight: pageHeight,
@@ -702,6 +733,9 @@ export function PdfEditor() {
 
         setExtractedFields(prevFields => [...prevFields, newExtractedField])
         setSelectedFieldId(newExtractedField.id)
+        
+        // Force PDF re-render to show the new field
+        setPdfVersion(v => v + 1)
     }
 
     const handleCloneField = (fieldId: string) => {
@@ -953,6 +987,57 @@ export function PdfEditor() {
         URL.revokeObjectURL(url)
     }
 
+    const handleFieldDragStart = (type: FieldType) => {
+        setDraggedFieldType(type)
+    }
+
+    const handleFieldDragEnd = () => {
+        setDraggedFieldType(null)
+    }
+
+    const handlePageDrop = (e: React.DragEvent, pageNumber: number, pageElement: HTMLElement) => {
+        e.preventDefault()
+        if (!draggedFieldType || !pdfDoc) return
+
+        // Get the page dimensions from the first page (or target page)
+        const pages = pdfDoc.pages.toArray()
+        const page = pages[pageNumber - 1]
+        if (!page) return
+
+        const pageHeight = page.height
+        const pageWidth = page.width
+
+        // Get drop position relative to the page element
+        const pageRect = pageElement.getBoundingClientRect()
+        const dropX = e.clientX - pageRect.left
+        const dropY = e.clientY - pageRect.top
+
+        // Convert from CSS pixels to PDF coordinates
+        // The page element is scaled, so we need to account for that
+        const scaleX = pageWidth / pageRect.width
+        const scaleY = pageHeight / pageRect.height
+
+        // PDF coordinates: bottom-left origin
+        // CSS coordinates: top-left origin
+        const pdfX = dropX * scaleX
+        const pdfY = pageHeight - (dropY * scaleY)
+
+        // Create field at drop position (centered on cursor)
+        // Checkboxes are smaller
+        const fieldWidth = draggedFieldType === 'Checkbox' ? 20 : 200
+        const fieldHeight = draggedFieldType === 'Checkbox' ? 20 : 30
+        
+        handleAddField(draggedFieldType, {
+            pageNumber,
+            x: pdfX - fieldWidth / 2,
+            y: pdfY + fieldHeight / 2,
+            width: fieldWidth,
+            height: fieldHeight
+        })
+
+        setDraggedFieldType(null)
+    }
+
     return (
         <div className="min-h-screen bg-slate-100 p-4 text-slate-900">
             <style>{`
@@ -1008,9 +1093,12 @@ export function PdfEditor() {
                                 <Button
                                     type="button"
                                     variant="ghost"
+                                    draggable
+                                    onDragStart={() => handleFieldDragStart('Text')}
+                                    onDragEnd={handleFieldDragEnd}
                                     onClick={() => handleAddField('Text')}
                                     disabled={!pdfDoc}
-                                    className="h-10 w-full justify-start rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
+                                    className="h-10 w-full justify-start rounded-xl cursor-grab active:cursor-grabbing transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
                                     <Type className="mr-2 h-4 w-4" />
@@ -1019,9 +1107,12 @@ export function PdfEditor() {
                                 <Button
                                     type="button"
                                     variant="ghost"
+                                    draggable
+                                    onDragStart={() => handleFieldDragStart('Checkbox')}
+                                    onDragEnd={handleFieldDragEnd}
                                     onClick={() => handleAddField('Checkbox')}
                                     disabled={!pdfDoc}
-                                    className="h-10 w-full justify-start rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
+                                    className="h-10 w-full justify-start rounded-xl cursor-grab active:cursor-grabbing transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
                                     <CheckSquare className="mr-2 h-4 w-4" />
@@ -1171,6 +1262,8 @@ export function PdfEditor() {
                                                 f => f.page === context.pageNumber
                                             )
                                             
+                                            let pageContainerElement: HTMLDivElement | null = null
+                                            
                                             return (
                                                 <div
                                                     key={context.pageNumber}
@@ -1186,7 +1279,25 @@ export function PdfEditor() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                                    <div 
+                                                        ref={(el) => { pageContainerElement = el }}
+                                                        className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                                                        onDragOver={(e) => {
+                                                            if (draggedFieldType) {
+                                                                e.preventDefault()
+                                                                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.05)'
+                                                            }
+                                                        }}
+                                                        onDragLeave={(e) => {
+                                                            e.currentTarget.style.backgroundColor = 'white'
+                                                        }}
+                                                        onDrop={(e) => {
+                                                            e.currentTarget.style.backgroundColor = 'white'
+                                                            if (pageContainerElement) {
+                                                                handlePageDrop(e, context.pageNumber, pageContainerElement)
+                                                            }
+                                                        }}
+                                                    >
                                                         <div className="relative">
                                                             {page}
                                                             {showAcroFormLayer && pageFields.map(field => (

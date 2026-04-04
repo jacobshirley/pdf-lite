@@ -36,6 +36,7 @@ export class PdfAnnotation extends PdfIndirectObject<
         Rect: PdfArray<PdfNumber>
         F: PdfNumber
         AP?: PdfAppearanceStreamDictionary | PdfObjectReference
+        BS?: PdfDictionary
         P?: PdfObjectReference
         Parent?: PdfObjectReference<PdfPage>
         A?: PdfDictionary<{
@@ -100,6 +101,7 @@ export class PdfAnnotation extends PdfIndirectObject<
             rect.map((num) => new PdfNumber(num)),
         )
         this.content.set('Rect', rectArray)
+        this.updateAppearance()
     }
 
     get annotationFlags(): number {
@@ -166,6 +168,25 @@ export class PdfAnnotation extends PdfIndirectObject<
         this.flags_.locked = value
     }
 
+    get borderWidth(): number {
+        const bs = this.content.get('BS')?.as(PdfDictionary)
+        if (bs) {
+            return bs.get('W')?.as(PdfNumber)?.value ?? 1
+        }
+        return 0
+    }
+
+    set borderWidth(width: number) {
+        let bs = this.content.get('BS')?.as(PdfDictionary)
+        if (!bs) {
+            bs = new PdfDictionary()
+            bs.set('S', new PdfName('S')) // Solid style
+            this.content.set('BS', bs)
+        }
+        bs.set('W', new PdfNumber(width))
+        this.updateAppearance()
+    }
+
     get appearanceStreamDict(): PdfAppearanceStreamDictionary | null {
         const apDict = this.content.get('AP')
         if (!apDict) return null
@@ -209,5 +230,9 @@ export class PdfAnnotation extends PdfIndirectObject<
 
     get page(): PdfPage | null {
         return this.parentRef?.resolve(PdfPage) ?? null
+    }
+
+    updateAppearance() {
+        // Base annotation doesn't have a default appearance, but subclasses can override this method to regenerate it when properties change
     }
 }

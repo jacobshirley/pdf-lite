@@ -184,6 +184,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         } else {
             this.content.set('DR', resources)
         }
+        this.updateAppearance()
     }
 
     /**

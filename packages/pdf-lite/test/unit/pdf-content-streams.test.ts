@@ -291,12 +291,18 @@ describe('TextBlock', () => {
         expect(tb.getSegments()[1].text).toBe('Line2')
     })
 
-    it('getLocalTransform returns first line transform', () => {
+    it('getLocalTransform returns identity (container)', () => {
         const s = makeStream('BT /F1 12 Tf 9 0 0 9 100 700 Tm (Hello) Tj ET')
         const tb = s.nodes[0] as TextBlock
         const tm = tb.getLocalTransform()
-        expect(tm.e).toBeCloseTo(100, 0)
-        expect(tm.f).toBeCloseTo(700, 0)
+        expect(tm.a).toBe(1)
+        expect(tm.d).toBe(1)
+        expect(tm.e).toBe(0)
+        expect(tm.f).toBe(0)
+        // Segment carries the actual transform
+        const segTm = tb.getSegments()[0].getLocalTransform()
+        expect(segTm.e).toBeCloseTo(100, 0)
+        expect(segTm.f).toBeCloseTo(700, 0)
     })
 
     it('text getter concatenates all lines', () => {

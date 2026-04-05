@@ -481,16 +481,14 @@ function decodeTextOperand(
 }
 
 export class Text extends ContentNode {
-    prev?: ContentNode
+    prev?: Text
 
     get text(): string {
-        const lastTj =
-            this.ops.findLast('Tj') ?? this.prev?.ops.findLast('Tj') ?? null
+        const lastTj = this.ops.findLast('Tj')
         if (lastTj) {
             return decodeTextOperand(lastTj, 'Tj', this.font)
         } else {
-            const lastTJ =
-                this.ops.findLast('TJ') ?? this.prev?.ops.findLast('TJ') ?? null
+            const lastTJ = this.ops.findLast('TJ')
             if (lastTJ) {
                 return decodeTextOperand(lastTJ, 'TJ', this.font)
             }
@@ -500,8 +498,8 @@ export class Text extends ContentNode {
     }
 
     get font(): PdfFont | null {
-        const lastTf =
-            this.ops.findLast('Tf') ?? this.prev?.ops.findLast('Tf') ?? null
+        const lastTf = this.ops.findLast('Tf')
+
         if (lastTf) {
             const parts = lastTf.split(' ')
             if (parts.length >= 2) {
@@ -510,24 +508,22 @@ export class Text extends ContentNode {
             }
         }
 
-        return null
+        return this.prev?.font ?? null
     }
 
     get charSpace(): number {
-        const lastTc =
-            this.ops.findLast('Tc') ?? this.prev?.ops.findLast('Tc') ?? null
+        const lastTc = this.ops.findLast('Tc')
         if (lastTc) {
             const parts = lastTc.split(' ')
             if (parts.length >= 1) {
                 return parseFloat(parts[0])
             }
         }
-        return 0
+        return this.prev?.charSpace ?? 0
     }
 
     get wordSpace(): number {
-        const lastTw =
-            this.ops.findLast('Tw') ?? this.prev?.ops.findLast('Tw') ?? null
+        const lastTw = this.ops.findLast('Tw')
         if (lastTw) {
             const parts = lastTw.split(' ')
             if (parts.length >= 1) {
@@ -535,12 +531,11 @@ export class Text extends ContentNode {
             }
         }
 
-        return 0
+        return this.prev?.wordSpace ?? 0
     }
 
     get fontSize(): number {
-        const lastTf =
-            this.ops.findLast('Tf') ?? this.prev?.ops.findLast('Tf') ?? null
+        const lastTf = this.ops.findLast('Tf')
         if (lastTf) {
             const parts = lastTf.split(' ')
             if (parts.length >= 2) {
@@ -548,53 +543,53 @@ export class Text extends ContentNode {
             }
         }
 
-        return 12
+        return this.prev?.fontSize ?? 12
     }
 
     getLocalTransform(): Matrix {
-        // Tm sets position absolutely
         let matrix = this.prev?.getLocalTransform() ?? Matrix.identity()
-        const lastTm = this.ops.findLast('Tm')
-
-        if (lastTm) {
-            const parts = lastTm.split(/\s+/)
-            if (parts.length >= 7) {
-                matrix = matrix.multiply(
-                    new Matrix({
-                        a: parseFloat(parts[0]),
-                        b: parseFloat(parts[1]),
-                        c: parseFloat(parts[2]),
-                        d: parseFloat(parts[3]),
-                        e: parseFloat(parts[4]),
-                        f: parseFloat(parts[5]),
-                    }),
-                )
-            }
-        }
-
-        const lastTd = this.ops.findLast('Td')
-        if (lastTd) {
-            const match = lastTd.match(
-                /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+Td/,
-            )
-            if (match) {
-                matrix = matrix.translate(
-                    parseFloat(match[1]),
-                    parseFloat(match[2]),
-                )
-            }
-        }
-
-        const lastTD = this.ops.findLast('TD')
-        if (lastTD) {
-            const match = lastTD.match(
-                /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+TD/,
-            )
-            if (match) {
-                matrix = matrix.translate(
-                    parseFloat(match[1]),
-                    parseFloat(match[2]),
-                )
+        for (const op of this.ops.ops) {
+            switch (op.split(' ').at(-1)) {
+                case 'Tm': {
+                    // Tm is absolute — replaces the text matrix
+                    const parts = op.split(/\s+/)
+                    if (parts.length >= 7) {
+                        matrix = new Matrix({
+                            a: parseFloat(parts[0]),
+                            b: parseFloat(parts[1]),
+                            c: parseFloat(parts[2]),
+                            d: parseFloat(parts[3]),
+                            e: parseFloat(parts[4]),
+                            f: parseFloat(parts[5]),
+                        })
+                    }
+                    break
+                }
+                case 'Td': {
+                    const match = op.match(
+                        /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+Td/,
+                    )
+                    if (match) {
+                        matrix = matrix.translate(
+                            parseFloat(match[1]),
+                            parseFloat(match[2]),
+                        )
+                    }
+                    break
+                }
+                case 'TD':
+                    {
+                        const match = op.match(
+                            /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+TD/,
+                        )
+                        if (match) {
+                            matrix = matrix.translate(
+                                parseFloat(match[1]),
+                                parseFloat(match[2]),
+                            )
+                        }
+                    }
+                    break
             }
         }
 
@@ -672,9 +667,7 @@ export class TextBlock extends ContentNode {
     }
 
     getLocalTransform(): Matrix {
-        if (this.segments.length > 0) {
-            return this.segments[0].getLocalTransform()
-        }
+        // TextBlock is just a container; segments carry their own transforms
         return Matrix.identity()
     }
 
@@ -751,11 +744,9 @@ export class TextBlock extends ContentNode {
         }
 
         for (const op of ops) {
+            currentLineOps.push(op)
             if (op.endsWith(' Tj') || op.endsWith(' TJ')) {
-                currentLineOps.push(op)
                 flushLine()
-            } else {
-                currentLineOps.push(op)
             }
         }
 

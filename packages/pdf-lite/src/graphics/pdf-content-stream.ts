@@ -443,7 +443,8 @@ function computeTJAdvance(
 ): number {
     let total = 0
     // Parse TJ array elements: strings and numbers alternating
-    const re = /(\([^)]*\)|<[^>]*>)|(-?\d+(?:\.\d+)?)/g
+    // String regex handles escaped parens like \) inside (C\))
+    const re = /(\((?:[^()\\]|\\.)*\)|<[^>]*>)|(-?\d+(?:\.\d+)?)/g
     let m: RegExpExecArray | null
     while ((m = re.exec(operand)) !== null) {
         if (m[1]) {
@@ -463,14 +464,14 @@ function decodeTextOperand(
     font: PdfFont | null,
 ): string {
     const operand = op.slice(0, -(operator.length + 1)).trim()
-    if (operator === 'Tj') {
+    if (operator === 'Tj' || operator === "'") {
         return font
             ? font.decode(parsePdfStringOperand(operand))
             : extractLiteral(operand)
     }
     // TJ array like [(Hello) -10 (World)]
     let result = ''
-    const re = /(\([^)]*\)|<[^>]*>)/g
+    const re = /(\((?:[^()\\]|\\.)*\)|<[^>]*>)/g
     let m: RegExpExecArray | null
     while ((m = re.exec(operand)) !== null) {
         result += font
@@ -492,6 +493,16 @@ export class Text extends ContentNode {
             if (lastTJ) {
                 return decodeTextOperand(lastTJ, 'TJ', this.font)
             }
+        }
+
+        const lastQuote = this.ops.findLast("'")
+        if (lastQuote) {
+            return decodeTextOperand(lastQuote, "'", this.font)
+        }
+
+        const lastDblQuote = this.ops.findLast('"')
+        if (lastDblQuote) {
+            return decodeTextOperand(lastDblQuote, '"', this.font)
         }
 
         return ''
@@ -546,15 +557,110 @@ export class Text extends ContentNode {
         return this.prev?.fontSize ?? 12
     }
 
-    getLocalTransform(): Matrix {
-        let matrix = this.prev?.getLocalTransform() ?? Matrix.identity()
+    get textLeading(): number {
+        const lastTL = this.ops.findLast('TL')
+        if (lastTL) {
+            return parseFloat(lastTL.split(' ')[0])
+        }
+        return this.prev?.textLeading ?? 0
+    }
+
+    /**
+     * Compute the text-space advance width of this segment's show operator.
+     * After Tj/TJ, the text position advances by this amount.
+     */
+    getTextAdvance(): number {
+        const fontSize = this.fontSize
+        const font = this.font
+        const tc = this.charSpace
+        const tw = this.wordSpace
+
+        const lastTJ = this.ops.findLast('TJ')
+        const lastTj = this.ops.findLast('Tj')
+        const lastQuote = this.ops.findLast("'")
+        const lastDblQuote = this.ops.findLast('"')
+
+        if (lastTJ) {
+            return computeTJAdvance(
+                lastTJ.slice(0, -3).trim(),
+                font,
+                fontSize,
+                tc,
+                tw,
+            )
+        }
+        if (lastTj) {
+            return computeTjAdvance(
+                lastTj.slice(0, -3).trim(),
+                font,
+                fontSize,
+                tc,
+                tw,
+            )
+        }
+        if (lastQuote) {
+            return computeTjAdvance(
+                lastQuote.slice(0, -2).trim(),
+                font,
+                fontSize,
+                tc,
+                tw,
+            )
+        }
+        if (lastDblQuote) {
+            const operand = lastDblQuote.slice(0, -2).trim()
+            const strMatch = operand.match(/(\((?:[^()\\]|\\.)*\)|<[^>]*>)\s*$/)
+            if (strMatch) {
+                return computeTjAdvance(strMatch[1], font, fontSize, tc, tw)
+            }
+        }
+        if (font && this.text) {
+            let total = 0
+            for (const ch of [...this.text]) {
+                total +=
+                    font.getCharacterWidth(ch.charCodeAt(0), fontSize) ??
+                    fontSize * 0.6
+                total += tc
+                if (ch === ' ') total += tw
+            }
+            return total
+        }
+        if (this.text) {
+            return this.text.length * fontSize * 0.6
+        }
+        return 0
+    }
+
+    /**
+     * Resolve the text matrix (Tm) and text line matrix (Tlm) at the START
+     * of this segment's text rendering.
+     * - Tm: the actual position where glyphs are placed
+     * - Tlm: the base for Td/TD/T* calculations (not advanced by text rendering)
+     */
+    private resolveTextState(): { tm: Matrix; tlm: Matrix } {
+        let tm: Matrix
+        let tlm: Matrix
+
+        if (this.prev) {
+            // After prev rendered text, Tm advanced by text width.
+            // Tlm stays wherever prev's positioning ops left it.
+            const prevState = this.prev.resolveTextState()
+            const prevAdvance = this.prev.getTextAdvance()
+            tm = prevState.tm.translate(prevAdvance, 0)
+            tlm = prevState.tlm
+        } else {
+            tm = Matrix.identity()
+            tlm = Matrix.identity()
+        }
+
+        // Process positioning operators in this segment
         for (const op of this.ops.ops) {
             switch (op.split(' ').at(-1)) {
                 case 'Tm': {
-                    // Tm is absolute — replaces the text matrix
+                    // Tm is absolute — sets both Tm and Tlm
                     const parts = op.split(/\s+/)
                     if (parts.length >= 7) {
-                        matrix = new Matrix({
+                        const m = new Matrix({
                             a: parseFloat(parts[0]),
                             b: parseFloat(parts[1]),
                             c: parseFloat(parts[2]),
@@ -562,69 +668,63 @@ export class Text extends ContentNode {
                             e: parseFloat(parts[4]),
                             f: parseFloat(parts[5]),
                         })
+                        tm = m
+                        tlm = m
                     }
                     break
                 }
                 case 'Td': {
+                    // Td is relative to Tlm, sets both Tlm and Tm
                     const match = op.match(
                         /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+Td/,
                     )
                     if (match) {
-                        matrix = matrix.translate(
+                        tlm = tlm.translate(
                             parseFloat(match[1]),
                             parseFloat(match[2]),
                         )
+                        tm = tlm
                     }
                     break
                 }
-                case 'TD':
-                    {
-                        const match = op.match(
-                            /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+TD/,
+                case 'TD': {
+                    // TD is like Td (also sets TL = -ty)
+                    const match = op.match(
+                        /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+TD/,
+                    )
+                    if (match) {
+                        tlm = tlm.translate(
+                            parseFloat(match[1]),
+                            parseFloat(match[2]),
                         )
-                        if (match) {
-                            matrix = matrix.translate(
-                                parseFloat(match[1]),
-                                parseFloat(match[2]),
-                            )
-                        }
+                        tm = tlm
                     }
                     break
+                }
+                case 'T*':
+                case "'":
+                case '"': {
+                    // Move to next line: Tlm += (0, -TL), Tm = Tlm
+                    const tl = this.textLeading
+                    tlm = tlm.translate(0, -tl)
+                    tm = tlm
+                    break
+                }
             }
         }
 
-        return matrix
+        return { tm, tlm }
+    }
+
+    getLocalTransform(): Matrix {
+        return this.resolveTextState().tm
     }
 
     getLocalBoundingBox(): BoundingBox {
         const fontSize = this.fontSize
         const descenderHeight = fontSize * 0.3
         const ascenderHeight = fontSize * 0.95
-        const font = this.font
-        const tc = this.charSpace
-        const tw = this.wordSpace
-
-        let textWidth = 0
-        const lastTJ = this.ops.findLast('TJ')
-        const lastTj = this.ops.findLast('Tj')
-
-        if (lastTJ) {
-            const operand = lastTJ.slice(0, -3).trim()
-            textWidth = computeTJAdvance(operand, font, fontSize, tc, tw)
-        } else if (lastTj) {
-            const operand = lastTj.slice(0, -3).trim()
-            textWidth = computeTjAdvance(operand, font, fontSize, tc, tw)
-        } else if (font && this.text) {
-            const chars = [...this.text]
-            for (const ch of chars) {
-                const w = font.getCharacterWidth(ch.charCodeAt(0), fontSize)
-                textWidth += w ?? fontSize * 0.6
-                textWidth += tc
-                if (ch === ' ') textWidth += tw
-            }
-        } else if (this.text) {
-            textWidth = this.text.length * fontSize * 0.6
-        }
+        const textWidth = this.getTextAdvance()
 
         return {
             x: 0,
@@ -733,7 +833,11 @@ export class TextBlock extends ContentNode {
         const flushLine = () => {
             if (
                 currentLineOps.some(
-                    (o) => o.endsWith(' Tj') || o.endsWith(' TJ'),
+                    (o) =>
+                        o.endsWith(' Tj') ||
+                        o.endsWith(' TJ') ||
+                        o.endsWith(" '") ||
+                        o.endsWith(' "'),
                 )
             ) {
                 const text = new Text(page)
@@ -745,7 +849,12 @@ export class TextBlock extends ContentNode {
 
         for (const op of ops) {
             currentLineOps.push(op)
-            if (op.endsWith(' Tj') || op.endsWith(' TJ')) {
+            if (
+                op.endsWith(' Tj') ||
+                op.endsWith(' TJ') ||
+                op.endsWith(" '") ||
+                op.endsWith(' "')
+            ) {
                 flushLine()
             }
         }

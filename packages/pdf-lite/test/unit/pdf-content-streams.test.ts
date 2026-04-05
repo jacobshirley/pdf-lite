@@ -152,7 +152,7 @@ describe('PdfContentStream.add() and dataAsString', () => {
         const s = makeStream('')
         const block = new TextBlock()
         block.moveTo(0, 0)
-        block.showText('Hello')
+        block.text = 'Hello'
         s.add(block)
         expect(s.dataAsString).toContain('/F1 12 Tf')
         expect(s.dataAsString).toContain('0 0 Td')
@@ -273,8 +273,9 @@ describe('TextBlock', () => {
         font.resourceName = 'F1'
 
         const block = new TextBlock()
-        block.font(font, 12)
-        block.showText('Hello World')
+        block.font = font
+        block.fontSize = 12
+        block.text = 'Hello World'
 
         // Build stream content wrapped in BT/ET as the parser expects
         const reparsed = makeStream(`BT ${block.toString()} ET`)
@@ -288,8 +289,9 @@ describe('TextBlock', () => {
         font.resourceName = 'F2'
 
         const block = new TextBlock()
-        block.font(font, 12)
-        block.showText('Hello €')
+        block.font = font
+        block.fontSize = 12
+        block.text = 'Hello €'
         expect(block.toString()).toContain('<00480065006c006c006f002020ac>') // "Hello €" as hex CIDs
 
         // Re-parse: without the page/fontMap the text getter falls back
@@ -331,8 +333,8 @@ describe('TextBlock', () => {
         font.resourceName = 'F2'
 
         const block = new TextBlock()
-        block.font(font, 12)
-        block.showText('Hello')
+        block.font = font
+        block.fontSize = 12
         block.text = 'AB'
         // Should encode as hex CIDs
         expect(block.toString().includes('<00410042>')).toBe(true)

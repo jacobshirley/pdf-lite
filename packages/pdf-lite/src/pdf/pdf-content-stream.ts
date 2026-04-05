@@ -218,10 +218,10 @@ export abstract class ContentNode {
 }
 
 export class TextBlock extends ContentNode {
-    private x: number
-    private y: number
-    private _font: PdfFont | null = null
-    private _fontSize: number
+    x: number
+    y: number
+    font: PdfFont | null = null
+    fontSize: number
     text: string
 
     constructor(ops?: string[], page?: PdfPage) {
@@ -229,8 +229,8 @@ export class TextBlock extends ContentNode {
         const [x, y] = this.parseXY(ops)
         this.x = x
         this.y = y
-        this._font = this.parseCurrentFont(ops)
-        this._fontSize = this.parseCurrentFontSize(ops)
+        this.font = this.parseCurrentFont(ops)
+        this.fontSize = this.parseCurrentFontSize(ops)
         this.text = this.parseText(ops)
     }
 
@@ -239,32 +239,17 @@ export class TextBlock extends ContentNode {
         this.y = y
     }
 
-    showText(text: string) {
-        this.text = text
-    }
-
-    font(font: PdfFont, fontSize?: number) {
-        this._font = font
-        if (typeof fontSize === 'number') {
-            this._fontSize = fontSize
-        }
-    }
-
-    fontSize(size: number) {
-        this._fontSize = size
-    }
-
     toString(): string {
         const ops = new ContentOps()
         ops.bt()
-        if (this._font) {
-            ops.tf(this._font.resourceName, this._fontSize)
+        if (this.font) {
+            ops.tf(this.font.resourceName, this.fontSize)
         } else {
-            ops.tf('F1', this._fontSize)
+            ops.tf('F1', this.fontSize)
         }
         ops.td(this.x, this.y)
-        if (this._font) {
-            ops.tj(this._font.encode(this.text))
+        if (this.font) {
+            ops.tj(this.font.encode(this.text))
         } else {
             ops.tj(this.text)
         }
@@ -295,8 +280,8 @@ export class TextBlock extends ContentNode {
         for (const op of ops) {
             if (op.endsWith(' Tj')) {
                 const operand = op.slice(0, -3).trim()
-                result += this._font
-                    ? this._font.decode(parsePdfStringOperand(operand))
+                result += this.font
+                    ? this.font.decode(parsePdfStringOperand(operand))
                     : extractLiteral(operand)
             } else if (op.endsWith(' TJ')) {
                 const operand = op.slice(0, -3).trim()
@@ -304,8 +289,8 @@ export class TextBlock extends ContentNode {
                 const re = /(\([^)]*\)|<[^>]*>)/g
                 let m: RegExpExecArray | null
                 while ((m = re.exec(operand)) !== null) {
-                    result += this._font
-                        ? this._font.decode(parsePdfStringOperand(m[1]))
+                    result += this.font
+                        ? this.font.decode(parsePdfStringOperand(m[1]))
                         : extractLiteral(m[1])
                 }
             }
@@ -315,7 +300,7 @@ export class TextBlock extends ContentNode {
     }
 
     private parseCurrentFont(ops: string[] = []): PdfFont | null {
-        if (this._font) return this._font
+        if (this.font) return this.font
         const fontOp = ops.find((op) => op.includes(' Tf'))
         if (!fontOp) return null
         const match = fontOp.match(/\/(\w+)\s+\d+(\.\d+)?\s+Tf/)

@@ -12,8 +12,9 @@ import {
 import {
     GraphicsBlock,
     PdfContentStream,
+    Text,
     TextBlock,
-} from './pdf-content-stream.js'
+} from '../graphics/pdf-content-stream.js'
 import { PdfFont } from '../fonts/pdf-font.js'
 
 type PdfPageDictionary = PdfDictionary<{
@@ -240,20 +241,22 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
             // Multiple content streams
             for (const ref of contentsEntry.items) {
                 const resolved = ref.resolve(PdfContentStream)
+                resolved.page = this
                 streams.push(resolved)
             }
         } else if (contentsEntry instanceof PdfObjectReference) {
             // Single content stream
             const resolved = contentsEntry.resolve(PdfContentStream)
+            resolved.page = this
             streams.push(resolved)
         }
 
         return streams
     }
 
-    extractTextBlocks(): TextBlock[] {
+    extractTextBlocks(): Text[] {
         const streams = this.contentStreams
-        const blocks: TextBlock[] = []
+        const blocks: Text[] = []
 
         for (const stream of streams) {
             blocks.push(...stream.textBlocks)

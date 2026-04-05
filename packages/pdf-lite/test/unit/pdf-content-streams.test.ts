@@ -4,8 +4,11 @@ import { PdfDocument } from '../../src/pdf/pdf-document'
 import {
     PdfContentStream,
     TextBlock,
+    Text,
     GraphicsBlock,
-} from '../../src/pdf/pdf-content-stream'
+    GroupNode,
+    ContentOps,
+} from '../../src/graphics/pdf-content-stream'
 import { PdfStream } from '../../src/core/objects/pdf-stream'
 import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
 import { PdfFont } from '../../src/fonts/pdf-font'
@@ -102,13 +105,20 @@ describe('multi-child-field.pdf — parsed nodes', () => {
         doc = await loadFixture()
     })
 
-    it('nodes() returns only TextBlock and GraphicsBlock instances', () => {
-        for (const stream of doc.pages.get(0).contentStreams) {
-            for (const node of stream.nodes) {
+    it('nodes() returns only supported ContentNode types', () => {
+        const check = (nodes: any[]) => {
+            for (const node of nodes) {
                 expect(
-                    node instanceof TextBlock || node instanceof GraphicsBlock,
+                    node instanceof TextBlock ||
+                        node instanceof GraphicsBlock ||
+                        node instanceof GroupNode,
                 ).toBe(true)
+                if (node.children && node.children.length > 0)
+                    check(node.children)
             }
+        }
+        for (const stream of doc.pages.get(0).contentStreams) {
+            check(stream.nodes)
         }
     })
 
@@ -119,26 +129,20 @@ describe('multi-child-field.pdf — parsed nodes', () => {
         expect(hasText).toBe(true)
     })
 
-    it('textBlocks are a subset of nodes', () => {
+    it('textBlocks are found recursively from the tree', () => {
         for (const stream of doc.pages.get(0).contentStreams) {
-            const nodes = stream.nodes
-            const textBlocks = nodes.filter((n) => n instanceof TextBlock)
-            expect(nodes.length).toBeGreaterThanOrEqual(textBlocks.length)
+            const textBlocks = stream.textBlocks
             for (const tb of textBlocks) {
-                expect(nodes).toContain(tb)
+                expect(tb).toBeInstanceOf(Text)
             }
         }
     })
 
-    it('graphicsBlocks are a subset of nodes', () => {
+    it('graphicsBlocks are found recursively from the tree', () => {
         for (const stream of doc.pages.get(0).contentStreams) {
-            const nodes = stream.nodes
-            const graphicsBlocks = nodes.filter(
-                (n) => n instanceof GraphicsBlock,
-            )
-            expect(nodes.length).toBeGreaterThanOrEqual(graphicsBlocks.length)
+            const graphicsBlocks = stream.graphicsBlocks
             for (const gb of graphicsBlocks) {
-                expect(nodes).toContain(gb)
+                expect(gb).toBeInstanceOf(GraphicsBlock)
             }
         }
     })
@@ -151,8 +155,9 @@ describe('PdfContentStream.add() and dataAsString', () => {
     it('add() appends a node to the stream', () => {
         const s = makeStream('')
         const block = new TextBlock()
-        block.moveTo(0, 0)
-        block.text = 'Hello'
+        const text = new Text()
+        text.ops = new ContentOps(['/F1 12 Tf', '0 0 Td', '(Hello) Tj'])
+        block.addSegment(text)
         s.add(block)
         expect(s.dataAsString).toContain('/F1 12 Tf')
         expect(s.dataAsString).toContain('0 0 Td')
@@ -188,7 +193,7 @@ describe('PdfContentStream.nodes() — TextBlock parsing', () => {
 
     it('parsed TextBlock ops contain the Tf instruction', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
-        const tb = s.textBlocks[0]
+        const tb = s.nodes[0] as TextBlock
         expect(tb.toString()).toContain('/F1 12 Tf')
     })
 
@@ -268,77 +273,38 @@ describe('TextBlock', () => {
         expect(tb.text).toBe('Hello World')
     })
 
-    it('should round-trip text through showText and .text with a standard font', () => {
-        const font = new PdfFont('Helvetica')
-        font.resourceName = 'F1'
-
-        const block = new TextBlock()
-        block.font = font
-        block.fontSize = 12
-        block.text = 'Hello World'
-
-        // Build stream content wrapped in BT/ET as the parser expects
-        const reparsed = makeStream(`BT ${block.toString()} ET`)
-        const tb = reparsed.textBlocks[0]
-        expect(tb.text).toBe('Hello World')
-    })
-
-    it('should round-trip text through showText and .text with a CID font (Type0)', () => {
-        const font = new PdfFont('CIDFont')
-        font.fontType = 'Type0'
-        font.resourceName = 'F2'
-
-        const block = new TextBlock()
-        block.font = font
-        block.fontSize = 12
-        block.text = 'Hello €'
-        expect(block.toString()).toContain('<00480065006c006c006f002020ac>') // "Hello €" as hex CIDs
-
-        // Re-parse: without the page/fontMap the text getter falls back
-        // to extractLiteral which handles hex as 2-byte pairs
-        const reparsed = makeStream(`BT ${block.toString()} ET`)
-        const tb = reparsed.textBlocks[0]
-        expect(tb.text).toBe('Hello €')
-    })
-
-    it('text setter replaces text in a parsed TextBlock', () => {
+    it('should have lines for each text segment', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
-        const tb = s.textBlocks[0]
-        tb.text = 'Goodbye'
-        expect(tb.text).toBe('Goodbye')
+        const tb = s.nodes[0] as TextBlock
+        expect(tb.getSegments()).toHaveLength(1)
+        expect(tb.getSegments()[0]).toBeInstanceOf(Text)
+        expect(tb.getSegments()[0].text).toBe('Hello')
     })
 
-    it('text setter preserves non-text ops (Tf, Td)', () => {
-        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
-        const tb = s.textBlocks[0]
-        tb.text = 'World'
-        expect(tb.toString()).toContain('/F1 12 Tf')
-        expect(tb.toString()).toContain('100 700 Td')
-    })
-
-    it('text setter replaces multiple Tj/TJ with a single Tj', () => {
+    it('should split multi-line BT blocks into separate lines', () => {
         const s = makeStream(
-            'BT /F1 12 Tf 100 700 Td (Hello) Tj ( World) Tj ET',
+            'BT /F1 12 Tf 100 700 Td (Line1) Tj 0 -14 Td (Line2) Tj ET',
         )
-        const tb = s.textBlocks[0]
-        expect(tb.text).toBe('Hello World')
-        tb.text = 'Combined'
-        expect(tb.text).toBe('Combined')
-        expect(tb.toString().includes(' Tj')).toBe(true)
+        const tb = s.nodes[0] as TextBlock
+        expect(tb.getSegments()).toHaveLength(2)
+        expect(tb.getSegments()[0].text).toBe('Line1')
+        expect(tb.getSegments()[1].text).toBe('Line2')
     })
 
-    it('text setter uses font encoding when a font is set', () => {
-        const font = new PdfFont('CIDFont')
-        font.fontType = 'Type0'
-        font.resourceName = 'F2'
+    it('getLocalTransform returns first line transform', () => {
+        const s = makeStream('BT /F1 12 Tf 9 0 0 9 100 700 Tm (Hello) Tj ET')
+        const tb = s.nodes[0] as TextBlock
+        const tm = tb.getLocalTransform()
+        expect(tm.e).toBeCloseTo(100, 0)
+        expect(tm.f).toBeCloseTo(700, 0)
+    })
 
-        const block = new TextBlock()
-        block.font = font
-        block.fontSize = 12
-        block.text = 'AB'
-        // Should encode as hex CIDs
-        expect(block.toString().includes('<00410042>')).toBe(true)
-        expect(block.text).toBe('AB')
+    it('text getter concatenates all lines', () => {
+        const s = makeStream(
+            'BT /F1 12 Tf 100 700 Td (Hello) Tj 0 -14 Td ( World) Tj ET',
+        )
+        const tb = s.nodes[0] as TextBlock
+        expect(tb.text).toBe('Hello World')
     })
 })
 

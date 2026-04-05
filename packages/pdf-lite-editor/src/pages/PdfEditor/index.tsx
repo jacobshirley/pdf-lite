@@ -34,8 +34,9 @@ import {
     PdfButtonFormField,
     PdfIndirectObject,
     PdfStream,
-    type TextBlock,
+    Text,
     type GraphicLine,
+    parseContentStreamForGraphics,
 } from 'pdf-lite'
 
 type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
@@ -70,7 +71,8 @@ type LayerItem = {
     visible: boolean
 }
 
-type ExtractedTextBlock = TextBlock & {
+type ExtractedTextBlock = {
+    block: Text
     id: string
     page: number
     pageHeight: number
@@ -655,7 +657,8 @@ function TextBlockOverlay({
     onSelect: (blockId: string) => void
     isSelected: boolean
 }) {
-    const { bbox, page, pageHeight, pageWidth } = textBlock
+    const { block, page, pageHeight, pageWidth } = textBlock
+    const bbox = block.getWorldBoundingBox()
 
     // PDF coordinates are bottom-left origin, convert to top-left for CSS
     const leftPercent = (bbox.x / pageWidth) * 100
@@ -693,7 +696,7 @@ function TextBlockOverlay({
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
             }}
-            title={`Text: "${textBlock.segments.map((s) => s.text).join('')}"`}
+            title={`Text: "${block.text}"`}
         />
     )
 }
@@ -866,10 +869,6 @@ export function PdfEditor() {
                     // Update the underlying PdfFormField's rect
                     if (field.fieldRef) {
                         field.fieldRef.rect = newRect
-                        // Regenerate appearance to fit new size
-                        if (field.fieldRef.generateAppearance) {
-                            field.fieldRef.generateAppearance()
-                        }
                     }
                     return { ...field, rect: newRect }
                 }
@@ -1275,8 +1274,9 @@ export function PdfEditor() {
                     try {
                         const blocks = page.extractTextBlocks()
                         for (const block of blocks) {
+                            if (block.text.trim().length === 0) continue
                             textBlocks.push({
-                                ...block,
+                                block,
                                 id: `text_block_${textBlockIndex++}`,
                                 page: pageNumber,
                                 pageHeight: page.height,
@@ -1302,15 +1302,19 @@ export function PdfEditor() {
                     const pageNumber = i + 1
 
                     try {
-                        const lines = page.extractGraphicLines()
-                        for (const line of lines) {
-                            graphicLines.push({
-                                ...line,
-                                id: `graphic_line_${graphicLineIndex++}`,
-                                page: pageNumber,
-                                pageHeight: page.height,
-                                pageWidth: page.width,
-                            })
+                        for (const stream of page.contentStreams) {
+                            const lines = parseContentStreamForGraphics(
+                                stream.dataAsString,
+                            )
+                            for (const line of lines) {
+                                graphicLines.push({
+                                    ...line,
+                                    id: `graphic_line_${graphicLineIndex++}`,
+                                    page: pageNumber,
+                                    pageHeight: page.height,
+                                    pageWidth: page.width,
+                                })
+                            }
                         }
                     } catch (error) {
                         console.warn(
@@ -1822,21 +1826,7 @@ export function PdfEditor() {
                                                                         />
                                                                     ),
                                                                 )}
-                                                            {showTextLayer &&
-                                                                pageGraphicLines.map(
-                                                                    (
-                                                                        graphicLine,
-                                                                    ) => (
-                                                                        <GraphicLineOverlay
-                                                                            key={
-                                                                                graphicLine.id
-                                                                            }
-                                                                            graphicLine={
-                                                                                graphicLine
-                                                                            }
-                                                                        />
-                                                                    ),
-                                                                )}
+                                                            {/* Graphics block overlays hidden for now */}
                                                         </div>
                                                     </div>
                                                 </div>

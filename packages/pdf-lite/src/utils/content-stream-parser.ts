@@ -18,7 +18,7 @@ export interface TextSegment {
     endX?: number
 }
 
-export interface TextBlock {
+export interface ParsedTextBlock {
     segments: TextSegment[]
     bbox: {
         x: number
@@ -180,8 +180,8 @@ export function parseContentStreamForText(
         resources?: PdfDictionary | null
         fontDict?: PdfDictionary | PdfObjectReference | null
     },
-): TextBlock[] {
-    const textBlocks: TextBlock[] = []
+): ParsedTextBlock[] {
+    const textBlocks: ParsedTextBlock[] = []
     let currentBlock: TextSegment[] | null = null
     let currentState: GraphicsState = {
         fontSize: 12,
@@ -714,13 +714,13 @@ function splitLineByHorizontalGap(
  * PDF often splits text on a single line into multiple BT...ET blocks.
  */
 function mergeBlocksOnSameLine(
-    blocks: TextBlock[],
+    blocks: ParsedTextBlock[],
     resolvedFonts: Map<string, PdfFont>,
-): TextBlock[] {
+): ParsedTextBlock[] {
     if (blocks.length === 0) return blocks
 
     // Group blocks by approximate Y coordinate (within 1.5 points tolerance)
-    const lineGroups = new Map<number, TextBlock[]>()
+    const lineGroups = new Map<number, ParsedTextBlock[]>()
     const yTolerance = 1.5 // Allow for slight vertical positioning variations in PDF text
 
     for (const block of blocks) {
@@ -743,7 +743,7 @@ function mergeBlocksOnSameLine(
     }
 
     // Merge blocks within each line group, but keep them separate if far apart
-    const merged: TextBlock[] = []
+    const merged: ParsedTextBlock[] = []
 
     for (const group of lineGroups.values()) {
         if (group.length === 1) {
@@ -763,7 +763,7 @@ function mergeBlocksOnSameLine(
             })
 
             // Group blocks that are horizontally adjacent
-            const horizontalGroups: TextBlock[][] = []
+            const horizontalGroups: ParsedTextBlock[][] = []
             for (const block of group) {
                 const blockX = block.segments[0]?.x ?? 0
                 const blockEndX = blockX + (block.bbox?.width ?? 0)

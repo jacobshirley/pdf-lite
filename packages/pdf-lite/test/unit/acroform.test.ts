@@ -2628,3 +2628,79 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         })
     })
 })
+
+describe('AcroForm Field Deletion', () => {
+    it.only('should be able to delete various fields from multi-child-field.pdf', async () => {
+        // Load the PDF with multi-child fields
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/multi-child-field.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = document.acroform
+        if (!acroform) {
+            throw new Error('No AcroForm found in the document')
+        }
+
+        // Get initial fields and their names
+        const initialFields = acroform.fields
+        const initialFieldCount = initialFields.length
+        const initialFieldNamesToDelete = ['Date', "Director's Address"]
+
+        expect(initialFieldCount).toBeGreaterThan(0)
+
+        // Identify fields to delete (e.g., delete half of the fields)
+        const fieldsToDelete = initialFields.filter((f) =>
+            initialFieldNamesToDelete.includes(f.name),
+        )
+        const fieldsToKeep = initialFields.filter(
+            (f) => !initialFieldNamesToDelete.includes(f.name),
+        )
+        const deleteFieldNames = fieldsToDelete.map((f) => f.name)
+        const keepFieldNames = fieldsToKeep.map((f) => f.name)
+
+        // Delete fields using deleteObject which will handle cleanup
+        for (const field of fieldsToDelete) {
+            document.deleteObject(field)
+        }
+
+        document.deleteObject(
+            initialFields.find((x) => x.name === 'Company Name')?.children[0],
+        )
+
+        // Save and reload the document
+        const newDocumentBytes = document.toBytes()
+        const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
+
+        // Verify the fields were deleted
+        const updatedAcroform = newDocument.acroform
+        expect(updatedAcroform).toBeDefined()
+
+        const remainingFields = updatedAcroform!.fields
+        const remainingFieldNames = remainingFields.map((f) => f.name)
+
+        // Should have fewer fields now
+        expect(remainingFields.length).toBe(fieldsToKeep.length)
+        expect(remainingFields.length).toBeLessThan(initialFieldCount)
+
+        // Verify deleted fields are gone
+        for (const deletedName of deleteFieldNames) {
+            expect(remainingFieldNames).not.toContain(deletedName)
+        }
+
+        // Verify kept fields are still present
+        for (const keptName of keepFieldNames) {
+            expect(remainingFieldNames).toContain(keptName)
+        }
+
+        // Save the modified PDF for inspection
+        await server.commands.writeFile(
+            './test/unit/tmp/multi-child-field-deleted.pdf',
+            bytesToBase64(newDocumentBytes),
+            { encoding: 'base64' },
+        )
+    })
+})

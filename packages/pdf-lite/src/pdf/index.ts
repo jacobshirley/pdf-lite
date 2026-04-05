@@ -1,3 +1,4 @@
+export * from '../graphics/pdf-content-stream.js'
 export * from './pdf-document.js'
 export * from './pdf-page.js'
 export * from './pdf-pages.js'

@@ -60,6 +60,45 @@ interface GraphicsState {
     charSpacing: number
     // Word spacing (Tw operator) - extra space added after space characters (code 32)
     wordSpacing: number
+    // Current Transformation Matrix [a, b, c, d, e, f]
+    // Transforms user space to page space: page_x = a*x + c*y + e, page_y = b*x + d*y + f
+    ctm: [number, number, number, number, number, number]
+}
+
+/**
+ * Multiply two 6-element PDF transformation matrices.
+ * Matrix [a, b, c, d, e, f] represents:
+ *   | a b 0 |
+ *   | c d 0 |
+ *   | e f 1 |
+ * Result = m1 × m2 (m1 applied first, then m2)
+ */
+function multiplyMatrix(
+    m1: [number, number, number, number, number, number],
+    m2: [number, number, number, number, number, number],
+): [number, number, number, number, number, number] {
+    return [
+        m1[0] * m2[0] + m1[1] * m2[2],
+        m1[0] * m2[1] + m1[1] * m2[3],
+        m1[2] * m2[0] + m1[3] * m2[2],
+        m1[2] * m2[1] + m1[3] * m2[3],
+        m1[4] * m2[0] + m1[5] * m2[2] + m2[4],
+        m1[4] * m2[1] + m1[5] * m2[3] + m2[5],
+    ]
+}
+
+/**
+ * Transform a point (x, y) through a CTM to get page-space coordinates.
+ */
+function transformPoint(
+    x: number,
+    y: number,
+    ctm: [number, number, number, number, number, number],
+): { x: number; y: number } {
+    return {
+        x: ctm[0] * x + ctm[2] * y + ctm[4],
+        y: ctm[1] * x + ctm[3] * y + ctm[5],
+    }
 }
 
 /**
@@ -132,7 +171,12 @@ export function parseContentStreamForText(
         tlm: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
         charSpacing: 0,
         wordSpacing: 0,
+        ctm: [1, 0, 0, 1, 0, 0],
     }
+    const stateStack: GraphicsState[] = []
+    let blockCtm: [number, number, number, number, number, number] = [
+        1, 0, 0, 1, 0, 0,
+    ]
 
     // Resolve fonts from resources if available
     const resolvedFonts = new Map<string, PdfFont>()
@@ -219,15 +263,87 @@ export function parseContentStreamForText(
     for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i]
 
+        // q - Save graphics state
+        if (token === 'q') {
+            stateStack.push({
+                ...currentState,
+                tm: { ...currentState.tm },
+                tlm: { ...currentState.tlm },
+                ctm: [...currentState.ctm],
+            })
+        }
+        // Q - Restore graphics state
+        else if (token === 'Q') {
+            if (stateStack.length > 0) {
+                currentState = stateStack.pop()!
+            }
+        }
+        // cm - Concat transformation matrix: a b c d e f cm
+        else if (token === 'cm') {
+            const f = parseFloat(tokens[i - 1])
+            const e = parseFloat(tokens[i - 2])
+            const d = parseFloat(tokens[i - 3])
+            const c = parseFloat(tokens[i - 4])
+            const b = parseFloat(tokens[i - 5])
+            const a = parseFloat(tokens[i - 6])
+            if (
+                !isNaN(a) &&
+                !isNaN(b) &&
+                !isNaN(c) &&
+                !isNaN(d) &&
+                !isNaN(e) &&
+                !isNaN(f)
+            ) {
+                currentState.ctm = multiplyMatrix(
+                    [a, b, c, d, e, f],
+                    currentState.ctm,
+                )
+            }
+        }
         // BT - Begin text
-        if (token === 'BT') {
+        else if (token === 'BT') {
             currentBlock = []
             currentState.tm = { x: 0, y: 0, scaleX: 1, scaleY: 1 }
             currentState.tlm = { x: 0, y: 0, scaleX: 1, scaleY: 1 }
+            blockCtm = [...currentState.ctm] as [
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+            ]
         }
         // ET - End text
         else if (token === 'ET') {
             if (currentBlock && currentBlock.length > 0) {
+                // Transform segments from user space to page space using the CTM
+                const isIdentity =
+                    blockCtm[0] === 1 &&
+                    blockCtm[1] === 0 &&
+                    blockCtm[2] === 0 &&
+                    blockCtm[3] === 1 &&
+                    blockCtm[4] === 0 &&
+                    blockCtm[5] === 0
+                if (!isIdentity) {
+                    for (const seg of currentBlock) {
+                        const origY = seg.y
+                        const p = transformPoint(seg.x, origY, blockCtm)
+                        seg.x = p.x
+                        seg.y = p.y
+                        if (seg.endX !== undefined) {
+                            const pe = transformPoint(seg.endX, origY, blockCtm)
+                            seg.endX = pe.x
+                        }
+                        // Scale fontSize by the CTM scale factor
+                        const ctmScaleY = Math.sqrt(
+                            blockCtm[1] * blockCtm[1] +
+                                blockCtm[3] * blockCtm[3],
+                        )
+                        seg.fontSize = seg.fontSize * ctmScaleY
+                    }
+                }
+
                 // Split the block by Y coordinate to separate lines
                 const lineBlocks = splitBlockByYCoordinate(currentBlock)
 
@@ -1125,12 +1241,45 @@ export function parseContentStreamForGraphics(
     let pathSegments: Array<{ x: number; y: number; w: number; h: number }> = []
     let currentX = 0
     let currentY = 0
+    let ctm: [number, number, number, number, number, number] = [
+        1, 0, 0, 1, 0, 0,
+    ]
+    const ctmStack: [number, number, number, number, number, number][] = []
 
     for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i]
 
+        // q - Save graphics state
+        if (token === 'q') {
+            ctmStack.push([...ctm])
+        }
+        // Q - Restore graphics state
+        else if (token === 'Q') {
+            if (ctmStack.length > 0) {
+                ctm = ctmStack.pop()!
+            }
+        }
+        // cm - Concat transformation matrix
+        else if (token === 'cm') {
+            const f = parseFloat(tokens[i - 1])
+            const e = parseFloat(tokens[i - 2])
+            const d = parseFloat(tokens[i - 3])
+            const c = parseFloat(tokens[i - 4])
+            const b = parseFloat(tokens[i - 5])
+            const a = parseFloat(tokens[i - 6])
+            if (
+                !isNaN(a) &&
+                !isNaN(b) &&
+                !isNaN(c) &&
+                !isNaN(d) &&
+                !isNaN(e) &&
+                !isNaN(f)
+            ) {
+                ctm = multiplyMatrix([a, b, c, d, e, f], ctm)
+            }
+        }
         // re - Rectangle path: x y width height re
-        if (token === 're') {
+        else if (token === 're') {
             const h = parseFloat(tokens[i - 1])
             const w = parseFloat(tokens[i - 2])
             const y = parseFloat(tokens[i - 3])
@@ -1183,12 +1332,33 @@ export function parseContentStreamForGraphics(
             token === 'b' ||
             token === 'b*'
         ) {
+            const isIdentity =
+                ctm[0] === 1 &&
+                ctm[1] === 0 &&
+                ctm[2] === 0 &&
+                ctm[3] === 1 &&
+                ctm[4] === 0 &&
+                ctm[5] === 0
+
             for (const seg of pathSegments) {
-                // Normalize negative widths/heights
-                const x = seg.w < 0 ? seg.x + seg.w : seg.x
-                const y = seg.h < 0 ? seg.y + seg.h : seg.y
-                const w = Math.abs(seg.w)
-                const h = Math.abs(seg.h)
+                let x = seg.w < 0 ? seg.x + seg.w : seg.x
+                let y = seg.h < 0 ? seg.y + seg.h : seg.y
+                let w = Math.abs(seg.w)
+                let h = Math.abs(seg.h)
+
+                if (!isIdentity) {
+                    // Transform the rectangle corners through CTM
+                    const p1 = transformPoint(x, y, ctm)
+                    const p2 = transformPoint(x + w, y + h, ctm)
+                    const minX = Math.min(p1.x, p2.x)
+                    const maxX = Math.max(p1.x, p2.x)
+                    const minY = Math.min(p1.y, p2.y)
+                    const maxY = Math.max(p1.y, p2.y)
+                    x = minX
+                    y = minY
+                    w = maxX - minX
+                    h = maxY - minY
+                }
 
                 // Only include paths with meaningful size (skip tiny dots)
                 if (w >= 2 || h >= 2) {

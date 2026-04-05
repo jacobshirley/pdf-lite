@@ -34,6 +34,8 @@ import {
     PdfButtonFormField,
     PdfIndirectObject,
     PdfStream,
+    type TextBlock,
+    type GraphicLine,
 } from 'pdf-lite'
 
 type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
@@ -66,6 +68,20 @@ type LayerItem = {
     name: string
     kind: string
     visible: boolean
+}
+
+type ExtractedTextBlock = TextBlock & {
+    id: string
+    page: number
+    pageHeight: number
+    pageWidth: number
+}
+
+type ExtractedGraphicLine = GraphicLine & {
+    id: string
+    page: number
+    pageHeight: number
+    pageWidth: number
 }
 
 type ToolButtonProps = {
@@ -629,6 +645,91 @@ function FieldOverlay({
     )
 }
 
+// Text block overlay component to render text appearance streams as visual overlays
+function TextBlockOverlay({
+    textBlock,
+    onSelect,
+    isSelected,
+}: {
+    textBlock: ExtractedTextBlock
+    onSelect: (blockId: string) => void
+    isSelected: boolean
+}) {
+    const { bbox, page, pageHeight, pageWidth } = textBlock
+
+    // PDF coordinates are bottom-left origin, convert to top-left for CSS
+    const leftPercent = (bbox.x / pageWidth) * 100
+    const topPercent = ((pageHeight - (bbox.y + bbox.height)) / pageHeight) * 100
+    const widthPercent = (bbox.width / pageWidth) * 100
+    const heightPercent = (bbox.height / pageHeight) * 100
+
+    return (
+        <div
+            className="text-block-overlay"
+            onClick={(e) => {
+                e.stopPropagation()
+                onSelect(textBlock.id)
+            }}
+            onDoubleClick={(e) => {
+                e.stopPropagation()
+                // TODO: Enable text editing mode
+                console.log('Edit text block:', textBlock)
+            }}
+            style={{
+                position: 'absolute',
+                left: `${leftPercent}%`,
+                top: `${topPercent}%`,
+                width: `${widthPercent}%`,
+                height: `${heightPercent}%`,
+                border: isSelected
+                    ? '2px solid rgba(234, 88, 12, 1)'
+                    : '1px solid rgba(234, 88, 12, 0.4)',
+                backgroundColor: isSelected
+                    ? 'rgba(234, 88, 12, 0.15)'
+                    : 'rgba(234, 88, 12, 0.08)',
+                borderRadius: '2px',
+                pointerEvents: 'auto',
+                zIndex: isSelected ? 15 : 10,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+            }}
+            title={`Text: "${textBlock.segments.map((s) => s.text).join('')}"`}
+        />
+    )
+}
+
+function GraphicLineOverlay({
+    graphicLine,
+}: {
+    graphicLine: ExtractedGraphicLine
+}) {
+    const { bbox, pageHeight, pageWidth } = graphicLine
+
+    const leftPercent = (bbox.x / pageWidth) * 100
+    const topPercent = ((pageHeight - (bbox.y + bbox.height)) / pageHeight) * 100
+    const widthPercent = (bbox.width / pageWidth) * 100
+    const heightPercent = (bbox.height / pageHeight) * 100
+
+    return (
+        <div
+            className="graphic-line-overlay"
+            style={{
+                position: 'absolute',
+                left: `${leftPercent}%`,
+                top: `${topPercent}%`,
+                width: `${widthPercent}%`,
+                height: `${Math.max(heightPercent, 0.3)}%`,
+                border: '1px solid rgba(220, 38, 38, 0.4)',
+                backgroundColor: 'rgba(220, 38, 38, 0.08)',
+                borderRadius: '1px',
+                pointerEvents: 'none',
+                zIndex: 5,
+            }}
+            title="Graphic line"
+        />
+    )
+}
+
 export function PdfEditor() {
     const [activeTool, setActiveTool] = useState<string>('select')
     const [uploadedFile, setUploadedFile] = useState<File | null>(null)
@@ -636,8 +737,18 @@ export function PdfEditor() {
     const [pdfDoc, setPdfDoc] = useState<PdfDocument | null>(null)
     const [activeView, setActiveView] = useState<'pdf' | 'text'>('pdf')
     const [extractedFields, setExtractedFields] = useState<ExtractedField[]>([])
+    const [extractedTextBlocks, setExtractedTextBlocks] = useState<
+        ExtractedTextBlock[]
+    >([])
+    const [extractedGraphicLines, setExtractedGraphicLines] = useState<
+        ExtractedGraphicLine[]
+    >([])
     const [showAcroFormLayer, setShowAcroFormLayer] = useState<boolean>(true)
+    const [showTextLayer, setShowTextLayer] = useState<boolean>(true)
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
+    const [selectedTextBlockId, setSelectedTextBlockId] = useState<
+        string | null
+    >(null)
     const [pdfVersion, setPdfVersion] = useState<number>(0) // Track PDF modifications
     const [draggedFieldType, setDraggedFieldType] = useState<FieldType | null>(
         null,
@@ -1081,7 +1192,7 @@ export function PdfEditor() {
                         object instanceof PdfIndirectObject &&
                         object.content instanceof PdfStream
                     ) {
-                        //object.content.removeAllFilters()
+                        object.content.removeAllFilters()
                     }
                 }
 
@@ -1152,6 +1263,65 @@ export function PdfEditor() {
 
                 setExtractedFields(fields)
 
+                // Extract text blocks from page content streams
+                const textBlocks: ExtractedTextBlock[] = []
+                const pages = document.pages.toArray()
+                let textBlockIndex = 0
+
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i]
+                    const pageNumber = i + 1
+
+                    try {
+                        const blocks = page.extractTextBlocks()
+                        for (const block of blocks) {
+                            textBlocks.push({
+                                ...block,
+                                id: `text_block_${textBlockIndex++}`,
+                                page: pageNumber,
+                                pageHeight: page.height,
+                                pageWidth: page.width,
+                            })
+                        }
+                    } catch (error) {
+                        console.warn(
+                            `Failed to extract text blocks from page ${pageNumber}:`,
+                            error,
+                        )
+                    }
+                }
+
+                setExtractedTextBlocks(textBlocks)
+
+                // Extract graphic lines from page content streams
+                const graphicLines: ExtractedGraphicLine[] = []
+                let graphicLineIndex = 0
+
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i]
+                    const pageNumber = i + 1
+
+                    try {
+                        const lines = page.extractGraphicLines()
+                        for (const line of lines) {
+                            graphicLines.push({
+                                ...line,
+                                id: `graphic_line_${graphicLineIndex++}`,
+                                page: pageNumber,
+                                pageHeight: page.height,
+                                pageWidth: page.width,
+                            })
+                        }
+                    } catch (error) {
+                        console.warn(
+                            `Failed to extract graphic lines from page ${pageNumber}:`,
+                            error,
+                        )
+                    }
+                }
+
+                setExtractedGraphicLines(graphicLines)
+
                 setUploadedFile(file)
                 setPdfDoc(document)
             } catch (error) {
@@ -1173,6 +1343,9 @@ export function PdfEditor() {
         setUploadedFile(null)
         setPdfDoc(null)
         setExtractedFields([])
+        setExtractedTextBlocks([])
+        setSelectedFieldId(null)
+        setSelectedTextBlockId(null)
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
@@ -1464,6 +1637,24 @@ export function PdfEditor() {
                                             Fields ({extractedFields.length})
                                         </Button>
                                     )}
+                                    {extractedTextBlocks.length > 0 && (
+                                        <Button
+                                            type="button"
+                                            variant={
+                                                showTextLayer
+                                                    ? 'default'
+                                                    : 'ghost'
+                                            }
+                                            size="sm"
+                                            onClick={() =>
+                                                setShowTextLayer(!showTextLayer)
+                                            }
+                                            className="rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+                                        >
+                                            <Type className="mr-2 h-3 w-3" />
+                                            Text ({extractedTextBlocks.length})
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                             <CardContent className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
@@ -1479,6 +1670,34 @@ export function PdfEditor() {
                                                         f.page ===
                                                         context.pageNumber,
                                                 )
+
+                                            // Filter text blocks for this page
+                                            const pageTextBlocks =
+                                                extractedTextBlocks.filter(
+                                                    (tb) =>
+                                                        tb.page ===
+                                                        context.pageNumber,
+                                                )
+
+                                            // Filter graphic lines for this page
+                                            const pageGraphicLines =
+                                                extractedGraphicLines.filter(
+                                                    (gl) =>
+                                                        gl.page ===
+                                                        context.pageNumber,
+                                                )
+
+                                            if (context.pageNumber === 1) {
+                                                console.log(
+                                                    `\ud83d\udcc4 Page ${context.pageNumber}:`,
+                                                    {
+                                                        showTextLayer,
+                                                        pageTextBlocks,
+                                                        totalTextBlocks:
+                                                            extractedTextBlocks.length,
+                                                    },
+                                                )
+                                            }
 
                                             let pageContainerElement: HTMLDivElement | null =
                                                 null
@@ -1514,8 +1733,11 @@ export function PdfEditor() {
                                                         }}
                                                         className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
                                                         onClick={() => {
-                                                            // Deselect field when clicking on page background
+                                                            // Deselect field and text block when clicking on page background
                                                             setSelectedFieldId(
+                                                                null,
+                                                            )
+                                                            setSelectedTextBlockId(
                                                                 null,
                                                             )
                                                         }}
@@ -1567,6 +1789,50 @@ export function PdfEditor() {
                                                                             isSelected={
                                                                                 field.id ===
                                                                                 selectedFieldId
+                                                                            }
+                                                                        />
+                                                                    ),
+                                                                )}
+                                                            {showTextLayer &&
+                                                                pageTextBlocks.map(
+                                                                    (
+                                                                        textBlock,
+                                                                    ) => (
+                                                                        <TextBlockOverlay
+                                                                            key={
+                                                                                textBlock.id
+                                                                            }
+                                                                            textBlock={
+                                                                                textBlock
+                                                                            }
+                                                                            onSelect={(
+                                                                                id,
+                                                                            ) => {
+                                                                                setSelectedTextBlockId(
+                                                                                    id,
+                                                                                )
+                                                                                setSelectedFieldId(
+                                                                                    null,
+                                                                                )
+                                                                            }}
+                                                                            isSelected={
+                                                                                textBlock.id ===
+                                                                                selectedTextBlockId
+                                                                            }
+                                                                        />
+                                                                    ),
+                                                                )}
+                                                            {showTextLayer &&
+                                                                pageGraphicLines.map(
+                                                                    (
+                                                                        graphicLine,
+                                                                    ) => (
+                                                                        <GraphicLineOverlay
+                                                                            key={
+                                                                                graphicLine.id
+                                                                            }
+                                                                            graphicLine={
+                                                                                graphicLine
                                                                             }
                                                                         />
                                                                     ),

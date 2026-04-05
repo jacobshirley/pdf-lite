@@ -28,6 +28,15 @@ export interface TextBlock {
     }
 }
 
+export interface GraphicLine {
+    bbox: {
+        x: number
+        y: number
+        width: number
+        height: number
+    }
+}
+
 interface GraphicsState {
     fontSize: number
     fontName: string
@@ -1096,4 +1105,105 @@ function mergeSegmentsAtSamePosition(segments: TextSegment[]): TextSegment[] {
     }
 
     return merged
+}
+
+/**
+ * Parse a PDF content stream and extract graphic lines/rectangles.
+ * Extracts paths drawn with `re` (rectangle) or `m`/`l` (move/line) operators
+ * that are stroked or filled. Returns bounding boxes for each graphic element.
+ *
+ * @param contentString The decoded content stream as a string
+ * @returns Array of graphic lines with bounding boxes
+ */
+export function parseContentStreamForGraphics(
+    contentString: string,
+): GraphicLine[] {
+    const lines: GraphicLine[] = []
+    const tokens = tokenizeContentStream(contentString)
+
+    // Track current path segments
+    let pathSegments: Array<{ x: number; y: number; w: number; h: number }> = []
+    let currentX = 0
+    let currentY = 0
+
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i]
+
+        // re - Rectangle path: x y width height re
+        if (token === 're') {
+            const h = parseFloat(tokens[i - 1])
+            const w = parseFloat(tokens[i - 2])
+            const y = parseFloat(tokens[i - 3])
+            const x = parseFloat(tokens[i - 4])
+            if (!isNaN(x) && !isNaN(y) && !isNaN(w) && !isNaN(h)) {
+                pathSegments.push({ x, y, w, h })
+            }
+        }
+        // m - Moveto: x y m
+        else if (token === 'm') {
+            const y = parseFloat(tokens[i - 1])
+            const x = parseFloat(tokens[i - 2])
+            if (!isNaN(x) && !isNaN(y)) {
+                currentX = x
+                currentY = y
+            }
+        }
+        // l - Lineto: x y l
+        else if (token === 'l') {
+            const y = parseFloat(tokens[i - 1])
+            const x = parseFloat(tokens[i - 2])
+            if (!isNaN(x) && !isNaN(y)) {
+                // Create a thin rectangle from the line segment
+                const minX = Math.min(currentX, x)
+                const maxX = Math.max(currentX, x)
+                const minY = Math.min(currentY, y)
+                const maxY = Math.max(currentY, y)
+                const w = maxX - minX
+                const h = maxY - minY
+                // Ensure minimum thickness of 1pt for lines
+                pathSegments.push({
+                    x: minX,
+                    y: minY,
+                    w: w || 1,
+                    h: h || 1,
+                })
+                currentX = x
+                currentY = y
+            }
+        }
+        // S, s, f, F, f*, B, B*, b, b* - Path painting operators
+        else if (
+            token === 'S' ||
+            token === 's' ||
+            token === 'f' ||
+            token === 'F' ||
+            token === 'f*' ||
+            token === 'B' ||
+            token === 'B*' ||
+            token === 'b' ||
+            token === 'b*'
+        ) {
+            for (const seg of pathSegments) {
+                // Normalize negative widths/heights
+                const x = seg.w < 0 ? seg.x + seg.w : seg.x
+                const y = seg.h < 0 ? seg.y + seg.h : seg.y
+                const w = Math.abs(seg.w)
+                const h = Math.abs(seg.h)
+
+                // Only include paths with meaningful size (skip tiny dots)
+                if (w >= 2 || h >= 2) {
+                    lines.push({
+                        bbox: { x, y, width: w, height: h },
+                    })
+                }
+            }
+            pathSegments = []
+        }
+        // n - End path without painting (clip or discard)
+        else if (token === 'n') {
+            pathSegments = []
+        }
+    }
+
+    return lines
 }

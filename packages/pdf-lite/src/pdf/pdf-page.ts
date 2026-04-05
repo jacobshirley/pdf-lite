@@ -8,7 +8,9 @@ import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfPages } from './pdf-pages.js'
 import {
     parseContentStreamForText,
+    parseContentStreamForGraphics,
     type TextBlock,
+    type GraphicLine,
 } from '../utils/content-stream-parser.js'
 
 type PdfPageDictionary = PdfDictionary<{
@@ -262,5 +264,25 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         }
 
         return allBlocks
+    }
+
+    extractGraphicLines(): GraphicLine[] {
+        const streams = this.contentStreams
+        const allLines: GraphicLine[] = []
+
+        for (const stream of streams) {
+            try {
+                const contentString = stream.dataAsString
+                const lines = parseContentStreamForGraphics(contentString)
+                allLines.push(...lines)
+            } catch (error) {
+                console.warn(
+                    'Failed to parse content stream for graphics:',
+                    error,
+                )
+            }
+        }
+
+        return allLines
     }
 }

@@ -4,15 +4,16 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfName } from '../core/objects/pdf-name.js'
-import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfPages } from './pdf-pages.js'
 import {
     parseContentStreamForText,
     parseContentStreamForGraphics,
-    type TextBlock,
-    type GraphicLine,
 } from '../utils/content-stream-parser.js'
-import { PdfContentStream } from './pdf-content-stream.js'
+import {
+    GraphicsBlock,
+    PdfContentStream,
+    TextBlock,
+} from './pdf-content-stream.js'
 import { PdfFont } from '../fonts/pdf-font.js'
 
 type PdfPageDictionary = PdfDictionary<{
@@ -250,62 +251,25 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         return streams
     }
 
-    /**
-     * Extract all text blocks from this page's content streams with their bounding boxes.
-     * This parses all page content streams and returns text operators with position information.
-     * Note: Does not include AcroForm field appearance streams - only page content.
-     *
-     * @returns Array of text blocks with bounding box information
-     */
     extractTextBlocks(): TextBlock[] {
         const streams = this.contentStreams
-        const allBlocks: TextBlock[] = []
-
-        // Get font resources from the page to enable accurate text width calculations
-        const resources = this.resources
-        const fontDictEntry = resources?.get('Font')
-        const fontDict =
-            fontDictEntry instanceof PdfDictionary
-                ? fontDictEntry
-                : fontDictEntry instanceof PdfObjectReference
-                  ? fontDictEntry
-                  : null
+        const blocks: TextBlock[] = []
 
         for (const stream of streams) {
-            try {
-                // Decode the stream to get the content string
-                const contentString = stream.dataAsString
-                const blocks = parseContentStreamForText(contentString, {
-                    resources,
-                    fontDict,
-                })
-                allBlocks.push(...blocks)
-            } catch (error) {
-                // Skip streams that can't be decoded
-                console.warn('Failed to parse content stream:', error)
-            }
+            blocks.push(...stream.textBlocks)
         }
 
-        return allBlocks
+        return blocks
     }
 
-    extractGraphicLines(): GraphicLine[] {
+    extractGraphicLines(): GraphicsBlock[] {
         const streams = this.contentStreams
-        const allLines: GraphicLine[] = []
+        const blocks: GraphicsBlock[] = []
 
         for (const stream of streams) {
-            try {
-                const contentString = stream.dataAsString
-                const lines = parseContentStreamForGraphics(contentString)
-                allLines.push(...lines)
-            } catch (error) {
-                console.warn(
-                    'Failed to parse content stream for graphics:',
-                    error,
-                )
-            }
+            blocks.push(...stream.graphicsBlocks)
         }
 
-        return allLines
+        return blocks
     }
 }

@@ -102,6 +102,25 @@ function transformPoint(
 }
 
 /**
+ * Parse N numeric operands preceding position `i` in the token array.
+ * Returns them in forward order (operand at i-count first, operand at i-1 last),
+ * or null if any operand is not a valid number.
+ */
+function parseNumericOperands(
+    tokens: string[],
+    i: number,
+    count: number,
+): number[] | null {
+    const result: number[] = []
+    for (let j = count; j >= 1; j--) {
+        const v = parseFloat(tokens[i - j])
+        if (isNaN(v)) return null
+        result.push(v)
+    }
+    return result
+}
+
+/**
  * Parse a ToUnicode CMap stream to build a mapping from CID to Unicode string.
  */
 function parseToUnicodeCMap(cmapContent: string): Map<number, string> {
@@ -280,20 +299,9 @@ export function parseContentStreamForText(
         }
         // cm - Concat transformation matrix: a b c d e f cm
         else if (token === 'cm') {
-            const f = parseFloat(tokens[i - 1])
-            const e = parseFloat(tokens[i - 2])
-            const d = parseFloat(tokens[i - 3])
-            const c = parseFloat(tokens[i - 4])
-            const b = parseFloat(tokens[i - 5])
-            const a = parseFloat(tokens[i - 6])
-            if (
-                !isNaN(a) &&
-                !isNaN(b) &&
-                !isNaN(c) &&
-                !isNaN(d) &&
-                !isNaN(e) &&
-                !isNaN(f)
-            ) {
+            const ops = parseNumericOperands(tokens, i, 6)
+            if (ops) {
+                const [a, b, c, d, e, f] = ops
                 currentState.ctm = multiplyMatrix(
                     [a, b, c, d, e, f],
                     currentState.ctm,
@@ -380,37 +388,28 @@ export function parseContentStreamForText(
         }
         // Tm - Set text matrix (e.g., "a b c d e f Tm" = "1 0 0 1 100 700 Tm")
         else if (token === 'Tm') {
-            // Matrix form: [a b c d e f] where e,f are x,y translation, a is x-scale,d is y-scale
-            const f = parseFloat(tokens[i - 1]) // y position
-            const e = parseFloat(tokens[i - 2]) // x position
-            const d = parseFloat(tokens[i - 3]) // y scale/rotation
-            const c = parseFloat(tokens[i - 4]) // skew
-            const b = parseFloat(tokens[i - 5]) // skew
-            const a = parseFloat(tokens[i - 6]) // x scale/rotation
-
-            if (!isNaN(e) && !isNaN(f)) {
+            const ops = parseNumericOperands(tokens, i, 6)
+            if (ops) {
+                const [a, , , d, e, f] = ops
                 currentState.tm = {
                     x: e,
                     y: f,
-                    scaleX: !isNaN(a) ? a : 1,
-                    scaleY: !isNaN(d) ? d : 1,
+                    scaleX: a,
+                    scaleY: d,
                 }
-                // Tm sets both text matrix and text line matrix
                 currentState.tlm = {
                     x: e,
                     y: f,
-                    scaleX: currentState.tm.scaleX,
-                    scaleY: currentState.tm.scaleY,
+                    scaleX: a,
+                    scaleY: d,
                 }
             }
         }
         // Td - Move to start of next line, offset from start of CURRENT LINE (not current position)
         else if (token === 'Td') {
-            const dx = parseFloat(tokens[i - 2])
-            const dy = parseFloat(tokens[i - 1])
-            if (!isNaN(dx) && !isNaN(dy)) {
-                // Per PDF spec: Td applies [1 0 0 1 tx ty] × Tlm
-                // Offsets are in text-space, so multiply by the line matrix scale
+            const ops = parseNumericOperands(tokens, i, 2)
+            if (ops) {
+                const [dx, dy] = ops
                 const newX = currentState.tlm.x + dx * currentState.tlm.scaleX
                 const newY = currentState.tlm.y + dy * currentState.tlm.scaleY
                 currentState.tm.x = newX
@@ -421,9 +420,9 @@ export function parseContentStreamForText(
         }
         // TD - Move text position and set leading (same positioning as Td)
         else if (token === 'TD') {
-            const dx = parseFloat(tokens[i - 2])
-            const dy = parseFloat(tokens[i - 1])
-            if (!isNaN(dx) && !isNaN(dy)) {
+            const ops = parseNumericOperands(tokens, i, 2)
+            if (ops) {
+                const [dx, dy] = ops
                 const newX = currentState.tlm.x + dx * currentState.tlm.scaleX
                 const newY = currentState.tlm.y + dy * currentState.tlm.scaleY
                 currentState.tm.x = newX
@@ -434,16 +433,16 @@ export function parseContentStreamForText(
         }
         // Tc - Set character spacing
         else if (token === 'Tc') {
-            const tc = parseFloat(tokens[i - 1])
-            if (!isNaN(tc)) {
-                currentState.charSpacing = tc
+            const ops = parseNumericOperands(tokens, i, 1)
+            if (ops) {
+                currentState.charSpacing = ops[0]
             }
         }
         // Tw - Set word spacing
         else if (token === 'Tw') {
-            const tw = parseFloat(tokens[i - 1])
-            if (!isNaN(tw)) {
-                currentState.wordSpacing = tw
+            const ops = parseNumericOperands(tokens, i, 1)
+            if (ops) {
+                currentState.wordSpacing = ops[0]
             }
         }
         // Tj - Show text (e.g., "(Hello) Tj" or "<00410042> Tj")

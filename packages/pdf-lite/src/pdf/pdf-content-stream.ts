@@ -5,6 +5,46 @@ import type { PdfFont } from '../fonts/pdf-font.js'
 import { PdfHexadecimal, PdfString } from '../core'
 import { PdfPage } from './pdf-page'
 
+type Matrix = [number, number, number, number, number, number]
+
+const IDENTITY_MATRIX: Matrix = [1, 0, 0, 1, 0, 0]
+
+function multiplyMatrix(m1: Matrix, m2: Matrix): Matrix {
+    return [
+        m1[0] * m2[0] + m1[1] * m2[2],
+        m1[0] * m2[1] + m1[1] * m2[3],
+        m1[2] * m2[0] + m1[3] * m2[2],
+        m1[2] * m2[1] + m1[3] * m2[3],
+        m1[4] * m2[0] + m1[5] * m2[2] + m2[4],
+        m1[4] * m2[1] + m1[5] * m2[3] + m2[5],
+    ]
+}
+
+function transformPoint(
+    x: number,
+    y: number,
+    ctm: Matrix,
+): { x: number; y: number } {
+    return {
+        x: ctm[0] * x + ctm[2] * y + ctm[4],
+        y: ctm[1] * x + ctm[3] * y + ctm[5],
+    }
+}
+
+function parseNumericOperands(
+    tokens: string[],
+    i: number,
+    count: number,
+): number[] | null {
+    const result: number[] = []
+    for (let j = count; j >= 1; j--) {
+        const v = parseFloat(tokens[i - j])
+        if (isNaN(v)) return null
+        result.push(v)
+    }
+    return result
+}
+
 function extractLiteral(token: string): string {
     if (token.startsWith('(') && token.endsWith(')')) {
         return token
@@ -223,6 +263,11 @@ export class TextBlock extends ContentNode {
     font: PdfFont | null = null
     fontSize: number
     text: string
+    /** Current Transformation Matrix active when this block was parsed */
+    ctm: Matrix = [...IDENTITY_MATRIX]
+    /** Text matrix scale factors from Tm operator */
+    tmScaleX: number = 1
+    tmScaleY: number = 1
 
     constructor(ops?: string[], page?: PdfPage) {
         super(page)
@@ -232,11 +277,60 @@ export class TextBlock extends ContentNode {
         this.font = this.parseCurrentFont(ops)
         this.fontSize = this.parseCurrentFontSize(ops)
         this.text = this.parseText(ops)
+        this.parseTm(ops)
     }
 
     moveTo(x: number, y: number) {
         this.x = x
         this.y = y
+    }
+
+    get boundingBox(): { x: number; y: number; width: number; height: number } {
+        const effectiveFontSize = this.fontSize * Math.abs(this.tmScaleY)
+        const widthFontSize = this.fontSize * Math.abs(this.tmScaleX)
+        const descenderHeight = effectiveFontSize * 0.3
+        const ascenderHeight = effectiveFontSize * 0.95
+
+        let textWidth = 0
+        for (const char of this.text) {
+            const charCode = char.charCodeAt(0)
+            const charWidth = this.font?.getCharacterWidth(
+                charCode,
+                widthFontSize,
+            )
+            textWidth += charWidth ?? widthFontSize * 0.6
+        }
+
+        // Apply CTM to the four corners and compute axis-aligned bbox
+        const x0 = this.x
+        const y0 = this.y - descenderHeight
+        const x1 = this.x + textWidth
+        const y1 = this.y + ascenderHeight
+
+        const isIdentity =
+            this.ctm[0] === 1 &&
+            this.ctm[1] === 0 &&
+            this.ctm[2] === 0 &&
+            this.ctm[3] === 1 &&
+            this.ctm[4] === 0 &&
+            this.ctm[5] === 0
+
+        if (isIdentity) {
+            return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 }
+        }
+
+        const corners = [
+            transformPoint(x0, y0, this.ctm),
+            transformPoint(x1, y0, this.ctm),
+            transformPoint(x0, y1, this.ctm),
+            transformPoint(x1, y1, this.ctm),
+        ]
+        const minX = Math.min(...corners.map((c) => c.x))
+        const minY = Math.min(...corners.map((c) => c.y))
+        const maxX = Math.max(...corners.map((c) => c.x))
+        const maxY = Math.max(...corners.map((c) => c.y))
+
+        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
     }
 
     toString(): string {
@@ -315,6 +409,25 @@ export class TextBlock extends ContentNode {
         const match = fontOp.match(/\/\w+\s+(\d+(\.\d+)?)\s+Tf/)
         if (!match) return 12
         return parseFloat(match[1])
+    }
+
+    private parseTm(ops: string[] = []): void {
+        const tmOp = ops.find((op) => op.endsWith(' Tm'))
+        if (!tmOp) return
+        const parts = tmOp.split(/\s+/)
+        if (parts.length >= 7) {
+            const a = parseFloat(parts[0])
+            const d = parseFloat(parts[3])
+            const e = parseFloat(parts[4])
+            const f = parseFloat(parts[5])
+            if (!isNaN(a)) this.tmScaleX = a
+            if (!isNaN(d)) this.tmScaleY = d
+            // Tm also sets position
+            if (!isNaN(e) && !isNaN(f)) {
+                this.x = e
+                this.y = f
+            }
+        }
     }
 }
 
@@ -480,6 +593,10 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
         let currentOps: string[] = []
         let graphicsOps: string[] = []
 
+        // CTM tracking
+        let ctm: Matrix = [...IDENTITY_MATRIX]
+        const ctmStack: Matrix[] = []
+
         const PAINT_OPS = new Set([
             'S',
             's',
@@ -506,19 +623,7 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
             'scn',
             'SCN',
         ])
-        const STATE_OPS = new Set([
-            'q',
-            'Q',
-            'cm',
-            'w',
-            'J',
-            'j',
-            'M',
-            'd',
-            'ri',
-            'i',
-            'gs',
-        ])
+        const STATE_OPS = new Set(['w', 'J', 'j', 'M', 'd', 'ri', 'i', 'gs'])
         const TEXT_OPS = new Set([
             'Tf',
             'Td',
@@ -552,11 +657,33 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
 
             if (token === 'ET') {
                 if (inTextBlock && currentOps.length > 0) {
-                    nodes.push(new TextBlock(currentOps))
+                    const block = new TextBlock(currentOps)
+                    block.ctm = [...ctm]
+                    nodes.push(block)
                 }
                 inTextBlock = false
                 currentOps = []
                 operandBuffer = []
+                continue
+            }
+
+            // Track graphics state (q/Q/cm) regardless of text mode
+            if (token === 'q') {
+                ctmStack.push([...ctm])
+                if (!inTextBlock) operandBuffer = []
+                continue
+            }
+            if (token === 'Q') {
+                if (ctmStack.length > 0) ctm = ctmStack.pop()!
+                if (!inTextBlock) operandBuffer = []
+                continue
+            }
+            if (token === 'cm') {
+                const ops = parseNumericOperands(tokens, i, 6)
+                if (ops) {
+                    ctm = multiplyMatrix(ops as Matrix, ctm)
+                }
+                if (!inTextBlock) operandBuffer = []
                 continue
             }
 
@@ -606,7 +733,7 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
                 operandBuffer = []
                 graphicsOps = []
             } else if (STATE_OPS.has(token)) {
-                // State operators are not part of a node
+                // State operators not handled above (w, J, j, M, etc.)
                 operandBuffer = []
             } else if (
                 token.startsWith('(') ||

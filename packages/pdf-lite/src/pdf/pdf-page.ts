@@ -4,7 +4,12 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfName } from '../core/objects/pdf-name.js'
+import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfPages } from './pdf-pages.js'
+import {
+    parseContentStreamForText,
+    type TextBlock,
+} from '../utils/content-stream-parser.js'
 
 type PdfPageDictionary = PdfDictionary<{
     Type: PdfName<'Page'>
@@ -188,5 +193,74 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
 
     set parent(value: PdfPages) {
         this.parentRef = value.reference
+    }
+
+    /**
+     * Get all content streams for this page as an array.
+     * Handles both single stream and array of streams cases.
+     * Returns empty array if no content streams exist.
+     */
+    get contentStreams(): PdfStream[] {
+        const contentsEntry = this.contents
+        if (!contentsEntry) return []
+
+        const streams: PdfStream[] = []
+
+        if (contentsEntry instanceof PdfArray) {
+            // Multiple content streams
+            for (const ref of contentsEntry.items) {
+                const resolved = ref.resolve()
+                if (resolved?.content instanceof PdfStream) {
+                    streams.push(resolved.content)
+                }
+            }
+        } else if (contentsEntry instanceof PdfObjectReference) {
+            // Single content stream
+            const resolved = contentsEntry.resolve()
+            if (resolved?.content instanceof PdfStream) {
+                streams.push(resolved.content)
+            }
+        }
+
+        return streams
+    }
+
+    /**
+     * Extract all text blocks from this page's content streams with their bounding boxes.
+     * This parses all page content streams and returns text operators with position information.
+     * Note: Does not include AcroForm field appearance streams - only page content.
+     *
+     * @returns Array of text blocks with bounding box information
+     */
+    extractTextBlocks(): TextBlock[] {
+        const streams = this.contentStreams
+        const allBlocks: TextBlock[] = []
+
+        // Get font resources from the page to enable accurate text width calculations
+        const resources = this.resources
+        const fontDictEntry = resources?.get('Font')
+        const fontDict =
+            fontDictEntry instanceof PdfDictionary
+                ? fontDictEntry
+                : fontDictEntry instanceof PdfObjectReference
+                  ? fontDictEntry
+                  : null
+
+        for (const stream of streams) {
+            try {
+                // Decode the stream to get the content string
+                const contentString = stream.dataAsString
+                const blocks = parseContentStreamForText(contentString, {
+                    resources,
+                    fontDict,
+                })
+                allBlocks.push(...blocks)
+            } catch (error) {
+                // Skip streams that can't be decoded
+                console.warn('Failed to parse content stream:', error)
+            }
+        }
+
+        return allBlocks
     }
 }

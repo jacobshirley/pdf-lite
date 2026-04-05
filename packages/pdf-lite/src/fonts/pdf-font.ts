@@ -16,6 +16,7 @@ import type {
 import type { ByteArray } from '../types.js'
 import { parseFont } from './parsers/font-parser.js'
 import { OtfParser } from './parsers/otf-parser.js'
+import { PdfHexadecimal } from '../core/index.js'
 
 type PdfFontDictionary = PdfDictionary<{
     Type: PdfName<'Font'>
@@ -398,6 +399,90 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      */
     toString(): string {
         return this.resourceName
+    }
+
+    /**
+     * Encodes a Unicode string into a PDF-delimited string operand for use with Tj.
+     *
+     * - Type0 (CID) fonts: returns `<XXXX...>` (2-byte CIDs, Identity-H assumed)
+     * - Fonts with a custom Differences encoding: returns `<XX...>` using the reverse map
+     * - Standard/simple fonts: returns `(text)` with PDF literal string escaping
+     */
+    encode(
+        text: string | PdfString | PdfHexadecimal,
+    ): PdfString | PdfHexadecimal {
+        text =
+            text instanceof PdfString || text instanceof PdfHexadecimal
+                ? this.decode(text)
+                : text
+        if (this.isUnicode) {
+            let hex = ''
+            for (const char of text) {
+                const cp = char.codePointAt(0) ?? 0
+                hex += cp.toString(16).padStart(4, '0')
+            }
+            return new PdfHexadecimal(hex, 'hex')
+        }
+
+        const reverseMap = this.reverseEncodingMap
+        if (reverseMap) {
+            let hex = ''
+            for (const char of text) {
+                const code = reverseMap.get(char) ?? char.charCodeAt(0)
+                hex += code.toString(16).padStart(2, '0')
+            }
+            return new PdfHexadecimal(hex, 'hex')
+        }
+
+        return new PdfString(text)
+    }
+
+    /**
+     * Decodes a PDF-delimited string operand back to a Unicode string.
+     * Inverse of `encode()`.
+     *
+     * - Hex strings `<XXXX...>` with Type0 (CID) fonts: 2-byte pairs → Unicode code points
+     * - Hex strings `<XX...>` with custom Differences encoding: 1-byte pairs → characters via encoding map
+     * - Literal strings `(text)`: un-escape PDF special characters
+     */
+    decode(encoded: PdfString | PdfHexadecimal): string {
+        if (encoded instanceof PdfHexadecimal) {
+            const cleaned = encoded.hexString
+            if (cleaned.length === 0) return ''
+
+            if (this.isUnicode) {
+                // 2-byte CIDs → Unicode code points
+                let result = ''
+                for (let i = 0; i < cleaned.length; i += 4) {
+                    const cid = parseInt(cleaned.substring(i, i + 4), 16)
+                    result += String.fromCodePoint(cid)
+                }
+                return result
+            }
+
+            const encodingMap = this.encodingMap
+            if (encodingMap) {
+                // 1-byte codes → characters via Differences map
+                let result = ''
+                for (let i = 0; i < cleaned.length; i += 2) {
+                    const code = parseInt(cleaned.substring(i, i + 2), 16)
+                    result += encodingMap.get(code) ?? String.fromCharCode(code)
+                }
+                return result
+            }
+
+            // Fallback: interpret hex as raw byte values
+            let result = ''
+            const byteWidth = cleaned.length % 4 === 0 ? 4 : 2
+            for (let i = 0; i < cleaned.length; i += byteWidth) {
+                result += String.fromCharCode(
+                    parseInt(cleaned.substring(i, i + byteWidth), 16),
+                )
+            }
+            return result
+        }
+
+        return encoded.value
     }
 
     /**

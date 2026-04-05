@@ -858,7 +858,7 @@ function consolidateAdjacentSegments(segments: TextSegment[]): TextSegment[] {
 /**
  * Tokenize a PDF content stream into operators and operands.
  */
-function tokenizeContentStream(content: string): string[] {
+export function tokenizeContentStream(content: string): string[] {
     const tokens: string[] = []
     let current = ''
     let inString = false

@@ -12,6 +12,8 @@ import {
     type TextBlock,
     type GraphicLine,
 } from '../utils/content-stream-parser.js'
+import { PdfContentStream } from './pdf-content-stream.js'
+import { PdfFont } from '../fonts/pdf-font.js'
 
 type PdfPageDictionary = PdfDictionary<{
     Type: PdfName<'Page'>
@@ -197,31 +199,52 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         this.parentRef = value.reference
     }
 
+    get fontMap(): Map<string, PdfFont> {
+        const resources = this.resources
+        const fontDictEntry = resources?.get('Font')
+        const fontDict =
+            fontDictEntry instanceof PdfDictionary
+                ? fontDictEntry
+                : fontDictEntry instanceof PdfObjectReference
+                  ? fontDictEntry.resolve(PdfIndirectObject<PdfDictionary>)
+                        ?.content
+                  : null
+
+        const map = new Map<string, PdfFont>()
+
+        if (fontDict) {
+            for (const [key, value] of fontDict.entries()) {
+                if (value instanceof PdfObjectReference) {
+                    const resolved = value.resolve(PdfFont)
+                    map.set(key, resolved)
+                }
+            }
+        }
+
+        return map
+    }
+
     /**
      * Get all content streams for this page as an array.
      * Handles both single stream and array of streams cases.
      * Returns empty array if no content streams exist.
      */
-    get contentStreams(): PdfStream[] {
+    get contentStreams(): PdfContentStream[] {
         const contentsEntry = this.contents
         if (!contentsEntry) return []
 
-        const streams: PdfStream[] = []
+        const streams: PdfContentStream[] = []
 
         if (contentsEntry instanceof PdfArray) {
             // Multiple content streams
             for (const ref of contentsEntry.items) {
-                const resolved = ref.resolve()
-                if (resolved?.content instanceof PdfStream) {
-                    streams.push(resolved.content)
-                }
+                const resolved = ref.resolve(PdfContentStream)
+                streams.push(resolved)
             }
         } else if (contentsEntry instanceof PdfObjectReference) {
             // Single content stream
-            const resolved = contentsEntry.resolve()
-            if (resolved?.content instanceof PdfStream) {
-                streams.push(resolved.content)
-            }
+            const resolved = contentsEntry.resolve(PdfContentStream)
+            streams.push(resolved)
         }
 
         return streams

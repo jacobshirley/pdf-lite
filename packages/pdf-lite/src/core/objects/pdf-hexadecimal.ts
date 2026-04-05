@@ -59,6 +59,14 @@ export class PdfHexadecimal extends PdfObject {
         return hexBytesToBytes(this.raw)
     }
 
+    get string(): string {
+        return bytesToString(this.bytes)
+    }
+
+    get hexString(): string {
+        return bytesToString(this.raw)
+    }
+
     toHexBytes(): ByteArray {
         return bytesToHexBytes(this.raw)
     }

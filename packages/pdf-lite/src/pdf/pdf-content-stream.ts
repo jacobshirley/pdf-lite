@@ -1,6 +1,44 @@
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
 import { PdfStream } from '../core/objects/pdf-stream'
 import { tokenizeContentStream } from '../utils/content-stream-parser.js'
+import type { PdfFont } from '../fonts/pdf-font.js'
+import { PdfHexadecimal, PdfString } from '../core'
+import { PdfPage } from './pdf-page'
+
+function extractLiteral(token: string): string {
+    if (token.startsWith('(') && token.endsWith(')')) {
+        return token
+            .slice(1, -1)
+            .replace(/\\n/g, '\n')
+            .replace(/\\r/g, '\r')
+            .replace(/\\t/g, '\t')
+            .replace(/\\\(/g, '(')
+            .replace(/\\\)/g, ')')
+            .replace(/\\\\/g, '\\')
+    }
+    if (token.startsWith('<') && token.endsWith('>')) {
+        const hex = token.slice(1, -1).replace(/\s/g, '')
+        const byteWidth = hex.length % 4 === 0 ? 4 : 2
+        let result = ''
+        for (let i = 0; i < hex.length; i += byteWidth) {
+            result += String.fromCharCode(
+                parseInt(hex.substring(i, i + byteWidth), 16),
+            )
+        }
+        return result
+    }
+    return token
+}
+
+function parsePdfStringOperand(token: string): PdfString | PdfHexadecimal {
+    if (token.startsWith('<') && token.endsWith('>')) {
+        return new PdfHexadecimal(token.slice(1, -1))
+    }
+    if (token.startsWith('(') && token.endsWith(')')) {
+        return new PdfString(token.slice(1, -1))
+    }
+    return new PdfString(token)
+}
 
 export class ContentOps {
     ops: string[]
@@ -25,8 +63,19 @@ export class ContentOps {
         this.ops.push(`${x} ${y} TD`)
     }
 
-    tj(text: string) {
-        this.ops.push(`(${text}) Tj`)
+    tj(text: PdfString | PdfHexadecimal | string) {
+        if (typeof text === 'string') {
+            this.tj(new PdfString(text))
+            return
+        }
+
+        if (text instanceof PdfHexadecimal) {
+            this.ops.push(`<${text.hexString}> Tj`)
+        } else if (text instanceof PdfString) {
+            this.ops.push(`(${text.value}) Tj`)
+        } else {
+            throw new Error('Invalid text type for Tj operator')
+        }
     }
 
     tJ(array: string) {
@@ -159,9 +208,136 @@ export class ContentOps {
 }
 
 export abstract class ContentNode {
+    page?: PdfPage
+
+    constructor(page?: PdfPage) {
+        this.page = page
+    }
+
+    abstract toString(): string
+}
+
+export class TextBlock extends ContentNode {
+    private x: number
+    private y: number
+    private _font: PdfFont | null = null
+    private _fontSize: number
+    text: string
+
+    constructor(ops?: string[], page?: PdfPage) {
+        super(page)
+        const [x, y] = this.parseXY(ops)
+        this.x = x
+        this.y = y
+        this._font = this.parseCurrentFont(ops)
+        this._fontSize = this.parseCurrentFontSize(ops)
+        this.text = this.parseText(ops)
+    }
+
+    moveTo(x: number, y: number) {
+        this.x = x
+        this.y = y
+    }
+
+    showText(text: string) {
+        this.text = text
+    }
+
+    font(font: PdfFont, fontSize?: number) {
+        this._font = font
+        if (typeof fontSize === 'number') {
+            this._fontSize = fontSize
+        }
+    }
+
+    fontSize(size: number) {
+        this._fontSize = size
+    }
+
+    toString(): string {
+        const ops = new ContentOps()
+        ops.bt()
+        if (this._font) {
+            ops.tf(this._font.resourceName, this._fontSize)
+        } else {
+            ops.tf('F1', this._fontSize)
+        }
+        ops.td(this.x, this.y)
+        if (this._font) {
+            ops.tj(this._font.encode(this.text))
+        } else {
+            ops.tj(this.text)
+        }
+        ops.et()
+        return ops.toString()
+    }
+
+    private parseXY(ops: string[] = []): [number, number] {
+        const tdOp = ops.find((op) => op.includes(' Td'))
+        if (tdOp) {
+            const match = tdOp.match(/(-?\d+(\.\d+)?)\s+(-?\d+(\.\d+)?)\s+Td/)
+            if (match) {
+                return [parseFloat(match[1]), parseFloat(match[3])]
+            }
+        }
+        const tDOp = ops.find((op) => op.includes(' TD'))
+        if (tDOp) {
+            const match = tDOp.match(/(-?\d+(\.\d+)?)\s+(-?\d+(\.\d+)?)\s+TD/)
+            if (match) {
+                return [parseFloat(match[1]), parseFloat(match[3])]
+            }
+        }
+        return [0, 0]
+    }
+
+    private parseText(ops: string[] = []): string {
+        let result = ''
+        for (const op of ops) {
+            if (op.endsWith(' Tj')) {
+                const operand = op.slice(0, -3).trim()
+                result += this._font
+                    ? this._font.decode(parsePdfStringOperand(operand))
+                    : extractLiteral(operand)
+            } else if (op.endsWith(' TJ')) {
+                const operand = op.slice(0, -3).trim()
+                // TJ array like [(Hello) -10 (World)]
+                const re = /(\([^)]*\)|<[^>]*>)/g
+                let m: RegExpExecArray | null
+                while ((m = re.exec(operand)) !== null) {
+                    result += this._font
+                        ? this._font.decode(parsePdfStringOperand(m[1]))
+                        : extractLiteral(m[1])
+                }
+            }
+        }
+
+        return result
+    }
+
+    private parseCurrentFont(ops: string[] = []): PdfFont | null {
+        if (this._font) return this._font
+        const fontOp = ops.find((op) => op.includes(' Tf'))
+        if (!fontOp) return null
+        const match = fontOp.match(/\/(\w+)\s+\d+(\.\d+)?\s+Tf/)
+        if (!match) return null
+        const fontName = match[1]
+        return this.page?.fontMap.get(fontName) || null
+    }
+
+    private parseCurrentFontSize(ops: string[] = []): number {
+        const fontOp = ops.find((op) => op.includes(' Tf'))
+        if (!fontOp) return 12
+        const match = fontOp.match(/\/\w+\s+(\d+(\.\d+)?)\s+Tf/)
+        if (!match) return 12
+        return parseFloat(match[1])
+    }
+}
+
+export class GraphicsBlock extends ContentNode {
     ops: ContentOps
 
-    constructor(ops?: string[]) {
+    constructor(ops?: string[], page?: PdfPage) {
+        super(page)
         this.ops = new ContentOps(ops)
     }
 
@@ -169,30 +345,6 @@ export abstract class ContentNode {
         return this.ops.toString()
     }
 
-    toJSON() {
-        return this.ops.toJSON()
-    }
-}
-
-export class TextBlock extends ContentNode {
-    moveTo(x: number, y: number) {
-        this.ops.td(x, y)
-    }
-
-    showText(text: string) {
-        this.ops.tj(text)
-    }
-
-    font(fontName: string, fontSize: number) {
-        this.ops.tf(fontName, fontSize)
-    }
-
-    rgb(r: number, g: number, b: number) {
-        this.ops.rg(r, g, b)
-    }
-}
-
-export class GraphicsBlock extends ContentNode {
     static line(options: {
         x1: number
         y1: number
@@ -303,8 +455,34 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
     static GraphicsBlock = GraphicsBlock
     static TextBlock = TextBlock
 
+    page?: PdfPage
+
+    constructor(object?: PdfIndirectObject) {
+        super(object)
+    }
+
+    textBlock(): TextBlock {
+        const block = new TextBlock()
+        block.page = this.page
+        return block
+    }
+
+    graphicsBlock(): GraphicsBlock {
+        const block = new GraphicsBlock()
+        block.page = this.page
+        return block
+    }
+
     add(node: ContentNode) {
         this.content.dataAsString += node.toString() + '\n'
+    }
+
+    get dataAsString(): string {
+        return this.content.dataAsString
+    }
+
+    set dataAsString(value: string) {
+        this.content.dataAsString = value
     }
 
     get nodes(): ContentNode[] {
@@ -458,6 +636,10 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
                 // Unknown operator outside text - reset operands
                 operandBuffer = []
             }
+        }
+
+        for (const node of nodes) {
+            node.page = this.page
         }
 
         return nodes

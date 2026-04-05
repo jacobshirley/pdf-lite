@@ -327,7 +327,7 @@ export class PdfStream<
         options:
             | { header: T; original: ByteArray | string; isModified?: boolean }
             | ByteArray
-            | string,
+            | string = '',
     ) {
         super()
 

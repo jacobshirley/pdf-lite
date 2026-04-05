@@ -18,6 +18,9 @@ import {
 } from '../../src/fonts/parsers/font-parser'
 import { ByteArray } from '../../src/types'
 import { PdfFont } from '../../src/fonts/pdf-font'
+import { PdfDictionary, PdfHexadecimal, PdfNumber, PdfString } from '../../src'
+import { PdfArray } from '../../src/core/objects/pdf-array'
+import { PdfName } from '../../src/core/objects/pdf-name'
 
 // Helper to load font fixtures
 const base64ToBytes = (base64: string): ByteArray => {
@@ -1069,6 +1072,177 @@ describe('Font Parsers with Minimal Test Data', () => {
             expect(font).toBeInstanceOf(PdfFont)
             expect(font.fontName).toBeDefined()
             expect(font.fontName!.length).toBeGreaterThan(0)
+        })
+    })
+})
+
+// Helper: build a PdfFont with a custom Differences encoding map.
+function fontWithDifferences(mapping: Record<number, string>): PdfFont {
+    const font = new PdfFont('CustomEncFont')
+    font.fontType = 'Type1'
+
+    const items: (PdfNumber | PdfName)[] = []
+    for (const [code, glyphName] of Object.entries(mapping)) {
+        items.push(new PdfNumber(Number(code)))
+        items.push(new PdfName(glyphName))
+    }
+
+    const encDict = new PdfDictionary<{
+        Type: PdfName<'Encoding'>
+        Differences: PdfArray<PdfNumber | PdfName>
+    }>()
+    encDict.set('Type', new PdfName('Encoding') as PdfName<'Encoding'>)
+    encDict.set('Differences', new PdfArray(items))
+    font.content.set('Encoding', encDict as never)
+
+    return font
+}
+
+function cidFont(): PdfFont {
+    const font = new PdfFont('CIDFont')
+    font.fontType = 'Type0'
+    return font
+}
+
+describe('PdfFont.encode()', () => {
+    describe('standard/simple font', () => {
+        it('wraps plain text in parentheses', () => {
+            const font = new PdfFont('Helvetica')
+            expect(font.encode('Hello').toString()).toBe('(Hello)')
+        })
+
+        it('escapes backslashes', () => {
+            const font = new PdfFont('Helvetica')
+            expect(font.encode('a\\b').toString()).toBe('(a\\\\b)')
+        })
+
+        it('escapes opening parenthesis', () => {
+            const font = new PdfFont('Helvetica')
+            expect(font.encode('(test').toString()).toBe('(\\(test)')
+        })
+
+        it('escapes closing parenthesis', () => {
+            const font = new PdfFont('Helvetica')
+            expect(font.encode('test)').toString()).toBe('(test\\))')
+        })
+
+        it('escapes both parentheses', () => {
+            const font = new PdfFont('Helvetica')
+            expect(font.encode('(Hello)').toString()).toBe('(\\(Hello\\))')
+        })
+    })
+
+    describe('Type0 / CID font', () => {
+        it('returns a hex string with 2-byte CIDs', () => {
+            const font = cidFont()
+            expect(font.encode('AB').toString()).toBe('<00410042>')
+        })
+
+        it('handles BMP characters', () => {
+            const font = cidFont()
+            expect(font.encode('\u20ac').toString()).toBe('<20ac>')
+        })
+
+        it('handles empty string', () => {
+            const font = cidFont()
+            expect(font.encode('').toString()).toBe('<>')
+        })
+    })
+
+    describe('font with custom Differences encoding', () => {
+        it('returns a hex string using the reverse map', () => {
+            const font = fontWithDifferences({ 160: 'Euro' })
+            expect(font.encode('\u20ac').toString()).toBe('<a0>')
+        })
+
+        it('falls back to char code for unmapped characters', () => {
+            const font = fontWithDifferences({ 160: 'Euro' })
+            expect(font.encode('A').toString()).toBe('<41>')
+        })
+
+        it('encodes multiple characters', () => {
+            const font = fontWithDifferences({ 160: 'Euro', 164: 'currency' })
+            expect(font.encode('\u20ac\u00a4').toString()).toBe('<a0a4>')
+        })
+    })
+})
+
+describe('PdfFont.decode()', () => {
+    describe('literal strings', () => {
+        it('strips surrounding parentheses', () => {
+            const font = new PdfFont('Helvetica')
+            expect(font.decode(new PdfString('Hello'))).toBe('Hello')
+        })
+
+        it('unescapes closing parenthesis', () => {
+            const font = new PdfFont('Helvetica')
+            expect(font.decode(new PdfString('test)'))).toBe('test)')
+        })
+
+        it('unescapes newline escape sequence', () => {
+            const font = new PdfFont('Helvetica')
+            expect(font.decode(new PdfString('line1\nline2'))).toBe(
+                'line1\nline2',
+            )
+        })
+
+        it('returns plain string unchanged when no delimiters match', () => {
+            const font = new PdfFont('Helvetica')
+            expect(font.decode(new PdfString('Hello'))).toBe('Hello')
+        })
+    })
+
+    describe('Type0 / CID font hex strings', () => {
+        it('decodes 2-byte CIDs to Unicode', () => {
+            const font = cidFont()
+            expect(font.decode(new PdfHexadecimal('00410042'))).toBe('AB')
+        })
+
+        it('handles empty hex string', () => {
+            const font = cidFont()
+            expect(font.decode(new PdfHexadecimal(''))).toBe('')
+        })
+
+        it('decodes BMP characters', () => {
+            const font = cidFont()
+            expect(font.decode(new PdfHexadecimal('20ac'))).toBe('\u20ac')
+        })
+    })
+
+    describe('font with custom Differences encoding hex strings', () => {
+        it('decodes 1-byte hex codes through encoding map', () => {
+            const font = fontWithDifferences({ 160: 'Euro' })
+            expect(font.decode(new PdfHexadecimal('a0'))).toBe('\u20ac')
+        })
+
+        it('falls back to char code for unmapped bytes', () => {
+            const font = fontWithDifferences({ 160: 'Euro' })
+            expect(font.decode(new PdfHexadecimal('41'))).toBe('A')
+        })
+
+        it('decodes multiple bytes', () => {
+            const font = fontWithDifferences({ 160: 'Euro', 164: 'currency' })
+            expect(font.decode(new PdfHexadecimal('a0a4'))).toBe('\u20ac\u00a4')
+        })
+    })
+
+    describe('round-trips', () => {
+        it('encode then decode returns original text (standard font)', () => {
+            const font = new PdfFont('Helvetica')
+            const text = 'Hello (World)'
+            expect(font.decode(font.encode(text))).toBe(text)
+        })
+
+        it('encode then decode returns original text (CID font)', () => {
+            const font = cidFont()
+            const text = 'Hello \u20ac'
+            expect(font.decode(font.encode(text))).toBe(text)
+        })
+
+        it('encode then decode returns original text (custom encoding)', () => {
+            const font = fontWithDifferences({ 160: 'Euro', 164: 'currency' })
+            const text = '\u20ac\u00a4'
+            expect(font.decode(font.encode(text))).toBe(text)
         })
     })
 })

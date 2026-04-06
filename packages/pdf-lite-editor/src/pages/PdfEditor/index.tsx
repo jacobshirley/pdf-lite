@@ -35,8 +35,7 @@ import {
     PdfIndirectObject,
     PdfStream,
     TextBlock,
-    type GraphicLine,
-    parseContentStreamForGraphics,
+    GraphicsBlock,
 } from 'pdf-lite'
 
 type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
@@ -79,7 +78,8 @@ type ExtractedTextBlock = {
     pageWidth: number
 }
 
-type ExtractedGraphicLine = GraphicLine & {
+type ExtractedGraphicsBlock = {
+    block: GraphicsBlock
     id: string
     page: number
     pageHeight: number
@@ -701,12 +701,15 @@ function TextBlockOverlay({
     )
 }
 
-function GraphicLineOverlay({
-    graphicLine,
+function GraphicsBlockOverlay({
+    graphicsBlock,
 }: {
-    graphicLine: ExtractedGraphicLine
+    graphicsBlock: ExtractedGraphicsBlock
 }) {
-    const { bbox, pageHeight, pageWidth } = graphicLine
+    const { block, pageHeight, pageWidth } = graphicsBlock
+    const bbox = block.getWorldBoundingBox()
+
+    if (bbox.width === 0 && bbox.height === 0) return null
 
     const leftPercent = (bbox.x / pageWidth) * 100
     const topPercent = ((pageHeight - (bbox.y + bbox.height)) / pageHeight) * 100
@@ -715,7 +718,7 @@ function GraphicLineOverlay({
 
     return (
         <div
-            className="graphic-line-overlay"
+            className="graphics-block-overlay"
             style={{
                 position: 'absolute',
                 left: `${leftPercent}%`,
@@ -728,7 +731,7 @@ function GraphicLineOverlay({
                 pointerEvents: 'none',
                 zIndex: 5,
             }}
-            title="Graphic line"
+            title="Graphics block"
         />
     )
 }
@@ -743,11 +746,12 @@ export function PdfEditor() {
     const [extractedTextBlocks, setExtractedTextBlocks] = useState<
         ExtractedTextBlock[]
     >([])
-    const [extractedGraphicLines, setExtractedGraphicLines] = useState<
-        ExtractedGraphicLine[]
+    const [extractedGraphicsBlocks, setExtractedGraphicsBlocks] = useState<
+        ExtractedGraphicsBlock[]
     >([])
     const [showAcroFormLayer, setShowAcroFormLayer] = useState<boolean>(true)
     const [showTextLayer, setShowTextLayer] = useState<boolean>(true)
+    const [showGraphicsLayer, setShowGraphicsLayer] = useState<boolean>(true)
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
     const [selectedTextBlockId, setSelectedTextBlockId] = useState<
         string | null
@@ -1293,38 +1297,34 @@ export function PdfEditor() {
 
                 setExtractedTextBlocks(textBlocks)
 
-                // Extract graphic lines from page content streams
-                const graphicLines: ExtractedGraphicLine[] = []
-                let graphicLineIndex = 0
+                // Extract graphics blocks from page content streams
+                const graphicsBlocks: ExtractedGraphicsBlock[] = []
+                let graphicsBlockIndex = 0
 
                 for (let i = 0; i < pages.length; i++) {
                     const page = pages[i]
                     const pageNumber = i + 1
 
                     try {
-                        for (const stream of page.contentStreams) {
-                            const lines = parseContentStreamForGraphics(
-                                stream.dataAsString,
-                            )
-                            for (const line of lines) {
-                                graphicLines.push({
-                                    ...line,
-                                    id: `graphic_line_${graphicLineIndex++}`,
-                                    page: pageNumber,
-                                    pageHeight: page.height,
-                                    pageWidth: page.width,
-                                })
-                            }
+                        const blocks = page.extractGraphicLines()
+                        for (const block of blocks) {
+                            graphicsBlocks.push({
+                                block,
+                                id: `graphics_block_${graphicsBlockIndex++}`,
+                                page: pageNumber,
+                                pageHeight: page.height,
+                                pageWidth: page.width,
+                            })
                         }
                     } catch (error) {
                         console.warn(
-                            `Failed to extract graphic lines from page ${pageNumber}:`,
+                            `Failed to extract graphics blocks from page ${pageNumber}:`,
                             error,
                         )
                     }
                 }
 
-                setExtractedGraphicLines(graphicLines)
+                setExtractedGraphicsBlocks(graphicsBlocks)
 
                 setUploadedFile(file)
                 setPdfDoc(document)
@@ -1659,6 +1659,24 @@ export function PdfEditor() {
                                             Text ({extractedTextBlocks.length})
                                         </Button>
                                     )}
+                                    {extractedGraphicsBlocks.length > 0 && (
+                                        <Button
+                                            type="button"
+                                            variant={
+                                                showGraphicsLayer
+                                                    ? 'default'
+                                                    : 'ghost'
+                                            }
+                                            size="sm"
+                                            onClick={() =>
+                                                setShowGraphicsLayer(!showGraphicsLayer)
+                                            }
+                                            className="rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+                                        >
+                                            <Layers className="mr-2 h-3 w-3" />
+                                            Graphics ({extractedGraphicsBlocks.length})
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                             <CardContent className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
@@ -1683,11 +1701,11 @@ export function PdfEditor() {
                                                         context.pageNumber,
                                                 )
 
-                                            // Filter graphic lines for this page
-                                            const pageGraphicLines =
-                                                extractedGraphicLines.filter(
-                                                    (gl) =>
-                                                        gl.page ===
+                                            // Filter graphics blocks for this page
+                                            const pageGraphicsBlocks =
+                                                extractedGraphicsBlocks.filter(
+                                                    (gb) =>
+                                                        gb.page ===
                                                         context.pageNumber,
                                                 )
 
@@ -1826,7 +1844,21 @@ export function PdfEditor() {
                                                                         />
                                                                     ),
                                                                 )}
-                                                            {/* Graphics block overlays hidden for now */}
+                                                            {showGraphicsLayer &&
+                                                                pageGraphicsBlocks.map(
+                                                                    (
+                                                                        graphicsBlock,
+                                                                    ) => (
+                                                                        <GraphicsBlockOverlay
+                                                                            key={
+                                                                                graphicsBlock.id
+                                                                            }
+                                                                            graphicsBlock={
+                                                                                graphicsBlock
+                                                                            }
+                                                                        />
+                                                                    ),
+                                                                )}
                                                         </div>
                                                     </div>
                                                 </div>

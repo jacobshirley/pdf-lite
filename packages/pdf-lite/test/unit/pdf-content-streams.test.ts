@@ -332,6 +332,33 @@ describe('TextBlock', () => {
         expect(str).toContain('<<')
         expect(str).toContain('>>')
     })
+
+    it('moveBy shifts all segments uniformly without double-shifting', () => {
+        // 3 segments: first has Tm, rest rely on text advance (no Tm/Td)
+        const s = makeStream(
+            'BT /F1 10 Tf 1 0 0 1 100 700 Tm (A) Tj (B) Tj (C) Tj ET',
+        )
+        const tb = s.textBlocks[0]
+        const segs = tb.getSegments()
+        expect(segs).toHaveLength(3)
+
+        // Record original positions
+        const origPositions = segs.map((seg) => {
+            const tm = seg.getLocalTransform()
+            return { x: tm.e, y: tm.f }
+        })
+
+        // Move by (50, -20)
+        tb.moveBy(50, -20)
+
+        // After move, each segment should be shifted by exactly (50, -20)
+        const newSegs = tb.getSegments()
+        for (let i = 0; i < newSegs.length; i++) {
+            const tm = newSegs[i].getLocalTransform()
+            expect(tm.e).toBeCloseTo(origPositions[i].x + 50, 5)
+            expect(tm.f).toBeCloseTo(origPositions[i].y + -20, 5)
+        }
+    })
 })
 
 // ---------------------------------------------------------------------------

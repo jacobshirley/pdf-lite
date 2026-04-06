@@ -1028,45 +1028,55 @@ export class TextBlock extends ContentNode {
      * in user-space coordinates.
      */
     moveBy(dx: number, dy: number): void {
-        for (const seg of this.segments) {
-            const newOps: string[] = []
-            let hasTm = false
-
-            for (const op of seg.ops.ops) {
+        // Pre-resolve all positions BEFORE modifying any segment.
+        // Otherwise, modifying segment N shifts its Tm, and segment N+1's
+        // resolveTextState() follows the prev chain to the already-shifted N,
+        // causing double-shifting and characters spreading apart.
+        const resolved = this.segments.map((seg) => {
+            const hasTm = seg.ops.ops.some((op) => {
                 const parts = op.split(/\s+/)
-                const operator = parts[parts.length - 1]
+                return parts[parts.length - 1] === 'Tm' && parts.length >= 7
+            })
+            return { hasTm, tm: hasTm ? null : seg.getLocalTransform() }
+        })
 
-                if (operator === 'Tm' && parts.length >= 7) {
-                    const a = parts[0]
-                    const b = parts[1]
-                    const c = parts[2]
-                    const d = parts[3]
-                    const e = parseFloat(parts[4]) + dx
-                    const f = parseFloat(parts[5]) + dy
-                    newOps.push(`${a} ${b} ${c} ${d} ${e} ${f} Tm`)
-                    hasTm = true
-                } else {
+        for (let i = 0; i < this.segments.length; i++) {
+            const seg = this.segments[i]
+            const { hasTm, tm } = resolved[i]
+            const newOps: string[] = []
+
+            if (hasTm) {
+                for (const op of seg.ops.ops) {
+                    const parts = op.split(/\s+/)
+                    const operator = parts[parts.length - 1]
+
+                    if (operator === 'Tm' && parts.length >= 7) {
+                        const a = parts[0]
+                        const b = parts[1]
+                        const c = parts[2]
+                        const d = parts[3]
+                        const e = parseFloat(parts[4]) + dx
+                        const f = parseFloat(parts[5]) + dy
+                        newOps.push(`${a} ${b} ${c} ${d} ${e} ${f} Tm`)
+                    } else {
+                        newOps.push(op)
+                    }
+                }
+                seg.ops = new ContentOps(newOps)
+            } else {
+                for (const op of seg.ops.ops) {
                     newOps.push(op)
                 }
-            }
-
-            if (!hasTm) {
-                // If no Tm, resolve current position and inject one
-                const tm = seg.getLocalTransform()
                 newOps.unshift(
-                    `${tm.a} ${tm.b} ${tm.c} ${tm.d} ${tm.e + dx} ${tm.f + dy} Tm`,
+                    `${tm!.a} ${tm!.b} ${tm!.c} ${tm!.d} ${tm!.e + dx} ${tm!.f + dy} Tm`,
                 )
-                // Remove relative positioning ops that are now superseded
                 seg.ops = new ContentOps(
                     newOps.filter((op) => {
                         const o = op.split(/\s+/).at(-1)
                         return o !== 'Td' && o !== 'TD' && o !== 'T*'
                     }),
                 )
-                continue
             }
-
-            seg.ops = new ContentOps(newOps)
         }
     }
 

@@ -12,7 +12,7 @@ import { WoffParser, detectFontFormat } from './woff-parser.js'
  * ```typescript
  * const fontData = readFileSync('myfont.woff')
  * const parser = parseFont(fontData)
- * const descriptor = parser.getFontDescriptor()
+ * const metrics = parser.getPdfFontDescriptor()
  * ```
  */
 export function parseFont(data: ByteArray): FontParser {

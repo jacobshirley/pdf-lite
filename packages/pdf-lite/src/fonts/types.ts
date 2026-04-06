@@ -1,12 +1,13 @@
 import { PdfDictionary, PdfIndirectObject } from '../core'
 import type { ByteArray } from '../types.js'
+import type { PdfFontDescriptor } from './pdf-font-descriptor.js'
 
 /**
  * Common interface for all font parsers.
  */
 export interface FontParser {
     getFontInfo(): TtfFontInfo
-    getFontDescriptor(fontName?: string): FontDescriptor
+    getPdfFontDescriptor(fontName?: string): PdfFontDescriptor
     getCharWidths(firstChar: number, lastChar: number): number[]
     getFontData(): ByteArray
     /**
@@ -42,31 +43,6 @@ export interface TtfFontInfo {
     isFixedPitch: boolean
 }
 
-/**
- * Font descriptor for embedding fonts in PDF documents.
- */
-export interface FontDescriptor {
-    fontName: string
-    fontFamily: string
-    fontWeight: number
-    flags: number
-    fontBBox: [number, number, number, number]
-    italicAngle: number
-    ascent: number
-    descent: number
-    capHeight: number
-    stemV: number
-    firstChar?: number
-    lastChar?: number
-    widths?: number[]
-}
-
-export interface UnicodeFontDescriptor extends FontDescriptor {
-    defaultWidth?: number
-    cidWidths?: CIDWidth[]
-    cidToGidMap?: 'Identity'
-}
-
 export type CIDWidth =
     | { cid: number; width: number }
     | { startCid: number; widths: number[] }
@@ -75,16 +51,6 @@ export type CIDWidth =
  * Detects the font format from the file signature.
  */
 export type FontFormat = 'ttf' | 'otf' | 'woff' | 'woff2' | 'unknown'
-
-/**
- * Represents a font that has been found in a PDF document.
- */
-export interface EmbeddedFont {
-    fontName: string
-    fontRef: PdfIndirectObject<PdfDictionary>
-    baseFont: string
-    encoding?: string
-}
 
 export interface AfmBBox {
     llx: number

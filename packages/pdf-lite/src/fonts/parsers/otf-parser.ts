@@ -1,5 +1,11 @@
 import { ByteArray } from '../../types.js'
-import { FontDescriptor, TtfFontInfo, FontParser } from '../types.js'
+import { TtfFontInfo, FontParser, AfmKernPair } from '../types.js'
+import { PdfFontDescriptor, GlyphMetrics } from '../pdf-font-descriptor.js'
+import {
+    STANDARD_MAC_GLYPH_NAMES,
+    weightClassToString,
+    estimateStemVFromWeight,
+} from './ttf-parser.js'
 
 /**
  * Parses OpenType font files (.otf) to extract metrics and glyph widths.
@@ -102,40 +108,80 @@ export class OtfParser implements FontParser {
     }
 
     /**
-     * Creates a FontDescriptor suitable for embedding.
+     * Creates PdfFontDescriptor suitable for embedding.
      * Scales metrics to PDF's 1000-unit em square.
      */
-    getFontDescriptor(fontName?: string): FontDescriptor {
+    getPdfFontDescriptor(fontName?: string): PdfFontDescriptor {
         const info = this.getFontInfo()
         const scale = 1000 / info.unitsPerEm
+        const os2 = this.parseOS2()
+        const postData = this.parsePostFull()
+        const cmap = this.parseCmap()
+        const hmtx = this.parseHmtx()
+        const glyphNames = this.parseGlyphNames()
 
-        let flags = 0
-        if (info.isFixedPitch) flags |= 1 << 0
-        if (!info.isFixedPitch) flags |= 1 << 5
-        if (info.isItalic) flags |= 1 << 6
+        // Build char widths (scaled)
+        const charWidths = new Map<number, number>()
+        for (let charCode = 32; charCode <= 126; charCode++) {
+            const glyphId = cmap.get(charCode) ?? 0
+            const width = hmtx.get(glyphId) ?? 0
+            charWidths.set(charCode, Math.round(width * scale))
+        }
 
-        const widths = this.getCharWidths(32, 126)
+        // Build per-glyph metrics and name→code map
+        const glyphMetrics = new Map<number, GlyphMetrics>()
+        const glyphNameToCode = new Map<string, number>()
+        for (const [charCode, glyphId] of cmap) {
+            const width = hmtx.get(glyphId) ?? 0
+            const name = glyphNames.get(glyphId) ?? `.gid${glyphId}`
+            glyphMetrics.set(charCode, {
+                width: Math.round(width * scale),
+                name,
+                bbox: { llx: 0, lly: 0, urx: 0, ury: 0 },
+            })
+            glyphNameToCode.set(name, charCode)
+        }
 
-        return {
+        // Parse kern pairs
+        const kernPairs = this.parseKern(glyphNames, cmap, scale)
+
+        return new PdfFontDescriptor({
             fontName: fontName ?? info.postScriptName,
-            fontFamily: info.fontFamily,
-            fontWeight: info.isBold ? 700 : 400,
-            flags,
-            fontBBox: [
-                Math.round(info.bbox[0] * scale),
-                Math.round(info.bbox[1] * scale),
-                Math.round(info.bbox[2] * scale),
-                Math.round(info.bbox[3] * scale),
-            ],
+            familyName: info.fontFamily,
+            fontWeight: os2?.usWeightClass ?? (info.isBold ? 700 : 400),
+            weight: weightClassToString(os2?.usWeightClass ?? 400),
+            isBold: info.isBold,
+            isItalic: info.isItalic,
+            isFixedPitch: info.isFixedPitch,
             italicAngle: info.isItalic ? -12 : 0,
-            ascent: Math.round(info.ascent * scale),
-            descent: Math.round(info.descent * scale),
+            ascender: Math.round(info.ascent * scale),
+            descender: Math.round(info.descent * scale),
             capHeight: Math.round(info.capHeight * scale),
-            stemV: Math.round(info.stemV * scale),
+            xHeight: Math.round(info.xHeight * scale),
+            stdVW: Math.round(info.stemV * scale),
+            unitsPerEm: info.unitsPerEm,
+            bbox: {
+                llx: Math.round(info.bbox[0] * scale),
+                lly: Math.round(info.bbox[1] * scale),
+                urx: Math.round(info.bbox[2] * scale),
+                ury: Math.round(info.bbox[3] * scale),
+            },
+            underlinePosition:
+                postData.underlinePosition !== undefined
+                    ? Math.round(postData.underlinePosition * scale)
+                    : undefined,
+            underlineThickness:
+                postData.underlineThickness !== undefined
+                    ? Math.round(postData.underlineThickness * scale)
+                    : undefined,
             firstChar: 32,
             lastChar: 126,
-            widths,
-        }
+            charWidths,
+            glyphMetrics,
+            glyphNameToCode,
+            kernPairs,
+            fontData: this.getFontData(),
+        })
     }
 
     /**
@@ -238,6 +284,125 @@ export class OtfParser implements FontParser {
         return {
             isFixedPitch: this.data.getUint32(offset + 12) !== 0,
         }
+    }
+
+    private parsePostFull(): {
+        isFixedPitch: boolean
+        underlinePosition?: number
+        underlineThickness?: number
+    } {
+        const table = this.getTable('post')
+        if (!table) return { isFixedPitch: false }
+
+        const offset = table.offset
+        return {
+            isFixedPitch: this.data.getUint32(offset + 12) !== 0,
+            underlinePosition: this.data.getInt16(offset + 8),
+            underlineThickness: this.data.getInt16(offset + 10),
+        }
+    }
+
+    parseGlyphNames(): Map<number, string> {
+        const table = this.getTable('post')
+        if (!table) return new Map()
+
+        const offset = table.offset
+        const format = this.data.getUint32(offset)
+        const names = new Map<number, string>()
+
+        if (format === 0x00020000) {
+            const numGlyphs = this.data.getUint16(offset + 32)
+            const glyphNameIndices: number[] = []
+            for (let i = 0; i < numGlyphs; i++) {
+                glyphNameIndices.push(this.data.getUint16(offset + 34 + i * 2))
+            }
+
+            let strOffset = offset + 34 + numGlyphs * 2
+            const customNames: string[] = []
+            while (strOffset < offset + table.length) {
+                const len = this.data.getUint8(strOffset)
+                strOffset++
+                let name = ''
+                for (let j = 0; j < len; j++) {
+                    name += String.fromCharCode(
+                        this.data.getUint8(strOffset + j),
+                    )
+                }
+                customNames.push(name)
+                strOffset += len
+            }
+
+            for (let i = 0; i < numGlyphs; i++) {
+                const idx = glyphNameIndices[i]
+                if (idx < 258) {
+                    names.set(i, STANDARD_MAC_GLYPH_NAMES[idx] ?? `.gid${i}`)
+                } else {
+                    names.set(i, customNames[idx - 258] ?? `.gid${i}`)
+                }
+            }
+        } else if (format === 0x00010000) {
+            for (
+                let i = 0;
+                i < 258 && i < STANDARD_MAC_GLYPH_NAMES.length;
+                i++
+            ) {
+                names.set(i, STANDARD_MAC_GLYPH_NAMES[i])
+            }
+        }
+
+        return names
+    }
+
+    parseKern(
+        glyphNames?: Map<number, string>,
+        cmap?: Map<number, number>,
+        scale?: number,
+    ): AfmKernPair[] {
+        const table = this.getTable('kern')
+        if (!table) return []
+
+        const offset = table.offset
+        const version = this.data.getUint16(offset)
+        if (version !== 0) return []
+
+        const nTables = this.data.getUint16(offset + 2)
+        const pairs: AfmKernPair[] = []
+        const names = glyphNames ?? this.parseGlyphNames()
+        const s = scale ?? 1000 / (this.getFontInfo().unitsPerEm || 1000)
+
+        let subtableOffset = offset + 4
+        for (let t = 0; t < nTables; t++) {
+            const subtableLength = this.data.getUint16(subtableOffset + 2)
+            const coverage = this.data.getUint16(subtableOffset + 4)
+            const format = coverage >> 8
+
+            if (format === 0) {
+                const nPairs = this.data.getUint16(subtableOffset + 6)
+                const pairOffset = subtableOffset + 14
+
+                for (let i = 0; i < nPairs; i++) {
+                    const entryOffset = pairOffset + i * 6
+                    const leftGlyph = this.data.getUint16(entryOffset)
+                    const rightGlyph = this.data.getUint16(entryOffset + 2)
+                    const value = this.data.getInt16(entryOffset + 4)
+
+                    const leftName = names.get(leftGlyph)
+                    const rightName = names.get(rightGlyph)
+
+                    if (leftName && rightName && value !== 0) {
+                        pairs.push({
+                            left: leftName,
+                            right: rightName,
+                            dx: Math.round(value * s),
+                        })
+                    }
+                }
+            }
+
+            subtableOffset += subtableLength
+        }
+
+        return pairs
     }
 
     private parseName(): {
@@ -443,16 +608,4 @@ export class OtfParser implements FontParser {
     private estimateStemV(weightClass: number): number {
         return estimateStemVFromWeight(weightClass)
     }
-}
-
-export function estimateStemVFromWeight(weightClass: number): number {
-    if (weightClass <= 100) return 25
-    if (weightClass <= 200) return 35
-    if (weightClass <= 300) return 50
-    if (weightClass <= 400) return 70
-    if (weightClass <= 500) return 88
-    if (weightClass <= 600) return 110
-    if (weightClass <= 700) return 135
-    if (weightClass <= 800) return 165
-    return 200
 }

@@ -1,11 +1,7 @@
 import { ByteArray } from '../../types.js'
 import { inflateData } from '../../utils/algos.js'
-import {
-    FontDescriptor,
-    TtfFontInfo,
-    FontParser,
-    FontFormat,
-} from '../types.js'
+import { TtfFontInfo, FontParser, FontFormat } from '../types.js'
+import { PdfFontDescriptor } from '../pdf-font-descriptor.js'
 import { TtfParser } from './ttf-parser.js'
 
 /**
@@ -36,10 +32,10 @@ export class WoffParser implements FontParser {
     }
 
     /**
-     * Creates a FontDescriptor suitable for embedding.
+     * Creates PdfFontDescriptor suitable for embedding.
      */
-    getFontDescriptor(fontName?: string): FontDescriptor {
-        return this.ttfParser.getFontDescriptor(fontName)
+    getPdfFontDescriptor(fontName?: string): PdfFontDescriptor {
+        return this.ttfParser.getPdfFontDescriptor(fontName)
     }
 
     /**

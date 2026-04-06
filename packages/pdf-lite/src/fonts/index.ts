@@ -1,4 +1,5 @@
 export * from './types.js'
 export * from './pdf-font.js'
 export * from './font-family.js'
+export * from './pdf-font-descriptor.js'
 export * from './parsers/index.js'

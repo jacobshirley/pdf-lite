@@ -1,11 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { server } from 'vitest/browser'
 import { PdfDocument } from '../../src/pdf/pdf-document'
-import {
-    FontDescriptor,
-    UnicodeFontDescriptor,
-    CIDWidth,
-} from '../../src/fonts/index'
+import { CIDWidth } from '../../src/fonts/index'
 import { TtfParser } from '../../src/fonts/parsers/ttf-parser'
 import { OtfParser } from '../../src/fonts/parsers/otf-parser'
 import {
@@ -18,6 +14,8 @@ import {
 } from '../../src/fonts/parsers/font-parser'
 import { ByteArray } from '../../src/types'
 import { PdfFont } from '../../src/fonts/pdf-font'
+import { PdfFontDescriptor } from '../../src/fonts/pdf-font-descriptor'
+import type { AfmKernPair } from '../../src/fonts/types'
 import { PdfDictionary, PdfHexadecimal, PdfNumber, PdfString } from '../../src'
 import { PdfArray } from '../../src/core/objects/pdf-array'
 import { PdfName } from '../../src/core/objects/pdf-name'
@@ -119,24 +117,20 @@ describe('Font Embedding', () => {
                 0x00, // rangeShift
             ])
 
-            const descriptor: FontDescriptor = {
+            const metrics = new PdfFontDescriptor({
                 fontName: 'CustomFont',
-                fontFamily: 'Custom',
+                familyName: 'Custom',
                 fontWeight: 400,
-                flags: 32, // Nonsymbolic
-                fontBBox: [-200, -200, 1000, 900],
+                bbox: { llx: -200, lly: -200, urx: 1000, ury: 900 },
                 italicAngle: 0,
-                ascent: 900,
-                descent: -200,
+                ascender: 900,
+                descender: -200,
                 capHeight: 700,
-                stemV: 80,
-            }
+                stdVW: 80,
+                fontData: mockFontData,
+            })
 
-            const font = PdfFont.fromTrueTypeData(
-                mockFontData,
-                'CustomFont',
-                descriptor,
-            )
+            const font = PdfFont.fromTrueTypeData(metrics)
             font.resourceName = 'F1'
 
             expect(font.resourceName).toBe('F1')
@@ -169,24 +163,20 @@ describe('Font Embedding', () => {
         it('should create TrueType font with default widths', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
-            const descriptor: FontDescriptor = {
+            const metrics = new PdfFontDescriptor({
                 fontName: 'TestFont',
-                fontFamily: 'Test',
+                familyName: 'Test',
                 fontWeight: 400,
-                flags: 32,
-                fontBBox: [-200, -200, 1000, 900],
+                bbox: { llx: -200, lly: -200, urx: 1000, ury: 900 },
                 italicAngle: 0,
-                ascent: 900,
-                descent: -200,
+                ascender: 900,
+                descender: -200,
                 capHeight: 700,
-                stemV: 80,
-            }
+                stdVW: 80,
+                fontData: mockFontData,
+            })
 
-            const font = PdfFont.fromTrueTypeData(
-                mockFontData,
-                'TestFont',
-                descriptor,
-            )
+            const font = PdfFont.fromTrueTypeData(metrics)
             font.resourceName = 'F1'
 
             expect(font.resourceName).toBe('F1')
@@ -195,27 +185,30 @@ describe('Font Embedding', () => {
         it('should create TrueType font with custom widths', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
-            const descriptor: FontDescriptor = {
+            const charWidths = new Map([
+                [32, 250],
+                [33, 333],
+                [34, 408],
+                [35, 500],
+                [36, 500],
+            ])
+            const metrics = new PdfFontDescriptor({
                 fontName: 'CustomWidthFont',
-                fontFamily: 'Custom',
+                familyName: 'Custom',
                 fontWeight: 400,
-                flags: 32,
-                fontBBox: [-200, -200, 1000, 900],
+                bbox: { llx: -200, lly: -200, urx: 1000, ury: 900 },
                 italicAngle: 0,
-                ascent: 900,
-                descent: -200,
+                ascender: 900,
+                descender: -200,
                 capHeight: 700,
-                stemV: 80,
+                stdVW: 80,
                 firstChar: 32,
                 lastChar: 36,
-                widths: [250, 333, 408, 500, 500], // Custom widths for chars 32-36
-            }
+                charWidths,
+                fontData: mockFontData,
+            })
 
-            const font = PdfFont.fromTrueTypeData(
-                mockFontData,
-                'CustomWidthFont',
-                descriptor,
-            )
+            const font = PdfFont.fromTrueTypeData(metrics)
             font.resourceName = 'F1'
 
             expect(font.resourceName).toBe('F1')
@@ -224,26 +217,22 @@ describe('Font Embedding', () => {
         it('should create TrueType font with custom firstChar/lastChar range', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
-            const descriptor: FontDescriptor = {
+            const metrics = new PdfFontDescriptor({
                 fontName: 'RangeFont',
-                fontFamily: 'Range',
+                familyName: 'Range',
                 fontWeight: 400,
-                flags: 32,
-                fontBBox: [-200, -200, 1000, 900],
+                bbox: { llx: -200, lly: -200, urx: 1000, ury: 900 },
                 italicAngle: 0,
-                ascent: 900,
-                descent: -200,
+                ascender: 900,
+                descender: -200,
                 capHeight: 700,
-                stemV: 80,
+                stdVW: 80,
                 firstChar: 65, // 'A'
                 lastChar: 90, // 'Z'
-            }
+                fontData: mockFontData,
+            })
 
-            const font = PdfFont.fromTrueTypeData(
-                mockFontData,
-                'RangeFont',
-                descriptor,
-            )
+            const font = PdfFont.fromTrueTypeData(metrics)
             font.resourceName = 'F1'
 
             expect(font.resourceName).toBe('F1')
@@ -254,25 +243,21 @@ describe('Font Embedding', () => {
         it('should create a Unicode TrueType font', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
-            const descriptor: UnicodeFontDescriptor = {
+            const metrics = new PdfFontDescriptor({
                 fontName: 'UnicodeFont',
-                fontFamily: 'Unicode',
+                familyName: 'Unicode',
                 fontWeight: 400,
-                flags: 32,
-                fontBBox: [-200, -200, 1000, 900],
+                bbox: { llx: -200, lly: -200, urx: 1000, ury: 900 },
                 italicAngle: 0,
-                ascent: 900,
-                descent: -200,
+                ascender: 900,
+                descender: -200,
                 capHeight: 700,
-                stemV: 80,
+                stdVW: 80,
                 defaultWidth: 1000,
-            }
+                fontData: mockFontData,
+            })
 
-            const font = PdfFont.fromType0Data(
-                mockFontData,
-                'UnicodeFont',
-                descriptor,
-            )
+            const font = PdfFont.fromType0Data(metrics)
             font.resourceName = 'F1'
 
             expect(font.resourceName).toBe('F1')
@@ -287,26 +272,22 @@ describe('Font Embedding', () => {
                 { startCid: 10, widths: [600, 700, 800] },
             ]
 
-            const descriptor: UnicodeFontDescriptor = {
+            const metrics = new PdfFontDescriptor({
                 fontName: 'CIDWidthFont',
-                fontFamily: 'CID',
+                familyName: 'CID',
                 fontWeight: 400,
-                flags: 32,
-                fontBBox: [-200, -200, 1000, 900],
+                bbox: { llx: -200, lly: -200, urx: 1000, ury: 900 },
                 italicAngle: 0,
-                ascent: 900,
-                descent: -200,
+                ascender: 900,
+                descender: -200,
                 capHeight: 700,
-                stemV: 80,
+                stdVW: 80,
                 defaultWidth: 1000,
                 cidWidths,
-            }
+                fontData: mockFontData,
+            })
 
-            const font = PdfFont.fromType0Data(
-                mockFontData,
-                'CIDWidthFont',
-                descriptor,
-            )
+            const font = PdfFont.fromType0Data(metrics)
             font.resourceName = 'F1'
 
             expect(font.resourceName).toBe('F1')
@@ -315,18 +296,18 @@ describe('Font Embedding', () => {
         it('should create Unicode font with ToUnicode CMap', () => {
             const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
 
-            const descriptor: UnicodeFontDescriptor = {
+            const metrics = new PdfFontDescriptor({
                 fontName: 'CMapFont',
-                fontFamily: 'CMap',
+                familyName: 'CMap',
                 fontWeight: 400,
-                flags: 32,
-                fontBBox: [-200, -200, 1000, 900],
+                bbox: { llx: -200, lly: -200, urx: 1000, ury: 900 },
                 italicAngle: 0,
-                ascent: 900,
-                descent: -200,
+                ascender: 900,
+                descender: -200,
                 capHeight: 700,
-                stemV: 80,
-            }
+                stdVW: 80,
+                fontData: mockFontData,
+            })
 
             // Unicode mappings: CID -> Unicode code point
             const unicodeMappings = new Map<number, number>([
@@ -336,12 +317,7 @@ describe('Font Embedding', () => {
                 [100, 0x4e2d], // CID 100 -> '中'
             ])
 
-            const font = PdfFont.fromType0Data(
-                mockFontData,
-                'CMapFont',
-                descriptor,
-                unicodeMappings,
-            )
+            const font = PdfFont.fromType0Data(metrics, unicodeMappings)
             font.resourceName = 'F1'
 
             expect(font.resourceName).toBe('F1')
@@ -418,15 +394,14 @@ describe('Font Parsers with Real Fonts', () => {
         it('should get font descriptor from Roboto TTF', async () => {
             const fontData = await loadFont(TTF_FIXTURE)
             const parser = new TtfParser(fontData)
-            const descriptor = parser.getFontDescriptor()
+            const descriptor = parser.getPdfFontDescriptor()
 
-            expect(descriptor.fontFamily).toBe('Roboto')
+            expect(descriptor.familyName).toBe('Roboto')
             expect(descriptor.fontWeight).toBe(400)
             // Metrics should be scaled to 1000 units
-            expect(descriptor.ascent).toBeGreaterThan(0)
-            expect(descriptor.descent).toBeLessThan(0)
-            expect(descriptor.widths).toBeDefined()
-            expect(descriptor.widths!.length).toBe(95) // chars 32-126
+            expect(descriptor.ascender).toBeGreaterThan(0)
+            expect(descriptor.descender).toBeLessThan(0)
+            expect(descriptor.charWidths.size).toBe(95) // chars 32-126
         })
 
         it('should extract character widths from Roboto TTF', async () => {
@@ -460,11 +435,11 @@ describe('Font Parsers with Real Fonts', () => {
         it('should get font descriptor from Source Sans OTF', async () => {
             const fontData = await loadFont(OTF_FIXTURE)
             const parser = new OtfParser(fontData)
-            const descriptor = parser.getFontDescriptor()
+            const descriptor = parser.getPdfFontDescriptor()
 
-            expect(descriptor.fontFamily).toBe('Source Sans 3')
-            expect(descriptor.ascent).toBeGreaterThan(0)
-            expect(descriptor.descent).toBeLessThan(0)
+            expect(descriptor.familyName).toBe('Source Sans 3')
+            expect(descriptor.ascender).toBeGreaterThan(0)
+            expect(descriptor.descender).toBeLessThan(0)
         })
     })
 
@@ -481,11 +456,11 @@ describe('Font Parsers with Real Fonts', () => {
         it('should decompress WOFF and extract metrics', async () => {
             const fontData = await loadFont(WOFF_FIXTURE)
             const parser = new WoffParser(fontData)
-            const descriptor = parser.getFontDescriptor()
+            const descriptor = parser.getPdfFontDescriptor()
 
-            expect(descriptor.fontFamily).toBe('Roboto')
-            expect(descriptor.ascent).toBeGreaterThan(0)
-            expect(descriptor.widths).toBeDefined()
+            expect(descriptor.familyName).toBe('Roboto')
+            expect(descriptor.ascender).toBeGreaterThan(0)
+            expect(descriptor.charWidths.size).toBeGreaterThan(0)
         })
 
         it('should provide access to decompressed font data', async () => {
@@ -535,13 +510,9 @@ describe('Font Parsers with Real Fonts', () => {
         it('should create PdfFont from Roboto TTF', async () => {
             const fontData = await loadFont(TTF_FIXTURE)
             const parser = parseFont(fontData)
-            const descriptor = parser.getFontDescriptor('Roboto')
+            const metrics = parser.getPdfFontDescriptor('Roboto')
 
-            const font = PdfFont.fromTrueTypeData(
-                fontData,
-                'Roboto',
-                descriptor,
-            )
+            const font = PdfFont.fromTrueTypeData(metrics)
             font.resourceName = 'F1'
 
             expect(font.resourceName).toBe('F1')
@@ -551,13 +522,9 @@ describe('Font Parsers with Real Fonts', () => {
             const document = new PdfDocument()
             const fontData = await loadFont(TTF_FIXTURE)
             const parser = parseFont(fontData)
-            const descriptor = parser.getFontDescriptor('Roboto')
+            const metrics = parser.getPdfFontDescriptor('Roboto')
 
-            const font = PdfFont.fromTrueTypeData(
-                fontData,
-                'Roboto',
-                descriptor,
-            )
+            const font = PdfFont.fromTrueTypeData(metrics)
             font.resourceName = 'F1'
             document.add(font)
 
@@ -746,16 +713,21 @@ describe('Font Parsers with Minimal Test Data', () => {
             expect(info.descent).toBe(-200)
         })
 
-        it('should create a FontDescriptor with scaled metrics', () => {
+        it('should create PdfFontDescriptor with scaled metrics', () => {
             const ttfData = createMinimalTtf()
             const parser = new TtfParser(ttfData)
-            const descriptor = parser.getFontDescriptor('TestFont')
+            const descriptor = parser.getPdfFontDescriptor('TestFont')
 
             expect(descriptor.fontName).toBe('TestFont')
             // Metrics should be scaled to 1000 units (already at 1000, so unchanged)
-            expect(descriptor.ascent).toBe(800)
-            expect(descriptor.descent).toBe(-200)
-            expect(descriptor.fontBBox).toEqual([-100, -200, 800, 900])
+            expect(descriptor.ascender).toBe(800)
+            expect(descriptor.descender).toBe(-200)
+            expect(descriptor.bbox).toEqual({
+                llx: -100,
+                lly: -200,
+                urx: 800,
+                ury: 900,
+            })
         })
 
         it('should scale metrics when unitsPerEm is not 1000', () => {
@@ -768,11 +740,11 @@ describe('Font Parsers with Minimal Test Data', () => {
             view.setInt16(166, -400)
 
             const parser = new TtfParser(ttfData)
-            const descriptor = parser.getFontDescriptor()
+            const descriptor = parser.getPdfFontDescriptor()
 
             // Metrics should be scaled from 2000 to 1000
-            expect(descriptor.ascent).toBe(800) // 1600 * (1000/2000)
-            expect(descriptor.descent).toBe(-200) // -400 * (1000/2000)
+            expect(descriptor.ascender).toBe(800) // 1600 * (1000/2000)
+            expect(descriptor.descender).toBe(-200) // -400 * (1000/2000)
         })
 
         it('should return character widths for a range', () => {
@@ -804,15 +776,15 @@ describe('Font Parsers with Minimal Test Data', () => {
             expect(parser.isCFFBased()).toBe(true)
         })
 
-        it('should create a FontDescriptor with scaled metrics', () => {
+        it('should create PdfFontDescriptor with scaled metrics', () => {
             const otfData = createMinimalOtf()
             const parser = new OtfParser(otfData)
-            const descriptor = parser.getFontDescriptor('OtfTestFont')
+            const descriptor = parser.getPdfFontDescriptor('OtfTestFont')
 
             expect(descriptor.fontName).toBe('OtfTestFont')
             // Metrics should be scaled from 2048 to 1000
-            expect(descriptor.ascent).toBe(Math.round((1800 * 1000) / 2048))
-            expect(descriptor.descent).toBe(Math.round((-400 * 1000) / 2048))
+            expect(descriptor.ascender).toBe(Math.round((1800 * 1000) / 2048))
+            expect(descriptor.descender).toBe(Math.round((-400 * 1000) / 2048))
         })
     })
 
@@ -900,11 +872,11 @@ describe('Font Parsers with Minimal Test Data', () => {
 
             // Both should implement the same interface
             expect(typeof ttfParser.getFontInfo).toBe('function')
-            expect(typeof ttfParser.getFontDescriptor).toBe('function')
+            expect(typeof ttfParser.getPdfFontDescriptor).toBe('function')
             expect(typeof ttfParser.getCharWidths).toBe('function')
 
             expect(typeof otfParser.getFontInfo).toBe('function')
-            expect(typeof otfParser.getFontDescriptor).toBe('function')
+            expect(typeof otfParser.getPdfFontDescriptor).toBe('function')
             expect(typeof otfParser.getCharWidths).toBe('function')
         })
 
@@ -929,23 +901,162 @@ describe('Font Parsers with Minimal Test Data', () => {
             expect(info).toHaveProperty('isFixedPitch')
         })
 
-        it('should return FontDescriptor with all required fields', () => {
+        it('should return PdfFontDescriptor with all required fields', () => {
             const parser = new TtfParser(createMinimalTtf())
-            const descriptor = parser.getFontDescriptor('TestFont')
+            const descriptor = parser.getPdfFontDescriptor('TestFont')
 
             expect(descriptor).toHaveProperty('fontName')
-            expect(descriptor).toHaveProperty('fontFamily')
+            expect(descriptor).toHaveProperty('familyName')
             expect(descriptor).toHaveProperty('fontWeight')
-            expect(descriptor).toHaveProperty('flags')
-            expect(descriptor).toHaveProperty('fontBBox')
+            expect(descriptor).toHaveProperty('bbox')
             expect(descriptor).toHaveProperty('italicAngle')
-            expect(descriptor).toHaveProperty('ascent')
-            expect(descriptor).toHaveProperty('descent')
+            expect(descriptor).toHaveProperty('ascender')
+            expect(descriptor).toHaveProperty('descender')
             expect(descriptor).toHaveProperty('capHeight')
-            expect(descriptor).toHaveProperty('stemV')
+            expect(descriptor).toHaveProperty('stdVW')
             expect(descriptor).toHaveProperty('firstChar')
             expect(descriptor).toHaveProperty('lastChar')
-            expect(descriptor).toHaveProperty('widths')
+            expect(descriptor).toHaveProperty('charWidths')
+        })
+    })
+
+    describe('parseGlyphNames', () => {
+        it('should return empty map for minimal font without post format 2', () => {
+            const parser = new TtfParser(createMinimalTtf())
+            const names = parser.parseGlyphNames()
+            // Minimal font has no post table, so no names
+            expect(names).toBeInstanceOf(Map)
+        })
+
+        it('should extract glyph names from real TTF font', async () => {
+            const fontData = await loadFont(TTF_FIXTURE)
+            const parser = new TtfParser(fontData)
+            const names = parser.parseGlyphNames()
+
+            expect(names.size).toBeGreaterThan(0)
+            // .notdef is typically glyph 0
+            expect(names.get(0)).toBe('.notdef')
+        })
+
+        it('should handle OTF font post table (may use format 3 with no names)', async () => {
+            const fontData = await loadFont(OTF_FIXTURE)
+            const parser = new OtfParser(fontData)
+            const names = parser.parseGlyphNames()
+
+            // CFF-based OTF fonts often use post format 3.0 (no glyph names)
+            expect(names).toBeInstanceOf(Map)
+        })
+    })
+
+    describe('parseKern', () => {
+        it('should return empty array for font without kern table', () => {
+            const parser = new TtfParser(createMinimalTtf())
+            const pairs = parser.parseKern()
+            expect(pairs).toEqual([])
+        })
+
+        it('should extract kern pairs from real TTF if kern table present', async () => {
+            const fontData = await loadFont(TTF_FIXTURE)
+            const parser = new TtfParser(fontData)
+            const pairs = parser.parseKern()
+
+            // Kern pairs array should be defined (may be empty if font uses GPOS instead)
+            expect(Array.isArray(pairs)).toBe(true)
+            for (const pair of pairs) {
+                expect(pair).toHaveProperty('left')
+                expect(pair).toHaveProperty('right')
+                expect(pair).toHaveProperty('dx')
+                expect(typeof pair.left).toBe('string')
+                expect(typeof pair.right).toBe('string')
+                expect(typeof pair.dx).toBe('number')
+            }
+        })
+
+        it('should extract kern pairs from real OTF if kern table present', async () => {
+            const fontData = await loadFont(OTF_FIXTURE)
+            const parser = new OtfParser(fontData)
+            const pairs = parser.parseKern()
+
+            expect(Array.isArray(pairs)).toBe(true)
+            for (const pair of pairs) {
+                expect(pair).toHaveProperty('left')
+                expect(pair).toHaveProperty('right')
+                expect(pair).toHaveProperty('dx')
+            }
+        })
+    })
+
+    describe('getPdfFontDescriptor extended fields', () => {
+        it('should include glyphMetrics in descriptor from real TTF', async () => {
+            const fontData = await loadFont(TTF_FIXTURE)
+            const parser = new TtfParser(fontData)
+            const desc = parser.getPdfFontDescriptor()
+
+            expect(desc.glyphMetrics.size).toBeGreaterThan(0)
+            // 'A' is char code 65
+            const aGlyph = desc.getGlyphMetrics(65)
+            expect(aGlyph).toBeDefined()
+            expect(aGlyph!.name).toBeDefined()
+            expect(aGlyph!.width).toBeGreaterThan(0)
+        })
+
+        it('should include glyphNameToCode in descriptor from real TTF', async () => {
+            const fontData = await loadFont(TTF_FIXTURE)
+            const parser = new TtfParser(fontData)
+            const desc = parser.getPdfFontDescriptor()
+
+            expect(desc.glyphNameToCode.size).toBeGreaterThan(0)
+        })
+
+        it('should include underline metrics from real TTF', async () => {
+            const fontData = await loadFont(TTF_FIXTURE)
+            const parser = new TtfParser(fontData)
+            const desc = parser.getPdfFontDescriptor()
+
+            expect(desc.underlinePosition).toBeDefined()
+            expect(typeof desc.underlinePosition).toBe('number')
+            expect(desc.underlineThickness).toBeDefined()
+            expect(typeof desc.underlineThickness).toBe('number')
+        })
+
+        it('should include weight string in descriptor', async () => {
+            const fontData = await loadFont(TTF_FIXTURE)
+            const parser = new TtfParser(fontData)
+            const desc = parser.getPdfFontDescriptor()
+
+            expect(desc.weight).toBeDefined()
+            expect(typeof desc.weight).toBe('string')
+        })
+
+        it('should include kernPairs in descriptor from real TTF', async () => {
+            const fontData = await loadFont(TTF_FIXTURE)
+            const parser = new TtfParser(fontData)
+            const desc = parser.getPdfFontDescriptor()
+
+            // kernPairs should always be defined (may be empty)
+            expect(Array.isArray(desc.kernPairs)).toBe(true)
+        })
+
+        it('should include extended fields from OTF parser', async () => {
+            const fontData = await loadFont(OTF_FIXTURE)
+            const parser = new OtfParser(fontData)
+            const desc = parser.getPdfFontDescriptor()
+
+            expect(desc.glyphMetrics.size).toBeGreaterThan(0)
+            expect(desc.glyphNameToCode.size).toBeGreaterThan(0)
+            expect(desc.weight).toBeDefined()
+            expect(Array.isArray(desc.kernPairs)).toBe(true)
+        })
+
+        it('should include extended fields from WOFF parser', async () => {
+            const fontData = await loadFont(WOFF_FIXTURE)
+            const parser = new WoffParser(fontData)
+            const desc = parser.getPdfFontDescriptor()
+
+            expect(desc.glyphMetrics.size).toBeGreaterThan(0)
+            expect(desc.glyphNameToCode.size).toBeGreaterThan(0)
+            expect(desc.weight).toBeDefined()
+            expect(Array.isArray(desc.kernPairs)).toBe(true)
         })
     })
 
@@ -1239,6 +1350,244 @@ describe('PdfFont.decode()', () => {
             const font = fontWithDifferences({ 160: 'Euro', 164: 'currency' })
             const text = '\u20ac\u00a4'
             expect(font.decode(font.encode(text))).toBe(text)
+        })
+    })
+
+    describe('PdfFontDescriptor', () => {
+        it('should construct with kern pairs and provide O(1) lookup', () => {
+            const kernPairs: AfmKernPair[] = [
+                { left: 'A', right: 'V', dx: -80 },
+                { left: 'A', right: 'W', dx: -60 },
+                { left: 'T', right: 'o', dx: -40 },
+            ]
+            const metrics = new PdfFontDescriptor({ kernPairs })
+
+            expect(metrics.getKernAdjustment('A', 'V')).toBe(-80)
+            expect(metrics.getKernAdjustment('A', 'W')).toBe(-60)
+            expect(metrics.getKernAdjustment('T', 'o')).toBe(-40)
+            expect(metrics.getKernAdjustment('A', 'B')).toBe(0)
+        })
+
+        it('should construct with char widths and provide lookup', () => {
+            const charWidths = new Map([
+                [32, 278],
+                [65, 667],
+            ])
+            const metrics = new PdfFontDescriptor({ charWidths })
+
+            expect(metrics.getCharWidth(32)).toBe(278)
+            expect(metrics.getCharWidth(65)).toBe(667)
+            expect(metrics.getCharWidth(99)).toBeUndefined()
+        })
+
+        it('should build from AfmFont data', () => {
+            const afm = {
+                metadata: {},
+                bbox: { llx: 0, lly: 0, urx: 1000, ury: 1000 },
+                charMetrics: [
+                    {
+                        code: 32,
+                        wx: 278,
+                        name: 'space',
+                        bbox: { llx: 0, lly: 0, urx: 0, ury: 0 },
+                    },
+                    {
+                        code: 65,
+                        wx: 667,
+                        name: 'A',
+                        bbox: { llx: 0, lly: 0, urx: 600, ury: 700 },
+                    },
+                ],
+                kernPairs: [{ left: 'A', right: 'V', dx: -80 }],
+            }
+            const metrics = PdfFontDescriptor.fromAfm(afm)
+
+            expect(metrics.getCharWidth(32)).toBe(278)
+            expect(metrics.getCharWidth(65)).toBe(667)
+            expect(metrics.getKernAdjustment('A', 'V')).toBe(-80)
+            expect(metrics.kernPairs).toHaveLength(1)
+        })
+
+        it('should return 0 for kern adjustment when no kern pairs exist', () => {
+            const metrics = new PdfFontDescriptor({})
+            expect(metrics.getKernAdjustment('A', 'V')).toBe(0)
+        })
+
+        it('Helvetica should have kern pairs from AFM data', () => {
+            const font = PdfFont.HELVETICA
+            expect(font.metrics).toBeDefined()
+            expect(font.metrics!.kernPairs.length).toBeGreaterThan(0)
+            // A,V is a common kern pair in Helvetica
+            expect(font.metrics!.getKernAdjustment('A', 'V')).toBeLessThan(0)
+        })
+
+        it('Helvetica should have correct char widths from AFM data', () => {
+            const font = PdfFont.HELVETICA
+            // space = 278 in Helvetica AFM
+            expect(font.metrics!.getCharWidth(32)).toBe(278)
+            // A = 667 in Helvetica AFM
+            expect(font.metrics!.getCharWidth(65)).toBe(667)
+        })
+
+        it('Courier should have no kern pairs', () => {
+            const font = PdfFont.COURIER
+            expect(font.metrics).toBeDefined()
+            expect(font.metrics!.kernPairs).toHaveLength(0)
+            expect(font.metrics!.getKernAdjustment('A', 'V')).toBe(0)
+        })
+
+        it('Courier should have fixed-width char widths', () => {
+            const font = PdfFont.COURIER
+            expect(font.metrics!.getCharWidth(32)).toBe(600)
+            expect(font.metrics!.getCharWidth(65)).toBe(600)
+        })
+
+        it('Times-Roman should have kern pairs', () => {
+            const font = PdfFont.TIMES_ROMAN
+            expect(font.metrics!.kernPairs.length).toBeGreaterThan(0)
+            expect(font.metrics!.getKernAdjustment('A', 'V')).toBeLessThan(0)
+        })
+
+        it('standard font widths in PDF dictionary should match AFM data', () => {
+            const font = PdfFont.HELVETICA
+            const pdfWidths = font.widths
+            expect(pdfWidths).toBeDefined()
+            // First char is 32 (space), widths[0] should match AFM space width
+            expect(pdfWidths![0]).toBe(278)
+            // 'A' is char code 65, index 65-32=33
+            expect(pdfWidths![33]).toBe(667)
+        })
+
+        it('Helvetica should have vertical metrics from AFM', () => {
+            const m = PdfFont.HELVETICA.metrics!
+            expect(m.ascender).toBe(718)
+            expect(m.descender).toBe(-207)
+            expect(m.capHeight).toBe(718)
+            expect(m.xHeight).toBe(523)
+        })
+
+        it('Helvetica should have underline metrics from AFM', () => {
+            const m = PdfFont.HELVETICA.metrics!
+            expect(m.underlinePosition).toBe(-100)
+            expect(m.underlineThickness).toBe(50)
+        })
+
+        it('Helvetica should have stem widths from AFM', () => {
+            const m = PdfFont.HELVETICA.metrics!
+            expect(m.stdHW).toBe(76)
+            expect(m.stdVW).toBe(88)
+        })
+
+        it('should have font identity metadata from AFM', () => {
+            const m = PdfFont.HELVETICA.metrics!
+            expect(m.fontName).toBe('Helvetica')
+            expect(m.familyName).toBe('Helvetica')
+            expect(m.weight).toBe('Medium')
+            expect(m.isFixedPitch).toBe(false)
+            expect(m.italicAngle).toBe(0)
+        })
+
+        it('Courier should be fixed pitch', () => {
+            const m = PdfFont.COURIER.metrics!
+            expect(m.isFixedPitch).toBe(true)
+        })
+
+        it('should have font bounding box from AFM', () => {
+            const m = PdfFont.HELVETICA.metrics!
+            expect(m.bbox).toEqual({
+                llx: -166,
+                lly: -225,
+                urx: 1000,
+                ury: 931,
+            })
+        })
+
+        it('should have per-glyph metrics', () => {
+            const m = PdfFont.HELVETICA.metrics!
+            const spaceGlyph = m.getGlyphMetrics(32)
+            expect(spaceGlyph).toBeDefined()
+            expect(spaceGlyph!.name).toBe('space')
+            expect(spaceGlyph!.width).toBe(278)
+
+            const aGlyph = m.getGlyphMetrics(65)
+            expect(aGlyph).toBeDefined()
+            expect(aGlyph!.name).toBe('A')
+            expect(aGlyph!.bbox.urx).toBeGreaterThan(0)
+        })
+
+        it('should have glyph name to code mapping', () => {
+            const m = PdfFont.HELVETICA.metrics!
+            expect(m.glyphNameToCode.get('space')).toBe(32)
+            expect(m.glyphNameToCode.get('A')).toBe(65)
+        })
+
+        it('should have ligature data on f glyph', () => {
+            const m = PdfFont.HELVETICA.metrics!
+            // 'f' is char code 102
+            const fGlyph = m.getGlyphMetrics(102)
+            expect(fGlyph).toBeDefined()
+            expect(fGlyph!.ligatures).toBeDefined()
+            expect(fGlyph!.ligatures!['i']).toBe('fi')
+            expect(fGlyph!.ligatures!['l']).toBe('fl')
+        })
+
+        it('getLigature should return ligature glyph name', () => {
+            const m = PdfFont.HELVETICA.metrics!
+            expect(m.getLigature(102, 'i')).toBe('fi')
+            expect(m.getLigature(102, 'l')).toBe('fl')
+            expect(m.getLigature(102, 'a')).toBeUndefined()
+            expect(m.getLigature(65, 'i')).toBeUndefined()
+        })
+
+        it('fromAfm should extract all metadata fields', () => {
+            const afm = {
+                metadata: {
+                    FontName: 'TestFont',
+                    FamilyName: 'Test',
+                    Weight: 'Bold',
+                    ItalicAngle: -12,
+                    IsFixedPitch: true,
+                    CapHeight: 700,
+                    XHeight: 500,
+                    Ascender: 750,
+                    Descender: -250,
+                    UnderlinePosition: -100,
+                    UnderlineThickness: 50,
+                    StdHW: 80,
+                    StdVW: 90,
+                },
+                bbox: { llx: -10, lly: -200, urx: 1000, ury: 900 },
+                charMetrics: [
+                    {
+                        code: 65,
+                        wx: 600,
+                        name: 'A',
+                        bbox: { llx: 0, lly: 0, urx: 550, ury: 700 },
+                        ligatures: { E: 'AE' },
+                    },
+                ],
+                kernPairs: [],
+            }
+            const m = PdfFontDescriptor.fromAfm(afm)
+
+            expect(m.fontName).toBe('TestFont')
+            expect(m.familyName).toBe('Test')
+            expect(m.weight).toBe('Bold')
+            expect(m.italicAngle).toBe(-12)
+            expect(m.isFixedPitch).toBe(true)
+            expect(m.capHeight).toBe(700)
+            expect(m.xHeight).toBe(500)
+            expect(m.ascender).toBe(750)
+            expect(m.descender).toBe(-250)
+            expect(m.underlinePosition).toBe(-100)
+            expect(m.underlineThickness).toBe(50)
+            expect(m.stdHW).toBe(80)
+            expect(m.stdVW).toBe(90)
+            expect(m.bbox).toEqual({ llx: -10, lly: -200, urx: 1000, ury: 900 })
+
+            const glyph = m.getGlyphMetrics(65)
+            expect(glyph!.ligatures).toEqual({ E: 'AE' })
+            expect(m.glyphNameToCode.get('A')).toBe(65)
         })
     })
 })

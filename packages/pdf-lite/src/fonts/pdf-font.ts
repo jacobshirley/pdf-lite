@@ -7,16 +7,27 @@ import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfString } from '../core/objects/pdf-string.js'
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
-import type {
-    FontDescriptor,
-    UnicodeFontDescriptor,
-    CIDWidth,
-    FontParser,
-} from './types.js'
+import type { CIDWidth, FontParser, AfmFont } from './types.js'
 import type { ByteArray } from '../types.js'
 import { parseFont } from './parsers/font-parser.js'
 import { OtfParser } from './parsers/otf-parser.js'
 import { PdfHexadecimal } from '../core/index.js'
+import { PdfFontDescriptor } from './pdf-font-descriptor.js'
+
+import HelveticaAfm from './vendor/Adobe/Core14/Helvetica.json'
+import HelveticaBoldAfm from './vendor/Adobe/Core14/Helvetica-Bold.json'
+import HelveticaObliqueAfm from './vendor/Adobe/Core14/Helvetica-Oblique.json'
+import HelveticaBoldObliqueAfm from './vendor/Adobe/Core14/Helvetica-BoldOblique.json'
+import TimesRomanAfm from './vendor/Adobe/Core14/Times-Roman.json'
+import TimesBoldAfm from './vendor/Adobe/Core14/Times-Bold.json'
+import TimesItalicAfm from './vendor/Adobe/Core14/Times-Italic.json'
+import TimesBoldItalicAfm from './vendor/Adobe/Core14/Times-BoldItalic.json'
+import CourierAfm from './vendor/Adobe/Core14/Courier.json'
+import CourierBoldAfm from './vendor/Adobe/Core14/Courier-Bold.json'
+import CourierObliqueAfm from './vendor/Adobe/Core14/Courier-Oblique.json'
+import CourierBoldObliqueAfm from './vendor/Adobe/Core14/Courier-BoldOblique.json'
+import SymbolAfm from './vendor/Adobe/Core14/Symbol.json'
+import ZapfDingbatsAfm from './vendor/Adobe/Core14/ZapfDingbats.json'
 
 type PdfFontDictionary = PdfDictionary<{
     Type: PdfName<'Font'>
@@ -65,11 +76,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         return `F${++PdfFont._resourceCounter}`
     }
 
-    /**
-     * @internal
-     * Original font file bytes.
-     */
-    private _fontData?: ByteArray
+    metrics: PdfFontDescriptor
 
     constructor(font: PdfIndirectObject)
     constructor(fontName: string)
@@ -77,7 +84,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         fontName?: string
         resourceName?: string
         encoding?: string
-        fontData?: ByteArray
+        metrics?: PdfFontDescriptor
     })
     constructor(
         optionsOrFontName:
@@ -86,7 +93,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                   fontName?: string
                   resourceName?: string
                   encoding?: string
-                  fontData?: ByteArray
+                  metrics?: PdfFontDescriptor
               }
             | PdfIndirectObject,
     ) {
@@ -102,6 +109,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             }
             this.content = fontObj.content as PdfFontDictionary
             this.resourceName = fontObj.reference.key
+            this.metrics = PdfFontDescriptor.fromPdfFontDict(this.content)
             return
         }
 
@@ -109,6 +117,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         if (typeof optionsOrFontName === 'string') {
             this.fontName = optionsOrFontName
             this.resourceName = optionsOrFontName
+            this.metrics = new PdfFontDescriptor({})
             return
         }
 
@@ -117,7 +126,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         this.fontName = options.fontName
         this.resourceName = options.resourceName || PdfFont.nextResourceName()
         this.encoding = options.encoding
-        this._fontData = options.fontData
+        this.metrics = options.metrics ?? new PdfFontDescriptor({})
     }
 
     get dict(): PdfFontDictionary {
@@ -189,7 +198,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * Available for embedded fonts, undefined for standard fonts or loaded fonts.
      */
     get fontData(): ByteArray | undefined {
-        return this._fontData
+        return this.metrics?.fontData
     }
 
     /**
@@ -215,83 +224,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         }
 
         return null
-    }
-
-    /**
-     * Lazily parses the CIDFont W (widths) array from DescendantFonts.
-     * Returns null if not a Type0 font or no W array is available.
-     */
-    private get cidWidthData(): {
-        cidWidths: Map<number, number>
-        defaultWidth: number
-    } | null {
-        if (!this.isUnicode) {
-            return null
-        }
-
-        const descFontsArr = this.content.get('DescendantFonts') as
-            | PdfArray<PdfObjectReference>
-            | undefined
-        if (!descFontsArr?.items?.length) {
-            return null
-        }
-
-        const cidFontRef = descFontsArr.items[0]
-        const cidFont =
-            cidFontRef instanceof PdfObjectReference
-                ? cidFontRef.resolve()
-                : null
-        const cidFontDict = cidFont?.content as PdfDictionary | undefined
-        if (!cidFontDict) {
-            return null
-        }
-
-        const cidWidths = new Map<number, number>()
-        const dwEntry = cidFontDict.get('DW')
-        const defaultWidth = dwEntry instanceof PdfNumber ? dwEntry.value : 1000
-
-        const wArr = cidFontDict.get('W') as PdfArray<any> | undefined
-        if (wArr?.items) {
-            const items = wArr.items
-            let i = 0
-            while (i < items.length) {
-                const first = items[i]
-                if (!(first instanceof PdfNumber)) {
-                    i++
-                    continue
-                }
-                const startCid = first.value
-                const next = items[i + 1]
-                if (next instanceof PdfArray) {
-                    // Format: startCid [w1 w2 w3 ...]
-                    const widths = next.items
-                    for (let j = 0; j < widths.length; j++) {
-                        if (widths[j] instanceof PdfNumber) {
-                            cidWidths.set(
-                                startCid + j,
-                                (widths[j] as PdfNumber).value,
-                            )
-                        }
-                    }
-                    i += 2
-                } else if (
-                    next instanceof PdfNumber &&
-                    items[i + 2] instanceof PdfNumber
-                ) {
-                    // Format: startCid endCid width
-                    const endCid = next.value
-                    const width = (items[i + 2] as PdfNumber).value
-                    for (let cid = startCid; cid <= endCid; cid++) {
-                        cidWidths.set(cid, width)
-                    }
-                    i += 3
-                } else {
-                    i++
-                }
-            }
-        }
-
-        return { cidWidths, defaultWidth }
     }
 
     /**
@@ -403,15 +335,18 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * @returns The raw character width or null if not found
      */
     getRawCharacterWidth(charCode: number): number | null {
-        // For Type0 fonts, use CIDFont W array from DescendantFonts
-        if (this.isUnicode) {
-            const cidData = this.cidWidthData
-            if (cidData) {
-                return cidData.cidWidths.get(charCode) ?? cidData.defaultWidth
-            }
+        // Try descriptor's charWidths first (populated for all font types)
+        const metricsWidth = this.metrics.getCharWidth(charCode)
+        if (metricsWidth !== undefined) {
+            return metricsWidth
         }
 
-        // For Type1/TrueType fonts, use simple widths array
+        // For Type0 fonts, fall back to default width
+        if (this.isUnicode) {
+            return this.metrics.defaultWidth ?? 1000
+        }
+
+        // For Type1/TrueType fonts, use simple widths array from font dict
         if (this.widths === undefined || this.firstChar === undefined) {
             return null
         }
@@ -598,12 +533,8 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             throw new Error('CFF-based OTF fonts are not supported yet')
         }
 
-        const fontInfo = parser.getFontInfo()
-        const fontName = fontInfo.postScriptName
-        const descriptor = parser.getFontDescriptor(fontName)
-        const fontData = parser.getFontData()
-
-        return PdfFont.fromTrueTypeData(fontData, fontName, descriptor)
+        const metrics = parser.getPdfFontDescriptor()
+        return PdfFont.fromTrueTypeData(metrics)
     }
 
     /**
@@ -611,141 +542,91 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * These fonts don't require font data as they're built into PDF viewers.
      *
      * @param fontName - One of the 14 standard PDF fonts
-     * @param widths - Optional AFM widths array (1/1000 em units) for chars 32–126
+     * @param metrics - PdfFontDescriptor built from AFM data
      * @returns A PdfFont instance ready to be written to the PDF
      */
     static fromStandardFont(
         fontName: PdfStandardFontName,
-        widths?: number[],
+        metrics: PdfFontDescriptor,
     ): PdfFont {
-        const font = new PdfFont({ fontName })
+        const font = new PdfFont({ fontName, metrics })
 
         // Build Type1 font dictionary
         font.content.set('Type', new PdfName('Font'))
         font.content.set('Subtype', new PdfName('Type1'))
         font.content.set('BaseFont', new PdfName(fontName))
 
-        if (widths) {
-            font.firstChar = 32
-            font.lastChar = 32 + widths.length - 1
+        if (metrics && metrics.charWidths.size > 0) {
+            const firstChar = 32
+            const lastChar = 126
+            const widths: number[] = []
+            for (let code = firstChar; code <= lastChar; code++) {
+                widths.push(metrics.getCharWidth(code) ?? 1000)
+            }
+            font.firstChar = firstChar
+            font.lastChar = lastChar
             font.widths = widths
         }
 
         return font
     }
 
-    // Helvetica AFM widths, chars 32–126 (95 values, 1/1000 em units)
-    private static readonly _HELVETICA_WIDTHS: readonly number[] = [
-        278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333,
-        278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278,
-        584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278,
-        500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944,
-        667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556,
-        278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500,
-        278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584,
-    ]
-
-    // Helvetica-Bold AFM widths, chars 32–126
-    private static readonly _HELVETICA_BOLD_WIDTHS: readonly number[] = [
-        278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333,
-        278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333,
-        584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278,
-        556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944,
-        667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556,
-        333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556,
-        333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584,
-    ]
-
-    // Times-Roman AFM widths, chars 32–126
-    private static readonly _TIMES_ROMAN_WIDTHS: readonly number[] = [
-        250, 333, 408, 500, 500, 833, 778, 180, 333, 333, 500, 564, 250, 333,
-        250, 278, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 278, 278,
-        564, 564, 564, 444, 921, 722, 667, 667, 722, 611, 556, 722, 722, 333,
-        389, 722, 611, 889, 722, 722, 556, 722, 667, 556, 611, 722, 722, 944,
-        722, 722, 611, 333, 278, 333, 469, 500, 333, 444, 500, 444, 500, 444,
-        333, 500, 500, 278, 278, 500, 278, 778, 500, 500, 500, 500, 333, 389,
-        278, 500, 500, 722, 500, 500, 444, 480, 200, 480, 541,
-    ]
-
-    // Times-Bold AFM widths, chars 32–126
-    private static readonly _TIMES_BOLD_WIDTHS: readonly number[] = [
-        250, 333, 555, 500, 500, 1000, 833, 278, 333, 333, 500, 570, 250, 333,
-        250, 278, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 333, 333,
-        570, 570, 570, 500, 930, 722, 667, 722, 722, 667, 611, 778, 778, 389,
-        500, 778, 667, 944, 722, 778, 611, 778, 722, 556, 667, 722, 722, 1000,
-        722, 722, 667, 333, 278, 333, 581, 500, 333, 500, 556, 444, 556, 444,
-        333, 500, 556, 278, 333, 556, 278, 833, 556, 500, 556, 556, 444, 389,
-        333, 556, 500, 722, 500, 500, 444, 394, 220, 394, 520,
-    ]
-
-    // Times-Italic AFM widths, chars 32–126
-    private static readonly _TIMES_ITALIC_WIDTHS: readonly number[] = [
-        250, 333, 420, 500, 500, 833, 778, 214, 333, 333, 500, 675, 250, 333,
-        250, 278, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 333, 333,
-        675, 675, 675, 500, 920, 611, 611, 667, 722, 611, 611, 722, 722, 333,
-        444, 667, 556, 833, 667, 722, 611, 722, 611, 500, 556, 722, 611, 833,
-        611, 556, 556, 389, 278, 389, 422, 500, 333, 500, 500, 444, 500, 444,
-        278, 500, 500, 278, 278, 444, 278, 722, 500, 500, 500, 500, 389, 389,
-        278, 500, 444, 667, 444, 444, 389, 400, 275, 400, 541,
-    ]
-
-    // Times-BoldItalic AFM widths, chars 32–126
-    private static readonly _TIMES_BOLD_ITALIC_WIDTHS: readonly number[] = [
-        250, 389, 555, 500, 500, 833, 778, 278, 333, 333, 500, 570, 250, 333,
-        250, 278, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 333, 333,
-        570, 570, 570, 500, 832, 667, 667, 667, 722, 667, 667, 722, 778, 389,
-        500, 667, 611, 889, 722, 722, 611, 722, 667, 556, 611, 722, 667, 889,
-        667, 611, 611, 333, 278, 333, 570, 500, 333, 500, 500, 444, 500, 444,
-        333, 500, 556, 278, 278, 500, 278, 778, 556, 500, 500, 500, 389, 389,
-        278, 556, 444, 667, 500, 444, 389, 348, 220, 348, 570,
-    ]
-
-    static readonly HELVETICA = PdfFont.fromStandardFont('Helvetica', [
-        ...PdfFont._HELVETICA_WIDTHS,
-    ])
+    static readonly HELVETICA = PdfFont.fromStandardFont(
+        'Helvetica',
+        PdfFontDescriptor.fromAfm(HelveticaAfm as AfmFont),
+    )
     static readonly HELVETICA_BOLD = PdfFont.fromStandardFont(
         'Helvetica-Bold',
-        [...PdfFont._HELVETICA_BOLD_WIDTHS],
+        PdfFontDescriptor.fromAfm(HelveticaBoldAfm as AfmFont),
     )
     static readonly HELVETICA_OBLIQUE = PdfFont.fromStandardFont(
         'Helvetica-Oblique',
-        [...PdfFont._HELVETICA_WIDTHS],
+        PdfFontDescriptor.fromAfm(HelveticaObliqueAfm as AfmFont),
     )
     static readonly HELVETICA_BOLD_OBLIQUE = PdfFont.fromStandardFont(
         'Helvetica-BoldOblique',
-        [...PdfFont._HELVETICA_BOLD_WIDTHS],
+        PdfFontDescriptor.fromAfm(HelveticaBoldObliqueAfm as AfmFont),
     )
-    static readonly TIMES_ROMAN = PdfFont.fromStandardFont('Times-Roman', [
-        ...PdfFont._TIMES_ROMAN_WIDTHS,
-    ])
-    static readonly TIMES_BOLD = PdfFont.fromStandardFont('Times-Bold', [
-        ...PdfFont._TIMES_BOLD_WIDTHS,
-    ])
-    static readonly TIMES_ITALIC = PdfFont.fromStandardFont('Times-Italic', [
-        ...PdfFont._TIMES_ITALIC_WIDTHS,
-    ])
+    static readonly TIMES_ROMAN = PdfFont.fromStandardFont(
+        'Times-Roman',
+        PdfFontDescriptor.fromAfm(TimesRomanAfm as AfmFont),
+    )
+    static readonly TIMES_BOLD = PdfFont.fromStandardFont(
+        'Times-Bold',
+        PdfFontDescriptor.fromAfm(TimesBoldAfm as AfmFont),
+    )
+    static readonly TIMES_ITALIC = PdfFont.fromStandardFont(
+        'Times-Italic',
+        PdfFontDescriptor.fromAfm(TimesItalicAfm as AfmFont),
+    )
     static readonly TIMES_BOLD_ITALIC = PdfFont.fromStandardFont(
         'Times-BoldItalic',
-        [...PdfFont._TIMES_BOLD_ITALIC_WIDTHS],
+        PdfFontDescriptor.fromAfm(TimesBoldItalicAfm as AfmFont),
     )
     static readonly COURIER = PdfFont.fromStandardFont(
         'Courier',
-        Array(95).fill(600),
+        PdfFontDescriptor.fromAfm(CourierAfm as AfmFont),
     )
     static readonly COURIER_BOLD = PdfFont.fromStandardFont(
         'Courier-Bold',
-        Array(95).fill(600),
+        PdfFontDescriptor.fromAfm(CourierBoldAfm as AfmFont),
     )
     static readonly COURIER_OBLIQUE = PdfFont.fromStandardFont(
         'Courier-Oblique',
-        Array(95).fill(600),
+        PdfFontDescriptor.fromAfm(CourierObliqueAfm as AfmFont),
     )
     static readonly COURIER_BOLD_OBLIQUE = PdfFont.fromStandardFont(
         'Courier-BoldOblique',
-        Array(95).fill(600),
+        PdfFontDescriptor.fromAfm(CourierBoldObliqueAfm as AfmFont),
     )
-    static readonly SYMBOL = PdfFont.fromStandardFont('Symbol')
-    static readonly ZAPF_DINGBATS = PdfFont.fromStandardFont('ZapfDingbats')
+    static readonly SYMBOL = PdfFont.fromStandardFont(
+        'Symbol',
+        PdfFontDescriptor.fromAfm(SymbolAfm as AfmFont),
+    )
+    static readonly ZAPF_DINGBATS = PdfFont.fromStandardFont(
+        'ZapfDingbats',
+        PdfFontDescriptor.fromAfm(ZapfDingbatsAfm as AfmFont),
+    )
 
     private static readonly BY_BASE_FONT: ReadonlyMap<string, PdfFont> =
         new Map([
@@ -790,88 +671,55 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * Creates a TrueType font from font file data.
      * Uses WinAnsiEncoding for standard 8-bit character support.
      *
-     * @param fontData - The TrueType font file bytes
-     * @param fontName - The name to use for this font in the PDF
-     * @param descriptor - Font metrics and properties
+     * @param metrics - PdfFontDescriptor with font data and properties
      * @returns A PdfFont instance ready to be written to the PDF
      */
-    static fromTrueTypeData(
-        fontData: ByteArray,
-        fontName: string,
-        descriptor: FontDescriptor,
-    ): PdfFont {
+    static fromTrueTypeData(metrics: PdfFontDescriptor): PdfFont {
+        const fontName = metrics.fontName ?? 'Unknown'
         const font = new PdfFont({
             fontName,
             encoding: 'WinAnsiEncoding',
-            fontData,
+            metrics,
         })
 
-        // Create font descriptor dictionary
-        const fontDescriptorDict = new PdfDictionary()
-        fontDescriptorDict.set('Type', new PdfName('FontDescriptor'))
-        fontDescriptorDict.set('FontName', new PdfName(descriptor.fontName))
-        fontDescriptorDict.set('FontFamily', new PdfName(descriptor.fontFamily))
-        fontDescriptorDict.set(
-            'FontWeight',
-            new PdfNumber(descriptor.fontWeight),
-        )
-        fontDescriptorDict.set('Flags', new PdfNumber(descriptor.flags))
-        fontDescriptorDict.set(
-            'FontBBox',
-            new PdfArray([
-                new PdfNumber(descriptor.fontBBox[0]),
-                new PdfNumber(descriptor.fontBBox[1]),
-                new PdfNumber(descriptor.fontBBox[2]),
-                new PdfNumber(descriptor.fontBBox[3]),
-            ]),
-        )
-        fontDescriptorDict.set(
-            'ItalicAngle',
-            new PdfNumber(descriptor.italicAngle),
-        )
-        fontDescriptorDict.set('Ascent', new PdfNumber(descriptor.ascent))
-        fontDescriptorDict.set('Descent', new PdfNumber(descriptor.descent))
-        fontDescriptorDict.set('CapHeight', new PdfNumber(descriptor.capHeight))
-        fontDescriptorDict.set('StemV', new PdfNumber(descriptor.stemV))
+        // Attach font file stream to descriptor
+        if (metrics.fontData) {
+            const fontFileStream = new PdfStream({
+                header: new PdfDictionary(),
+                original: metrics.fontData,
+            })
+            fontFileStream.header.set(
+                'Length1',
+                new PdfNumber(metrics.fontData.length),
+            )
+            fontFileStream.addFilter('FlateDecode')
 
-        // Create font file stream
-        const fontFileStream = new PdfStream({
-            header: new PdfDictionary(),
-            original: fontData,
-        })
-        fontFileStream.header.set('Length1', new PdfNumber(fontData.length))
-        fontFileStream.addFilter('FlateDecode')
-
-        const fontFileObject = new PdfIndirectObject({
-            content: fontFileStream,
-        })
-
-        fontDescriptorDict.set('FontFile2', fontFileObject.reference)
-
-        const fontDescriptorObject = new PdfIndirectObject({
-            content: fontDescriptorDict,
-        })
+            const fontFileObject = new PdfIndirectObject({
+                content: fontFileStream,
+            })
+            metrics.content.set('FontFile2', fontFileObject.reference)
+        }
 
         // Build TrueType font dictionary
         font.content.set('Type', new PdfName('Font'))
         font.content.set('Subtype', new PdfName('TrueType'))
-        font.content.set('BaseFont', new PdfName(descriptor.fontName))
-        font.content.set('FontDescriptor', fontDescriptorObject.reference)
+        font.content.set('BaseFont', new PdfName(fontName))
+        font.content.set('FontDescriptor', metrics.reference)
         font.content.set('Encoding', new PdfName('WinAnsiEncoding'))
 
-        // Add width information for proper glyph rendering
-        const firstChar = descriptor.firstChar ?? 32
-        const lastChar = descriptor.lastChar ?? 255
+        // Add width information
+        const firstChar = metrics.firstChar ?? 32
+        const lastChar = metrics.lastChar ?? 255
         font.content.set('FirstChar', new PdfNumber(firstChar))
         font.content.set('LastChar', new PdfNumber(lastChar))
 
-        if (descriptor.widths) {
-            font.content.set(
-                'Widths',
-                new PdfArray(descriptor.widths.map((w) => new PdfNumber(w))),
-            )
+        if (metrics.charWidths.size > 0) {
+            const widths: PdfNumber[] = []
+            for (let code = firstChar; code <= lastChar; code++) {
+                widths.push(new PdfNumber(metrics.getCharWidth(code) ?? 1000))
+            }
+            font.content.set('Widths', new PdfArray(widths))
         } else {
-            // Default: 1000 (standard em-square)
             const defaultWidths = Array(lastChar - firstChar + 1)
                 .fill(0)
                 .map(() => new PdfNumber(1000))
@@ -885,75 +733,44 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * Creates a Type0 (composite) font with Unicode support.
      * Use this for fonts that need to display non-ASCII characters.
      *
-     * @param fontData - The TrueType font file bytes
-     * @param fontName - The name to use for this font in the PDF
-     * @param descriptor - Unicode font descriptor with CID metrics
+     * @param metrics - PdfFontDescriptor with font data and CID properties
      * @param unicodeMappings - Optional map of CID to Unicode code point for ToUnicode CMap
      * @returns A PdfFont instance ready to be written to the PDF
      */
     static fromType0Data(
-        fontData: ByteArray,
-        fontName: string,
-        descriptor: UnicodeFontDescriptor,
+        metrics: PdfFontDescriptor,
         unicodeMappings?: Map<number, number>,
     ): PdfFont {
+        const fontName = metrics.fontName ?? 'Unknown'
         const font = new PdfFont({
             fontName,
             encoding: 'Identity-H',
-            fontData,
+            metrics,
         })
 
-        // Create font descriptor dictionary
-        const fontDescriptorDict = new PdfDictionary()
-        fontDescriptorDict.set('Type', new PdfName('FontDescriptor'))
-        fontDescriptorDict.set('FontName', new PdfName(descriptor.fontName))
-        fontDescriptorDict.set('FontFamily', new PdfName(descriptor.fontFamily))
-        fontDescriptorDict.set(
-            'FontWeight',
-            new PdfNumber(descriptor.fontWeight),
-        )
-        fontDescriptorDict.set('Flags', new PdfNumber(descriptor.flags))
-        fontDescriptorDict.set(
-            'FontBBox',
-            new PdfArray([
-                new PdfNumber(descriptor.fontBBox[0]),
-                new PdfNumber(descriptor.fontBBox[1]),
-                new PdfNumber(descriptor.fontBBox[2]),
-                new PdfNumber(descriptor.fontBBox[3]),
-            ]),
-        )
-        fontDescriptorDict.set(
-            'ItalicAngle',
-            new PdfNumber(descriptor.italicAngle),
-        )
-        fontDescriptorDict.set('Ascent', new PdfNumber(descriptor.ascent))
-        fontDescriptorDict.set('Descent', new PdfNumber(descriptor.descent))
-        fontDescriptorDict.set('CapHeight', new PdfNumber(descriptor.capHeight))
-        fontDescriptorDict.set('StemV', new PdfNumber(descriptor.stemV))
+        // Attach font file stream to descriptor
+        if (metrics.fontData) {
+            const fontFileStream = new PdfStream({
+                header: new PdfDictionary(),
+                original: metrics.fontData,
+            })
+            fontFileStream.header.set(
+                'Length1',
+                new PdfNumber(metrics.fontData.length),
+            )
+            fontFileStream.addFilter('FlateDecode')
 
-        // Create font file stream
-        const fontFileStream = new PdfStream({
-            header: new PdfDictionary(),
-            original: fontData,
-        })
-        fontFileStream.header.set('Length1', new PdfNumber(fontData.length))
-        fontFileStream.addFilter('FlateDecode')
-
-        const fontFileObject = new PdfIndirectObject({
-            content: fontFileStream,
-        })
-
-        fontDescriptorDict.set('FontFile2', fontFileObject.reference)
-
-        const fontDescriptorObject = new PdfIndirectObject({
-            content: fontDescriptorDict,
-        })
+            const fontFileObject = new PdfIndirectObject({
+                content: fontFileStream,
+            })
+            metrics.content.set('FontFile2', fontFileObject.reference)
+        }
 
         // Create CIDFont dictionary (descendant font)
         const cidFontDict = new PdfDictionary()
         cidFontDict.set('Type', new PdfName('Font'))
         cidFontDict.set('Subtype', new PdfName('CIDFontType2'))
-        cidFontDict.set('BaseFont', new PdfName(descriptor.fontName))
+        cidFontDict.set('BaseFont', new PdfName(fontName))
 
         // CIDSystemInfo
         const cidSystemInfo = new PdfDictionary()
@@ -962,34 +779,25 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         cidSystemInfo.set('Supplement', new PdfNumber(0))
         cidFontDict.set('CIDSystemInfo', cidSystemInfo)
 
-        cidFontDict.set('FontDescriptor', fontDescriptorObject.reference)
-        cidFontDict.set('DW', new PdfNumber(descriptor.defaultWidth ?? 1000))
+        cidFontDict.set('FontDescriptor', metrics.reference)
+        cidFontDict.set('DW', new PdfNumber(metrics.defaultWidth ?? 1000))
 
         // Add /W (widths) array if provided
-        if (descriptor.cidWidths && descriptor.cidWidths.length > 0) {
-            cidFontDict.set(
-                'W',
-                PdfFont.buildCIDWidthArray(descriptor.cidWidths),
-            )
+        if (metrics.cidWidths && metrics.cidWidths.length > 0) {
+            cidFontDict.set('W', PdfFont.buildCIDWidthArray(metrics.cidWidths))
         }
 
         // CIDToGIDMap - Generate binary stream if unicodeMappings provided
         if (unicodeMappings && unicodeMappings.size > 0) {
-            // Create a binary CIDToGIDMap stream
-            // For Identity-H encoding, CID = Unicode value
-            // We need to map each CID to its GID
             const maxCid = Math.max(...Array.from(unicodeMappings.keys()))
             const cidToGidData = new Uint8Array((maxCid + 1) * 2)
 
-            // Initialize all mappings to 0 (missing glyph)
             for (let i = 0; i < cidToGidData.length; i++) {
                 cidToGidData[i] = 0
             }
 
-            // Fill in the mappings
             for (const [unicode, glyphId] of unicodeMappings.entries()) {
                 const offset = unicode * 2
-                // Big-endian 16-bit glyph ID
                 cidToGidData[offset] = (glyphId >> 8) & 0xff
                 cidToGidData[offset + 1] = glyphId & 0xff
             }
@@ -1008,7 +816,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         } else {
             cidFontDict.set(
                 'CIDToGIDMap',
-                new PdfName(descriptor.cidToGidMap ?? 'Identity'),
+                new PdfName(metrics.cidToGidMap ?? 'Identity'),
             )
         }
 
@@ -1019,10 +827,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         // Build Type0 font dictionary
         font.content.set('Type', new PdfName('Font'))
         font.content.set('Subtype', new PdfName('Type0'))
-        font.content.set(
-            'BaseFont',
-            new PdfName(`${descriptor.fontName}-Identity-H`),
-        )
+        font.content.set('BaseFont', new PdfName(`${fontName}-Identity-H`))
         font.content.set('Encoding', new PdfName('Identity-H'))
         font.content.set(
             'DescendantFonts',
@@ -1056,53 +861,43 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             unicodeMappings?: Map<number, number>
         },
     ): PdfFont {
-        // Parse the font to extract metadata
         const parser = parseFont(fontData)
 
-        // Check if CFF-based OTF (not supported)
         if (parser instanceof OtfParser && parser.isCFFBased()) {
             throw new Error('CFF-based OTF fonts are not supported yet')
         }
 
         const info = parser.getFontInfo()
-
-        // Auto-generate font name from metadata if not provided
         const fontName =
             options?.fontName ?? info.postScriptName ?? info.fullName
+        const metrics = parser.getPdfFontDescriptor(fontName)
 
-        // Get the appropriate descriptor based on unicode option
-        const descriptor = parser.getFontDescriptor(fontName)
-
-        // Auto-detect if Unicode font is needed if not explicitly specified
+        // Auto-detect if Unicode font is needed
         let useUnicode = options?.unicode
         if (useUnicode === undefined) {
-            // Check if font has glyphs beyond WinAnsiEncoding range (0-255)
             const cmap = parser.parseCmap()
             useUnicode = Array.from(cmap.keys()).some(
                 (unicode) => unicode > 0xff,
             )
         }
 
-        // Embed using the appropriate method and return PdfFont
         if (useUnicode) {
-            // Auto-extract cmap if not provided
             const unicodeMappings =
                 options?.unicodeMappings ?? parser.parseCmap()
 
-            // Extract glyph widths for Unicode characters
+            // Build CID widths from cmap + hmtx
             const hmtx = parser.parseHmtx()
             const unitsPerEm = info.unitsPerEm
             const cidWidths: CIDWidth[] = []
+            const charWidths = new Map<number, number>()
 
-            // Build CID widths array from cmap + hmtx
             for (const [unicode, glyphId] of unicodeMappings.entries()) {
                 const glyphWidth = hmtx.get(glyphId) ?? 0
-                // Scale to 1000-unit em square
                 const scaledWidth = Math.round((glyphWidth * 1000) / unitsPerEm)
                 cidWidths.push({ cid: unicode, width: scaledWidth })
+                charWidths.set(unicode, scaledWidth)
             }
 
-            // Compute average width for default
             const avgWidth =
                 cidWidths.length > 0
                     ? Math.round(
@@ -1110,7 +905,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                               if ('width' in entry) {
                                   return sum + entry.width
                               } else {
-                                  // Average the widths in the range
                                   const rangeSum = entry.widths.reduce(
                                       (a, b) => a + b,
                                       0,
@@ -1121,23 +915,35 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                       )
                     : 1000
 
-            // For Unicode fonts, we need a UnicodeFontDescriptor
-            const unicodeDescriptor: UnicodeFontDescriptor = {
-                ...descriptor,
+            const unicodeMetrics = new PdfFontDescriptor({
+                fontData: metrics.fontData,
+                fontName: metrics.fontName,
+                familyName: metrics.familyName,
+                fontWeight: metrics.fontWeight,
+                isBold: metrics.isBold,
+                isItalic: metrics.isItalic,
+                isFixedPitch: metrics.isFixedPitch,
+                italicAngle: metrics.italicAngle,
+                ascender: metrics.ascender,
+                descender: metrics.descender,
+                capHeight: metrics.capHeight,
+                xHeight: metrics.xHeight,
+                stdVW: metrics.stdVW,
+                stdHW: metrics.stdHW,
+                unitsPerEm: metrics.unitsPerEm,
+                bbox: metrics.bbox,
+                kernPairs: metrics.kernPairs,
+                glyphMetrics: metrics.glyphMetrics,
+                glyphNameToCode: metrics.glyphNameToCode,
+                charWidths,
                 defaultWidth: avgWidth,
                 cidWidths,
                 cidToGidMap: 'Identity',
-            }
+            })
 
-            return PdfFont.fromType0Data(
-                fontData,
-                fontName,
-                unicodeDescriptor,
-                unicodeMappings,
-            )
+            return PdfFont.fromType0Data(unicodeMetrics, unicodeMappings)
         } else {
-            // Use standard TrueType embedding
-            return PdfFont.fromTrueTypeData(fontData, fontName, descriptor)
+            return PdfFont.fromTrueTypeData(metrics)
         }
     }
 
@@ -1239,9 +1045,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         return lines.join('\n')
     }
 
-    /**
-     * Builds a CID width array for the /W entry in CIDFont dictionaries.
-     */
     private static buildCIDWidthArray(widths: CIDWidth[]): PdfArray {
         const items: (PdfNumber | PdfArray)[] = []
 

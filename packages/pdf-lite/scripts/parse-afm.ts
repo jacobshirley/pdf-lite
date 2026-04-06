@@ -12,7 +12,7 @@ import type {
     AfmCharMetric,
     AfmKernPair,
     AfmFont,
-} from '../../../src/fonts/types.js'
+} from '../src/fonts/types.js'
 
 function parseBBox(parts: string[]): AfmBBox {
     return {
@@ -161,8 +161,8 @@ function parseAfm(content: string): AfmFont {
 }
 
 // Main
-const dir = import.meta.dirname
-const outDir = resolve(dir, '../../../src/fonts/vendor/Adobe/Core14')
+const dir = resolve(import.meta.dirname, '../vendor/Adobe/Core14')
+const outDir = resolve(dir, '../src/fonts/vendor/Adobe/Core14')
 mkdirSync(outDir, { recursive: true })
 
 const afmFiles = readdirSync(dir).filter((f) => f.endsWith('.afm'))

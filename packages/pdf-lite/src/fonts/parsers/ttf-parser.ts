@@ -1,5 +1,6 @@
 import { ByteArray } from '../../types.js'
-import { FontDescriptor, TtfFontInfo, FontParser } from '../types.js'
+import { TtfFontInfo, FontParser, AfmKernPair } from '../types.js'
+import { PdfFontDescriptor, GlyphMetrics } from '../pdf-font-descriptor.js'
 
 /**
  * Parses TrueType font files (.ttf) to extract metrics and glyph widths.
@@ -84,41 +85,80 @@ export class TtfParser implements FontParser {
     }
 
     /**
-     * Creates a FontDescriptor suitable for embedding.
+     * Creates PdfFontDescriptor suitable for embedding.
      * Scales metrics to PDF's 1000-unit em square.
      */
-    getFontDescriptor(fontName?: string): FontDescriptor {
+    getPdfFontDescriptor(fontName?: string): PdfFontDescriptor {
         const info = this.getFontInfo()
         const scale = 1000 / info.unitsPerEm
+        const os2 = this.parseOS2()
+        const postData = this.parsePostFull()
+        const cmap = this.parseCmap()
+        const hmtx = this.parseHmtx()
+        const glyphNames = this.parseGlyphNames()
 
-        // Calculate PDF font flags
-        let flags = 0
-        if (info.isFixedPitch) flags |= 1 << 0 // FixedPitch
-        if (!info.isFixedPitch) flags |= 1 << 5 // Nonsymbolic
-        if (info.isItalic) flags |= 1 << 6 // Italic
+        // Build char widths (scaled)
+        const charWidths = new Map<number, number>()
+        for (let charCode = 32; charCode <= 126; charCode++) {
+            const glyphId = cmap.get(charCode) ?? 0
+            const width = hmtx.get(glyphId) ?? 0
+            charWidths.set(charCode, Math.round(width * scale))
+        }
 
-        const widths = this.getCharWidths(32, 126)
+        // Build per-glyph metrics and name→code map
+        const glyphMetrics = new Map<number, GlyphMetrics>()
+        const glyphNameToCode = new Map<string, number>()
+        for (const [charCode, glyphId] of cmap) {
+            const width = hmtx.get(glyphId) ?? 0
+            const name = glyphNames.get(glyphId) ?? `.gid${glyphId}`
+            glyphMetrics.set(charCode, {
+                width: Math.round(width * scale),
+                name,
+                bbox: { llx: 0, lly: 0, urx: 0, ury: 0 },
+            })
+            glyphNameToCode.set(name, charCode)
+        }
 
-        return {
+        // Parse kern pairs
+        const kernPairs = this.parseKern(glyphNames, cmap, scale)
+
+        return new PdfFontDescriptor({
             fontName: fontName ?? info.postScriptName,
-            fontFamily: info.fontFamily,
-            fontWeight: info.isBold ? 700 : 400,
-            flags,
-            fontBBox: [
-                Math.round(info.bbox[0] * scale),
-                Math.round(info.bbox[1] * scale),
-                Math.round(info.bbox[2] * scale),
-                Math.round(info.bbox[3] * scale),
-            ],
+            familyName: info.fontFamily,
+            fontWeight: os2?.usWeightClass ?? (info.isBold ? 700 : 400),
+            weight: weightClassToString(os2?.usWeightClass ?? 400),
+            isBold: info.isBold,
+            isItalic: info.isItalic,
+            isFixedPitch: info.isFixedPitch,
             italicAngle: info.isItalic ? -12 : 0,
-            ascent: Math.round(info.ascent * scale),
-            descent: Math.round(info.descent * scale),
+            ascender: Math.round(info.ascent * scale),
+            descender: Math.round(info.descent * scale),
             capHeight: Math.round(info.capHeight * scale),
-            stemV: Math.round(info.stemV * scale),
+            xHeight: Math.round(info.xHeight * scale),
+            stdVW: Math.round(info.stemV * scale),
+            unitsPerEm: info.unitsPerEm,
+            bbox: {
+                llx: Math.round(info.bbox[0] * scale),
+                lly: Math.round(info.bbox[1] * scale),
+                urx: Math.round(info.bbox[2] * scale),
+                ury: Math.round(info.bbox[3] * scale),
+            },
+            underlinePosition:
+                postData.underlinePosition !== undefined
+                    ? Math.round(postData.underlinePosition * scale)
+                    : undefined,
+            underlineThickness:
+                postData.underlineThickness !== undefined
+                    ? Math.round(postData.underlineThickness * scale)
+                    : undefined,
             firstChar: 32,
             lastChar: 126,
-            widths,
-        }
+            charWidths,
+            glyphMetrics,
+            glyphNameToCode,
+            kernPairs,
+            fontData: this.getFontData(),
+        })
     }
 
     /**
@@ -223,6 +263,149 @@ export class TtfParser implements FontParser {
         return {
             isFixedPitch: this.data.getUint32(offset + 12) !== 0,
         }
+    }
+
+    private parsePostFull(): {
+        isFixedPitch: boolean
+        underlinePosition?: number
+        underlineThickness?: number
+    } {
+        const table = this.getTable('post')
+        if (!table) return { isFixedPitch: false }
+
+        const offset = table.offset
+        return {
+            isFixedPitch: this.data.getUint32(offset + 12) !== 0,
+            underlinePosition: this.data.getInt16(offset + 8),
+            underlineThickness: this.data.getInt16(offset + 10),
+        }
+    }
+
+    /**
+     * Parses the 'post' table to extract glyph names.
+     * Supports format 2.0 (explicit names) and format 1.0 (standard Mac names).
+     */
+    parseGlyphNames(): Map<number, string> {
+        const table = this.getTable('post')
+        if (!table) return new Map()
+
+        const offset = table.offset
+        const format = this.data.getUint32(offset) // Fixed 16.16
+        const names = new Map<number, string>()
+
+        if (format === 0x00020000) {
+            // Format 2.0
+            const numGlyphs = this.data.getUint16(offset + 32)
+            const glyphNameIndices: number[] = []
+            for (let i = 0; i < numGlyphs; i++) {
+                glyphNameIndices.push(this.data.getUint16(offset + 34 + i * 2))
+            }
+
+            // Read custom name strings
+            let strOffset = offset + 34 + numGlyphs * 2
+            const customNames: string[] = []
+            while (strOffset < offset + table.length) {
+                const len = this.data.getUint8(strOffset)
+                strOffset++
+                let name = ''
+                for (let j = 0; j < len; j++) {
+                    name += String.fromCharCode(
+                        this.data.getUint8(strOffset + j),
+                    )
+                }
+                customNames.push(name)
+                strOffset += len
+            }
+
+            for (let i = 0; i < numGlyphs; i++) {
+                const idx = glyphNameIndices[i]
+                if (idx < 258) {
+                    names.set(i, STANDARD_MAC_GLYPH_NAMES[idx] ?? `.gid${i}`)
+                } else {
+                    const customIdx = idx - 258
+                    names.set(i, customNames[customIdx] ?? `.gid${i}`)
+                }
+            }
+        } else if (format === 0x00010000) {
+            // Format 1.0 — standard Macintosh ordering
+            for (
+                let i = 0;
+                i < 258 && i < STANDARD_MAC_GLYPH_NAMES.length;
+                i++
+            ) {
+                names.set(i, STANDARD_MAC_GLYPH_NAMES[i])
+            }
+        }
+
+        return names
+    }
+
+    /**
+     * Parses the 'kern' table to extract kerning pairs.
+     * Returns pairs using glyph names (for AfmKernPair compatibility).
+     */
+    parseKern(
+        glyphNames?: Map<number, string>,
+        cmap?: Map<number, number>,
+        scale?: number,
+    ): AfmKernPair[] {
+        const table = this.getTable('kern')
+        if (!table) return []
+
+        const offset = table.offset
+        const version = this.data.getUint16(offset)
+
+        if (version !== 0) return [] // Only support version 0
+
+        const nTables = this.data.getUint16(offset + 2)
+        const pairs: AfmKernPair[] = []
+
+        const names = glyphNames ?? this.parseGlyphNames()
+        const s = scale ?? 1000 / (this.getFontInfo().unitsPerEm || 1000)
+
+        // Build reverse cmap: glyphId → charCode (for fallback naming)
+        const glyphIdToChar = new Map<number, number>()
+        const cm = cmap ?? this.parseCmap()
+        for (const [charCode, glyphId] of cm) {
+            if (!glyphIdToChar.has(glyphId)) {
+                glyphIdToChar.set(glyphId, charCode)
+            }
+        }
+
+        let subtableOffset = offset + 4
+        for (let t = 0; t < nTables; t++) {
+            const subtableLength = this.data.getUint16(subtableOffset + 2)
+            const coverage = this.data.getUint16(subtableOffset + 4)
+            const format = coverage >> 8
+
+            if (format === 0) {
+                // Format 0: ordered list of kerning pairs
+                const nPairs = this.data.getUint16(subtableOffset + 6)
+                const pairOffset = subtableOffset + 14
+
+                for (let i = 0; i < nPairs; i++) {
+                    const entryOffset = pairOffset + i * 6
+                    const leftGlyph = this.data.getUint16(entryOffset)
+                    const rightGlyph = this.data.getUint16(entryOffset + 2)
+                    const value = this.data.getInt16(entryOffset + 4)
+
+                    const leftName = names.get(leftGlyph)
+                    const rightName = names.get(rightGlyph)
+
+                    if (leftName && rightName && value !== 0) {
+                        pairs.push({
+                            left: leftName,
+                            right: rightName,
+                            dx: Math.round(value * s),
+                        })
+                    }
+                }
+            }
+
+            subtableOffset += subtableLength
+        }
+
+        return pairs
     }
 
     private parseName(): {
@@ -433,16 +616,294 @@ export class TtfParser implements FontParser {
     }
 
     private estimateStemV(weightClass: number): number {
-        // Approximate stemV based on weight class
-        // These are rough estimates
-        if (weightClass <= 100) return 25
-        if (weightClass <= 200) return 35
-        if (weightClass <= 300) return 50
-        if (weightClass <= 400) return 70
-        if (weightClass <= 500) return 88
-        if (weightClass <= 600) return 110
-        if (weightClass <= 700) return 135
-        if (weightClass <= 800) return 165
-        return 200
+        return estimateStemVFromWeight(weightClass)
     }
 }
+
+export function estimateStemVFromWeight(weightClass: number): number {
+    if (weightClass <= 100) return 25
+    if (weightClass <= 200) return 35
+    if (weightClass <= 300) return 50
+    if (weightClass <= 400) return 70
+    if (weightClass <= 500) return 88
+    if (weightClass <= 600) return 110
+    if (weightClass <= 700) return 135
+    if (weightClass <= 800) return 165
+    return 200
+}
+
+export function weightClassToString(weightClass: number): string {
+    if (weightClass <= 100) return 'Thin'
+    if (weightClass <= 200) return 'ExtraLight'
+    if (weightClass <= 300) return 'Light'
+    if (weightClass <= 400) return 'Regular'
+    if (weightClass <= 500) return 'Medium'
+    if (weightClass <= 600) return 'SemiBold'
+    if (weightClass <= 700) return 'Bold'
+    if (weightClass <= 800) return 'ExtraBold'
+    return 'Black'
+}
+
+/**
+ * Standard Macintosh glyph names (post table format 1.0 / format 2.0 indices < 258).
+ */
+export const STANDARD_MAC_GLYPH_NAMES = [
+    '.notdef',
+    '.null',
+    'nonmarkingreturn',
+    'space',
+    'exclam',
+    'quotedbl',
+    'numbersign',
+    'dollar',
+    'percent',
+    'ampersand',
+    'quotesingle',
+    'parenleft',
+    'parenright',
+    'asterisk',
+    'plus',
+    'comma',
+    'hyphen',
+    'period',
+    'slash',
+    'zero',
+    'one',
+    'two',
+    'three',
+    'four',
+    'five',
+    'six',
+    'seven',
+    'eight',
+    'nine',
+    'colon',
+    'semicolon',
+    'less',
+    'equal',
+    'greater',
+    'question',
+    'at',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z',
+    'bracketleft',
+    'backslash',
+    'bracketright',
+    'asciicircum',
+    'underscore',
+    'grave',
+    'a',
+    'b',
+    'c',
+    'd',
+    'e',
+    'f',
+    'g',
+    'h',
+    'i',
+    'j',
+    'k',
+    'l',
+    'm',
+    'n',
+    'o',
+    'p',
+    'q',
+    'r',
+    's',
+    't',
+    'u',
+    'v',
+    'w',
+    'x',
+    'y',
+    'z',
+    'braceleft',
+    'bar',
+    'braceright',
+    'asciitilde',
+    'Adieresis',
+    'Aring',
+    'Ccedilla',
+    'Eacute',
+    'Ntilde',
+    'Odieresis',
+    'Udieresis',
+    'aacute',
+    'agrave',
+    'acircumflex',
+    'adieresis',
+    'atilde',
+    'aring',
+    'ccedilla',
+    'eacute',
+    'egrave',
+    'ecircumflex',
+    'edieresis',
+    'iacute',
+    'igrave',
+    'icircumflex',
+    'idieresis',
+    'ntilde',
+    'oacute',
+    'ograve',
+    'ocircumflex',
+    'odieresis',
+    'otilde',
+    'uacute',
+    'ugrave',
+    'ucircumflex',
+    'udieresis',
+    'dagger',
+    'degree',
+    'cent',
+    'sterling',
+    'section',
+    'bullet',
+    'paragraph',
+    'germandbls',
+    'registered',
+    'copyright',
+    'trademark',
+    'acute',
+    'dieresis',
+    'notequal',
+    'AE',
+    'Oslash',
+    'infinity',
+    'plusminus',
+    'lessequal',
+    'greaterequal',
+    'yen',
+    'mu',
+    'partialdiff',
+    'summation',
+    'product',
+    'pi',
+    'integral',
+    'ordfeminine',
+    'ordmasculine',
+    'Omega',
+    'ae',
+    'oslash',
+    'questiondown',
+    'exclamdown',
+    'logicalnot',
+    'radical',
+    'florin',
+    'approxequal',
+    'Delta',
+    'guillemotleft',
+    'guillemotright',
+    'ellipsis',
+    'nonbreakingspace',
+    'Agrave',
+    'Atilde',
+    'Otilde',
+    'OE',
+    'oe',
+    'endash',
+    'emdash',
+    'quotedblleft',
+    'quotedblright',
+    'quoteleft',
+    'quoteright',
+    'divide',
+    'lozenge',
+    'ydieresis',
+    'Ydieresis',
+    'fraction',
+    'currency',
+    'guilsinglleft',
+    'guilsinglright',
+    'fi',
+    'fl',
+    'daggerdbl',
+    'periodcentered',
+    'quotesinglbase',
+    'quotedblbase',
+    'perthousand',
+    'Acircumflex',
+    'Ecircumflex',
+    'Aacute',
+    'Edieresis',
+    'Egrave',
+    'Iacute',
+    'Icircumflex',
+    'Idieresis',
+    'Igrave',
+    'Oacute',
+    'Ocircumflex',
+    'apple',
+    'Ograve',
+    'Uacute',
+    'Ucircumflex',
+    'Ugrave',
+    'dotlessi',
+    'circumflex',
+    'tilde',
+    'macron',
+    'breve',
+    'dotaccent',
+    'ring',
+    'cedilla',
+    'hungarumlaut',
+    'ogonek',
+    'caron',
+    'Lslash',
+    'lslash',
+    'Scaron',
+    'scaron',
+    'Zcaron',
+    'zcaron',
+    'brokenbar',
+    'Eth',
+    'eth',
+    'Yacute',
+    'yacute',
+    'Thorn',
+    'thorn',
+    'minus',
+    'multiply',
+    'onesuperior',
+    'twosuperior',
+    'threesuperior',
+    'onehalf',
+    'onequarter',
+    'threequarters',
+    'franc',
+    'Gbreve',
+    'gbreve',
+    'Idotaccent',
+    'Scedilla',
+    'scedilla',
+    'Cacute',
+    'cacute',
+    'Ccaron',
+    'ccaron',
+    'dcroat',
+]

@@ -171,6 +171,7 @@ export function PdfViewer(props: PdfViewerProps) {
         isDocumentReady,
         numberOfPages,
         containerWidth,
+        pageWrapper,
     ])
     
     // Restore scroll position after document renders

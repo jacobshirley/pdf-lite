@@ -360,13 +360,10 @@ describe('Font Embedding', () => {
             expect(font.fontType).toBe('Type0')
             expect(font.encoding).toBe('Identity-H')
 
-            // Verify font has descriptor with CID widths
-            expect(font.descriptor).toBeDefined()
-            const unicodeDesc = font.descriptor as UnicodeFontDescriptor
-            expect(unicodeDesc.cidWidths).toBeDefined()
-            expect(unicodeDesc.cidWidths!.length).toBeGreaterThan(0)
-
-            // Create document and serialize to verify structure is valid
+            // Verify font has CID widths via PDF dictionary
+            const cidWidth = font.getRawCharacterWidth(0x0041) // 'A'
+            expect(cidWidth).not.toBeNull()
+            expect(cidWidth).toBeGreaterThan(0)
             const document = new PdfDocument()
             document.add(font)
             const pdfBytes = document.toBytes()
@@ -385,11 +382,10 @@ describe('Font Embedding', () => {
                 fontName: 'TestFont-Exotic',
             })
 
-            // Verify font has descriptor with CID widths
-            expect(font.descriptor).toBeDefined()
-            const unicodeDesc = font.descriptor as UnicodeFontDescriptor
-            expect(unicodeDesc.cidWidths).toBeDefined()
-            expect(unicodeDesc.cidWidths!.length).toBeGreaterThan(0)
+            // Verify font has CID widths via PDF dictionary
+            const cidWidth = font.getRawCharacterWidth(0x0041) // 'A'
+            expect(cidWidth).not.toBeNull()
+            expect(cidWidth).toBeGreaterThan(0)
 
             // Verify specific characters have widths
             // Polish Ę character (U+0118)

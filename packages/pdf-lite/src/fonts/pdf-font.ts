@@ -67,28 +67,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
 
     /**
      * @internal
-     * Font descriptor with metrics and properties.
-     */
-    private _descriptor?: FontDescriptor | UnicodeFontDescriptor
-
-    /**
-     * @internal
-     * Lazily parsed ToUnicode CMap for CID→Unicode mapping.
-     */
-    private _toUnicodeMap?: Map<number, string> | null
-
-    /**
-     * @internal
-     * Lazily parsed CIDFont W array for CID→width mapping.
-     * Stores { cidWidths: Map<cid, width>, defaultWidth: number }.
-     */
-    private _cidWidthCache?: {
-        cidWidths: Map<number, number>
-        defaultWidth: number
-    } | null
-
-    /**
-     * @internal
      * Original font file bytes.
      */
     private _fontData?: ByteArray
@@ -99,7 +77,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         fontName?: string
         resourceName?: string
         encoding?: string
-        descriptor?: FontDescriptor | UnicodeFontDescriptor
         fontData?: ByteArray
     })
     constructor(
@@ -109,7 +86,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                   fontName?: string
                   resourceName?: string
                   encoding?: string
-                  descriptor?: FontDescriptor | UnicodeFontDescriptor
                   fontData?: ByteArray
               }
             | PdfIndirectObject,
@@ -141,7 +117,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         this.fontName = options.fontName
         this.resourceName = options.resourceName || PdfFont.nextResourceName()
         this.encoding = options.encoding
-        this._descriptor = options.descriptor
         this._fontData = options.fontData
     }
 
@@ -210,14 +185,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     }
 
     /**
-     * Gets the font descriptor with metrics and properties.
-     * Available for embedded fonts, undefined for standard fonts or loaded fonts without descriptor.
-     */
-    get descriptor(): FontDescriptor | UnicodeFontDescriptor | undefined {
-        return this._descriptor
-    }
-
-    /**
      * Gets the original font file bytes.
      * Available for embedded fonts, undefined for standard fonts or loaded fonts.
      */
@@ -230,11 +197,8 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * Returns null if no ToUnicode stream is available.
      */
     get toUnicodeMap(): Map<number, string> | null {
-        if (this._toUnicodeMap !== undefined) return this._toUnicodeMap
-
         const toUnicodeRef = this.content.get('ToUnicode')
         if (!toUnicodeRef) {
-            this._toUnicodeMap = null
             return null
         }
 
@@ -246,12 +210,10 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         if (stream instanceof PdfStream) {
             const cmapContent = stream.dataAsString
             if (cmapContent) {
-                this._toUnicodeMap = PdfFont.parseToUnicodeCMap(cmapContent)
-                return this._toUnicodeMap
+                return PdfFont.parseToUnicodeCMap(cmapContent)
             }
         }
 
-        this._toUnicodeMap = null
         return null
     }
 
@@ -263,10 +225,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         cidWidths: Map<number, number>
         defaultWidth: number
     } | null {
-        if (this._cidWidthCache !== undefined) return this._cidWidthCache
-
         if (!this.isUnicode) {
-            this._cidWidthCache = null
             return null
         }
 
@@ -274,7 +233,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             | PdfArray<PdfObjectReference>
             | undefined
         if (!descFontsArr?.items?.length) {
-            this._cidWidthCache = null
             return null
         }
 
@@ -285,7 +243,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                 : null
         const cidFontDict = cidFont?.content as PdfDictionary | undefined
         if (!cidFontDict) {
-            this._cidWidthCache = null
             return null
         }
 
@@ -334,8 +291,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             }
         }
 
-        this._cidWidthCache = { cidWidths, defaultWidth }
-        return this._cidWidthCache
+        return { cidWidths, defaultWidth }
     }
 
     /**
@@ -447,27 +403,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * @returns The raw character width or null if not found
      */
     getRawCharacterWidth(charCode: number): number | null {
-        // For Type0 fonts, check CID widths in descriptor
-        if (this.isUnicode && this._descriptor) {
-            const unicodeDesc = this._descriptor as UnicodeFontDescriptor
-            if (unicodeDesc.cidWidths) {
-                // Find width for this CID (which equals Unicode code point for Identity-H)
-                for (const entry of unicodeDesc.cidWidths) {
-                    if ('width' in entry && entry.cid === charCode) {
-                        return entry.width
-                    } else if ('widths' in entry) {
-                        const offset = charCode - entry.startCid
-                        if (offset >= 0 && offset < entry.widths.length) {
-                            return entry.widths[offset]
-                        }
-                    }
-                }
-                // Not found, use default width
-                return unicodeDesc.defaultWidth ?? 1000
-            }
-        }
-
-        // For Type0 fonts without _descriptor, use CIDFont W array from DescendantFonts
+        // For Type0 fonts, use CIDFont W array from DescendantFonts
         if (this.isUnicode) {
             const cidData = this.cidWidthData
             if (cidData) {
@@ -867,7 +803,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         const font = new PdfFont({
             fontName,
             encoding: 'WinAnsiEncoding',
-            descriptor,
             fontData,
         })
 
@@ -965,7 +900,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         const font = new PdfFont({
             fontName,
             encoding: 'Identity-H',
-            descriptor,
             fontData,
         })
 

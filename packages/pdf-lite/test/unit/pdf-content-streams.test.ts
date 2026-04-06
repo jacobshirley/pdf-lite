@@ -320,6 +320,18 @@ describe('TextBlock', () => {
         expect(tb1.text).toBe('Hello')
         expect(tb2.text).toBe(' World')
     })
+
+    it('toString() preserves << >> dictionary delimiters in marked content', () => {
+        const s = makeStream(
+            'BT /P <</MCID 3 >>BDC /F1 12 Tf 100 700 Td (Hello) Tj EMC ET',
+        )
+        const tb = s.textBlocks[0]
+        const str = tb.toString()
+        expect(str).not.toContain('< <')
+        expect(str).not.toContain('> >')
+        expect(str).toContain('<<')
+        expect(str).toContain('>>')
+    })
 })
 
 // ---------------------------------------------------------------------------

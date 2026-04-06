@@ -251,23 +251,30 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
 
     extractTextBlocks(): TextBlock[] {
         const streams = this.contentStreams
-        const blocks: TextBlock[] = []
+        if (streams.length === 0) return []
+        if (streams.length === 1) return streams[0].textBlocks
 
-        for (const stream of streams) {
-            blocks.push(...stream.textBlocks)
-        }
-
+        // Concatenate all content stream data before parsing
+        const combinedData = streams.map((s) => s.dataAsString).join('\n')
+        const first = streams[0]
+        const savedData = first.dataAsString
+        first.dataAsString = combinedData
+        const blocks = first.textBlocks
+        first.dataAsString = savedData
         return blocks
     }
 
     extractGraphicLines(): GraphicsBlock[] {
         const streams = this.contentStreams
-        const blocks: GraphicsBlock[] = []
+        if (streams.length === 0) return []
+        if (streams.length === 1) return streams[0].graphicsBlocks
 
-        for (const stream of streams) {
-            blocks.push(...stream.graphicsBlocks)
-        }
-
+        const combinedData = streams.map((s) => s.dataAsString).join('\n')
+        const first = streams[0]
+        const savedData = first.dataAsString
+        first.dataAsString = combinedData
+        const blocks = first.graphicsBlocks
+        first.dataAsString = savedData
         return blocks
     }
 }

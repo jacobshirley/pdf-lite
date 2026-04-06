@@ -929,8 +929,9 @@ export class TextBlock extends ContentNode {
         }
     }
 
-    static parseFromContentStream(ops: string[], page?: PdfPage): TextBlock {
-        const block = new TextBlock(page)
+    static parseFromContentStream(ops: string[], page?: PdfPage): TextBlock[] {
+        // Build a full block first to establish proper prev chains for position resolution
+        const fullBlock = new TextBlock(page)
 
         let currentLineOps: string[] = []
 
@@ -946,7 +947,7 @@ export class TextBlock extends ContentNode {
             ) {
                 const text = new Text(page)
                 text.ops = new ContentOps(currentLineOps)
-                block.addSegment(text)
+                fullBlock.addSegment(text)
             }
             currentLineOps = []
         }
@@ -965,7 +966,121 @@ export class TextBlock extends ContentNode {
 
         flushLine()
 
-        return block
+        const segments = fullBlock.getSegments()
+        if (segments.length <= 1) return [fullBlock]
+
+        // Compute absolute positions using the full prev chain
+        const positions = segments.map((s) => s.getLocalTransform())
+
+        // Find split points where y-position changes (different line)
+        const Y_THRESHOLD = 0.5
+        const splitIndices: number[] = [0]
+        for (let i = 1; i < segments.length; i++) {
+            const dy = Math.abs(positions[i].f - positions[i - 1].f)
+            if (dy > Y_THRESHOLD) {
+                splitIndices.push(i)
+            }
+        }
+
+        if (splitIndices.length <= 1) return [fullBlock]
+
+        // Split into separate TextBlocks for each group
+        const results: TextBlock[] = []
+        for (let g = 0; g < splitIndices.length; g++) {
+            const startIdx = splitIndices[g]
+            const endIdx =
+                g + 1 < splitIndices.length
+                    ? splitIndices[g + 1]
+                    : segments.length
+
+            const block = new TextBlock(page)
+            for (let i = startIdx; i < endIdx; i++) {
+                const seg = segments[i]
+                const text = new Text(page)
+
+                if (i === startIdx && g > 0) {
+                    // First segment of a split group: inject absolute Tm
+                    // and inherited font state so prev chain isn't needed
+                    const tm = positions[i]
+                    const newOps: string[] = []
+
+                    // Keep non-positioning ops from original segment
+                    for (const op of seg.ops.ops) {
+                        const operator = op.split(/\s+/).at(-1)
+                        if (
+                            operator === 'Td' ||
+                            operator === 'TD' ||
+                            operator === 'T*' ||
+                            operator === 'Tm'
+                        ) {
+                            continue
+                        }
+                        newOps.push(op)
+                    }
+
+                    // Inject inherited Tf/Tc/Tw from previous segments if missing
+                    const hasTf = newOps.some((op) => op.endsWith(' Tf'))
+                    const hasTc = newOps.some((op) => op.endsWith(' Tc'))
+                    const hasTw = newOps.some((op) => op.endsWith(' Tw'))
+                    const inject: string[] = []
+
+                    for (let j = i - 1; j >= 0; j--) {
+                        const segOps = segments[j].ops.ops
+                        for (let k = segOps.length - 1; k >= 0; k--) {
+                            if (
+                                !hasTf &&
+                                !inject.some((o) => o.endsWith(' Tf')) &&
+                                segOps[k].endsWith(' Tf')
+                            )
+                                inject.push(segOps[k])
+                            if (
+                                !hasTc &&
+                                !inject.some((o) => o.endsWith(' Tc')) &&
+                                segOps[k].endsWith(' Tc')
+                            )
+                                inject.push(segOps[k])
+                            if (
+                                !hasTw &&
+                                !inject.some((o) => o.endsWith(' Tw')) &&
+                                segOps[k].endsWith(' Tw')
+                            )
+                                inject.push(segOps[k])
+                        }
+                    }
+
+                    // Insert inherited state at the beginning, then absolute Tm before show op
+                    newOps.unshift(...inject)
+
+                    const showIdx = newOps.findIndex((op) => {
+                        const operator = op.split(/\s+/).at(-1)
+                        return (
+                            operator === 'Tj' ||
+                            operator === 'TJ' ||
+                            operator === "'" ||
+                            operator === '"'
+                        )
+                    })
+                    const tmStr = `${tm.a} ${tm.b} ${tm.c} ${tm.d} ${tm.e} ${tm.f} Tm`
+                    if (showIdx >= 0) {
+                        newOps.splice(showIdx, 0, tmStr)
+                    } else {
+                        newOps.push(tmStr)
+                    }
+
+                    text.ops = new ContentOps(newOps)
+                } else {
+                    text.ops = new ContentOps([...seg.ops.ops])
+                }
+
+                block.addSegment(text)
+            }
+
+            if (block.getSegments().length > 0) {
+                results.push(block)
+            }
+        }
+
+        return results
     }
 }
 
@@ -1295,11 +1410,13 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
 
             if (token === 'ET') {
                 if (inTextBlock && currentOps.length > 0) {
-                    const block = TextBlock.parseFromContentStream(
+                    const blocks = TextBlock.parseFromContentStream(
                         currentOps,
                         this.page,
                     )
-                    currentGroup.addChild(block)
+                    for (const block of blocks) {
+                        currentGroup.addChild(block)
+                    }
                 }
                 inTextBlock = false
                 currentOps = []

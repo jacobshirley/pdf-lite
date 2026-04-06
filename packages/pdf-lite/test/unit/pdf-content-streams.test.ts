@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { server } from 'vitest/browser'
 import { PdfDocument } from '../../src/pdf/pdf-document'
 import {
-    PdfContentStream,
+    PdfContentStreamObject,
     TextBlock,
     Text,
     GraphicsBlock,
@@ -28,10 +28,10 @@ async function loadFixture(): Promise<PdfDocument> {
     return PdfDocument.fromBytes([base64ToBytes(b64)])
 }
 
-function makeStream(content: string): PdfContentStream {
+function makeStream(content: string): PdfContentStreamObject {
     const stream = new PdfStream(content)
     const obj = new PdfIndirectObject({ content: stream })
-    return new PdfContentStream(obj)
+    return new PdfContentStreamObject(obj)
 }
 
 // ---------------------------------------------------------------------------
@@ -72,9 +72,9 @@ describe('multi-child-field.pdf — content streams', () => {
         expect(streams.length).toBeGreaterThanOrEqual(1)
     })
 
-    it('every content stream is a PdfContentStream', () => {
+    it('every content stream is a PdfContentStreamObject', () => {
         for (const s of doc.pages.get(0).contentStreams) {
-            expect(s).toBeInstanceOf(PdfContentStream)
+            expect(s).toBeInstanceOf(PdfContentStreamObject)
         }
     })
 
@@ -151,7 +151,7 @@ describe('multi-child-field.pdf — parsed nodes', () => {
 // ---------------------------------------------------------------------------
 // Programmatic construction — add() and dataAsString round-trip
 // ---------------------------------------------------------------------------
-describe('PdfContentStream.add() and dataAsString', () => {
+describe('PdfContentStreamObject.add() and dataAsString', () => {
     it('add() appends a node to the stream', () => {
         const s = makeStream('')
         const block = new TextBlock()
@@ -183,7 +183,7 @@ describe('PdfContentStream.add() and dataAsString', () => {
 // ---------------------------------------------------------------------------
 // nodes() parser — TextBlock
 // ---------------------------------------------------------------------------
-describe('PdfContentStream.nodes() — TextBlock parsing', () => {
+describe('PdfContentStreamObject.nodes() — TextBlock parsing', () => {
     it('parses a BT/ET block as a single TextBlock', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
         const nodes = s.nodes
@@ -219,7 +219,7 @@ describe('PdfContentStream.nodes() — TextBlock parsing', () => {
 // ---------------------------------------------------------------------------
 // nodes() parser — GraphicsBlock
 // ---------------------------------------------------------------------------
-describe('PdfContentStream.nodes() — GraphicsBlock parsing', () => {
+describe('PdfContentStreamObject.nodes() — GraphicsBlock parsing', () => {
     it('parses a simple move/line/stroke as a GraphicsBlock', () => {
         const s = makeStream('10 10 m 100 10 l S')
         const nodes = s.nodes

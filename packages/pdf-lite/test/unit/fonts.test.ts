@@ -1353,6 +1353,65 @@ describe('PdfFont.decode()', () => {
         })
     })
 
+    describe('writeContentStreamText', () => {
+        it('should produce simple Tj for font without kern pairs', () => {
+            const font = new PdfFont('Helvetica')
+            font.metrics = new PdfFontDescriptor({})
+            const result = font.writeContentStreamText('Hello')
+            expect(result).toBe('(Hello) Tj')
+        })
+
+        it('should produce Tj for standard font when no kern applies', () => {
+            const font = PdfFont.HELVETICA
+            // "xx" — unlikely to have a kern pair
+            const result = font.writeContentStreamText('xx')
+            expect(result).toMatch(/Tj$/)
+        })
+
+        it('should produce TJ with kern adjustments for kerned pairs', () => {
+            const font = PdfFont.HELVETICA
+            // AV is a classic kern pair in Helvetica
+            const result = font.writeContentStreamText('AV')
+            // Should use TJ if kern applies
+            expect(result).toMatch(/TJ$/)
+            // Should contain a numeric kern adjustment
+            expect(result).toMatch(/\[.*\d+.*\] TJ/)
+        })
+
+        it('should handle text with multiple kern pairs', () => {
+            const font = PdfFont.HELVETICA
+            const result = font.writeContentStreamText('AVATAR')
+            // Should be TJ with multiple segments
+            expect(result).toMatch(/TJ$/)
+        })
+
+        it('should handle empty string', () => {
+            const font = PdfFont.HELVETICA
+            const result = font.writeContentStreamText('')
+            expect(result).toMatch(/Tj$/)
+        })
+
+        it('should escape special PDF characters in literal strings', () => {
+            const font = new PdfFont('Helvetica')
+            font.metrics = new PdfFontDescriptor({})
+            const result = font.writeContentStreamText('Hello (World)')
+            expect(result).toBe('(Hello \\(World\\)) Tj')
+        })
+
+        it('should use hex encoding for Type0 fonts', () => {
+            const font = PdfFont.HELVETICA
+            // Create a Type0 font manually
+            const cidFont = new PdfFont({
+                fontName: 'TestCID',
+                encoding: 'Identity-H',
+                metrics: new PdfFontDescriptor({}),
+            })
+            cidFont.fontType = 'Type0'
+            const result = cidFont.writeContentStreamText('AB')
+            expect(result).toMatch(/<[0-9a-f]+>/)
+        })
+    })
+
     describe('PdfFontDescriptor', () => {
         it('should construct with kern pairs and provide O(1) lookup', () => {
             const kernPairs: AfmKernPair[] = [

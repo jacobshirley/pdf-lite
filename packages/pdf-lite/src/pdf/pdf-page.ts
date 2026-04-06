@@ -7,7 +7,7 @@ import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfPages } from './pdf-pages.js'
 import {
     GraphicsBlock,
-    PdfContentStream,
+    PdfContentStreamObject,
     TextBlock,
 } from '../graphics/pdf-content-stream.js'
 import { PdfFont } from '../fonts/pdf-font.js'
@@ -226,22 +226,22 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
      * Handles both single stream and array of streams cases.
      * Returns empty array if no content streams exist.
      */
-    get contentStreams(): PdfContentStream[] {
+    get contentStreams(): PdfContentStreamObject[] {
         const contentsEntry = this.contents
         if (!contentsEntry) return []
 
-        const streams: PdfContentStream[] = []
+        const streams: PdfContentStreamObject[] = []
 
         if (contentsEntry instanceof PdfArray) {
             // Multiple content streams
             for (const ref of contentsEntry.items) {
-                const resolved = ref.resolve(PdfContentStream)
+                const resolved = ref.resolve(PdfContentStreamObject)
                 resolved.page = this
                 streams.push(resolved)
             }
         } else if (contentsEntry instanceof PdfObjectReference) {
             // Single content stream
-            const resolved = contentsEntry.resolve(PdfContentStream)
+            const resolved = contentsEntry.resolve(PdfContentStreamObject)
             resolved.page = this
             streams.push(resolved)
         }

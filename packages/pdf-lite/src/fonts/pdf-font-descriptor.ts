@@ -6,6 +6,7 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfName } from '../core/objects/pdf-name.js'
+import { PdfStream } from '../core/objects/pdf-stream.js'
 
 export interface GlyphMetrics {
     width: number
@@ -272,6 +273,43 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
     get flags(): number {
         const entry = this.content.get('Flags')
         return entry instanceof PdfNumber ? entry.value : 0
+    }
+
+    /**
+     * Gets the embedded font file data from the FontFile2 stream.
+     * Returns the in-memory fontData if no stream is attached yet.
+     */
+    get data(): ByteArray | undefined {
+        const ref = this.content.get('FontFile2')
+        if (ref instanceof PdfObjectReference) {
+            const obj = ref.resolve()
+            if (obj?.content instanceof PdfStream) {
+                return obj.content.data
+            }
+        }
+        return this.fontData
+    }
+
+    /**
+     * Sets the embedded font file data.
+     * Creates a new PdfStream with FlateDecode compression and stores
+     * a reference in the FontFile2 entry.
+     */
+    set data(value: ByteArray | undefined) {
+        this.fontData = value
+        if (value) {
+            const stream = new PdfStream({
+                header: new PdfDictionary(),
+                original: value,
+            })
+            stream.header.set('Length1', new PdfNumber(value.length))
+            stream.addFilter('FlateDecode')
+
+            const obj = new PdfIndirectObject({ content: stream })
+            this.content.set('FontFile2', obj.reference)
+        } else {
+            this.content.delete('FontFile2')
+        }
     }
 
     // --- Kern/glyph helpers ---

@@ -1074,11 +1074,11 @@ export function PdfEditor() {
             const siblings = extractedTextBlocks.filter(
                 (tb) =>
                     tb.page === textBlock.page &&
-                    (tb.block as any).sourceIndex === sourceIndex,
+                    (tb.block).sourceIndex === sourceIndex,
             )
 
             // Apply the text change to this block
-            textBlock.block.replaceText(editText)
+            textBlock.block.text = editText
 
             // Write all sibling blocks back as the replacement for this BT/ET
             const replacementBlocks = siblings.map((tb) => tb.block)

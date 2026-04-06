@@ -501,6 +501,90 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     }
 
     /**
+     * Produces a Tj or TJ content stream operator for the given text.
+     * Uses the TJ operator with kern adjustments when kern data is available,
+     * otherwise falls back to a simple Tj.
+     *
+     * The returned string is ready to be inserted into a content stream, e.g.:
+     * ```
+     * BT /F1 12 Tf 100 700 Td <TJ output> ET
+     * ```
+     *
+     * @param text - The text to render
+     * @returns A string like `(Hello) Tj` or `[(H) 40 (ello)] TJ`
+     */
+    writeContentStreamText(text: string): string {
+        const m = this.metrics
+        const hasKern = m.kernPairs.length > 0
+
+        if (!hasKern || text.length <= 1) {
+            return `${this.encodeOperand(text)} Tj`
+        }
+
+        // Build TJ array: split at kern boundaries
+        type TJEntry = { text: string } | { kern: number }
+        const entries: TJEntry[] = []
+        let run = ''
+
+        const chars = [...text]
+        for (let i = 0; i < chars.length; i++) {
+            run += chars[i]
+
+            if (i < chars.length - 1) {
+                const leftCode = chars[i].codePointAt(0)!
+                const rightCode = chars[i + 1].codePointAt(0)!
+                const leftName = m.getGlyphMetrics(leftCode)?.name
+                const rightName = m.getGlyphMetrics(rightCode)?.name
+
+                if (leftName && rightName) {
+                    const kern = m.getKernAdjustment(leftName, rightName)
+                    if (kern !== 0) {
+                        entries.push({ text: run })
+                        // PDF TJ kern values: positive moves left (tightens),
+                        // AFM dx is negative for tightening, so negate
+                        entries.push({ kern: -kern })
+                        run = ''
+                    }
+                }
+            }
+        }
+
+        if (run) {
+            entries.push({ text: run })
+        }
+
+        // If no kern was actually applied, use simple Tj
+        if (entries.length === 1 && 'text' in entries[0]) {
+            return `${this.encodeOperand(entries[0].text)} Tj`
+        }
+
+        const parts = entries.map((e) => {
+            if ('kern' in e) return String(e.kern)
+            return this.encodeOperand(e.text)
+        })
+
+        return `[${parts.join(' ')}] TJ`
+    }
+
+    /**
+     * Encodes text as a PDF string operand for use in content streams.
+     * Returns `(escaped text)` for literal strings or `<hex>` for hex strings.
+     */
+    private encodeOperand(text: string): string {
+        const encoded = this.encode(text)
+        if (encoded instanceof PdfHexadecimal) {
+            return `<${encoded.hexString}>`
+        }
+        // PdfString — escape special chars for PDF literal string
+        const val = encoded.value
+        const escaped = val
+            .replace(/\\/g, '\\\\')
+            .replace(/\(/g, '\\(')
+            .replace(/\)/g, '\\)')
+        return `(${escaped})`
+    }
+
+    /**
      * @internal
      * Legacy property for backward compatibility with code that accesses fontRef.
      * Returns this font's reference since PdfFont IS the indirect object.
@@ -547,7 +631,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      */
     static fromStandardFont(
         fontName: PdfStandardFontName,
-        metrics: PdfFontDescriptor,
+        metrics: PdfFontDescriptor = new PdfFontDescriptor({}),
     ): PdfFont {
         const font = new PdfFont({ fontName, metrics })
 
@@ -682,22 +766,9 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             metrics,
         })
 
-        // Attach font file stream to descriptor
+        // Embed font file via descriptor
         if (metrics.fontData) {
-            const fontFileStream = new PdfStream({
-                header: new PdfDictionary(),
-                original: metrics.fontData,
-            })
-            fontFileStream.header.set(
-                'Length1',
-                new PdfNumber(metrics.fontData.length),
-            )
-            fontFileStream.addFilter('FlateDecode')
-
-            const fontFileObject = new PdfIndirectObject({
-                content: fontFileStream,
-            })
-            metrics.content.set('FontFile2', fontFileObject.reference)
+            metrics.data = metrics.fontData
         }
 
         // Build TrueType font dictionary
@@ -748,22 +819,9 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             metrics,
         })
 
-        // Attach font file stream to descriptor
+        // Embed font file via descriptor
         if (metrics.fontData) {
-            const fontFileStream = new PdfStream({
-                header: new PdfDictionary(),
-                original: metrics.fontData,
-            })
-            fontFileStream.header.set(
-                'Length1',
-                new PdfNumber(metrics.fontData.length),
-            )
-            fontFileStream.addFilter('FlateDecode')
-
-            const fontFileObject = new PdfIndirectObject({
-                content: fontFileStream,
-            })
-            metrics.content.set('FontFile2', fontFileObject.reference)
+            metrics.data = metrics.fontData
         }
 
         // Create CIDFont dictionary (descendant font)

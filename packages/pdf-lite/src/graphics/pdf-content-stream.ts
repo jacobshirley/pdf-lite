@@ -1,6 +1,6 @@
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
 import { PdfStream } from '../core/objects/pdf-stream'
-import type { PdfFont } from '../fonts/pdf-font.js'
+import { PdfFont } from '../fonts/pdf-font.js'
 import { PdfHexadecimal, PdfString } from '../core'
 import { PdfPage } from '../pdf/pdf-page'
 import { Matrix } from './geom/matrix'
@@ -193,18 +193,20 @@ export class ContentOps {
         return this.ops
     }
 
-    td(x: number, y: number) {
+    td(x: number, y: number): this {
         this.ops.push(`${x} ${y} Td`)
+        return this
     }
 
-    tD(x: number, y: number) {
+    tD(x: number, y: number): this {
         this.ops.push(`${x} ${y} TD`)
+        return this
     }
 
-    tj(text: PdfString | PdfHexadecimal | string) {
+    tj(text: PdfString | PdfHexadecimal | string): this {
         if (typeof text === 'string') {
             this.tj(new PdfString(text))
-            return
+            return this
         }
 
         if (text instanceof PdfHexadecimal) {
@@ -214,134 +216,175 @@ export class ContentOps {
         } else {
             throw new Error('Invalid text type for Tj operator')
         }
+
+        return this
     }
 
-    tJ(array: string) {
+    tJ(array: string): this {
         this.ops.push(`${array} TJ`)
+        return this
     }
 
-    tf(fontName: string, fontSize: number) {
+    tf(fontName: string, fontSize: number): this {
         this.ops.push(`/${fontName} ${fontSize} Tf`)
+        return this
     }
 
-    tm(a: number, b: number, c: number, d: number, e: number, f: number) {
+    tm(a: number, b: number, c: number, d: number, e: number, f: number): this {
         this.ops.push(`${a} ${b} ${c} ${d} ${e} ${f} Tm`)
+        return this
     }
 
-    tc(charSpace: number) {
+    tc(charSpace: number): this {
         this.ops.push(`${charSpace} Tc`)
+        return this
     }
 
-    tw(wordSpace: number) {
+    tw(wordSpace: number): this {
         this.ops.push(`${wordSpace} Tw`)
+        return this
     }
 
-    tStar() {
+    tStar(): this {
         this.ops.push('T*')
+        return this
     }
 
-    quote(text: string) {
+    quote(text: string): this {
         this.ops.push(`(${text}) '`)
+        return this
     }
 
-    bt() {
+    bt(): this {
         this.ops.push('BT')
+        return this
     }
 
-    et() {
+    et(): this {
         this.ops.push('ET')
+        return this
     }
 
-    rg(r: number, g: number, b: number) {
+    rg(r: number, g: number, b: number): this {
         this.ops.push(`${r} ${g} ${b} rg`)
+        return this
     }
 
-    RG(r: number, g: number, b: number) {
+    RG(r: number, g: number, b: number): this {
         this.ops.push(`${r} ${g} ${b} RG`)
+        return this
     }
 
-    m(x: number, y: number) {
+    m(x: number, y: number): this {
         this.ops.push(`${x} ${y} m`)
+        return this
     }
 
-    l(x: number, y: number) {
+    l(x: number, y: number): this {
         this.ops.push(`${x} ${y} l`)
+        return this
     }
 
-    re(x: number, y: number, width: number, height: number) {
+    re(x: number, y: number, width: number, height: number): this {
         this.ops.push(`${x} ${y} ${width} ${height} re`)
+        return this
     }
 
-    h() {
+    h(): this {
         this.ops.push('h')
+        return this
     }
 
-    c(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+    c(
+        x1: number,
+        y1: number,
+        x2: number,
+        y2: number,
+        x3: number,
+        y3: number,
+    ): this {
         this.ops.push(`${x1} ${y1} ${x2} ${y2} ${x3} ${y3} c`)
+        return this
     }
 
-    s() {
+    s(): this {
         this.ops.push('S')
+        return this
     }
 
-    f() {
+    f(): this {
         this.ops.push('f')
+        return this
     }
 
-    fStar() {
+    fStar(): this {
         this.ops.push('f*')
+        return this
     }
 
-    b() {
+    b(): this {
         this.ops.push('b')
+        return this
     }
 
-    B() {
+    B(): this {
         this.ops.push('B')
+        return this
     }
 
-    bStar() {
+    bStar(): this {
         this.ops.push('b*')
+        return this
     }
 
-    BStar() {
+    BStar(): this {
         this.ops.push('B*')
+        return this
     }
 
-    n() {
+    n(): this {
         this.ops.push('n')
+        return this
     }
 
-    W() {
+    W(): this {
         this.ops.push('W')
+        return this
     }
 
-    WStar() {
+    WStar(): this {
         this.ops.push('W*')
+        return this
     }
 
-    q() {
+    q(): this {
         this.ops.push('q')
+        return this
     }
 
-    Q() {
+    Q(): this {
         this.ops.push('Q')
+        return this
     }
 
-    cm(a: number, b: number, c: number, d: number, e: number, f: number) {
+    cm(a: number, b: number, c: number, d: number, e: number, f: number): this {
         this.ops.push(`${a} ${b} ${c} ${d} ${e} ${f} cm`)
+        return this
     }
 
-    w(lineWidth: number) {
+    w(lineWidth: number): this {
         this.ops.push(`${lineWidth} w`)
+        return this
     }
 
-    gs(name: string) {
+    gs(name: string): this {
         this.ops.push(`/${name} gs`)
+        return this
     }
 
-    Do(name: string) {
+    Do(name: string): this {
         this.ops.push(`/${name} Do`)
+        return this
     }
 
     has(operator: string): boolean {
@@ -352,15 +395,17 @@ export class ContentOps {
         return this.ops.findLast((op) => op.endsWith(` ${operator}`)) ?? null
     }
 
-    prepend(ops: ContentOps) {
+    prepend(ops: ContentOps): this {
         this.ops = [...ops.ops, ...this.ops]
+        return this
     }
 
-    append(ops: ContentOps) {
+    append(ops: ContentOps): this {
         this.ops = [...this.ops, ...ops.ops]
+        return this
     }
 
-    replace(ops: ContentOps) {
+    replace(ops: ContentOps): this {
         for (const op of ops.ops) {
             const operator = op.split(' ').slice(-1)[0]
             const index = this.ops.findIndex((o) => o.endsWith(` ${operator}`))
@@ -370,6 +415,7 @@ export class ContentOps {
                 this.ops.push(op)
             }
         }
+        return this
     }
 }
 
@@ -645,18 +691,25 @@ export class Text extends ContentNode {
         return ''
     }
 
-    get font(): PdfFont | null {
+    get font(): PdfFont {
+        const defaultFont = PdfFont.HELVETICA
         const lastTf = this.ops.findLast('Tf')
 
         if (lastTf) {
             const parts = lastTf.split(' ')
             if (parts.length >= 2) {
                 const fontName = parts[0].slice(1)
-                return this.page?.fontMap.get(fontName) ?? null
+                return this.page?.fontMap.get(fontName) ?? defaultFont
             }
         }
 
-        return this.prev?.font ?? null
+        return this.prev?.font ?? defaultFont
+    }
+
+    set font(font: PdfFont) {
+        const size = this.fontSize
+        const tfOp = `/${font.resourceName} ${size} Tf`
+        this.replaceOrPrependOp('Tf', tfOp)
     }
 
     get charSpace(): number {
@@ -694,6 +747,12 @@ export class Text extends ContentNode {
         return this.prev?.fontSize ?? 12
     }
 
+    set fontSize(size: number) {
+        const fontName = this.font.resourceName
+        const tfOp = `/${fontName} ${size} Tf`
+        this.replaceOrPrependOp('Tf', tfOp)
+    }
+
     get textLeading(): number {
         const lastTL = this.ops.findLast('TL')
         if (lastTL) {
@@ -710,6 +769,11 @@ export class Text extends ContentNode {
             }
         }
         return this.prev?.textLeading ?? 0
+    }
+
+    set text(newText: string) {
+        const textOp = this.font.writeContentStreamText(newText)
+        this.ops.replace(new ContentOps().tj(textOp))
     }
 
     /**
@@ -880,6 +944,17 @@ export class Text extends ContentNode {
             height: ascenderHeight + descenderHeight,
         }
     }
+
+    private replaceOrPrependOp(operator: string, newOp: string): void {
+        const idx = this.ops.ops.findLastIndex((op) =>
+            op.endsWith(` ${operator}`),
+        )
+        if (idx !== -1) {
+            this.ops.ops[idx] = newOp
+        } else {
+            this.ops.ops.unshift(newOp)
+        }
+    }
 }
 
 export class TextBlock extends ContentNode {
@@ -973,10 +1048,19 @@ export class TextBlock extends ContentNode {
         }
     }
 
-    replaceText(newText: string): void {
-        if (this.segments.length === 0) return
+    set text(newText: string) {
+        if (this.segments.length === 0) {
+            const text = new Text(this.page)
+            text.ops = new ContentOps()
+            text.font = PdfFont.HELVETICA
+            text.fontSize = 12
+            text.text = newText
+            this.addSegment(text)
+            return
+        }
 
         const firstSeg = this.segments[0]
+        const textOp = firstSeg.font.writeContentStreamText(newText)
         const newOps: string[] = []
         let replaced = false
 
@@ -991,11 +1075,7 @@ export class TextBlock extends ContentNode {
                     operator === "'" ||
                     operator === '"')
             ) {
-                const escaped = newText
-                    .replace(/\\/g, '\\\\')
-                    .replace(/\(/g, '\\(')
-                    .replace(/\)/g, '\\)')
-                newOps.push(`(${escaped}) Tj`)
+                newOps.push(textOp)
                 replaced = true
             } else if (
                 replaced &&
@@ -1012,11 +1092,7 @@ export class TextBlock extends ContentNode {
         }
 
         if (!replaced) {
-            const escaped = newText
-                .replace(/\\/g, '\\\\')
-                .replace(/\(/g, '\\(')
-                .replace(/\)/g, '\\)')
-            newOps.push(`(${escaped}) Tj`)
+            newOps.push(textOp)
         }
 
         firstSeg.ops = new ContentOps(newOps)
@@ -1438,7 +1514,9 @@ export class GraphicsBlock extends ContentNode {
     }
 }
 
-export class PdfContentStream extends PdfIndirectObject<PdfStream> {
+export class PdfContentStream extends PdfStream {}
+
+export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> {
     static ContentNode = ContentNode
     static GroupNode = GroupNode
     static GraphicsBlock = GraphicsBlock

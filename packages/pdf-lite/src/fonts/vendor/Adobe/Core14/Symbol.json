@@ -1,0 +1,2117 @@
+{
+    "metadata": {
+        "FontName": "Symbol",
+        "FullName": "Symbol",
+        "FamilyName": "Symbol",
+        "Weight": "Medium",
+        "ItalicAngle": 0,
+        "IsFixedPitch": false,
+        "CharacterSet": "Special",
+        "UnderlinePosition": -100,
+        "UnderlineThickness": 50,
+        "Version": "001.008",
+        "Notice": "Copyright (c) 1985, 1987, 1989, 1990, 1997 Adobe Systems Incorporated. All rights reserved.",
+        "EncodingScheme": "FontSpecific",
+        "StdHW": 92,
+        "StdVW": 85
+    },
+    "bbox": {
+        "llx": -180,
+        "lly": -293,
+        "urx": 1090,
+        "ury": 1010
+    },
+    "charMetrics": [
+        {
+            "code": 32,
+            "wx": 250,
+            "name": "space",
+            "bbox": {
+                "llx": 0,
+                "lly": 0,
+                "urx": 0,
+                "ury": 0
+            }
+        },
+        {
+            "code": 33,
+            "wx": 333,
+            "name": "exclam",
+            "bbox": {
+                "llx": 128,
+                "lly": -17,
+                "urx": 240,
+                "ury": 672
+            }
+        },
+        {
+            "code": 34,
+            "wx": 713,
+            "name": "universal",
+            "bbox": {
+                "llx": 31,
+                "lly": 0,
+                "urx": 681,
+                "ury": 705
+            }
+        },
+        {
+            "code": 35,
+            "wx": 500,
+            "name": "numbersign",
+            "bbox": {
+                "llx": 20,
+                "lly": -16,
+                "urx": 481,
+                "ury": 673
+            }
+        },
+        {
+            "code": 36,
+            "wx": 549,
+            "name": "existential",
+            "bbox": {
+                "llx": 25,
+                "lly": 0,
+                "urx": 478,
+                "ury": 707
+            }
+        },
+        {
+            "code": 37,
+            "wx": 833,
+            "name": "percent",
+            "bbox": {
+                "llx": 63,
+                "lly": -36,
+                "urx": 771,
+                "ury": 655
+            }
+        },
+        {
+            "code": 38,
+            "wx": 778,
+            "name": "ampersand",
+            "bbox": {
+                "llx": 41,
+                "lly": -18,
+                "urx": 750,
+                "ury": 661
+            }
+        },
+        {
+            "code": 39,
+            "wx": 439,
+            "name": "suchthat",
+            "bbox": {
+                "llx": 48,
+                "lly": -17,
+                "urx": 414,
+                "ury": 500
+            }
+        },
+        {
+            "code": 40,
+            "wx": 333,
+            "name": "parenleft",
+            "bbox": {
+                "llx": 53,
+                "lly": -191,
+                "urx": 300,
+                "ury": 673
+            }
+        },
+        {
+            "code": 41,
+            "wx": 333,
+            "name": "parenright",
+            "bbox": {
+                "llx": 30,
+                "lly": -191,
+                "urx": 277,
+                "ury": 673
+            }
+        },
+        {
+            "code": 42,
+            "wx": 500,
+            "name": "asteriskmath",
+            "bbox": {
+                "llx": 65,
+                "lly": 134,
+                "urx": 427,
+                "ury": 551
+            }
+        },
+        {
+            "code": 43,
+            "wx": 549,
+            "name": "plus",
+            "bbox": {
+                "llx": 10,
+                "lly": 0,
+                "urx": 539,
+                "ury": 533
+            }
+        },
+        {
+            "code": 44,
+            "wx": 250,
+            "name": "comma",
+            "bbox": {
+                "llx": 56,
+                "lly": -152,
+                "urx": 194,
+                "ury": 104
+            }
+        },
+        {
+            "code": 45,
+            "wx": 549,
+            "name": "minus",
+            "bbox": {
+                "llx": 11,
+                "lly": 233,
+                "urx": 535,
+                "ury": 288
+            }
+        },
+        {
+            "code": 46,
+            "wx": 250,
+            "name": "period",
+            "bbox": {
+                "llx": 69,
+                "lly": -17,
+                "urx": 181,
+                "ury": 95
+            }
+        },
+        {
+            "code": 47,
+            "wx": 278,
+            "name": "slash",
+            "bbox": {
+                "llx": 0,
+                "lly": -18,
+                "urx": 254,
+                "ury": 646
+            }
+        },
+        {
+            "code": 48,
+            "wx": 500,
+            "name": "zero",
+            "bbox": {
+                "llx": 24,
+                "lly": -14,
+                "urx": 476,
+                "ury": 685
+            }
+        },
+        {
+            "code": 49,
+            "wx": 500,
+            "name": "one",
+            "bbox": {
+                "llx": 117,
+                "lly": 0,
+                "urx": 390,
+                "ury": 673
+            }
+        },
+        {
+            "code": 50,
+            "wx": 500,
+            "name": "two",
+            "bbox": {
+                "llx": 25,
+                "lly": 0,
+                "urx": 475,
+                "ury": 685
+            }
+        },
+        {
+            "code": 51,
+            "wx": 500,
+            "name": "three",
+            "bbox": {
+                "llx": 43,
+                "lly": -14,
+                "urx": 435,
+                "ury": 685
+            }
+        },
+        {
+            "code": 52,
+            "wx": 500,
+            "name": "four",
+            "bbox": {
+                "llx": 15,
+                "lly": 0,
+                "urx": 469,
+                "ury": 685
+            }
+        },
+        {
+            "code": 53,
+            "wx": 500,
+            "name": "five",
+            "bbox": {
+                "llx": 32,
+                "lly": -14,
+                "urx": 445,
+                "ury": 690
+            }
+        },
+        {
+            "code": 54,
+            "wx": 500,
+            "name": "six",
+            "bbox": {
+                "llx": 34,
+                "lly": -14,
+                "urx": 468,
+                "ury": 685
+            }
+        },
+        {
+            "code": 55,
+            "wx": 500,
+            "name": "seven",
+            "bbox": {
+                "llx": 24,
+                "lly": -16,
+                "urx": 448,
+                "ury": 673
+            }
+        },
+        {
+            "code": 56,
+            "wx": 500,
+            "name": "eight",
+            "bbox": {
+                "llx": 56,
+                "lly": -14,
+                "urx": 445,
+                "ury": 685
+            }
+        },
+        {
+            "code": 57,
+            "wx": 500,
+            "name": "nine",
+            "bbox": {
+                "llx": 30,
+                "lly": -18,
+                "urx": 459,
+                "ury": 685
+            }
+        },
+        {
+            "code": 58,
+            "wx": 278,
+            "name": "colon",
+            "bbox": {
+                "llx": 81,
+                "lly": -17,
+                "urx": 193,
+                "ury": 460
+            }
+        },
+        {
+            "code": 59,
+            "wx": 278,
+            "name": "semicolon",
+            "bbox": {
+                "llx": 83,
+                "lly": -152,
+                "urx": 221,
+                "ury": 460
+            }
+        },
+        {
+            "code": 60,
+            "wx": 549,
+            "name": "less",
+            "bbox": {
+                "llx": 26,
+                "lly": 0,
+                "urx": 523,
+                "ury": 522
+            }
+        },
+        {
+            "code": 61,
+            "wx": 549,
+            "name": "equal",
+            "bbox": {
+                "llx": 11,
+                "lly": 141,
+                "urx": 537,
+                "ury": 390
+            }
+        },
+        {
+            "code": 62,
+            "wx": 549,
+            "name": "greater",
+            "bbox": {
+                "llx": 26,
+                "lly": 0,
+                "urx": 523,
+                "ury": 522
+            }
+        },
+        {
+            "code": 63,
+            "wx": 444,
+            "name": "question",
+            "bbox": {
+                "llx": 70,
+                "lly": -17,
+                "urx": 412,
+                "ury": 686
+            }
+        },
+        {
+            "code": 64,
+            "wx": 549,
+            "name": "congruent",
+            "bbox": {
+                "llx": 11,
+                "lly": 0,
+                "urx": 537,
+                "ury": 475
+            }
+        },
+        {
+            "code": 65,
+            "wx": 722,
+            "name": "Alpha",
+            "bbox": {
+                "llx": 4,
+                "lly": 0,
+                "urx": 684,
+                "ury": 673
+            }
+        },
+        {
+            "code": 66,
+            "wx": 667,
+            "name": "Beta",
+            "bbox": {
+                "llx": 29,
+                "lly": 0,
+                "urx": 592,
+                "ury": 673
+            }
+        },
+        {
+            "code": 67,
+            "wx": 722,
+            "name": "Chi",
+            "bbox": {
+                "llx": -9,
+                "lly": 0,
+                "urx": 704,
+                "ury": 673
+            }
+        },
+        {
+            "code": 68,
+            "wx": 612,
+            "name": "Delta",
+            "bbox": {
+                "llx": 6,
+                "lly": 0,
+                "urx": 608,
+                "ury": 688
+            }
+        },
+        {
+            "code": 69,
+            "wx": 611,
+            "name": "Epsilon",
+            "bbox": {
+                "llx": 32,
+                "lly": 0,
+                "urx": 617,
+                "ury": 673
+            }
+        },
+        {
+            "code": 70,
+            "wx": 763,
+            "name": "Phi",
+            "bbox": {
+                "llx": 26,
+                "lly": 0,
+                "urx": 741,
+                "ury": 673
+            }
+        },
+        {
+            "code": 71,
+            "wx": 603,
+            "name": "Gamma",
+            "bbox": {
+                "llx": 24,
+                "lly": 0,
+                "urx": 609,
+                "ury": 673
+            }
+        },
+        {
+            "code": 72,
+            "wx": 722,
+            "name": "Eta",
+            "bbox": {
+                "llx": 39,
+                "lly": 0,
+                "urx": 729,
+                "ury": 673
+            }
+        },
+        {
+            "code": 73,
+            "wx": 333,
+            "name": "Iota",
+            "bbox": {
+                "llx": 32,
+                "lly": 0,
+                "urx": 316,
+                "ury": 673
+            }
+        },
+        {
+            "code": 74,
+            "wx": 631,
+            "name": "theta1",
+            "bbox": {
+                "llx": 18,
+                "lly": -18,
+                "urx": 623,
+                "ury": 689
+            }
+        },
+        {
+            "code": 75,
+            "wx": 722,
+            "name": "Kappa",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 722,
+                "ury": 673
+            }
+        },
+        {
+            "code": 76,
+            "wx": 686,
+            "name": "Lambda",
+            "bbox": {
+                "llx": 6,
+                "lly": 0,
+                "urx": 680,
+                "ury": 688
+            }
+        },
+        {
+            "code": 77,
+            "wx": 889,
+            "name": "Mu",
+            "bbox": {
+                "llx": 28,
+                "lly": 0,
+                "urx": 887,
+                "ury": 673
+            }
+        },
+        {
+            "code": 78,
+            "wx": 722,
+            "name": "Nu",
+            "bbox": {
+                "llx": 29,
+                "lly": -8,
+                "urx": 720,
+                "ury": 673
+            }
+        },
+        {
+            "code": 79,
+            "wx": 722,
+            "name": "Omicron",
+            "bbox": {
+                "llx": 41,
+                "lly": -17,
+                "urx": 715,
+                "ury": 685
+            }
+        },
+        {
+            "code": 80,
+            "wx": 768,
+            "name": "Pi",
+            "bbox": {
+                "llx": 25,
+                "lly": 0,
+                "urx": 745,
+                "ury": 673
+            }
+        },
+        {
+            "code": 81,
+            "wx": 741,
+            "name": "Theta",
+            "bbox": {
+                "llx": 41,
+                "lly": -17,
+                "urx": 715,
+                "ury": 685
+            }
+        },
+        {
+            "code": 82,
+            "wx": 556,
+            "name": "Rho",
+            "bbox": {
+                "llx": 28,
+                "lly": 0,
+                "urx": 563,
+                "ury": 673
+            }
+        },
+        {
+            "code": 83,
+            "wx": 592,
+            "name": "Sigma",
+            "bbox": {
+                "llx": 5,
+                "lly": 0,
+                "urx": 589,
+                "ury": 673
+            }
+        },
+        {
+            "code": 84,
+            "wx": 611,
+            "name": "Tau",
+            "bbox": {
+                "llx": 33,
+                "lly": 0,
+                "urx": 607,
+                "ury": 673
+            }
+        },
+        {
+            "code": 85,
+            "wx": 690,
+            "name": "Upsilon",
+            "bbox": {
+                "llx": -8,
+                "lly": 0,
+                "urx": 694,
+                "ury": 673
+            }
+        },
+        {
+            "code": 86,
+            "wx": 439,
+            "name": "sigma1",
+            "bbox": {
+                "llx": 40,
+                "lly": -233,
+                "urx": 436,
+                "ury": 500
+            }
+        },
+        {
+            "code": 87,
+            "wx": 768,
+            "name": "Omega",
+            "bbox": {
+                "llx": 34,
+                "lly": 0,
+                "urx": 736,
+                "ury": 688
+            }
+        },
+        {
+            "code": 88,
+            "wx": 645,
+            "name": "Xi",
+            "bbox": {
+                "llx": 40,
+                "lly": 0,
+                "urx": 599,
+                "ury": 673
+            }
+        },
+        {
+            "code": 89,
+            "wx": 795,
+            "name": "Psi",
+            "bbox": {
+                "llx": 15,
+                "lly": 0,
+                "urx": 781,
+                "ury": 684
+            }
+        },
+        {
+            "code": 90,
+            "wx": 611,
+            "name": "Zeta",
+            "bbox": {
+                "llx": 44,
+                "lly": 0,
+                "urx": 636,
+                "ury": 673
+            }
+        },
+        {
+            "code": 91,
+            "wx": 333,
+            "name": "bracketleft",
+            "bbox": {
+                "llx": 86,
+                "lly": -155,
+                "urx": 299,
+                "ury": 674
+            }
+        },
+        {
+            "code": 92,
+            "wx": 863,
+            "name": "therefore",
+            "bbox": {
+                "llx": 163,
+                "lly": 0,
+                "urx": 701,
+                "ury": 487
+            }
+        },
+        {
+            "code": 93,
+            "wx": 333,
+            "name": "bracketright",
+            "bbox": {
+                "llx": 33,
+                "lly": -155,
+                "urx": 246,
+                "ury": 674
+            }
+        },
+        {
+            "code": 94,
+            "wx": 658,
+            "name": "perpendicular",
+            "bbox": {
+                "llx": 15,
+                "lly": 0,
+                "urx": 652,
+                "ury": 674
+            }
+        },
+        {
+            "code": 95,
+            "wx": 500,
+            "name": "underscore",
+            "bbox": {
+                "llx": -2,
+                "lly": -125,
+                "urx": 502,
+                "ury": -75
+            }
+        },
+        {
+            "code": 96,
+            "wx": 500,
+            "name": "radicalex",
+            "bbox": {
+                "llx": 480,
+                "lly": 881,
+                "urx": 1090,
+                "ury": 917
+            }
+        },
+        {
+            "code": 97,
+            "wx": 631,
+            "name": "alpha",
+            "bbox": {
+                "llx": 41,
+                "lly": -18,
+                "urx": 622,
+                "ury": 500
+            }
+        },
+        {
+            "code": 98,
+            "wx": 549,
+            "name": "beta",
+            "bbox": {
+                "llx": 61,
+                "lly": -223,
+                "urx": 515,
+                "ury": 741
+            }
+        },
+        {
+            "code": 99,
+            "wx": 549,
+            "name": "chi",
+            "bbox": {
+                "llx": 12,
+                "lly": -231,
+                "urx": 522,
+                "ury": 499
+            }
+        },
+        {
+            "code": 100,
+            "wx": 494,
+            "name": "delta",
+            "bbox": {
+                "llx": 40,
+                "lly": -19,
+                "urx": 481,
+                "ury": 740
+            }
+        },
+        {
+            "code": 101,
+            "wx": 439,
+            "name": "epsilon",
+            "bbox": {
+                "llx": 22,
+                "lly": -19,
+                "urx": 427,
+                "ury": 502
+            }
+        },
+        {
+            "code": 102,
+            "wx": 521,
+            "name": "phi",
+            "bbox": {
+                "llx": 28,
+                "lly": -224,
+                "urx": 492,
+                "ury": 673
+            }
+        },
+        {
+            "code": 103,
+            "wx": 411,
+            "name": "gamma",
+            "bbox": {
+                "llx": 5,
+                "lly": -225,
+                "urx": 484,
+                "ury": 499
+            }
+        },
+        {
+            "code": 104,
+            "wx": 603,
+            "name": "eta",
+            "bbox": {
+                "llx": 0,
+                "lly": -202,
+                "urx": 527,
+                "ury": 514
+            }
+        },
+        {
+            "code": 105,
+            "wx": 329,
+            "name": "iota",
+            "bbox": {
+                "llx": 0,
+                "lly": -17,
+                "urx": 301,
+                "ury": 503
+            }
+        },
+        {
+            "code": 106,
+            "wx": 603,
+            "name": "phi1",
+            "bbox": {
+                "llx": 36,
+                "lly": -224,
+                "urx": 587,
+                "ury": 499
+            }
+        },
+        {
+            "code": 107,
+            "wx": 549,
+            "name": "kappa",
+            "bbox": {
+                "llx": 33,
+                "lly": 0,
+                "urx": 558,
+                "ury": 501
+            }
+        },
+        {
+            "code": 108,
+            "wx": 549,
+            "name": "lambda",
+            "bbox": {
+                "llx": 24,
+                "lly": -17,
+                "urx": 548,
+                "ury": 739
+            }
+        },
+        {
+            "code": 109,
+            "wx": 576,
+            "name": "mu",
+            "bbox": {
+                "llx": 33,
+                "lly": -223,
+                "urx": 567,
+                "ury": 500
+            }
+        },
+        {
+            "code": 110,
+            "wx": 521,
+            "name": "nu",
+            "bbox": {
+                "llx": -9,
+                "lly": -16,
+                "urx": 475,
+                "ury": 507
+            }
+        },
+        {
+            "code": 111,
+            "wx": 549,
+            "name": "omicron",
+            "bbox": {
+                "llx": 35,
+                "lly": -19,
+                "urx": 501,
+                "ury": 499
+            }
+        },
+        {
+            "code": 112,
+            "wx": 549,
+            "name": "pi",
+            "bbox": {
+                "llx": 10,
+                "lly": -19,
+                "urx": 530,
+                "ury": 487
+            }
+        },
+        {
+            "code": 113,
+            "wx": 521,
+            "name": "theta",
+            "bbox": {
+                "llx": 43,
+                "lly": -17,
+                "urx": 485,
+                "ury": 690
+            }
+        },
+        {
+            "code": 114,
+            "wx": 549,
+            "name": "rho",
+            "bbox": {
+                "llx": 50,
+                "lly": -230,
+                "urx": 490,
+                "ury": 499
+            }
+        },
+        {
+            "code": 115,
+            "wx": 603,
+            "name": "sigma",
+            "bbox": {
+                "llx": 30,
+                "lly": -21,
+                "urx": 588,
+                "ury": 500
+            }
+        },
+        {
+            "code": 116,
+            "wx": 439,
+            "name": "tau",
+            "bbox": {
+                "llx": 10,
+                "lly": -19,
+                "urx": 418,
+                "ury": 500
+            }
+        },
+        {
+            "code": 117,
+            "wx": 576,
+            "name": "upsilon",
+            "bbox": {
+                "llx": 7,
+                "lly": -18,
+                "urx": 535,
+                "ury": 507
+            }
+        },
+        {
+            "code": 118,
+            "wx": 713,
+            "name": "omega1",
+            "bbox": {
+                "llx": 12,
+                "lly": -18,
+                "urx": 671,
+                "ury": 583
+            }
+        },
+        {
+            "code": 119,
+            "wx": 686,
+            "name": "omega",
+            "bbox": {
+                "llx": 42,
+                "lly": -17,
+                "urx": 684,
+                "ury": 500
+            }
+        },
+        {
+            "code": 120,
+            "wx": 493,
+            "name": "xi",
+            "bbox": {
+                "llx": 27,
+                "lly": -224,
+                "urx": 469,
+                "ury": 766
+            }
+        },
+        {
+            "code": 121,
+            "wx": 686,
+            "name": "psi",
+            "bbox": {
+                "llx": 12,
+                "lly": -228,
+                "urx": 701,
+                "ury": 500
+            }
+        },
+        {
+            "code": 122,
+            "wx": 494,
+            "name": "zeta",
+            "bbox": {
+                "llx": 60,
+                "lly": -225,
+                "urx": 467,
+                "ury": 756
+            }
+        },
+        {
+            "code": 123,
+            "wx": 480,
+            "name": "braceleft",
+            "bbox": {
+                "llx": 58,
+                "lly": -183,
+                "urx": 397,
+                "ury": 673
+            }
+        },
+        {
+            "code": 124,
+            "wx": 200,
+            "name": "bar",
+            "bbox": {
+                "llx": 65,
+                "lly": -293,
+                "urx": 135,
+                "ury": 707
+            }
+        },
+        {
+            "code": 125,
+            "wx": 480,
+            "name": "braceright",
+            "bbox": {
+                "llx": 79,
+                "lly": -183,
+                "urx": 418,
+                "ury": 673
+            }
+        },
+        {
+            "code": 126,
+            "wx": 549,
+            "name": "similar",
+            "bbox": {
+                "llx": 17,
+                "lly": 203,
+                "urx": 529,
+                "ury": 307
+            }
+        },
+        {
+            "code": 160,
+            "wx": 750,
+            "name": "Euro",
+            "bbox": {
+                "llx": 20,
+                "lly": -12,
+                "urx": 714,
+                "ury": 685
+            }
+        },
+        {
+            "code": 161,
+            "wx": 620,
+            "name": "Upsilon1",
+            "bbox": {
+                "llx": -2,
+                "lly": 0,
+                "urx": 610,
+                "ury": 685
+            }
+        },
+        {
+            "code": 162,
+            "wx": 247,
+            "name": "minute",
+            "bbox": {
+                "llx": 27,
+                "lly": 459,
+                "urx": 228,
+                "ury": 735
+            }
+        },
+        {
+            "code": 163,
+            "wx": 549,
+            "name": "lessequal",
+            "bbox": {
+                "llx": 29,
+                "lly": 0,
+                "urx": 526,
+                "ury": 639
+            }
+        },
+        {
+            "code": 164,
+            "wx": 167,
+            "name": "fraction",
+            "bbox": {
+                "llx": -180,
+                "lly": -12,
+                "urx": 340,
+                "ury": 677
+            }
+        },
+        {
+            "code": 165,
+            "wx": 713,
+            "name": "infinity",
+            "bbox": {
+                "llx": 26,
+                "lly": 124,
+                "urx": 688,
+                "ury": 404
+            }
+        },
+        {
+            "code": 166,
+            "wx": 500,
+            "name": "florin",
+            "bbox": {
+                "llx": 2,
+                "lly": -193,
+                "urx": 494,
+                "ury": 686
+            }
+        },
+        {
+            "code": 167,
+            "wx": 753,
+            "name": "club",
+            "bbox": {
+                "llx": 86,
+                "lly": -26,
+                "urx": 660,
+                "ury": 533
+            }
+        },
+        {
+            "code": 168,
+            "wx": 753,
+            "name": "diamond",
+            "bbox": {
+                "llx": 142,
+                "lly": -36,
+                "urx": 600,
+                "ury": 550
+            }
+        },
+        {
+            "code": 169,
+            "wx": 753,
+            "name": "heart",
+            "bbox": {
+                "llx": 117,
+                "lly": -33,
+                "urx": 631,
+                "ury": 532
+            }
+        },
+        {
+            "code": 170,
+            "wx": 753,
+            "name": "spade",
+            "bbox": {
+                "llx": 113,
+                "lly": -36,
+                "urx": 629,
+                "ury": 548
+            }
+        },
+        {
+            "code": 171,
+            "wx": 1042,
+            "name": "arrowboth",
+            "bbox": {
+                "llx": 24,
+                "lly": -15,
+                "urx": 1024,
+                "ury": 511
+            }
+        },
+        {
+            "code": 172,
+            "wx": 987,
+            "name": "arrowleft",
+            "bbox": {
+                "llx": 32,
+                "lly": -15,
+                "urx": 942,
+                "ury": 511
+            }
+        },
+        {
+            "code": 173,
+            "wx": 603,
+            "name": "arrowup",
+            "bbox": {
+                "llx": 45,
+                "lly": 0,
+                "urx": 571,
+                "ury": 910
+            }
+        },
+        {
+            "code": 174,
+            "wx": 987,
+            "name": "arrowright",
+            "bbox": {
+                "llx": 49,
+                "lly": -15,
+                "urx": 959,
+                "ury": 511
+            }
+        },
+        {
+            "code": 175,
+            "wx": 603,
+            "name": "arrowdown",
+            "bbox": {
+                "llx": 45,
+                "lly": -22,
+                "urx": 571,
+                "ury": 888
+            }
+        },
+        {
+            "code": 176,
+            "wx": 400,
+            "name": "degree",
+            "bbox": {
+                "llx": 50,
+                "lly": 385,
+                "urx": 350,
+                "ury": 685
+            }
+        },
+        {
+            "code": 177,
+            "wx": 549,
+            "name": "plusminus",
+            "bbox": {
+                "llx": 10,
+                "lly": 0,
+                "urx": 539,
+                "ury": 645
+            }
+        },
+        {
+            "code": 178,
+            "wx": 411,
+            "name": "second",
+            "bbox": {
+                "llx": 20,
+                "lly": 459,
+                "urx": 413,
+                "ury": 737
+            }
+        },
+        {
+            "code": 179,
+            "wx": 549,
+            "name": "greaterequal",
+            "bbox": {
+                "llx": 29,
+                "lly": 0,
+                "urx": 526,
+                "ury": 639
+            }
+        },
+        {
+            "code": 180,
+            "wx": 549,
+            "name": "multiply",
+            "bbox": {
+                "llx": 17,
+                "lly": 8,
+                "urx": 533,
+                "ury": 524
+            }
+        },
+        {
+            "code": 181,
+            "wx": 713,
+            "name": "proportional",
+            "bbox": {
+                "llx": 27,
+                "lly": 123,
+                "urx": 639,
+                "ury": 404
+            }
+        },
+        {
+            "code": 182,
+            "wx": 494,
+            "name": "partialdiff",
+            "bbox": {
+                "llx": 26,
+                "lly": -20,
+                "urx": 462,
+                "ury": 746
+            }
+        },
+        {
+            "code": 183,
+            "wx": 460,
+            "name": "bullet",
+            "bbox": {
+                "llx": 50,
+                "lly": 113,
+                "urx": 410,
+                "ury": 473
+            }
+        },
+        {
+            "code": 184,
+            "wx": 549,
+            "name": "divide",
+            "bbox": {
+                "llx": 10,
+                "lly": 71,
+                "urx": 536,
+                "ury": 456
+            }
+        },
+        {
+            "code": 185,
+            "wx": 549,
+            "name": "notequal",
+            "bbox": {
+                "llx": 15,
+                "lly": -25,
+                "urx": 540,
+                "ury": 549
+            }
+        },
+        {
+            "code": 186,
+            "wx": 549,
+            "name": "equivalence",
+            "bbox": {
+                "llx": 14,
+                "lly": 82,
+                "urx": 538,
+                "ury": 443
+            }
+        },
+        {
+            "code": 187,
+            "wx": 549,
+            "name": "approxequal",
+            "bbox": {
+                "llx": 14,
+                "lly": 135,
+                "urx": 527,
+                "ury": 394
+            }
+        },
+        {
+            "code": 188,
+            "wx": 1000,
+            "name": "ellipsis",
+            "bbox": {
+                "llx": 111,
+                "lly": -17,
+                "urx": 889,
+                "ury": 95
+            }
+        },
+        {
+            "code": 189,
+            "wx": 603,
+            "name": "arrowvertex",
+            "bbox": {
+                "llx": 280,
+                "lly": -120,
+                "urx": 336,
+                "ury": 1010
+            }
+        },
+        {
+            "code": 190,
+            "wx": 1000,
+            "name": "arrowhorizex",
+            "bbox": {
+                "llx": -60,
+                "lly": 220,
+                "urx": 1050,
+                "ury": 276
+            }
+        },
+        {
+            "code": 191,
+            "wx": 658,
+            "name": "carriagereturn",
+            "bbox": {
+                "llx": 15,
+                "lly": -16,
+                "urx": 602,
+                "ury": 629
+            }
+        },
+        {
+            "code": 192,
+            "wx": 823,
+            "name": "aleph",
+            "bbox": {
+                "llx": 175,
+                "lly": -18,
+                "urx": 661,
+                "ury": 658
+            }
+        },
+        {
+            "code": 193,
+            "wx": 686,
+            "name": "Ifraktur",
+            "bbox": {
+                "llx": 10,
+                "lly": -53,
+                "urx": 578,
+                "ury": 740
+            }
+        },
+        {
+            "code": 194,
+            "wx": 795,
+            "name": "Rfraktur",
+            "bbox": {
+                "llx": 26,
+                "lly": -15,
+                "urx": 759,
+                "ury": 734
+            }
+        },
+        {
+            "code": 195,
+            "wx": 987,
+            "name": "weierstrass",
+            "bbox": {
+                "llx": 159,
+                "lly": -211,
+                "urx": 870,
+                "ury": 573
+            }
+        },
+        {
+            "code": 196,
+            "wx": 768,
+            "name": "circlemultiply",
+            "bbox": {
+                "llx": 43,
+                "lly": -17,
+                "urx": 733,
+                "ury": 673
+            }
+        },
+        {
+            "code": 197,
+            "wx": 768,
+            "name": "circleplus",
+            "bbox": {
+                "llx": 43,
+                "lly": -15,
+                "urx": 733,
+                "ury": 675
+            }
+        },
+        {
+            "code": 198,
+            "wx": 823,
+            "name": "emptyset",
+            "bbox": {
+                "llx": 39,
+                "lly": -24,
+                "urx": 781,
+                "ury": 719
+            }
+        },
+        {
+            "code": 199,
+            "wx": 768,
+            "name": "intersection",
+            "bbox": {
+                "llx": 40,
+                "lly": 0,
+                "urx": 732,
+                "ury": 509
+            }
+        },
+        {
+            "code": 200,
+            "wx": 768,
+            "name": "union",
+            "bbox": {
+                "llx": 40,
+                "lly": -17,
+                "urx": 732,
+                "ury": 492
+            }
+        },
+        {
+            "code": 201,
+            "wx": 713,
+            "name": "propersuperset",
+            "bbox": {
+                "llx": 20,
+                "lly": 0,
+                "urx": 673,
+                "ury": 470
+            }
+        },
+        {
+            "code": 202,
+            "wx": 713,
+            "name": "reflexsuperset",
+            "bbox": {
+                "llx": 20,
+                "lly": -125,
+                "urx": 673,
+                "ury": 470
+            }
+        },
+        {
+            "code": 203,
+            "wx": 713,
+            "name": "notsubset",
+            "bbox": {
+                "llx": 36,
+                "lly": -70,
+                "urx": 690,
+                "ury": 540
+            }
+        },
+        {
+            "code": 204,
+            "wx": 713,
+            "name": "propersubset",
+            "bbox": {
+                "llx": 37,
+                "lly": 0,
+                "urx": 690,
+                "ury": 470
+            }
+        },
+        {
+            "code": 205,
+            "wx": 713,
+            "name": "reflexsubset",
+            "bbox": {
+                "llx": 37,
+                "lly": -125,
+                "urx": 690,
+                "ury": 470
+            }
+        },
+        {
+            "code": 206,
+            "wx": 713,
+            "name": "element",
+            "bbox": {
+                "llx": 45,
+                "lly": 0,
+                "urx": 505,
+                "ury": 468
+            }
+        },
+        {
+            "code": 207,
+            "wx": 713,
+            "name": "notelement",
+            "bbox": {
+                "llx": 45,
+                "lly": -58,
+                "urx": 505,
+                "ury": 555
+            }
+        },
+        {
+            "code": 208,
+            "wx": 768,
+            "name": "angle",
+            "bbox": {
+                "llx": 26,
+                "lly": 0,
+                "urx": 738,
+                "ury": 673
+            }
+        },
+        {
+            "code": 209,
+            "wx": 713,
+            "name": "gradient",
+            "bbox": {
+                "llx": 36,
+                "lly": -19,
+                "urx": 681,
+                "ury": 718
+            }
+        },
+        {
+            "code": 210,
+            "wx": 790,
+            "name": "registerserif",
+            "bbox": {
+                "llx": 50,
+                "lly": -17,
+                "urx": 740,
+                "ury": 673
+            }
+        },
+        {
+            "code": 211,
+            "wx": 790,
+            "name": "copyrightserif",
+            "bbox": {
+                "llx": 51,
+                "lly": -15,
+                "urx": 741,
+                "ury": 675
+            }
+        },
+        {
+            "code": 212,
+            "wx": 890,
+            "name": "trademarkserif",
+            "bbox": {
+                "llx": 18,
+                "lly": 293,
+                "urx": 855,
+                "ury": 673
+            }
+        },
+        {
+            "code": 213,
+            "wx": 823,
+            "name": "product",
+            "bbox": {
+                "llx": 25,
+                "lly": -101,
+                "urx": 803,
+                "ury": 751
+            }
+        },
+        {
+            "code": 214,
+            "wx": 549,
+            "name": "radical",
+            "bbox": {
+                "llx": 10,
+                "lly": -38,
+                "urx": 515,
+                "ury": 917
+            }
+        },
+        {
+            "code": 215,
+            "wx": 250,
+            "name": "dotmath",
+            "bbox": {
+                "llx": 69,
+                "lly": 210,
+                "urx": 169,
+                "ury": 310
+            }
+        },
+        {
+            "code": 216,
+            "wx": 713,
+            "name": "logicalnot",
+            "bbox": {
+                "llx": 15,
+                "lly": 0,
+                "urx": 680,
+                "ury": 288
+            }
+        },
+        {
+            "code": 217,
+            "wx": 603,
+            "name": "logicaland",
+            "bbox": {
+                "llx": 23,
+                "lly": 0,
+                "urx": 583,
+                "ury": 454
+            }
+        },
+        {
+            "code": 218,
+            "wx": 603,
+            "name": "logicalor",
+            "bbox": {
+                "llx": 30,
+                "lly": 0,
+                "urx": 578,
+                "ury": 477
+            }
+        },
+        {
+            "code": 219,
+            "wx": 1042,
+            "name": "arrowdblboth",
+            "bbox": {
+                "llx": 27,
+                "lly": -20,
+                "urx": 1023,
+                "ury": 510
+            }
+        },
+        {
+            "code": 220,
+            "wx": 987,
+            "name": "arrowdblleft",
+            "bbox": {
+                "llx": 30,
+                "lly": -15,
+                "urx": 939,
+                "ury": 513
+            }
+        },
+        {
+            "code": 221,
+            "wx": 603,
+            "name": "arrowdblup",
+            "bbox": {
+                "llx": 39,
+                "lly": 2,
+                "urx": 567,
+                "ury": 911
+            }
+        },
+        {
+            "code": 222,
+            "wx": 987,
+            "name": "arrowdblright",
+            "bbox": {
+                "llx": 45,
+                "lly": -20,
+                "urx": 954,
+                "ury": 508
+            }
+        },
+        {
+            "code": 223,
+            "wx": 603,
+            "name": "arrowdbldown",
+            "bbox": {
+                "llx": 44,
+                "lly": -19,
+                "urx": 572,
+                "ury": 890
+            }
+        },
+        {
+            "code": 224,
+            "wx": 494,
+            "name": "lozenge",
+            "bbox": {
+                "llx": 18,
+                "lly": 0,
+                "urx": 466,
+                "ury": 745
+            }
+        },
+        {
+            "code": 225,
+            "wx": 329,
+            "name": "angleleft",
+            "bbox": {
+                "llx": 25,
+                "lly": -198,
+                "urx": 306,
+                "ury": 746
+            }
+        },
+        {
+            "code": 226,
+            "wx": 790,
+            "name": "registersans",
+            "bbox": {
+                "llx": 50,
+                "lly": -20,
+                "urx": 740,
+                "ury": 670
+            }
+        },
+        {
+            "code": 227,
+            "wx": 790,
+            "name": "copyrightsans",
+            "bbox": {
+                "llx": 49,
+                "lly": -15,
+                "urx": 739,
+                "ury": 675
+            }
+        },
+        {
+            "code": 228,
+            "wx": 786,
+            "name": "trademarksans",
+            "bbox": {
+                "llx": 5,
+                "lly": 293,
+                "urx": 725,
+                "ury": 673
+            }
+        },
+        {
+            "code": 229,
+            "wx": 713,
+            "name": "summation",
+            "bbox": {
+                "llx": 14,
+                "lly": -108,
+                "urx": 695,
+                "ury": 752
+            }
+        },
+        {
+            "code": 230,
+            "wx": 384,
+            "name": "parenlefttp",
+            "bbox": {
+                "llx": 24,
+                "lly": -293,
+                "urx": 436,
+                "ury": 926
+            }
+        },
+        {
+            "code": 231,
+            "wx": 384,
+            "name": "parenleftex",
+            "bbox": {
+                "llx": 24,
+                "lly": -85,
+                "urx": 108,
+                "ury": 925
+            }
+        },
+        {
+            "code": 232,
+            "wx": 384,
+            "name": "parenleftbt",
+            "bbox": {
+                "llx": 24,
+                "lly": -293,
+                "urx": 436,
+                "ury": 926
+            }
+        },
+        {
+            "code": 233,
+            "wx": 384,
+            "name": "bracketlefttp",
+            "bbox": {
+                "llx": 0,
+                "lly": -80,
+                "urx": 349,
+                "ury": 926
+            }
+        },
+        {
+            "code": 234,
+            "wx": 384,
+            "name": "bracketleftex",
+            "bbox": {
+                "llx": 0,
+                "lly": -79,
+                "urx": 77,
+                "ury": 925
+            }
+        },
+        {
+            "code": 235,
+            "wx": 384,
+            "name": "bracketleftbt",
+            "bbox": {
+                "llx": 0,
+                "lly": -80,
+                "urx": 349,
+                "ury": 926
+            }
+        },
+        {
+            "code": 236,
+            "wx": 494,
+            "name": "bracelefttp",
+            "bbox": {
+                "llx": 209,
+                "lly": -85,
+                "urx": 445,
+                "ury": 925
+            }
+        },
+        {
+            "code": 237,
+            "wx": 494,
+            "name": "braceleftmid",
+            "bbox": {
+                "llx": 20,
+                "lly": -85,
+                "urx": 284,
+                "ury": 935
+            }
+        },
+        {
+            "code": 238,
+            "wx": 494,
+            "name": "braceleftbt",
+            "bbox": {
+                "llx": 209,
+                "lly": -75,
+                "urx": 445,
+                "ury": 935
+            }
+        },
+        {
+            "code": 239,
+            "wx": 494,
+            "name": "braceex",
+            "bbox": {
+                "llx": 209,
+                "lly": -85,
+                "urx": 284,
+                "ury": 935
+            }
+        },
+        {
+            "code": 241,
+            "wx": 329,
+            "name": "angleright",
+            "bbox": {
+                "llx": 21,
+                "lly": -198,
+                "urx": 302,
+                "ury": 746
+            }
+        },
+        {
+            "code": 242,
+            "wx": 274,
+            "name": "integral",
+            "bbox": {
+                "llx": 2,
+                "lly": -107,
+                "urx": 291,
+                "ury": 916
+            }
+        },
+        {
+            "code": 243,
+            "wx": 686,
+            "name": "integraltp",
+            "bbox": {
+                "llx": 308,
+                "lly": -88,
+                "urx": 675,
+                "ury": 920
+            }
+        },
+        {
+            "code": 244,
+            "wx": 686,
+            "name": "integralex",
+            "bbox": {
+                "llx": 308,
+                "lly": -88,
+                "urx": 378,
+                "ury": 975
+            }
+        },
+        {
+            "code": 245,
+            "wx": 686,
+            "name": "integralbt",
+            "bbox": {
+                "llx": 11,
+                "lly": -87,
+                "urx": 378,
+                "ury": 921
+            }
+        },
+        {
+            "code": 246,
+            "wx": 384,
+            "name": "parenrighttp",
+            "bbox": {
+                "llx": 54,
+                "lly": -293,
+                "urx": 466,
+                "ury": 926
+            }
+        },
+        {
+            "code": 247,
+            "wx": 384,
+            "name": "parenrightex",
+            "bbox": {
+                "llx": 382,
+                "lly": -85,
+                "urx": 466,
+                "ury": 925
+            }
+        },
+        {
+            "code": 248,
+            "wx": 384,
+            "name": "parenrightbt",
+            "bbox": {
+                "llx": 54,
+                "lly": -293,
+                "urx": 466,
+                "ury": 926
+            }
+        },
+        {
+            "code": 249,
+            "wx": 384,
+            "name": "bracketrighttp",
+            "bbox": {
+                "llx": 22,
+                "lly": -80,
+                "urx": 371,
+                "ury": 926
+            }
+        },
+        {
+            "code": 250,
+            "wx": 384,
+            "name": "bracketrightex",
+            "bbox": {
+                "llx": 294,
+                "lly": -79,
+                "urx": 371,
+                "ury": 925
+            }
+        },
+        {
+            "code": 251,
+            "wx": 384,
+            "name": "bracketrightbt",
+            "bbox": {
+                "llx": 22,
+                "lly": -80,
+                "urx": 371,
+                "ury": 926
+            }
+        },
+        {
+            "code": 252,
+            "wx": 494,
+            "name": "bracerighttp",
+            "bbox": {
+                "llx": 48,
+                "lly": -85,
+                "urx": 284,
+                "ury": 925
+            }
+        },
+        {
+            "code": 253,
+            "wx": 494,
+            "name": "bracerightmid",
+            "bbox": {
+                "llx": 209,
+                "lly": -85,
+                "urx": 473,
+                "ury": 935
+            }
+        },
+        {
+            "code": 254,
+            "wx": 494,
+            "name": "bracerightbt",
+            "bbox": {
+                "llx": 48,
+                "lly": -75,
+                "urx": 284,
+                "ury": 935
+            }
+        },
+        {
+            "code": -1,
+            "wx": 790,
+            "name": "apple",
+            "bbox": {
+                "llx": 56,
+                "lly": -3,
+                "urx": 733,
+                "ury": 808
+            }
+        }
+    ],
+    "kernPairs": []
+}

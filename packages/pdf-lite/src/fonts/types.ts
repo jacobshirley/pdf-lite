@@ -85,3 +85,31 @@ export interface EmbeddedFont {
     baseFont: string
     encoding?: string
 }
+
+export interface AfmBBox {
+    llx: number
+    lly: number
+    urx: number
+    ury: number
+}
+
+export interface AfmCharMetric {
+    code: number
+    wx: number
+    name: string
+    bbox: AfmBBox
+    ligatures?: Record<string, string>
+}
+
+export interface AfmKernPair {
+    left: string
+    right: string
+    dx: number
+}
+
+export interface AfmFont {
+    metadata: Record<string, string | number | boolean>
+    bbox: AfmBBox
+    charMetrics: AfmCharMetric[]
+    kernPairs: AfmKernPair[]
+}

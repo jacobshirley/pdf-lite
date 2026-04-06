@@ -1,0 +1,2249 @@
+{
+    "metadata": {
+        "FontName": "ZapfDingbats",
+        "FullName": "ITC Zapf Dingbats",
+        "FamilyName": "ZapfDingbats",
+        "Weight": "Medium",
+        "ItalicAngle": 0,
+        "IsFixedPitch": false,
+        "CharacterSet": "Special",
+        "UnderlinePosition": -100,
+        "UnderlineThickness": 50,
+        "Version": "002.000",
+        "Notice": "Copyright (c) 1985, 1987, 1988, 1989, 1997 Adobe Systems Incorporated. All Rights Reserved.ITC Zapf Dingbats is a registered trademark of International Typeface Corporation.",
+        "EncodingScheme": "FontSpecific",
+        "StdHW": 28,
+        "StdVW": 90
+    },
+    "bbox": {
+        "llx": -1,
+        "lly": -143,
+        "urx": 981,
+        "ury": 820
+    },
+    "charMetrics": [
+        {
+            "code": 32,
+            "wx": 278,
+            "name": "space",
+            "bbox": {
+                "llx": 0,
+                "lly": 0,
+                "urx": 0,
+                "ury": 0
+            }
+        },
+        {
+            "code": 33,
+            "wx": 974,
+            "name": "a1",
+            "bbox": {
+                "llx": 35,
+                "lly": 72,
+                "urx": 939,
+                "ury": 621
+            }
+        },
+        {
+            "code": 34,
+            "wx": 961,
+            "name": "a2",
+            "bbox": {
+                "llx": 35,
+                "lly": 81,
+                "urx": 927,
+                "ury": 611
+            }
+        },
+        {
+            "code": 35,
+            "wx": 974,
+            "name": "a202",
+            "bbox": {
+                "llx": 35,
+                "lly": 72,
+                "urx": 939,
+                "ury": 621
+            }
+        },
+        {
+            "code": 36,
+            "wx": 980,
+            "name": "a3",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 945,
+                "ury": 692
+            }
+        },
+        {
+            "code": 37,
+            "wx": 719,
+            "name": "a4",
+            "bbox": {
+                "llx": 34,
+                "lly": 139,
+                "urx": 685,
+                "ury": 566
+            }
+        },
+        {
+            "code": 38,
+            "wx": 789,
+            "name": "a5",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 755,
+                "ury": 705
+            }
+        },
+        {
+            "code": 39,
+            "wx": 790,
+            "name": "a119",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 755,
+                "ury": 705
+            }
+        },
+        {
+            "code": 40,
+            "wx": 791,
+            "name": "a118",
+            "bbox": {
+                "llx": 35,
+                "lly": -13,
+                "urx": 761,
+                "ury": 705
+            }
+        },
+        {
+            "code": 41,
+            "wx": 690,
+            "name": "a117",
+            "bbox": {
+                "llx": 34,
+                "lly": 138,
+                "urx": 655,
+                "ury": 553
+            }
+        },
+        {
+            "code": 42,
+            "wx": 960,
+            "name": "a11",
+            "bbox": {
+                "llx": 35,
+                "lly": 123,
+                "urx": 925,
+                "ury": 568
+            }
+        },
+        {
+            "code": 43,
+            "wx": 939,
+            "name": "a12",
+            "bbox": {
+                "llx": 35,
+                "lly": 134,
+                "urx": 904,
+                "ury": 559
+            }
+        },
+        {
+            "code": 44,
+            "wx": 549,
+            "name": "a13",
+            "bbox": {
+                "llx": 29,
+                "lly": -11,
+                "urx": 516,
+                "ury": 705
+            }
+        },
+        {
+            "code": 45,
+            "wx": 855,
+            "name": "a14",
+            "bbox": {
+                "llx": 34,
+                "lly": 59,
+                "urx": 820,
+                "ury": 632
+            }
+        },
+        {
+            "code": 46,
+            "wx": 911,
+            "name": "a15",
+            "bbox": {
+                "llx": 35,
+                "lly": 50,
+                "urx": 876,
+                "ury": 642
+            }
+        },
+        {
+            "code": 47,
+            "wx": 933,
+            "name": "a16",
+            "bbox": {
+                "llx": 35,
+                "lly": 139,
+                "urx": 899,
+                "ury": 550
+            }
+        },
+        {
+            "code": 48,
+            "wx": 911,
+            "name": "a105",
+            "bbox": {
+                "llx": 35,
+                "lly": 50,
+                "urx": 876,
+                "ury": 642
+            }
+        },
+        {
+            "code": 49,
+            "wx": 945,
+            "name": "a17",
+            "bbox": {
+                "llx": 35,
+                "lly": 139,
+                "urx": 909,
+                "ury": 553
+            }
+        },
+        {
+            "code": 50,
+            "wx": 974,
+            "name": "a18",
+            "bbox": {
+                "llx": 35,
+                "lly": 104,
+                "urx": 938,
+                "ury": 587
+            }
+        },
+        {
+            "code": 51,
+            "wx": 755,
+            "name": "a19",
+            "bbox": {
+                "llx": 34,
+                "lly": -13,
+                "urx": 721,
+                "ury": 705
+            }
+        },
+        {
+            "code": 52,
+            "wx": 846,
+            "name": "a20",
+            "bbox": {
+                "llx": 36,
+                "lly": -14,
+                "urx": 811,
+                "ury": 705
+            }
+        },
+        {
+            "code": 53,
+            "wx": 762,
+            "name": "a21",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 727,
+                "ury": 692
+            }
+        },
+        {
+            "code": 54,
+            "wx": 761,
+            "name": "a22",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 727,
+                "ury": 692
+            }
+        },
+        {
+            "code": 55,
+            "wx": 571,
+            "name": "a23",
+            "bbox": {
+                "llx": -1,
+                "lly": -68,
+                "urx": 571,
+                "ury": 661
+            }
+        },
+        {
+            "code": 56,
+            "wx": 677,
+            "name": "a24",
+            "bbox": {
+                "llx": 36,
+                "lly": -13,
+                "urx": 642,
+                "ury": 705
+            }
+        },
+        {
+            "code": 57,
+            "wx": 763,
+            "name": "a25",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 728,
+                "ury": 692
+            }
+        },
+        {
+            "code": 58,
+            "wx": 760,
+            "name": "a26",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 726,
+                "ury": 692
+            }
+        },
+        {
+            "code": 59,
+            "wx": 759,
+            "name": "a27",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 725,
+                "ury": 692
+            }
+        },
+        {
+            "code": 60,
+            "wx": 754,
+            "name": "a28",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 720,
+                "ury": 692
+            }
+        },
+        {
+            "code": 61,
+            "wx": 494,
+            "name": "a6",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 460,
+                "ury": 692
+            }
+        },
+        {
+            "code": 62,
+            "wx": 552,
+            "name": "a7",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 517,
+                "ury": 692
+            }
+        },
+        {
+            "code": 63,
+            "wx": 537,
+            "name": "a8",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 503,
+                "ury": 692
+            }
+        },
+        {
+            "code": 64,
+            "wx": 577,
+            "name": "a9",
+            "bbox": {
+                "llx": 35,
+                "lly": 96,
+                "urx": 542,
+                "ury": 596
+            }
+        },
+        {
+            "code": 65,
+            "wx": 692,
+            "name": "a10",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 657,
+                "ury": 705
+            }
+        },
+        {
+            "code": 66,
+            "wx": 786,
+            "name": "a29",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 751,
+                "ury": 705
+            }
+        },
+        {
+            "code": 67,
+            "wx": 788,
+            "name": "a30",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 752,
+                "ury": 705
+            }
+        },
+        {
+            "code": 68,
+            "wx": 788,
+            "name": "a31",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 753,
+                "ury": 705
+            }
+        },
+        {
+            "code": 69,
+            "wx": 790,
+            "name": "a32",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 756,
+                "ury": 705
+            }
+        },
+        {
+            "code": 70,
+            "wx": 793,
+            "name": "a33",
+            "bbox": {
+                "llx": 35,
+                "lly": -13,
+                "urx": 759,
+                "ury": 705
+            }
+        },
+        {
+            "code": 71,
+            "wx": 794,
+            "name": "a34",
+            "bbox": {
+                "llx": 35,
+                "lly": -13,
+                "urx": 759,
+                "ury": 705
+            }
+        },
+        {
+            "code": 72,
+            "wx": 816,
+            "name": "a35",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 782,
+                "ury": 705
+            }
+        },
+        {
+            "code": 73,
+            "wx": 823,
+            "name": "a36",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 787,
+                "ury": 705
+            }
+        },
+        {
+            "code": 74,
+            "wx": 789,
+            "name": "a37",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 75,
+            "wx": 841,
+            "name": "a38",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 807,
+                "ury": 705
+            }
+        },
+        {
+            "code": 76,
+            "wx": 823,
+            "name": "a39",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 789,
+                "ury": 705
+            }
+        },
+        {
+            "code": 77,
+            "wx": 833,
+            "name": "a40",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 798,
+                "ury": 705
+            }
+        },
+        {
+            "code": 78,
+            "wx": 816,
+            "name": "a41",
+            "bbox": {
+                "llx": 35,
+                "lly": -13,
+                "urx": 782,
+                "ury": 705
+            }
+        },
+        {
+            "code": 79,
+            "wx": 831,
+            "name": "a42",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 796,
+                "ury": 705
+            }
+        },
+        {
+            "code": 80,
+            "wx": 923,
+            "name": "a43",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 888,
+                "ury": 705
+            }
+        },
+        {
+            "code": 81,
+            "wx": 744,
+            "name": "a44",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 710,
+                "ury": 692
+            }
+        },
+        {
+            "code": 82,
+            "wx": 723,
+            "name": "a45",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 688,
+                "ury": 692
+            }
+        },
+        {
+            "code": 83,
+            "wx": 749,
+            "name": "a46",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 714,
+                "ury": 692
+            }
+        },
+        {
+            "code": 84,
+            "wx": 790,
+            "name": "a47",
+            "bbox": {
+                "llx": 34,
+                "lly": -14,
+                "urx": 756,
+                "ury": 705
+            }
+        },
+        {
+            "code": 85,
+            "wx": 792,
+            "name": "a48",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 758,
+                "ury": 705
+            }
+        },
+        {
+            "code": 86,
+            "wx": 695,
+            "name": "a49",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 661,
+                "ury": 706
+            }
+        },
+        {
+            "code": 87,
+            "wx": 776,
+            "name": "a50",
+            "bbox": {
+                "llx": 35,
+                "lly": -6,
+                "urx": 741,
+                "ury": 699
+            }
+        },
+        {
+            "code": 88,
+            "wx": 768,
+            "name": "a51",
+            "bbox": {
+                "llx": 35,
+                "lly": -7,
+                "urx": 734,
+                "ury": 699
+            }
+        },
+        {
+            "code": 89,
+            "wx": 792,
+            "name": "a52",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 757,
+                "ury": 705
+            }
+        },
+        {
+            "code": 90,
+            "wx": 759,
+            "name": "a53",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 725,
+                "ury": 692
+            }
+        },
+        {
+            "code": 91,
+            "wx": 707,
+            "name": "a54",
+            "bbox": {
+                "llx": 35,
+                "lly": -13,
+                "urx": 672,
+                "ury": 704
+            }
+        },
+        {
+            "code": 92,
+            "wx": 708,
+            "name": "a55",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 672,
+                "ury": 705
+            }
+        },
+        {
+            "code": 93,
+            "wx": 682,
+            "name": "a56",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 647,
+                "ury": 705
+            }
+        },
+        {
+            "code": 94,
+            "wx": 701,
+            "name": "a57",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 666,
+                "ury": 705
+            }
+        },
+        {
+            "code": 95,
+            "wx": 826,
+            "name": "a58",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 791,
+                "ury": 705
+            }
+        },
+        {
+            "code": 96,
+            "wx": 815,
+            "name": "a59",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 780,
+                "ury": 705
+            }
+        },
+        {
+            "code": 97,
+            "wx": 789,
+            "name": "a60",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 98,
+            "wx": 789,
+            "name": "a61",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 99,
+            "wx": 707,
+            "name": "a62",
+            "bbox": {
+                "llx": 34,
+                "lly": -14,
+                "urx": 673,
+                "ury": 705
+            }
+        },
+        {
+            "code": 100,
+            "wx": 687,
+            "name": "a63",
+            "bbox": {
+                "llx": 36,
+                "lly": 0,
+                "urx": 651,
+                "ury": 692
+            }
+        },
+        {
+            "code": 101,
+            "wx": 696,
+            "name": "a64",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 661,
+                "ury": 691
+            }
+        },
+        {
+            "code": 102,
+            "wx": 689,
+            "name": "a65",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 655,
+                "ury": 692
+            }
+        },
+        {
+            "code": 103,
+            "wx": 786,
+            "name": "a66",
+            "bbox": {
+                "llx": 34,
+                "lly": -14,
+                "urx": 751,
+                "ury": 705
+            }
+        },
+        {
+            "code": 104,
+            "wx": 787,
+            "name": "a67",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 752,
+                "ury": 705
+            }
+        },
+        {
+            "code": 105,
+            "wx": 713,
+            "name": "a68",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 678,
+                "ury": 705
+            }
+        },
+        {
+            "code": 106,
+            "wx": 791,
+            "name": "a69",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 756,
+                "ury": 705
+            }
+        },
+        {
+            "code": 107,
+            "wx": 785,
+            "name": "a70",
+            "bbox": {
+                "llx": 36,
+                "lly": -14,
+                "urx": 751,
+                "ury": 705
+            }
+        },
+        {
+            "code": 108,
+            "wx": 791,
+            "name": "a71",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 757,
+                "ury": 705
+            }
+        },
+        {
+            "code": 109,
+            "wx": 873,
+            "name": "a72",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 838,
+                "ury": 705
+            }
+        },
+        {
+            "code": 110,
+            "wx": 761,
+            "name": "a73",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 726,
+                "ury": 692
+            }
+        },
+        {
+            "code": 111,
+            "wx": 762,
+            "name": "a74",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 727,
+                "ury": 692
+            }
+        },
+        {
+            "code": 112,
+            "wx": 762,
+            "name": "a203",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 727,
+                "ury": 692
+            }
+        },
+        {
+            "code": 113,
+            "wx": 759,
+            "name": "a75",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 725,
+                "ury": 692
+            }
+        },
+        {
+            "code": 114,
+            "wx": 759,
+            "name": "a204",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 725,
+                "ury": 692
+            }
+        },
+        {
+            "code": 115,
+            "wx": 892,
+            "name": "a76",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 858,
+                "ury": 705
+            }
+        },
+        {
+            "code": 116,
+            "wx": 892,
+            "name": "a77",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 858,
+                "ury": 692
+            }
+        },
+        {
+            "code": 117,
+            "wx": 788,
+            "name": "a78",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 118,
+            "wx": 784,
+            "name": "a79",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 749,
+                "ury": 705
+            }
+        },
+        {
+            "code": 119,
+            "wx": 438,
+            "name": "a81",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 403,
+                "ury": 705
+            }
+        },
+        {
+            "code": 120,
+            "wx": 138,
+            "name": "a82",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 104,
+                "ury": 692
+            }
+        },
+        {
+            "code": 121,
+            "wx": 277,
+            "name": "a83",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 242,
+                "ury": 692
+            }
+        },
+        {
+            "code": 122,
+            "wx": 415,
+            "name": "a84",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 380,
+                "ury": 692
+            }
+        },
+        {
+            "code": 123,
+            "wx": 392,
+            "name": "a97",
+            "bbox": {
+                "llx": 35,
+                "lly": 263,
+                "urx": 357,
+                "ury": 705
+            }
+        },
+        {
+            "code": 124,
+            "wx": 392,
+            "name": "a98",
+            "bbox": {
+                "llx": 34,
+                "lly": 263,
+                "urx": 357,
+                "ury": 705
+            }
+        },
+        {
+            "code": 125,
+            "wx": 668,
+            "name": "a99",
+            "bbox": {
+                "llx": 35,
+                "lly": 263,
+                "urx": 633,
+                "ury": 705
+            }
+        },
+        {
+            "code": 126,
+            "wx": 668,
+            "name": "a100",
+            "bbox": {
+                "llx": 36,
+                "lly": 263,
+                "urx": 634,
+                "ury": 705
+            }
+        },
+        {
+            "code": 128,
+            "wx": 390,
+            "name": "a89",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 356,
+                "ury": 705
+            }
+        },
+        {
+            "code": 129,
+            "wx": 390,
+            "name": "a90",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 355,
+                "ury": 705
+            }
+        },
+        {
+            "code": 130,
+            "wx": 317,
+            "name": "a93",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 283,
+                "ury": 692
+            }
+        },
+        {
+            "code": 131,
+            "wx": 317,
+            "name": "a94",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 283,
+                "ury": 692
+            }
+        },
+        {
+            "code": 132,
+            "wx": 276,
+            "name": "a91",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 242,
+                "ury": 692
+            }
+        },
+        {
+            "code": 133,
+            "wx": 276,
+            "name": "a92",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 242,
+                "ury": 692
+            }
+        },
+        {
+            "code": 134,
+            "wx": 509,
+            "name": "a205",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 475,
+                "ury": 692
+            }
+        },
+        {
+            "code": 135,
+            "wx": 509,
+            "name": "a85",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 475,
+                "ury": 692
+            }
+        },
+        {
+            "code": 136,
+            "wx": 410,
+            "name": "a206",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 375,
+                "ury": 692
+            }
+        },
+        {
+            "code": 137,
+            "wx": 410,
+            "name": "a86",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 375,
+                "ury": 692
+            }
+        },
+        {
+            "code": 138,
+            "wx": 234,
+            "name": "a87",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 199,
+                "ury": 705
+            }
+        },
+        {
+            "code": 139,
+            "wx": 234,
+            "name": "a88",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 199,
+                "ury": 705
+            }
+        },
+        {
+            "code": 140,
+            "wx": 334,
+            "name": "a95",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 299,
+                "ury": 692
+            }
+        },
+        {
+            "code": 141,
+            "wx": 334,
+            "name": "a96",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 299,
+                "ury": 692
+            }
+        },
+        {
+            "code": 161,
+            "wx": 732,
+            "name": "a101",
+            "bbox": {
+                "llx": 35,
+                "lly": -143,
+                "urx": 697,
+                "ury": 806
+            }
+        },
+        {
+            "code": 162,
+            "wx": 544,
+            "name": "a102",
+            "bbox": {
+                "llx": 56,
+                "lly": -14,
+                "urx": 488,
+                "ury": 706
+            }
+        },
+        {
+            "code": 163,
+            "wx": 544,
+            "name": "a103",
+            "bbox": {
+                "llx": 34,
+                "lly": -14,
+                "urx": 508,
+                "ury": 705
+            }
+        },
+        {
+            "code": 164,
+            "wx": 910,
+            "name": "a104",
+            "bbox": {
+                "llx": 35,
+                "lly": 40,
+                "urx": 875,
+                "ury": 651
+            }
+        },
+        {
+            "code": 165,
+            "wx": 667,
+            "name": "a106",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 633,
+                "ury": 705
+            }
+        },
+        {
+            "code": 166,
+            "wx": 760,
+            "name": "a107",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 726,
+                "ury": 705
+            }
+        },
+        {
+            "code": 167,
+            "wx": 760,
+            "name": "a108",
+            "bbox": {
+                "llx": 0,
+                "lly": 121,
+                "urx": 758,
+                "ury": 569
+            }
+        },
+        {
+            "code": 168,
+            "wx": 776,
+            "name": "a112",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 741,
+                "ury": 705
+            }
+        },
+        {
+            "code": 169,
+            "wx": 595,
+            "name": "a111",
+            "bbox": {
+                "llx": 34,
+                "lly": -14,
+                "urx": 560,
+                "ury": 705
+            }
+        },
+        {
+            "code": 170,
+            "wx": 694,
+            "name": "a110",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 659,
+                "ury": 705
+            }
+        },
+        {
+            "code": 171,
+            "wx": 626,
+            "name": "a109",
+            "bbox": {
+                "llx": 34,
+                "lly": 0,
+                "urx": 591,
+                "ury": 705
+            }
+        },
+        {
+            "code": 172,
+            "wx": 788,
+            "name": "a120",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 173,
+            "wx": 788,
+            "name": "a121",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 174,
+            "wx": 788,
+            "name": "a122",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 175,
+            "wx": 788,
+            "name": "a123",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 176,
+            "wx": 788,
+            "name": "a124",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 177,
+            "wx": 788,
+            "name": "a125",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 178,
+            "wx": 788,
+            "name": "a126",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 179,
+            "wx": 788,
+            "name": "a127",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 180,
+            "wx": 788,
+            "name": "a128",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 181,
+            "wx": 788,
+            "name": "a129",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 182,
+            "wx": 788,
+            "name": "a130",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 183,
+            "wx": 788,
+            "name": "a131",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 184,
+            "wx": 788,
+            "name": "a132",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 185,
+            "wx": 788,
+            "name": "a133",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 186,
+            "wx": 788,
+            "name": "a134",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 187,
+            "wx": 788,
+            "name": "a135",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 188,
+            "wx": 788,
+            "name": "a136",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 189,
+            "wx": 788,
+            "name": "a137",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 190,
+            "wx": 788,
+            "name": "a138",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 191,
+            "wx": 788,
+            "name": "a139",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 192,
+            "wx": 788,
+            "name": "a140",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 193,
+            "wx": 788,
+            "name": "a141",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 194,
+            "wx": 788,
+            "name": "a142",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 195,
+            "wx": 788,
+            "name": "a143",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 196,
+            "wx": 788,
+            "name": "a144",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 197,
+            "wx": 788,
+            "name": "a145",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 198,
+            "wx": 788,
+            "name": "a146",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 199,
+            "wx": 788,
+            "name": "a147",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 200,
+            "wx": 788,
+            "name": "a148",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 201,
+            "wx": 788,
+            "name": "a149",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 202,
+            "wx": 788,
+            "name": "a150",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 203,
+            "wx": 788,
+            "name": "a151",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 204,
+            "wx": 788,
+            "name": "a152",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 205,
+            "wx": 788,
+            "name": "a153",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 206,
+            "wx": 788,
+            "name": "a154",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 207,
+            "wx": 788,
+            "name": "a155",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 208,
+            "wx": 788,
+            "name": "a156",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 209,
+            "wx": 788,
+            "name": "a157",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 210,
+            "wx": 788,
+            "name": "a158",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 211,
+            "wx": 788,
+            "name": "a159",
+            "bbox": {
+                "llx": 35,
+                "lly": -14,
+                "urx": 754,
+                "ury": 705
+            }
+        },
+        {
+            "code": 212,
+            "wx": 894,
+            "name": "a160",
+            "bbox": {
+                "llx": 35,
+                "lly": 58,
+                "urx": 860,
+                "ury": 634
+            }
+        },
+        {
+            "code": 213,
+            "wx": 838,
+            "name": "a161",
+            "bbox": {
+                "llx": 35,
+                "lly": 152,
+                "urx": 803,
+                "ury": 540
+            }
+        },
+        {
+            "code": 214,
+            "wx": 1016,
+            "name": "a163",
+            "bbox": {
+                "llx": 34,
+                "lly": 152,
+                "urx": 981,
+                "ury": 540
+            }
+        },
+        {
+            "code": 215,
+            "wx": 458,
+            "name": "a164",
+            "bbox": {
+                "llx": 35,
+                "lly": -127,
+                "urx": 422,
+                "ury": 820
+            }
+        },
+        {
+            "code": 216,
+            "wx": 748,
+            "name": "a196",
+            "bbox": {
+                "llx": 35,
+                "lly": 94,
+                "urx": 698,
+                "ury": 597
+            }
+        },
+        {
+            "code": 217,
+            "wx": 924,
+            "name": "a165",
+            "bbox": {
+                "llx": 35,
+                "lly": 140,
+                "urx": 890,
+                "ury": 552
+            }
+        },
+        {
+            "code": 218,
+            "wx": 748,
+            "name": "a192",
+            "bbox": {
+                "llx": 35,
+                "lly": 94,
+                "urx": 698,
+                "ury": 597
+            }
+        },
+        {
+            "code": 219,
+            "wx": 918,
+            "name": "a166",
+            "bbox": {
+                "llx": 35,
+                "lly": 166,
+                "urx": 884,
+                "ury": 526
+            }
+        },
+        {
+            "code": 220,
+            "wx": 927,
+            "name": "a167",
+            "bbox": {
+                "llx": 35,
+                "lly": 32,
+                "urx": 892,
+                "ury": 660
+            }
+        },
+        {
+            "code": 221,
+            "wx": 928,
+            "name": "a168",
+            "bbox": {
+                "llx": 35,
+                "lly": 129,
+                "urx": 891,
+                "ury": 562
+            }
+        },
+        {
+            "code": 222,
+            "wx": 928,
+            "name": "a169",
+            "bbox": {
+                "llx": 35,
+                "lly": 128,
+                "urx": 893,
+                "ury": 563
+            }
+        },
+        {
+            "code": 223,
+            "wx": 834,
+            "name": "a170",
+            "bbox": {
+                "llx": 35,
+                "lly": 155,
+                "urx": 799,
+                "ury": 537
+            }
+        },
+        {
+            "code": 224,
+            "wx": 873,
+            "name": "a171",
+            "bbox": {
+                "llx": 35,
+                "lly": 93,
+                "urx": 838,
+                "ury": 599
+            }
+        },
+        {
+            "code": 225,
+            "wx": 828,
+            "name": "a172",
+            "bbox": {
+                "llx": 35,
+                "lly": 104,
+                "urx": 791,
+                "ury": 588
+            }
+        },
+        {
+            "code": 226,
+            "wx": 924,
+            "name": "a173",
+            "bbox": {
+                "llx": 35,
+                "lly": 98,
+                "urx": 889,
+                "ury": 594
+            }
+        },
+        {
+            "code": 227,
+            "wx": 924,
+            "name": "a162",
+            "bbox": {
+                "llx": 35,
+                "lly": 98,
+                "urx": 889,
+                "ury": 594
+            }
+        },
+        {
+            "code": 228,
+            "wx": 917,
+            "name": "a174",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 882,
+                "ury": 692
+            }
+        },
+        {
+            "code": 229,
+            "wx": 930,
+            "name": "a175",
+            "bbox": {
+                "llx": 35,
+                "lly": 84,
+                "urx": 896,
+                "ury": 608
+            }
+        },
+        {
+            "code": 230,
+            "wx": 931,
+            "name": "a176",
+            "bbox": {
+                "llx": 35,
+                "lly": 84,
+                "urx": 896,
+                "ury": 608
+            }
+        },
+        {
+            "code": 231,
+            "wx": 463,
+            "name": "a177",
+            "bbox": {
+                "llx": 35,
+                "lly": -99,
+                "urx": 429,
+                "ury": 791
+            }
+        },
+        {
+            "code": 232,
+            "wx": 883,
+            "name": "a178",
+            "bbox": {
+                "llx": 35,
+                "lly": 71,
+                "urx": 848,
+                "ury": 623
+            }
+        },
+        {
+            "code": 233,
+            "wx": 836,
+            "name": "a179",
+            "bbox": {
+                "llx": 35,
+                "lly": 44,
+                "urx": 802,
+                "ury": 648
+            }
+        },
+        {
+            "code": 234,
+            "wx": 836,
+            "name": "a193",
+            "bbox": {
+                "llx": 35,
+                "lly": 44,
+                "urx": 802,
+                "ury": 648
+            }
+        },
+        {
+            "code": 235,
+            "wx": 867,
+            "name": "a180",
+            "bbox": {
+                "llx": 35,
+                "lly": 101,
+                "urx": 832,
+                "ury": 591
+            }
+        },
+        {
+            "code": 236,
+            "wx": 867,
+            "name": "a199",
+            "bbox": {
+                "llx": 35,
+                "lly": 101,
+                "urx": 832,
+                "ury": 591
+            }
+        },
+        {
+            "code": 237,
+            "wx": 696,
+            "name": "a181",
+            "bbox": {
+                "llx": 35,
+                "lly": 44,
+                "urx": 661,
+                "ury": 648
+            }
+        },
+        {
+            "code": 238,
+            "wx": 696,
+            "name": "a200",
+            "bbox": {
+                "llx": 35,
+                "lly": 44,
+                "urx": 661,
+                "ury": 648
+            }
+        },
+        {
+            "code": 239,
+            "wx": 874,
+            "name": "a182",
+            "bbox": {
+                "llx": 35,
+                "lly": 77,
+                "urx": 840,
+                "ury": 619
+            }
+        },
+        {
+            "code": 241,
+            "wx": 874,
+            "name": "a201",
+            "bbox": {
+                "llx": 35,
+                "lly": 73,
+                "urx": 840,
+                "ury": 615
+            }
+        },
+        {
+            "code": 242,
+            "wx": 760,
+            "name": "a183",
+            "bbox": {
+                "llx": 35,
+                "lly": 0,
+                "urx": 725,
+                "ury": 692
+            }
+        },
+        {
+            "code": 243,
+            "wx": 946,
+            "name": "a184",
+            "bbox": {
+                "llx": 35,
+                "lly": 160,
+                "urx": 911,
+                "ury": 533
+            }
+        },
+        {
+            "code": 244,
+            "wx": 771,
+            "name": "a197",
+            "bbox": {
+                "llx": 34,
+                "lly": 37,
+                "urx": 736,
+                "ury": 655
+            }
+        },
+        {
+            "code": 245,
+            "wx": 865,
+            "name": "a185",
+            "bbox": {
+                "llx": 35,
+                "lly": 207,
+                "urx": 830,
+                "ury": 481
+            }
+        },
+        {
+            "code": 246,
+            "wx": 771,
+            "name": "a194",
+            "bbox": {
+                "llx": 34,
+                "lly": 37,
+                "urx": 736,
+                "ury": 655
+            }
+        },
+        {
+            "code": 247,
+            "wx": 888,
+            "name": "a198",
+            "bbox": {
+                "llx": 34,
+                "lly": -19,
+                "urx": 853,
+                "ury": 712
+            }
+        },
+        {
+            "code": 248,
+            "wx": 967,
+            "name": "a186",
+            "bbox": {
+                "llx": 35,
+                "lly": 124,
+                "urx": 932,
+                "ury": 568
+            }
+        },
+        {
+            "code": 249,
+            "wx": 888,
+            "name": "a195",
+            "bbox": {
+                "llx": 34,
+                "lly": -19,
+                "urx": 853,
+                "ury": 712
+            }
+        },
+        {
+            "code": 250,
+            "wx": 831,
+            "name": "a187",
+            "bbox": {
+                "llx": 35,
+                "lly": 113,
+                "urx": 796,
+                "ury": 579
+            }
+        },
+        {
+            "code": 251,
+            "wx": 873,
+            "name": "a188",
+            "bbox": {
+                "llx": 36,
+                "lly": 118,
+                "urx": 838,
+                "ury": 578
+            }
+        },
+        {
+            "code": 252,
+            "wx": 927,
+            "name": "a189",
+            "bbox": {
+                "llx": 35,
+                "lly": 150,
+                "urx": 891,
+                "ury": 542
+            }
+        },
+        {
+            "code": 253,
+            "wx": 970,
+            "name": "a190",
+            "bbox": {
+                "llx": 35,
+                "lly": 76,
+                "urx": 931,
+                "ury": 616
+            }
+        },
+        {
+            "code": 254,
+            "wx": 918,
+            "name": "a191",
+            "bbox": {
+                "llx": 34,
+                "lly": 99,
+                "urx": 884,
+                "ury": 593
+            }
+        }
+    ],
+    "kernPairs": []
+}

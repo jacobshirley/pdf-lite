@@ -1,0 +1,3500 @@
+{
+    "metadata": {
+        "FontName": "Courier",
+        "FullName": "Courier",
+        "FamilyName": "Courier",
+        "Weight": "Medium",
+        "ItalicAngle": 0,
+        "IsFixedPitch": true,
+        "CharacterSet": "ExtendedRoman",
+        "UnderlinePosition": -100,
+        "UnderlineThickness": 50,
+        "Version": "003.000",
+        "Notice": "Copyright (c) 1989, 1990, 1991, 1992, 1993, 1997 Adobe Systems Incorporated.  All Rights Reserved.",
+        "EncodingScheme": "AdobeStandardEncoding",
+        "CapHeight": 562,
+        "XHeight": 426,
+        "Ascender": 629,
+        "Descender": -157,
+        "StdHW": 51,
+        "StdVW": 51
+    },
+    "bbox": {
+        "llx": -23,
+        "lly": -250,
+        "urx": 715,
+        "ury": 805
+    },
+    "charMetrics": [
+        {
+            "code": 32,
+            "wx": 600,
+            "name": "space",
+            "bbox": {
+                "llx": 0,
+                "lly": 0,
+                "urx": 0,
+                "ury": 0
+            }
+        },
+        {
+            "code": 33,
+            "wx": 600,
+            "name": "exclam",
+            "bbox": {
+                "llx": 236,
+                "lly": -15,
+                "urx": 364,
+                "ury": 572
+            }
+        },
+        {
+            "code": 34,
+            "wx": 600,
+            "name": "quotedbl",
+            "bbox": {
+                "llx": 187,
+                "lly": 328,
+                "urx": 413,
+                "ury": 562
+            }
+        },
+        {
+            "code": 35,
+            "wx": 600,
+            "name": "numbersign",
+            "bbox": {
+                "llx": 93,
+                "lly": -32,
+                "urx": 507,
+                "ury": 639
+            }
+        },
+        {
+            "code": 36,
+            "wx": 600,
+            "name": "dollar",
+            "bbox": {
+                "llx": 105,
+                "lly": -126,
+                "urx": 496,
+                "ury": 662
+            }
+        },
+        {
+            "code": 37,
+            "wx": 600,
+            "name": "percent",
+            "bbox": {
+                "llx": 81,
+                "lly": -15,
+                "urx": 518,
+                "ury": 622
+            }
+        },
+        {
+            "code": 38,
+            "wx": 600,
+            "name": "ampersand",
+            "bbox": {
+                "llx": 63,
+                "lly": -15,
+                "urx": 538,
+                "ury": 543
+            }
+        },
+        {
+            "code": 39,
+            "wx": 600,
+            "name": "quoteright",
+            "bbox": {
+                "llx": 213,
+                "lly": 328,
+                "urx": 376,
+                "ury": 562
+            }
+        },
+        {
+            "code": 40,
+            "wx": 600,
+            "name": "parenleft",
+            "bbox": {
+                "llx": 269,
+                "lly": -108,
+                "urx": 440,
+                "ury": 622
+            }
+        },
+        {
+            "code": 41,
+            "wx": 600,
+            "name": "parenright",
+            "bbox": {
+                "llx": 160,
+                "lly": -108,
+                "urx": 331,
+                "ury": 622
+            }
+        },
+        {
+            "code": 42,
+            "wx": 600,
+            "name": "asterisk",
+            "bbox": {
+                "llx": 116,
+                "lly": 257,
+                "urx": 484,
+                "ury": 607
+            }
+        },
+        {
+            "code": 43,
+            "wx": 600,
+            "name": "plus",
+            "bbox": {
+                "llx": 80,
+                "lly": 44,
+                "urx": 520,
+                "ury": 470
+            }
+        },
+        {
+            "code": 44,
+            "wx": 600,
+            "name": "comma",
+            "bbox": {
+                "llx": 181,
+                "lly": -112,
+                "urx": 344,
+                "ury": 122
+            }
+        },
+        {
+            "code": 45,
+            "wx": 600,
+            "name": "hyphen",
+            "bbox": {
+                "llx": 103,
+                "lly": 231,
+                "urx": 497,
+                "ury": 285
+            }
+        },
+        {
+            "code": 46,
+            "wx": 600,
+            "name": "period",
+            "bbox": {
+                "llx": 229,
+                "lly": -15,
+                "urx": 371,
+                "ury": 109
+            }
+        },
+        {
+            "code": 47,
+            "wx": 600,
+            "name": "slash",
+            "bbox": {
+                "llx": 125,
+                "lly": -80,
+                "urx": 475,
+                "ury": 629
+            }
+        },
+        {
+            "code": 48,
+            "wx": 600,
+            "name": "zero",
+            "bbox": {
+                "llx": 106,
+                "lly": -15,
+                "urx": 494,
+                "ury": 622
+            }
+        },
+        {
+            "code": 49,
+            "wx": 600,
+            "name": "one",
+            "bbox": {
+                "llx": 96,
+                "lly": 0,
+                "urx": 505,
+                "ury": 622
+            }
+        },
+        {
+            "code": 50,
+            "wx": 600,
+            "name": "two",
+            "bbox": {
+                "llx": 70,
+                "lly": 0,
+                "urx": 471,
+                "ury": 622
+            }
+        },
+        {
+            "code": 51,
+            "wx": 600,
+            "name": "three",
+            "bbox": {
+                "llx": 75,
+                "lly": -15,
+                "urx": 466,
+                "ury": 622
+            }
+        },
+        {
+            "code": 52,
+            "wx": 600,
+            "name": "four",
+            "bbox": {
+                "llx": 78,
+                "lly": 0,
+                "urx": 500,
+                "ury": 622
+            }
+        },
+        {
+            "code": 53,
+            "wx": 600,
+            "name": "five",
+            "bbox": {
+                "llx": 92,
+                "lly": -15,
+                "urx": 497,
+                "ury": 607
+            }
+        },
+        {
+            "code": 54,
+            "wx": 600,
+            "name": "six",
+            "bbox": {
+                "llx": 111,
+                "lly": -15,
+                "urx": 497,
+                "ury": 622
+            }
+        },
+        {
+            "code": 55,
+            "wx": 600,
+            "name": "seven",
+            "bbox": {
+                "llx": 82,
+                "lly": 0,
+                "urx": 483,
+                "ury": 607
+            }
+        },
+        {
+            "code": 56,
+            "wx": 600,
+            "name": "eight",
+            "bbox": {
+                "llx": 102,
+                "lly": -15,
+                "urx": 498,
+                "ury": 622
+            }
+        },
+        {
+            "code": 57,
+            "wx": 600,
+            "name": "nine",
+            "bbox": {
+                "llx": 96,
+                "lly": -15,
+                "urx": 489,
+                "ury": 622
+            }
+        },
+        {
+            "code": 58,
+            "wx": 600,
+            "name": "colon",
+            "bbox": {
+                "llx": 229,
+                "lly": -15,
+                "urx": 371,
+                "ury": 385
+            }
+        },
+        {
+            "code": 59,
+            "wx": 600,
+            "name": "semicolon",
+            "bbox": {
+                "llx": 181,
+                "lly": -112,
+                "urx": 371,
+                "ury": 385
+            }
+        },
+        {
+            "code": 60,
+            "wx": 600,
+            "name": "less",
+            "bbox": {
+                "llx": 41,
+                "lly": 42,
+                "urx": 519,
+                "ury": 472
+            }
+        },
+        {
+            "code": 61,
+            "wx": 600,
+            "name": "equal",
+            "bbox": {
+                "llx": 80,
+                "lly": 138,
+                "urx": 520,
+                "ury": 376
+            }
+        },
+        {
+            "code": 62,
+            "wx": 600,
+            "name": "greater",
+            "bbox": {
+                "llx": 66,
+                "lly": 42,
+                "urx": 544,
+                "ury": 472
+            }
+        },
+        {
+            "code": 63,
+            "wx": 600,
+            "name": "question",
+            "bbox": {
+                "llx": 129,
+                "lly": -15,
+                "urx": 492,
+                "ury": 572
+            }
+        },
+        {
+            "code": 64,
+            "wx": 600,
+            "name": "at",
+            "bbox": {
+                "llx": 77,
+                "lly": -15,
+                "urx": 533,
+                "ury": 622
+            }
+        },
+        {
+            "code": 65,
+            "wx": 600,
+            "name": "A",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 562
+            }
+        },
+        {
+            "code": 66,
+            "wx": 600,
+            "name": "B",
+            "bbox": {
+                "llx": 43,
+                "lly": 0,
+                "urx": 559,
+                "ury": 562
+            }
+        },
+        {
+            "code": 67,
+            "wx": 600,
+            "name": "C",
+            "bbox": {
+                "llx": 41,
+                "lly": -18,
+                "urx": 540,
+                "ury": 580
+            }
+        },
+        {
+            "code": 68,
+            "wx": 600,
+            "name": "D",
+            "bbox": {
+                "llx": 43,
+                "lly": 0,
+                "urx": 574,
+                "ury": 562
+            }
+        },
+        {
+            "code": 69,
+            "wx": 600,
+            "name": "E",
+            "bbox": {
+                "llx": 53,
+                "lly": 0,
+                "urx": 550,
+                "ury": 562
+            }
+        },
+        {
+            "code": 70,
+            "wx": 600,
+            "name": "F",
+            "bbox": {
+                "llx": 53,
+                "lly": 0,
+                "urx": 545,
+                "ury": 562
+            }
+        },
+        {
+            "code": 71,
+            "wx": 600,
+            "name": "G",
+            "bbox": {
+                "llx": 31,
+                "lly": -18,
+                "urx": 575,
+                "ury": 580
+            }
+        },
+        {
+            "code": 72,
+            "wx": 600,
+            "name": "H",
+            "bbox": {
+                "llx": 32,
+                "lly": 0,
+                "urx": 568,
+                "ury": 562
+            }
+        },
+        {
+            "code": 73,
+            "wx": 600,
+            "name": "I",
+            "bbox": {
+                "llx": 96,
+                "lly": 0,
+                "urx": 504,
+                "ury": 562
+            }
+        },
+        {
+            "code": 74,
+            "wx": 600,
+            "name": "J",
+            "bbox": {
+                "llx": 34,
+                "lly": -18,
+                "urx": 566,
+                "ury": 562
+            }
+        },
+        {
+            "code": 75,
+            "wx": 600,
+            "name": "K",
+            "bbox": {
+                "llx": 38,
+                "lly": 0,
+                "urx": 582,
+                "ury": 562
+            }
+        },
+        {
+            "code": 76,
+            "wx": 600,
+            "name": "L",
+            "bbox": {
+                "llx": 47,
+                "lly": 0,
+                "urx": 554,
+                "ury": 562
+            }
+        },
+        {
+            "code": 77,
+            "wx": 600,
+            "name": "M",
+            "bbox": {
+                "llx": 4,
+                "lly": 0,
+                "urx": 596,
+                "ury": 562
+            }
+        },
+        {
+            "code": 78,
+            "wx": 600,
+            "name": "N",
+            "bbox": {
+                "llx": 7,
+                "lly": -13,
+                "urx": 593,
+                "ury": 562
+            }
+        },
+        {
+            "code": 79,
+            "wx": 600,
+            "name": "O",
+            "bbox": {
+                "llx": 43,
+                "lly": -18,
+                "urx": 557,
+                "ury": 580
+            }
+        },
+        {
+            "code": 80,
+            "wx": 600,
+            "name": "P",
+            "bbox": {
+                "llx": 79,
+                "lly": 0,
+                "urx": 558,
+                "ury": 562
+            }
+        },
+        {
+            "code": 81,
+            "wx": 600,
+            "name": "Q",
+            "bbox": {
+                "llx": 43,
+                "lly": -138,
+                "urx": 557,
+                "ury": 580
+            }
+        },
+        {
+            "code": 82,
+            "wx": 600,
+            "name": "R",
+            "bbox": {
+                "llx": 38,
+                "lly": 0,
+                "urx": 588,
+                "ury": 562
+            }
+        },
+        {
+            "code": 83,
+            "wx": 600,
+            "name": "S",
+            "bbox": {
+                "llx": 72,
+                "lly": -20,
+                "urx": 529,
+                "ury": 580
+            }
+        },
+        {
+            "code": 84,
+            "wx": 600,
+            "name": "T",
+            "bbox": {
+                "llx": 38,
+                "lly": 0,
+                "urx": 563,
+                "ury": 562
+            }
+        },
+        {
+            "code": 85,
+            "wx": 600,
+            "name": "U",
+            "bbox": {
+                "llx": 17,
+                "lly": -18,
+                "urx": 583,
+                "ury": 562
+            }
+        },
+        {
+            "code": 86,
+            "wx": 600,
+            "name": "V",
+            "bbox": {
+                "llx": -4,
+                "lly": -13,
+                "urx": 604,
+                "ury": 562
+            }
+        },
+        {
+            "code": 87,
+            "wx": 600,
+            "name": "W",
+            "bbox": {
+                "llx": -3,
+                "lly": -13,
+                "urx": 603,
+                "ury": 562
+            }
+        },
+        {
+            "code": 88,
+            "wx": 600,
+            "name": "X",
+            "bbox": {
+                "llx": 23,
+                "lly": 0,
+                "urx": 577,
+                "ury": 562
+            }
+        },
+        {
+            "code": 89,
+            "wx": 600,
+            "name": "Y",
+            "bbox": {
+                "llx": 24,
+                "lly": 0,
+                "urx": 576,
+                "ury": 562
+            }
+        },
+        {
+            "code": 90,
+            "wx": 600,
+            "name": "Z",
+            "bbox": {
+                "llx": 86,
+                "lly": 0,
+                "urx": 514,
+                "ury": 562
+            }
+        },
+        {
+            "code": 91,
+            "wx": 600,
+            "name": "bracketleft",
+            "bbox": {
+                "llx": 269,
+                "lly": -108,
+                "urx": 442,
+                "ury": 622
+            }
+        },
+        {
+            "code": 92,
+            "wx": 600,
+            "name": "backslash",
+            "bbox": {
+                "llx": 118,
+                "lly": -80,
+                "urx": 482,
+                "ury": 629
+            }
+        },
+        {
+            "code": 93,
+            "wx": 600,
+            "name": "bracketright",
+            "bbox": {
+                "llx": 158,
+                "lly": -108,
+                "urx": 331,
+                "ury": 622
+            }
+        },
+        {
+            "code": 94,
+            "wx": 600,
+            "name": "asciicircum",
+            "bbox": {
+                "llx": 94,
+                "lly": 354,
+                "urx": 506,
+                "ury": 622
+            }
+        },
+        {
+            "code": 95,
+            "wx": 600,
+            "name": "underscore",
+            "bbox": {
+                "llx": 0,
+                "lly": -125,
+                "urx": 600,
+                "ury": -75
+            }
+        },
+        {
+            "code": 96,
+            "wx": 600,
+            "name": "quoteleft",
+            "bbox": {
+                "llx": 224,
+                "lly": 328,
+                "urx": 387,
+                "ury": 562
+            }
+        },
+        {
+            "code": 97,
+            "wx": 600,
+            "name": "a",
+            "bbox": {
+                "llx": 53,
+                "lly": -15,
+                "urx": 559,
+                "ury": 441
+            }
+        },
+        {
+            "code": 98,
+            "wx": 600,
+            "name": "b",
+            "bbox": {
+                "llx": 14,
+                "lly": -15,
+                "urx": 575,
+                "ury": 629
+            }
+        },
+        {
+            "code": 99,
+            "wx": 600,
+            "name": "c",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 529,
+                "ury": 441
+            }
+        },
+        {
+            "code": 100,
+            "wx": 600,
+            "name": "d",
+            "bbox": {
+                "llx": 45,
+                "lly": -15,
+                "urx": 591,
+                "ury": 629
+            }
+        },
+        {
+            "code": 101,
+            "wx": 600,
+            "name": "e",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 548,
+                "ury": 441
+            }
+        },
+        {
+            "code": 102,
+            "wx": 600,
+            "name": "f",
+            "bbox": {
+                "llx": 114,
+                "lly": 0,
+                "urx": 531,
+                "ury": 629
+            },
+            "ligatures": {
+                "i": "fi",
+                "l": "fl"
+            }
+        },
+        {
+            "code": 103,
+            "wx": 600,
+            "name": "g",
+            "bbox": {
+                "llx": 45,
+                "lly": -157,
+                "urx": 566,
+                "ury": 441
+            }
+        },
+        {
+            "code": 104,
+            "wx": 600,
+            "name": "h",
+            "bbox": {
+                "llx": 18,
+                "lly": 0,
+                "urx": 582,
+                "ury": 629
+            }
+        },
+        {
+            "code": 105,
+            "wx": 600,
+            "name": "i",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 505,
+                "ury": 657
+            }
+        },
+        {
+            "code": 106,
+            "wx": 600,
+            "name": "j",
+            "bbox": {
+                "llx": 82,
+                "lly": -157,
+                "urx": 410,
+                "ury": 657
+            }
+        },
+        {
+            "code": 107,
+            "wx": 600,
+            "name": "k",
+            "bbox": {
+                "llx": 43,
+                "lly": 0,
+                "urx": 580,
+                "ury": 629
+            }
+        },
+        {
+            "code": 108,
+            "wx": 600,
+            "name": "l",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 505,
+                "ury": 629
+            }
+        },
+        {
+            "code": 109,
+            "wx": 600,
+            "name": "m",
+            "bbox": {
+                "llx": -5,
+                "lly": 0,
+                "urx": 605,
+                "ury": 441
+            }
+        },
+        {
+            "code": 110,
+            "wx": 600,
+            "name": "n",
+            "bbox": {
+                "llx": 26,
+                "lly": 0,
+                "urx": 575,
+                "ury": 441
+            }
+        },
+        {
+            "code": 111,
+            "wx": 600,
+            "name": "o",
+            "bbox": {
+                "llx": 62,
+                "lly": -15,
+                "urx": 538,
+                "ury": 441
+            }
+        },
+        {
+            "code": 112,
+            "wx": 600,
+            "name": "p",
+            "bbox": {
+                "llx": 9,
+                "lly": -157,
+                "urx": 555,
+                "ury": 441
+            }
+        },
+        {
+            "code": 113,
+            "wx": 600,
+            "name": "q",
+            "bbox": {
+                "llx": 45,
+                "lly": -157,
+                "urx": 591,
+                "ury": 441
+            }
+        },
+        {
+            "code": 114,
+            "wx": 600,
+            "name": "r",
+            "bbox": {
+                "llx": 60,
+                "lly": 0,
+                "urx": 559,
+                "ury": 441
+            }
+        },
+        {
+            "code": 115,
+            "wx": 600,
+            "name": "s",
+            "bbox": {
+                "llx": 80,
+                "lly": -15,
+                "urx": 513,
+                "ury": 441
+            }
+        },
+        {
+            "code": 116,
+            "wx": 600,
+            "name": "t",
+            "bbox": {
+                "llx": 87,
+                "lly": -15,
+                "urx": 530,
+                "ury": 561
+            }
+        },
+        {
+            "code": 117,
+            "wx": 600,
+            "name": "u",
+            "bbox": {
+                "llx": 21,
+                "lly": -15,
+                "urx": 562,
+                "ury": 426
+            }
+        },
+        {
+            "code": 118,
+            "wx": 600,
+            "name": "v",
+            "bbox": {
+                "llx": 10,
+                "lly": -10,
+                "urx": 590,
+                "ury": 426
+            }
+        },
+        {
+            "code": 119,
+            "wx": 600,
+            "name": "w",
+            "bbox": {
+                "llx": -4,
+                "lly": -10,
+                "urx": 604,
+                "ury": 426
+            }
+        },
+        {
+            "code": 120,
+            "wx": 600,
+            "name": "x",
+            "bbox": {
+                "llx": 20,
+                "lly": 0,
+                "urx": 580,
+                "ury": 426
+            }
+        },
+        {
+            "code": 121,
+            "wx": 600,
+            "name": "y",
+            "bbox": {
+                "llx": 7,
+                "lly": -157,
+                "urx": 592,
+                "ury": 426
+            }
+        },
+        {
+            "code": 122,
+            "wx": 600,
+            "name": "z",
+            "bbox": {
+                "llx": 99,
+                "lly": 0,
+                "urx": 502,
+                "ury": 426
+            }
+        },
+        {
+            "code": 123,
+            "wx": 600,
+            "name": "braceleft",
+            "bbox": {
+                "llx": 182,
+                "lly": -108,
+                "urx": 437,
+                "ury": 622
+            }
+        },
+        {
+            "code": 124,
+            "wx": 600,
+            "name": "bar",
+            "bbox": {
+                "llx": 275,
+                "lly": -250,
+                "urx": 326,
+                "ury": 750
+            }
+        },
+        {
+            "code": 125,
+            "wx": 600,
+            "name": "braceright",
+            "bbox": {
+                "llx": 163,
+                "lly": -108,
+                "urx": 418,
+                "ury": 622
+            }
+        },
+        {
+            "code": 126,
+            "wx": 600,
+            "name": "asciitilde",
+            "bbox": {
+                "llx": 63,
+                "lly": 197,
+                "urx": 540,
+                "ury": 320
+            }
+        },
+        {
+            "code": 161,
+            "wx": 600,
+            "name": "exclamdown",
+            "bbox": {
+                "llx": 236,
+                "lly": -157,
+                "urx": 364,
+                "ury": 430
+            }
+        },
+        {
+            "code": 162,
+            "wx": 600,
+            "name": "cent",
+            "bbox": {
+                "llx": 96,
+                "lly": -49,
+                "urx": 500,
+                "ury": 614
+            }
+        },
+        {
+            "code": 163,
+            "wx": 600,
+            "name": "sterling",
+            "bbox": {
+                "llx": 84,
+                "lly": -21,
+                "urx": 521,
+                "ury": 611
+            }
+        },
+        {
+            "code": 164,
+            "wx": 600,
+            "name": "fraction",
+            "bbox": {
+                "llx": 92,
+                "lly": -57,
+                "urx": 509,
+                "ury": 665
+            }
+        },
+        {
+            "code": 165,
+            "wx": 600,
+            "name": "yen",
+            "bbox": {
+                "llx": 26,
+                "lly": 0,
+                "urx": 574,
+                "ury": 562
+            }
+        },
+        {
+            "code": 166,
+            "wx": 600,
+            "name": "florin",
+            "bbox": {
+                "llx": 4,
+                "lly": -143,
+                "urx": 539,
+                "ury": 622
+            }
+        },
+        {
+            "code": 167,
+            "wx": 600,
+            "name": "section",
+            "bbox": {
+                "llx": 113,
+                "lly": -78,
+                "urx": 488,
+                "ury": 580
+            }
+        },
+        {
+            "code": 168,
+            "wx": 600,
+            "name": "currency",
+            "bbox": {
+                "llx": 73,
+                "lly": 58,
+                "urx": 527,
+                "ury": 506
+            }
+        },
+        {
+            "code": 169,
+            "wx": 600,
+            "name": "quotesingle",
+            "bbox": {
+                "llx": 259,
+                "lly": 328,
+                "urx": 341,
+                "ury": 562
+            }
+        },
+        {
+            "code": 170,
+            "wx": 600,
+            "name": "quotedblleft",
+            "bbox": {
+                "llx": 143,
+                "lly": 328,
+                "urx": 471,
+                "ury": 562
+            }
+        },
+        {
+            "code": 171,
+            "wx": 600,
+            "name": "guillemotleft",
+            "bbox": {
+                "llx": 37,
+                "lly": 70,
+                "urx": 563,
+                "ury": 446
+            }
+        },
+        {
+            "code": 172,
+            "wx": 600,
+            "name": "guilsinglleft",
+            "bbox": {
+                "llx": 149,
+                "lly": 70,
+                "urx": 451,
+                "ury": 446
+            }
+        },
+        {
+            "code": 173,
+            "wx": 600,
+            "name": "guilsinglright",
+            "bbox": {
+                "llx": 149,
+                "lly": 70,
+                "urx": 451,
+                "ury": 446
+            }
+        },
+        {
+            "code": 174,
+            "wx": 600,
+            "name": "fi",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 629
+            }
+        },
+        {
+            "code": 175,
+            "wx": 600,
+            "name": "fl",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 629
+            }
+        },
+        {
+            "code": 177,
+            "wx": 600,
+            "name": "endash",
+            "bbox": {
+                "llx": 75,
+                "lly": 231,
+                "urx": 525,
+                "ury": 285
+            }
+        },
+        {
+            "code": 178,
+            "wx": 600,
+            "name": "dagger",
+            "bbox": {
+                "llx": 141,
+                "lly": -78,
+                "urx": 459,
+                "ury": 580
+            }
+        },
+        {
+            "code": 179,
+            "wx": 600,
+            "name": "daggerdbl",
+            "bbox": {
+                "llx": 141,
+                "lly": -78,
+                "urx": 459,
+                "ury": 580
+            }
+        },
+        {
+            "code": 180,
+            "wx": 600,
+            "name": "periodcentered",
+            "bbox": {
+                "llx": 222,
+                "lly": 189,
+                "urx": 378,
+                "ury": 327
+            }
+        },
+        {
+            "code": 182,
+            "wx": 600,
+            "name": "paragraph",
+            "bbox": {
+                "llx": 50,
+                "lly": -78,
+                "urx": 511,
+                "ury": 562
+            }
+        },
+        {
+            "code": 183,
+            "wx": 600,
+            "name": "bullet",
+            "bbox": {
+                "llx": 172,
+                "lly": 130,
+                "urx": 428,
+                "ury": 383
+            }
+        },
+        {
+            "code": 184,
+            "wx": 600,
+            "name": "quotesinglbase",
+            "bbox": {
+                "llx": 213,
+                "lly": -134,
+                "urx": 376,
+                "ury": 100
+            }
+        },
+        {
+            "code": 185,
+            "wx": 600,
+            "name": "quotedblbase",
+            "bbox": {
+                "llx": 143,
+                "lly": -134,
+                "urx": 457,
+                "ury": 100
+            }
+        },
+        {
+            "code": 186,
+            "wx": 600,
+            "name": "quotedblright",
+            "bbox": {
+                "llx": 143,
+                "lly": 328,
+                "urx": 457,
+                "ury": 562
+            }
+        },
+        {
+            "code": 187,
+            "wx": 600,
+            "name": "guillemotright",
+            "bbox": {
+                "llx": 37,
+                "lly": 70,
+                "urx": 563,
+                "ury": 446
+            }
+        },
+        {
+            "code": 188,
+            "wx": 600,
+            "name": "ellipsis",
+            "bbox": {
+                "llx": 37,
+                "lly": -15,
+                "urx": 563,
+                "ury": 111
+            }
+        },
+        {
+            "code": 189,
+            "wx": 600,
+            "name": "perthousand",
+            "bbox": {
+                "llx": 3,
+                "lly": -15,
+                "urx": 600,
+                "ury": 622
+            }
+        },
+        {
+            "code": 191,
+            "wx": 600,
+            "name": "questiondown",
+            "bbox": {
+                "llx": 108,
+                "lly": -157,
+                "urx": 471,
+                "ury": 430
+            }
+        },
+        {
+            "code": 193,
+            "wx": 600,
+            "name": "grave",
+            "bbox": {
+                "llx": 151,
+                "lly": 497,
+                "urx": 378,
+                "ury": 672
+            }
+        },
+        {
+            "code": 194,
+            "wx": 600,
+            "name": "acute",
+            "bbox": {
+                "llx": 242,
+                "lly": 497,
+                "urx": 469,
+                "ury": 672
+            }
+        },
+        {
+            "code": 195,
+            "wx": 600,
+            "name": "circumflex",
+            "bbox": {
+                "llx": 124,
+                "lly": 477,
+                "urx": 476,
+                "ury": 654
+            }
+        },
+        {
+            "code": 196,
+            "wx": 600,
+            "name": "tilde",
+            "bbox": {
+                "llx": 105,
+                "lly": 489,
+                "urx": 503,
+                "ury": 606
+            }
+        },
+        {
+            "code": 197,
+            "wx": 600,
+            "name": "macron",
+            "bbox": {
+                "llx": 120,
+                "lly": 525,
+                "urx": 480,
+                "ury": 565
+            }
+        },
+        {
+            "code": 198,
+            "wx": 600,
+            "name": "breve",
+            "bbox": {
+                "llx": 153,
+                "lly": 501,
+                "urx": 447,
+                "ury": 609
+            }
+        },
+        {
+            "code": 199,
+            "wx": 600,
+            "name": "dotaccent",
+            "bbox": {
+                "llx": 249,
+                "lly": 537,
+                "urx": 352,
+                "ury": 640
+            }
+        },
+        {
+            "code": 200,
+            "wx": 600,
+            "name": "dieresis",
+            "bbox": {
+                "llx": 148,
+                "lly": 537,
+                "urx": 453,
+                "ury": 640
+            }
+        },
+        {
+            "code": 202,
+            "wx": 600,
+            "name": "ring",
+            "bbox": {
+                "llx": 218,
+                "lly": 463,
+                "urx": 382,
+                "ury": 627
+            }
+        },
+        {
+            "code": 203,
+            "wx": 600,
+            "name": "cedilla",
+            "bbox": {
+                "llx": 224,
+                "lly": -151,
+                "urx": 362,
+                "ury": 10
+            }
+        },
+        {
+            "code": 205,
+            "wx": 600,
+            "name": "hungarumlaut",
+            "bbox": {
+                "llx": 133,
+                "lly": 497,
+                "urx": 540,
+                "ury": 672
+            }
+        },
+        {
+            "code": 206,
+            "wx": 600,
+            "name": "ogonek",
+            "bbox": {
+                "llx": 211,
+                "lly": -172,
+                "urx": 407,
+                "ury": 4
+            }
+        },
+        {
+            "code": 207,
+            "wx": 600,
+            "name": "caron",
+            "bbox": {
+                "llx": 124,
+                "lly": 492,
+                "urx": 476,
+                "ury": 669
+            }
+        },
+        {
+            "code": 208,
+            "wx": 600,
+            "name": "emdash",
+            "bbox": {
+                "llx": 0,
+                "lly": 231,
+                "urx": 600,
+                "ury": 285
+            }
+        },
+        {
+            "code": 225,
+            "wx": 600,
+            "name": "AE",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 550,
+                "ury": 562
+            }
+        },
+        {
+            "code": 227,
+            "wx": 600,
+            "name": "ordfeminine",
+            "bbox": {
+                "llx": 156,
+                "lly": 249,
+                "urx": 442,
+                "ury": 580
+            }
+        },
+        {
+            "code": 232,
+            "wx": 600,
+            "name": "Lslash",
+            "bbox": {
+                "llx": 47,
+                "lly": 0,
+                "urx": 554,
+                "ury": 562
+            }
+        },
+        {
+            "code": 233,
+            "wx": 600,
+            "name": "Oslash",
+            "bbox": {
+                "llx": 43,
+                "lly": -80,
+                "urx": 557,
+                "ury": 629
+            }
+        },
+        {
+            "code": 234,
+            "wx": 600,
+            "name": "OE",
+            "bbox": {
+                "llx": 7,
+                "lly": 0,
+                "urx": 567,
+                "ury": 562
+            }
+        },
+        {
+            "code": 235,
+            "wx": 600,
+            "name": "ordmasculine",
+            "bbox": {
+                "llx": 157,
+                "lly": 249,
+                "urx": 443,
+                "ury": 580
+            }
+        },
+        {
+            "code": 241,
+            "wx": 600,
+            "name": "ae",
+            "bbox": {
+                "llx": 19,
+                "lly": -15,
+                "urx": 570,
+                "ury": 441
+            }
+        },
+        {
+            "code": 245,
+            "wx": 600,
+            "name": "dotlessi",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 505,
+                "ury": 426
+            }
+        },
+        {
+            "code": 248,
+            "wx": 600,
+            "name": "lslash",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 505,
+                "ury": 629
+            }
+        },
+        {
+            "code": 249,
+            "wx": 600,
+            "name": "oslash",
+            "bbox": {
+                "llx": 62,
+                "lly": -80,
+                "urx": 538,
+                "ury": 506
+            }
+        },
+        {
+            "code": 250,
+            "wx": 600,
+            "name": "oe",
+            "bbox": {
+                "llx": 19,
+                "lly": -15,
+                "urx": 559,
+                "ury": 441
+            }
+        },
+        {
+            "code": 251,
+            "wx": 600,
+            "name": "germandbls",
+            "bbox": {
+                "llx": 48,
+                "lly": -15,
+                "urx": 588,
+                "ury": 629
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Idieresis",
+            "bbox": {
+                "llx": 96,
+                "lly": 0,
+                "urx": 504,
+                "ury": 753
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "eacute",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 548,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "abreve",
+            "bbox": {
+                "llx": 53,
+                "lly": -15,
+                "urx": 559,
+                "ury": 609
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "uhungarumlaut",
+            "bbox": {
+                "llx": 21,
+                "lly": -15,
+                "urx": 580,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ecaron",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 548,
+                "ury": 669
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ydieresis",
+            "bbox": {
+                "llx": 24,
+                "lly": 0,
+                "urx": 576,
+                "ury": 753
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "divide",
+            "bbox": {
+                "llx": 87,
+                "lly": 48,
+                "urx": 513,
+                "ury": 467
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Yacute",
+            "bbox": {
+                "llx": 24,
+                "lly": 0,
+                "urx": 576,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Acircumflex",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 787
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "aacute",
+            "bbox": {
+                "llx": 53,
+                "lly": -15,
+                "urx": 559,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ucircumflex",
+            "bbox": {
+                "llx": 17,
+                "lly": -18,
+                "urx": 583,
+                "ury": 787
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "yacute",
+            "bbox": {
+                "llx": 7,
+                "lly": -157,
+                "urx": 592,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "scommaaccent",
+            "bbox": {
+                "llx": 80,
+                "lly": -250,
+                "urx": 513,
+                "ury": 441
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ecircumflex",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 548,
+                "ury": 654
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Uring",
+            "bbox": {
+                "llx": 17,
+                "lly": -18,
+                "urx": 583,
+                "ury": 760
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Udieresis",
+            "bbox": {
+                "llx": 17,
+                "lly": -18,
+                "urx": 583,
+                "ury": 753
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "aogonek",
+            "bbox": {
+                "llx": 53,
+                "lly": -172,
+                "urx": 587,
+                "ury": 441
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Uacute",
+            "bbox": {
+                "llx": 17,
+                "lly": -18,
+                "urx": 583,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "uogonek",
+            "bbox": {
+                "llx": 21,
+                "lly": -172,
+                "urx": 590,
+                "ury": 426
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Edieresis",
+            "bbox": {
+                "llx": 53,
+                "lly": 0,
+                "urx": 550,
+                "ury": 753
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Dcroat",
+            "bbox": {
+                "llx": 30,
+                "lly": 0,
+                "urx": 574,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "commaaccent",
+            "bbox": {
+                "llx": 198,
+                "lly": -250,
+                "urx": 335,
+                "ury": -58
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "copyright",
+            "bbox": {
+                "llx": 0,
+                "lly": -18,
+                "urx": 600,
+                "ury": 580
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Emacron",
+            "bbox": {
+                "llx": 53,
+                "lly": 0,
+                "urx": 550,
+                "ury": 698
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ccaron",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 529,
+                "ury": 669
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "aring",
+            "bbox": {
+                "llx": 53,
+                "lly": -15,
+                "urx": 559,
+                "ury": 627
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ncommaaccent",
+            "bbox": {
+                "llx": 7,
+                "lly": -250,
+                "urx": 593,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "lacute",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 505,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "agrave",
+            "bbox": {
+                "llx": 53,
+                "lly": -15,
+                "urx": 559,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Tcommaaccent",
+            "bbox": {
+                "llx": 38,
+                "lly": -250,
+                "urx": 563,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Cacute",
+            "bbox": {
+                "llx": 41,
+                "lly": -18,
+                "urx": 540,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "atilde",
+            "bbox": {
+                "llx": 53,
+                "lly": -15,
+                "urx": 559,
+                "ury": 606
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Edotaccent",
+            "bbox": {
+                "llx": 53,
+                "lly": 0,
+                "urx": 550,
+                "ury": 753
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "scaron",
+            "bbox": {
+                "llx": 80,
+                "lly": -15,
+                "urx": 513,
+                "ury": 669
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "scedilla",
+            "bbox": {
+                "llx": 80,
+                "lly": -151,
+                "urx": 513,
+                "ury": 441
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "iacute",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 505,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "lozenge",
+            "bbox": {
+                "llx": 18,
+                "lly": 0,
+                "urx": 443,
+                "ury": 706
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Rcaron",
+            "bbox": {
+                "llx": 38,
+                "lly": 0,
+                "urx": 588,
+                "ury": 802
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Gcommaaccent",
+            "bbox": {
+                "llx": 31,
+                "lly": -250,
+                "urx": 575,
+                "ury": 580
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ucircumflex",
+            "bbox": {
+                "llx": 21,
+                "lly": -15,
+                "urx": 562,
+                "ury": 654
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "acircumflex",
+            "bbox": {
+                "llx": 53,
+                "lly": -15,
+                "urx": 559,
+                "ury": 654
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Amacron",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 698
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "rcaron",
+            "bbox": {
+                "llx": 60,
+                "lly": 0,
+                "urx": 559,
+                "ury": 669
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ccedilla",
+            "bbox": {
+                "llx": 66,
+                "lly": -151,
+                "urx": 529,
+                "ury": 441
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Zdotaccent",
+            "bbox": {
+                "llx": 86,
+                "lly": 0,
+                "urx": 514,
+                "ury": 753
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Thorn",
+            "bbox": {
+                "llx": 79,
+                "lly": 0,
+                "urx": 538,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Omacron",
+            "bbox": {
+                "llx": 43,
+                "lly": -18,
+                "urx": 557,
+                "ury": 698
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Racute",
+            "bbox": {
+                "llx": 38,
+                "lly": 0,
+                "urx": 588,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Sacute",
+            "bbox": {
+                "llx": 72,
+                "lly": -20,
+                "urx": 529,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "dcaron",
+            "bbox": {
+                "llx": 45,
+                "lly": -15,
+                "urx": 715,
+                "ury": 629
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Umacron",
+            "bbox": {
+                "llx": 17,
+                "lly": -18,
+                "urx": 583,
+                "ury": 698
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "uring",
+            "bbox": {
+                "llx": 21,
+                "lly": -15,
+                "urx": 562,
+                "ury": 627
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "threesuperior",
+            "bbox": {
+                "llx": 155,
+                "lly": 240,
+                "urx": 406,
+                "ury": 622
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ograve",
+            "bbox": {
+                "llx": 43,
+                "lly": -18,
+                "urx": 557,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Agrave",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Abreve",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 732
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "multiply",
+            "bbox": {
+                "llx": 87,
+                "lly": 43,
+                "urx": 515,
+                "ury": 470
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "uacute",
+            "bbox": {
+                "llx": 21,
+                "lly": -15,
+                "urx": 562,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Tcaron",
+            "bbox": {
+                "llx": 38,
+                "lly": 0,
+                "urx": 563,
+                "ury": 802
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "partialdiff",
+            "bbox": {
+                "llx": 17,
+                "lly": -38,
+                "urx": 459,
+                "ury": 710
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ydieresis",
+            "bbox": {
+                "llx": 7,
+                "lly": -157,
+                "urx": 592,
+                "ury": 620
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Nacute",
+            "bbox": {
+                "llx": 7,
+                "lly": -13,
+                "urx": 593,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "icircumflex",
+            "bbox": {
+                "llx": 94,
+                "lly": 0,
+                "urx": 505,
+                "ury": 654
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ecircumflex",
+            "bbox": {
+                "llx": 53,
+                "lly": 0,
+                "urx": 550,
+                "ury": 787
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "adieresis",
+            "bbox": {
+                "llx": 53,
+                "lly": -15,
+                "urx": 559,
+                "ury": 620
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "edieresis",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 548,
+                "ury": 620
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "cacute",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 529,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "nacute",
+            "bbox": {
+                "llx": 26,
+                "lly": 0,
+                "urx": 575,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "umacron",
+            "bbox": {
+                "llx": 21,
+                "lly": -15,
+                "urx": 562,
+                "ury": 565
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ncaron",
+            "bbox": {
+                "llx": 7,
+                "lly": -13,
+                "urx": 593,
+                "ury": 802
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Iacute",
+            "bbox": {
+                "llx": 96,
+                "lly": 0,
+                "urx": 504,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "plusminus",
+            "bbox": {
+                "llx": 87,
+                "lly": 44,
+                "urx": 513,
+                "ury": 558
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "brokenbar",
+            "bbox": {
+                "llx": 275,
+                "lly": -175,
+                "urx": 326,
+                "ury": 675
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "registered",
+            "bbox": {
+                "llx": 0,
+                "lly": -18,
+                "urx": 600,
+                "ury": 580
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Gbreve",
+            "bbox": {
+                "llx": 31,
+                "lly": -18,
+                "urx": 575,
+                "ury": 732
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Idotaccent",
+            "bbox": {
+                "llx": 96,
+                "lly": 0,
+                "urx": 504,
+                "ury": 753
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "summation",
+            "bbox": {
+                "llx": 15,
+                "lly": -10,
+                "urx": 585,
+                "ury": 706
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Egrave",
+            "bbox": {
+                "llx": 53,
+                "lly": 0,
+                "urx": 550,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "racute",
+            "bbox": {
+                "llx": 60,
+                "lly": 0,
+                "urx": 559,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "omacron",
+            "bbox": {
+                "llx": 62,
+                "lly": -15,
+                "urx": 538,
+                "ury": 565
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Zacute",
+            "bbox": {
+                "llx": 86,
+                "lly": 0,
+                "urx": 514,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Zcaron",
+            "bbox": {
+                "llx": 86,
+                "lly": 0,
+                "urx": 514,
+                "ury": 802
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "greaterequal",
+            "bbox": {
+                "llx": 98,
+                "lly": 0,
+                "urx": 502,
+                "ury": 710
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Eth",
+            "bbox": {
+                "llx": 30,
+                "lly": 0,
+                "urx": 574,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ccedilla",
+            "bbox": {
+                "llx": 41,
+                "lly": -151,
+                "urx": 540,
+                "ury": 580
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "lcommaaccent",
+            "bbox": {
+                "llx": 95,
+                "lly": -250,
+                "urx": 505,
+                "ury": 629
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "tcaron",
+            "bbox": {
+                "llx": 87,
+                "lly": -15,
+                "urx": 530,
+                "ury": 717
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "eogonek",
+            "bbox": {
+                "llx": 66,
+                "lly": -172,
+                "urx": 548,
+                "ury": 441
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Uogonek",
+            "bbox": {
+                "llx": 17,
+                "lly": -172,
+                "urx": 583,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Aacute",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Adieresis",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 753
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "egrave",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 548,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "zacute",
+            "bbox": {
+                "llx": 99,
+                "lly": 0,
+                "urx": 502,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "iogonek",
+            "bbox": {
+                "llx": 95,
+                "lly": -172,
+                "urx": 505,
+                "ury": 657
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Oacute",
+            "bbox": {
+                "llx": 43,
+                "lly": -18,
+                "urx": 557,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "oacute",
+            "bbox": {
+                "llx": 62,
+                "lly": -15,
+                "urx": 538,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "amacron",
+            "bbox": {
+                "llx": 53,
+                "lly": -15,
+                "urx": 559,
+                "ury": 565
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "sacute",
+            "bbox": {
+                "llx": 80,
+                "lly": -15,
+                "urx": 513,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "idieresis",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 505,
+                "ury": 620
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ocircumflex",
+            "bbox": {
+                "llx": 43,
+                "lly": -18,
+                "urx": 557,
+                "ury": 787
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ugrave",
+            "bbox": {
+                "llx": 17,
+                "lly": -18,
+                "urx": 583,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Delta",
+            "bbox": {
+                "llx": 6,
+                "lly": 0,
+                "urx": 598,
+                "ury": 688
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "thorn",
+            "bbox": {
+                "llx": -6,
+                "lly": -157,
+                "urx": 555,
+                "ury": 629
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "twosuperior",
+            "bbox": {
+                "llx": 177,
+                "lly": 249,
+                "urx": 424,
+                "ury": 622
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Odieresis",
+            "bbox": {
+                "llx": 43,
+                "lly": -18,
+                "urx": 557,
+                "ury": 753
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "mu",
+            "bbox": {
+                "llx": 21,
+                "lly": -157,
+                "urx": 562,
+                "ury": 426
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "igrave",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 505,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ohungarumlaut",
+            "bbox": {
+                "llx": 62,
+                "lly": -15,
+                "urx": 580,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Eogonek",
+            "bbox": {
+                "llx": 53,
+                "lly": -172,
+                "urx": 561,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "dcroat",
+            "bbox": {
+                "llx": 45,
+                "lly": -15,
+                "urx": 591,
+                "ury": 629
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "threequarters",
+            "bbox": {
+                "llx": 8,
+                "lly": -56,
+                "urx": 593,
+                "ury": 666
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Scedilla",
+            "bbox": {
+                "llx": 72,
+                "lly": -151,
+                "urx": 529,
+                "ury": 580
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "lcaron",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 533,
+                "ury": 629
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Kcommaaccent",
+            "bbox": {
+                "llx": 38,
+                "lly": -250,
+                "urx": 582,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Lacute",
+            "bbox": {
+                "llx": 47,
+                "lly": 0,
+                "urx": 554,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "trademark",
+            "bbox": {
+                "llx": -23,
+                "lly": 263,
+                "urx": 623,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "edotaccent",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 548,
+                "ury": 620
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Igrave",
+            "bbox": {
+                "llx": 96,
+                "lly": 0,
+                "urx": 504,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Imacron",
+            "bbox": {
+                "llx": 96,
+                "lly": 0,
+                "urx": 504,
+                "ury": 698
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Lcaron",
+            "bbox": {
+                "llx": 47,
+                "lly": 0,
+                "urx": 554,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "onehalf",
+            "bbox": {
+                "llx": 0,
+                "lly": -57,
+                "urx": 611,
+                "ury": 665
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "lessequal",
+            "bbox": {
+                "llx": 98,
+                "lly": 0,
+                "urx": 502,
+                "ury": 710
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ocircumflex",
+            "bbox": {
+                "llx": 62,
+                "lly": -15,
+                "urx": 538,
+                "ury": 654
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ntilde",
+            "bbox": {
+                "llx": 26,
+                "lly": 0,
+                "urx": 575,
+                "ury": 606
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Uhungarumlaut",
+            "bbox": {
+                "llx": 17,
+                "lly": -18,
+                "urx": 590,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Eacute",
+            "bbox": {
+                "llx": 53,
+                "lly": 0,
+                "urx": 550,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "emacron",
+            "bbox": {
+                "llx": 66,
+                "lly": -15,
+                "urx": 548,
+                "ury": 565
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "gbreve",
+            "bbox": {
+                "llx": 45,
+                "lly": -157,
+                "urx": 566,
+                "ury": 609
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "onequarter",
+            "bbox": {
+                "llx": 0,
+                "lly": -57,
+                "urx": 600,
+                "ury": 665
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Scaron",
+            "bbox": {
+                "llx": 72,
+                "lly": -20,
+                "urx": 529,
+                "ury": 802
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Scommaaccent",
+            "bbox": {
+                "llx": 72,
+                "lly": -250,
+                "urx": 529,
+                "ury": 580
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ohungarumlaut",
+            "bbox": {
+                "llx": 43,
+                "lly": -18,
+                "urx": 580,
+                "ury": 805
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "degree",
+            "bbox": {
+                "llx": 123,
+                "lly": 269,
+                "urx": 477,
+                "ury": 622
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ograve",
+            "bbox": {
+                "llx": 62,
+                "lly": -15,
+                "urx": 538,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ccaron",
+            "bbox": {
+                "llx": 41,
+                "lly": -18,
+                "urx": 540,
+                "ury": 802
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ugrave",
+            "bbox": {
+                "llx": 21,
+                "lly": -15,
+                "urx": 562,
+                "ury": 672
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "radical",
+            "bbox": {
+                "llx": 3,
+                "lly": -15,
+                "urx": 597,
+                "ury": 792
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Dcaron",
+            "bbox": {
+                "llx": 43,
+                "lly": 0,
+                "urx": 574,
+                "ury": 802
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "rcommaaccent",
+            "bbox": {
+                "llx": 60,
+                "lly": -250,
+                "urx": 559,
+                "ury": 441
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ntilde",
+            "bbox": {
+                "llx": 7,
+                "lly": -13,
+                "urx": 593,
+                "ury": 729
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "otilde",
+            "bbox": {
+                "llx": 62,
+                "lly": -15,
+                "urx": 538,
+                "ury": 606
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Rcommaaccent",
+            "bbox": {
+                "llx": 38,
+                "lly": -250,
+                "urx": 588,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Lcommaaccent",
+            "bbox": {
+                "llx": 47,
+                "lly": -250,
+                "urx": 554,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Atilde",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 729
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Aogonek",
+            "bbox": {
+                "llx": 3,
+                "lly": -172,
+                "urx": 608,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Aring",
+            "bbox": {
+                "llx": 3,
+                "lly": 0,
+                "urx": 597,
+                "ury": 750
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Otilde",
+            "bbox": {
+                "llx": 43,
+                "lly": -18,
+                "urx": 557,
+                "ury": 729
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "zdotaccent",
+            "bbox": {
+                "llx": 99,
+                "lly": 0,
+                "urx": 502,
+                "ury": 620
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Ecaron",
+            "bbox": {
+                "llx": 53,
+                "lly": 0,
+                "urx": 550,
+                "ury": 802
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Iogonek",
+            "bbox": {
+                "llx": 96,
+                "lly": -172,
+                "urx": 504,
+                "ury": 562
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "kcommaaccent",
+            "bbox": {
+                "llx": 43,
+                "lly": -250,
+                "urx": 580,
+                "ury": 629
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "minus",
+            "bbox": {
+                "llx": 80,
+                "lly": 232,
+                "urx": 520,
+                "ury": 283
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Icircumflex",
+            "bbox": {
+                "llx": 96,
+                "lly": 0,
+                "urx": 504,
+                "ury": 787
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ncaron",
+            "bbox": {
+                "llx": 26,
+                "lly": 0,
+                "urx": 575,
+                "ury": 669
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "tcommaaccent",
+            "bbox": {
+                "llx": 87,
+                "lly": -250,
+                "urx": 530,
+                "ury": 561
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "logicalnot",
+            "bbox": {
+                "llx": 87,
+                "lly": 108,
+                "urx": 513,
+                "ury": 369
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "odieresis",
+            "bbox": {
+                "llx": 62,
+                "lly": -15,
+                "urx": 538,
+                "ury": 620
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "udieresis",
+            "bbox": {
+                "llx": 21,
+                "lly": -15,
+                "urx": 562,
+                "ury": 620
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "notequal",
+            "bbox": {
+                "llx": 15,
+                "lly": -16,
+                "urx": 540,
+                "ury": 529
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "gcommaaccent",
+            "bbox": {
+                "llx": 45,
+                "lly": -157,
+                "urx": 566,
+                "ury": 708
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "eth",
+            "bbox": {
+                "llx": 62,
+                "lly": -15,
+                "urx": 538,
+                "ury": 629
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "zcaron",
+            "bbox": {
+                "llx": 99,
+                "lly": 0,
+                "urx": 502,
+                "ury": 669
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "ncommaaccent",
+            "bbox": {
+                "llx": 26,
+                "lly": -250,
+                "urx": 575,
+                "ury": 441
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "onesuperior",
+            "bbox": {
+                "llx": 172,
+                "lly": 249,
+                "urx": 428,
+                "ury": 622
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "imacron",
+            "bbox": {
+                "llx": 95,
+                "lly": 0,
+                "urx": 505,
+                "ury": 565
+            }
+        },
+        {
+            "code": -1,
+            "wx": 600,
+            "name": "Euro",
+            "bbox": {
+                "llx": 0,
+                "lly": 0,
+                "urx": 0,
+                "ury": 0
+            }
+        }
+    ],
+    "kernPairs": []
+}

@@ -26,7 +26,9 @@ type PdfFontDictionary = PdfDictionary<{
     Encoding?: PdfName
     FirstChar?: PdfNumber
     LastChar?: PdfNumber
-    Widths?: PdfArray<PdfNumber>
+    Widths?:
+        | PdfArray<PdfNumber>
+        | PdfObjectReference<PdfIndirectObject<PdfArray<PdfNumber>>>
     DescendantFonts?: PdfArray<PdfObjectReference>
     ToUnicode?: PdfObjectReference
 }>
@@ -416,6 +418,10 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     get widths(): number[] | undefined {
         const widths = this.content.get('Widths')
         if (!widths) return undefined
+        if (widths instanceof PdfObjectReference) {
+            const resolved = widths.resolve()
+            return resolved.content.items.map((item) => item.value)
+        }
         return widths.items.map((item) => item.value)
     }
 

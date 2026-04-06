@@ -666,6 +666,16 @@ export class Text extends ContentNode {
         if (lastTL) {
             return parseFloat(lastTL.split(' ')[0])
         }
+        // TD also sets TL = -ty (PDF spec Table 108)
+        const lastTD = this.ops.findLast('TD')
+        if (lastTD) {
+            const match = lastTD.match(
+                /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+TD/,
+            )
+            if (match) {
+                return -parseFloat(match[2])
+            }
+        }
         return this.prev?.textLeading ?? 0
     }
 
@@ -841,6 +851,7 @@ export class Text extends ContentNode {
 
 export class TextBlock extends ContentNode {
     protected segments: Text[] = []
+    sourceIndex?: number
 
     constructor(page?: PdfPage) {
         super(page)
@@ -929,6 +940,56 @@ export class TextBlock extends ContentNode {
         }
     }
 
+    replaceText(newText: string): void {
+        if (this.segments.length === 0) return
+
+        const firstSeg = this.segments[0]
+        const newOps: string[] = []
+        let replaced = false
+
+        for (const op of firstSeg.ops.ops) {
+            const parts = op.split(/\s+/)
+            const operator = parts[parts.length - 1]
+
+            if (
+                !replaced &&
+                (operator === 'Tj' ||
+                    operator === 'TJ' ||
+                    operator === "'" ||
+                    operator === '"')
+            ) {
+                const escaped = newText
+                    .replace(/\\/g, '\\\\')
+                    .replace(/\(/g, '\\(')
+                    .replace(/\)/g, '\\)')
+                newOps.push(`(${escaped}) Tj`)
+                replaced = true
+            } else if (
+                replaced &&
+                (operator === 'Tj' ||
+                    operator === 'TJ' ||
+                    operator === "'" ||
+                    operator === '"')
+            ) {
+                // Skip additional text show ops in the first segment
+                continue
+            } else {
+                newOps.push(op)
+            }
+        }
+
+        if (!replaced) {
+            const escaped = newText
+                .replace(/\\/g, '\\\\')
+                .replace(/\(/g, '\\(')
+                .replace(/\)/g, '\\)')
+            newOps.push(`(${escaped}) Tj`)
+        }
+
+        firstSeg.ops = new ContentOps(newOps)
+        this.segments.splice(1)
+    }
+
     static parseFromContentStream(ops: string[], page?: PdfPage): TextBlock[] {
         // Build a full block first to establish proper prev chains for position resolution
         const fullBlock = new TextBlock(page)
@@ -972,12 +1033,16 @@ export class TextBlock extends ContentNode {
         // Compute absolute positions using the full prev chain
         const positions = segments.map((s) => s.getLocalTransform())
 
-        // Find split points where y-position changes (different line)
+        // Find split points where position changes significantly
         const Y_THRESHOLD = 0.5
+        const X_THRESHOLD = 50
         const splitIndices: number[] = [0]
         for (let i = 1; i < segments.length; i++) {
             const dy = Math.abs(positions[i].f - positions[i - 1].f)
-            if (dy > Y_THRESHOLD) {
+            const prevEndX =
+                positions[i - 1].e + segments[i - 1].getTextAdvance()
+            const dx = positions[i].e - prevEndX
+            if (dy > Y_THRESHOLD || dx > X_THRESHOLD) {
                 splitIndices.push(i)
             }
         }
@@ -1332,6 +1397,7 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
         let inTextBlock = false
         let currentOps: string[] = []
         let graphicsOps: string[] = []
+        let btEtIndex = 0
 
         // Text state persists across BT/ET blocks (PDF spec 9.3)
         let currentFontName = ''
@@ -1415,8 +1481,10 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
                         this.page,
                     )
                     for (const block of blocks) {
+                        block.sourceIndex = btEtIndex
                         currentGroup.addChild(block)
                     }
+                    btEtIndex++
                 }
                 inTextBlock = false
                 currentOps = []

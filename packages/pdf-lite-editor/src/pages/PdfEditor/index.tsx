@@ -1188,14 +1188,14 @@ export function PdfEditor() {
                 const document = await PdfDocument.fromBytes([
                     new Uint8Array(await file.arrayBuffer()),
                 ])
-                // await document.decrypt()
+                await document.decrypt()
 
                 for (const object of document.objects) {
                     if (
                         object instanceof PdfIndirectObject &&
                         object.content instanceof PdfStream
                     ) {
-                        object.content.removeAllFilters()
+                       // object.content.removeAllFilters()
                     }
                 }
 

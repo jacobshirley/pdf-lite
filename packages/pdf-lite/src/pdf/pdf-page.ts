@@ -277,4 +277,56 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         first.dataAsString = savedData
         return blocks
     }
+
+    /**
+     * Replace the BT/ET block at the given sourceIndex with new content.
+     * All TextBlocks that share the same sourceIndex (split siblings)
+     * should be passed as replacementBlocks.
+     */
+    replaceTextInStream(
+        sourceIndex: number,
+        replacementBlocks: TextBlock[],
+    ): void {
+        const streams = this.contentStreams
+        if (streams.length === 0) return
+
+        const combinedData = streams.map((s) => s.dataAsString).join('\n')
+
+        // Find BT...ET block positions in the raw content stream
+        const btEtPositions: { start: number; end: number }[] = []
+        const btRegex = /\bBT\b/g
+        let btMatch: RegExpExecArray | null
+        while ((btMatch = btRegex.exec(combinedData)) !== null) {
+            // Find the matching ET (handle nested by simple scan — PDF doesn't nest BT/ET)
+            const etRegex = /\bET\b/g
+            etRegex.lastIndex = btMatch.index + 2
+            const etMatch = etRegex.exec(combinedData)
+            if (etMatch) {
+                btEtPositions.push({
+                    start: btMatch.index,
+                    end: etMatch.index + 2,
+                })
+                // Advance btRegex past this ET to avoid finding BTs inside this block
+                btRegex.lastIndex = etMatch.index + 2
+            }
+        }
+
+        if (sourceIndex < 0 || sourceIndex >= btEtPositions.length) return
+
+        const target = btEtPositions[sourceIndex]
+        const replacement = replacementBlocks
+            .map((b) => b.toString())
+            .join('\n')
+
+        const newData =
+            combinedData.substring(0, target.start) +
+            replacement +
+            combinedData.substring(target.end)
+
+        // Write back to the first stream, clear others
+        streams[0].dataAsString = newData
+        for (let i = 1; i < streams.length; i++) {
+            streams[i].dataAsString = ''
+        }
+    }
 }

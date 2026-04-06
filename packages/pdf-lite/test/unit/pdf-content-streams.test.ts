@@ -285,10 +285,14 @@ describe('TextBlock', () => {
         const s = makeStream(
             'BT /F1 12 Tf 100 700 Td (Line1) Tj 0 -14 Td (Line2) Tj ET',
         )
-        const tb = s.nodes[0] as TextBlock
-        expect(tb.getSegments()).toHaveLength(2)
-        expect(tb.getSegments()[0].text).toBe('Line1')
-        expect(tb.getSegments()[1].text).toBe('Line2')
+        // Per-line splitting: each line becomes its own TextBlock
+        expect(s.nodes).toHaveLength(2)
+        const tb1 = s.nodes[0] as TextBlock
+        const tb2 = s.nodes[1] as TextBlock
+        expect(tb1.getSegments()).toHaveLength(1)
+        expect(tb1.getSegments()[0].text).toBe('Line1')
+        expect(tb2.getSegments()).toHaveLength(1)
+        expect(tb2.getSegments()[0].text).toBe('Line2')
     })
 
     it('getLocalTransform returns identity (container)', () => {
@@ -309,8 +313,12 @@ describe('TextBlock', () => {
         const s = makeStream(
             'BT /F1 12 Tf 100 700 Td (Hello) Tj 0 -14 Td ( World) Tj ET',
         )
-        const tb = s.nodes[0] as TextBlock
-        expect(tb.text).toBe('Hello World')
+        // Per-line splitting: each line is a separate TextBlock
+        expect(s.nodes).toHaveLength(2)
+        const tb1 = s.nodes[0] as TextBlock
+        const tb2 = s.nodes[1] as TextBlock
+        expect(tb1.text).toBe('Hello')
+        expect(tb2.text).toBe(' World')
     })
 })
 

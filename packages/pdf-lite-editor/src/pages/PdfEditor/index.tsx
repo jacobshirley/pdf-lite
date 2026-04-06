@@ -34,7 +34,7 @@ import {
     PdfButtonFormField,
     PdfIndirectObject,
     PdfStream,
-    Text,
+    TextBlock,
     type GraphicLine,
     parseContentStreamForGraphics,
 } from 'pdf-lite'
@@ -72,7 +72,7 @@ type LayerItem = {
 }
 
 type ExtractedTextBlock = {
-    block: Text
+    block: TextBlock
     id: string
     page: number
     pageHeight: number

@@ -1,11 +1,100 @@
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
 import { PdfStream } from '../core/objects/pdf-stream'
-import { tokenizeContentStream } from '../utils/content-stream-parser.js'
 import type { PdfFont } from '../fonts/pdf-font.js'
 import { PdfHexadecimal, PdfString } from '../core'
 import { PdfPage } from '../pdf/pdf-page'
 import { Matrix } from './geom/matrix'
 import { Point } from './geom/point'
+
+function tokenizeContentStream(content: string): string[] {
+    const tokens: string[] = []
+    let current = ''
+    let inString = false
+    let inArray = false
+    let arrayDepth = 0
+    let arrayContent = ''
+
+    for (let i = 0; i < content.length; i++) {
+        const char = content[i]
+        const nextChar = content[i + 1]
+
+        // Handle arrays
+        if (char === '[') {
+            if (!inString) {
+                inArray = true
+                arrayDepth++
+                arrayContent = char
+                continue
+            }
+        }
+
+        if (inArray) {
+            arrayContent += char
+            if (char === '[' && !inString) arrayDepth++
+            if (char === ']' && !inString) {
+                arrayDepth--
+                if (arrayDepth === 0) {
+                    tokens.push(arrayContent)
+                    arrayContent = ''
+                    inArray = false
+                }
+            }
+            if (char === '(') inString = true
+            if (char === ')') inString = false
+            continue
+        }
+
+        // Handle strings
+        if (char === '(') {
+            inString = true
+            current = char
+            continue
+        }
+
+        if (inString) {
+            current += char
+            if (char === ')' && content[i - 1] !== '\\') {
+                inString = false
+                tokens.push(current)
+                current = ''
+            }
+            continue
+        }
+
+        // Handle hex strings <...>
+        if (char === '<' && nextChar !== '<') {
+            if (current) {
+                tokens.push(current)
+                current = ''
+            }
+            let hexStr = '<'
+            i++
+            while (i < content.length && content[i] !== '>') {
+                hexStr += content[i]
+                i++
+            }
+            hexStr += '>'
+            tokens.push(hexStr)
+            continue
+        }
+
+        // Handle regular tokens
+        if (char === ' ' || char === '\n' || char === '\r' || char === '\t') {
+            if (current) {
+                tokens.push(current)
+                current = ''
+            }
+        } else {
+            current += char
+        }
+    }
+
+    if (current) {
+        tokens.push(current)
+    }
+
+    return tokens
+}
 
 function parseNumericOperands(
     tokens: string[],
@@ -262,9 +351,9 @@ export abstract class ContentNode {
 
     getWorldTransform(): Matrix {
         if (!this.parent) return this.getLocalTransform()
-        return this.getLocalTransform().multiply(
-            this.parent.getWorldTransform(),
-        )
+        return this.parent
+            .getWorldTransform()
+            .multiply(this.getLocalTransform())
     }
 
     abstract getLocalTransform(): Matrix
@@ -408,14 +497,29 @@ function computeTjAdvance(
     let total = 0
     if (font) {
         const pdfStr = parsePdfStringOperand(operand)
-        const decoded = font.decode(pdfStr)
-        const chars = [...decoded]
-        for (let i = 0; i < chars.length; i++) {
-            const charCode = chars[i].charCodeAt(0)
-            const w = font.getCharacterWidth(charCode, fontSize)
-            total += w ?? fontSize * 0.6
-            total += tc
-            if (chars[i] === ' ') total += tw
+        if (font.isUnicode && pdfStr instanceof PdfHexadecimal) {
+            // For CID fonts, use raw CID values for width lookup
+            const hex = pdfStr.hexString
+            for (let i = 0; i < hex.length; i += 4) {
+                const cid = parseInt(hex.substring(i, i + 4), 16)
+                const w = font.getCharacterWidth(cid, fontSize)
+                total += w ?? fontSize * 0.6
+                total += tc
+                // Check if this CID maps to a space character
+                const umap = font.toUnicodeMap
+                const ch = umap?.get(cid) ?? String.fromCodePoint(cid)
+                if (ch === ' ') total += tw
+            }
+        } else {
+            const decoded = font.decode(pdfStr)
+            const chars = [...decoded]
+            for (let i = 0; i < chars.length; i++) {
+                const charCode = chars[i].charCodeAt(0)
+                const w = font.getCharacterWidth(charCode, fontSize)
+                total += w ?? fontSize * 0.6
+                total += tc
+                if (chars[i] === ' ') total += tw
+            }
         }
     } else {
         const literal = extractLiteral(operand)
@@ -986,12 +1090,80 @@ export class GraphicsBlock extends ContentNode {
     }
 
     getLocalBoundingBox(): BoundingBox {
-        //TODO
+        let minX = Infinity
+        let minY = Infinity
+        let maxX = -Infinity
+        let maxY = -Infinity
+
+        const track = (x: number, y: number) => {
+            minX = Math.min(minX, x)
+            minY = Math.min(minY, y)
+            maxX = Math.max(maxX, x)
+            maxY = Math.max(maxY, y)
+        }
+
+        for (const op of this.ops.ops) {
+            const parts = op.split(/\s+/)
+            const operator = parts[parts.length - 1]
+
+            switch (operator) {
+                case 'm': // moveTo: x y m
+                case 'l': {
+                    // lineTo: x y l
+                    if (parts.length >= 3) {
+                        track(parseFloat(parts[0]), parseFloat(parts[1]))
+                    }
+                    break
+                }
+                case 're': {
+                    // rectangle: x y w h re
+                    if (parts.length >= 5) {
+                        const x = parseFloat(parts[0])
+                        const y = parseFloat(parts[1])
+                        const w = parseFloat(parts[2])
+                        const h = parseFloat(parts[3])
+                        track(x, y)
+                        track(x + w, y + h)
+                    }
+                    break
+                }
+                case 'c': {
+                    // cubic bezier: x1 y1 x2 y2 x3 y3 c
+                    if (parts.length >= 7) {
+                        track(parseFloat(parts[0]), parseFloat(parts[1]))
+                        track(parseFloat(parts[2]), parseFloat(parts[3]))
+                        track(parseFloat(parts[4]), parseFloat(parts[5]))
+                    }
+                    break
+                }
+                case 'v': {
+                    // cubic bezier (cp1=current): x2 y2 x3 y3 v
+                    if (parts.length >= 5) {
+                        track(parseFloat(parts[0]), parseFloat(parts[1]))
+                        track(parseFloat(parts[2]), parseFloat(parts[3]))
+                    }
+                    break
+                }
+                case 'y': {
+                    // cubic bezier (cp2=endpoint): x1 y1 x3 y3 y
+                    if (parts.length >= 5) {
+                        track(parseFloat(parts[0]), parseFloat(parts[1]))
+                        track(parseFloat(parts[2]), parseFloat(parts[3]))
+                    }
+                    break
+                }
+            }
+        }
+
+        if (!isFinite(minX)) {
+            return { x: 0, y: 0, width: 0, height: 0 }
+        }
+
         return {
-            x: 0,
-            y: 0,
-            width: 0,
-            height: 0,
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
         }
     }
 }
@@ -1255,12 +1427,11 @@ export class PdfContentStream extends PdfIndirectObject<PdfStream> {
         return root.getChildren()
     }
 
-    get textBlocks(): Text[] {
-        const collect = (nodes: ContentNode[]): Text[] => {
-            const result: Text[] = []
+    get textBlocks(): TextBlock[] {
+        const collect = (nodes: ContentNode[]): TextBlock[] => {
+            const result: TextBlock[] = []
             for (const node of nodes) {
-                if (node instanceof TextBlock)
-                    result.push(...node.getSegments())
+                if (node instanceof TextBlock) result.push(node)
                 else if (node instanceof GroupNode) {
                     result.push(...collect(node.getChildren()))
                 }

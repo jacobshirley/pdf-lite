@@ -71,6 +71,22 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
 
     /**
      * @internal
+     * Lazily parsed ToUnicode CMap for CID→Unicode mapping.
+     */
+    private _toUnicodeMap?: Map<number, string> | null
+
+    /**
+     * @internal
+     * Lazily parsed CIDFont W array for CID→width mapping.
+     * Stores { cidWidths: Map<cid, width>, defaultWidth: number }.
+     */
+    private _cidWidthCache?: {
+        cidWidths: Map<number, number>
+        defaultWidth: number
+    } | null
+
+    /**
+     * @internal
      * Original font file bytes.
      */
     private _fontData?: ByteArray
@@ -208,6 +224,119 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     }
 
     /**
+     * Lazily parses and returns the ToUnicode CMap for this font.
+     * Returns null if no ToUnicode stream is available.
+     */
+    get toUnicodeMap(): Map<number, string> | null {
+        if (this._toUnicodeMap !== undefined) return this._toUnicodeMap
+
+        const toUnicodeRef = this.content.get('ToUnicode')
+        if (!toUnicodeRef) {
+            this._toUnicodeMap = null
+            return null
+        }
+
+        const resolved =
+            toUnicodeRef instanceof PdfObjectReference
+                ? toUnicodeRef.resolve()
+                : null
+        const stream = resolved?.content
+        if (stream instanceof PdfStream) {
+            const cmapContent = stream.dataAsString
+            if (cmapContent) {
+                this._toUnicodeMap = PdfFont.parseToUnicodeCMap(cmapContent)
+                return this._toUnicodeMap
+            }
+        }
+
+        this._toUnicodeMap = null
+        return null
+    }
+
+    /**
+     * Lazily parses the CIDFont W (widths) array from DescendantFonts.
+     * Returns null if not a Type0 font or no W array is available.
+     */
+    private get cidWidthData(): {
+        cidWidths: Map<number, number>
+        defaultWidth: number
+    } | null {
+        if (this._cidWidthCache !== undefined) return this._cidWidthCache
+
+        if (!this.isUnicode) {
+            this._cidWidthCache = null
+            return null
+        }
+
+        const descFontsArr = this.content.get('DescendantFonts') as
+            | PdfArray<PdfObjectReference>
+            | undefined
+        if (!descFontsArr?.items?.length) {
+            this._cidWidthCache = null
+            return null
+        }
+
+        const cidFontRef = descFontsArr.items[0]
+        const cidFont =
+            cidFontRef instanceof PdfObjectReference
+                ? cidFontRef.resolve()
+                : null
+        const cidFontDict = cidFont?.content as PdfDictionary | undefined
+        if (!cidFontDict) {
+            this._cidWidthCache = null
+            return null
+        }
+
+        const cidWidths = new Map<number, number>()
+        const dwEntry = cidFontDict.get('DW')
+        const defaultWidth = dwEntry instanceof PdfNumber ? dwEntry.value : 1000
+
+        const wArr = cidFontDict.get('W') as PdfArray<any> | undefined
+        if (wArr?.items) {
+            const items = wArr.items
+            let i = 0
+            while (i < items.length) {
+                const first = items[i]
+                if (!(first instanceof PdfNumber)) {
+                    i++
+                    continue
+                }
+                const startCid = first.value
+                const next = items[i + 1]
+                if (next instanceof PdfArray) {
+                    // Format: startCid [w1 w2 w3 ...]
+                    const widths = next.items
+                    for (let j = 0; j < widths.length; j++) {
+                        if (widths[j] instanceof PdfNumber) {
+                            cidWidths.set(
+                                startCid + j,
+                                (widths[j] as PdfNumber).value,
+                            )
+                        }
+                    }
+                    i += 2
+                } else if (
+                    next instanceof PdfNumber &&
+                    items[i + 2] instanceof PdfNumber
+                ) {
+                    // Format: startCid endCid width
+                    const endCid = next.value
+                    const width = (items[i + 2] as PdfNumber).value
+                    for (let cid = startCid; cid <= endCid; cid++) {
+                        cidWidths.set(cid, width)
+                    }
+                    i += 3
+                } else {
+                    i++
+                }
+            }
+        }
+
+        this._cidWidthCache = { cidWidths, defaultWidth }
+        return this._cidWidthCache
+    }
+
+    /**
      * Gets the font type (Subtype in PDF).
      */
     get fontType():
@@ -332,6 +461,14 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             }
         }
 
+        // For Type0 fonts without _descriptor, use CIDFont W array from DescendantFonts
+        if (this.isUnicode) {
+            const cidData = this.cidWidthData
+            if (cidData) {
+                return cidData.cidWidths.get(charCode) ?? cidData.defaultWidth
+            }
+        }
+
         // For Type1/TrueType fonts, use simple widths array
         if (this.widths === undefined || this.firstChar === undefined) {
             return null
@@ -451,11 +588,12 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             if (cleaned.length === 0) return ''
 
             if (this.isUnicode) {
-                // 2-byte CIDs → Unicode code points
+                // 2-byte CIDs → Unicode via ToUnicode map, fallback to raw code points
+                const umap = this.toUnicodeMap
                 let result = ''
                 for (let i = 0; i < cleaned.length; i += 4) {
                     const cid = parseInt(cleaned.substring(i, i + 4), 16)
-                    result += String.fromCodePoint(cid)
+                    result += umap?.get(cid) ?? String.fromCodePoint(cid)
                 }
                 return result
             }
@@ -1061,6 +1199,52 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             // Use standard TrueType embedding
             return PdfFont.fromTrueTypeData(fontData, fontName, descriptor)
         }
+    }
+
+    /**
+     * Parses a ToUnicode CMap stream to build a mapping from CID to Unicode string.
+     */
+    private static parseToUnicodeCMap(
+        cmapContent: string,
+    ): Map<number, string> {
+        const map = new Map<number, string>()
+
+        const bfcharRegex = /beginbfchar\s*([\s\S]*?)endbfchar/g
+        let match
+        while ((match = bfcharRegex.exec(cmapContent)) !== null) {
+            const section = match[1]
+            const lineRegex = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g
+            let lineMatch
+            while ((lineMatch = lineRegex.exec(section)) !== null) {
+                const cid = parseInt(lineMatch[1], 16)
+                const unicode = lineMatch[2]
+                let str = ''
+                for (let j = 0; j < unicode.length; j += 4) {
+                    str += String.fromCharCode(
+                        parseInt(unicode.substring(j, j + 4), 16),
+                    )
+                }
+                map.set(cid, str)
+            }
+        }
+
+        const bfrangeRegex = /beginbfrange\s*([\s\S]*?)endbfrange/g
+        while ((match = bfrangeRegex.exec(cmapContent)) !== null) {
+            const section = match[1]
+            const rangeRegex =
+                /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g
+            let rangeMatch
+            while ((rangeMatch = rangeRegex.exec(section)) !== null) {
+                const start = parseInt(rangeMatch[1], 16)
+                const end = parseInt(rangeMatch[2], 16)
+                let unicodeStart = parseInt(rangeMatch[3], 16)
+                for (let cid = start; cid <= end; cid++) {
+                    map.set(cid, String.fromCharCode(unicodeStart++))
+                }
+            }
+        }
+
+        return map
     }
 
     /**

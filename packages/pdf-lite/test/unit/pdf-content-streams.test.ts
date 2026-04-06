@@ -133,7 +133,7 @@ describe('multi-child-field.pdf — parsed nodes', () => {
         for (const stream of doc.pages.get(0).contentStreams) {
             const textBlocks = stream.textBlocks
             for (const tb of textBlocks) {
-                expect(tb).toBeInstanceOf(Text)
+                expect(tb).toBeInstanceOf(TextBlock)
             }
         }
     })

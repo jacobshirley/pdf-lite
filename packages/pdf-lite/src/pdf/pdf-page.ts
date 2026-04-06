@@ -6,13 +6,8 @@ import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfPages } from './pdf-pages.js'
 import {
-    parseContentStreamForText,
-    parseContentStreamForGraphics,
-} from '../utils/content-stream-parser.js'
-import {
     GraphicsBlock,
     PdfContentStream,
-    Text,
     TextBlock,
 } from '../graphics/pdf-content-stream.js'
 import { PdfFont } from '../fonts/pdf-font.js'
@@ -254,9 +249,9 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         return streams
     }
 
-    extractTextBlocks(): Text[] {
+    extractTextBlocks(): TextBlock[] {
         const streams = this.contentStreams
-        const blocks: Text[] = []
+        const blocks: TextBlock[] = []
 
         for (const stream of streams) {
             blocks.push(...stream.textBlocks)

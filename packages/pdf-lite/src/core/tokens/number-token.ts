@@ -158,9 +158,20 @@ export class PdfNumberToken extends PdfToken {
 
         const numberValue = value instanceof Ref ? value.resolve() : value
 
-        const valueString = decimalPlaces
+        let valueString = decimalPlaces
             ? numberValue.toFixed(decimalPlaces)
             : numberValue.toString()
+
+        // toFixed() always adds a leading zero (e.g. 0.5), but the original PDF
+        // may have omitted it (e.g. .5). If padTo is set and the formatted string
+        // is longer than padTo, strip the leading zero to match the original length.
+        if (padTo !== undefined && valueString.length > padTo) {
+            if (valueString.startsWith('0.')) {
+                valueString = valueString.slice(1)
+            } else if (valueString.startsWith('-0.')) {
+                valueString = '-' + valueString.slice(2)
+            }
+        }
 
         const tokenString = valueString.padStart(padTo ?? 0, '0')
 

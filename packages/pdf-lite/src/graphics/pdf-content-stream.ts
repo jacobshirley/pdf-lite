@@ -5,6 +5,8 @@ import { PdfHexadecimal, PdfString } from '../core'
 import { PdfPage } from '../pdf/pdf-page'
 import { Matrix } from './geom/matrix'
 import { Point } from './geom/point'
+import { ByteArray } from '../types'
+import { stringToBytes } from '../utils'
 
 function tokenizeContentStream(content: string): string[] {
     const tokens: string[] = []
@@ -420,13 +422,30 @@ export class ContentOps {
 }
 
 export abstract class ContentNode {
-    page?: PdfPage
+    _page?: PdfPage
     parent?: ContentNode
     ops: ContentOps = new ContentOps()
 
     constructor(page?: PdfPage) {
-        this.page = page
+        this._page = page
     }
+
+    get page(): PdfPage | undefined {
+        return this._page ?? this.parent?.page
+    }
+
+    set page(page: PdfPage | undefined) {
+        if (this.parent?.page && page && this.parent.page !== page) {
+            throw new Error(
+                'Cannot set page on a node whose parent belongs to a different page',
+            )
+        }
+
+        this._page = page
+    }
+
+    abstract getLocalTransform(): Matrix
+    abstract getLocalBoundingBox(): BoundingBox
 
     getWorldTransform(): Matrix {
         if (!this.parent) return this.getLocalTransform()
@@ -435,28 +454,26 @@ export abstract class ContentNode {
             .multiply(this.getLocalTransform())
     }
 
-    abstract getLocalTransform(): Matrix
-    abstract getLocalBoundingBox(): BoundingBox
-
     getWorldBoundingBox(): BoundingBox {
         const localBox = this.getLocalBoundingBox()
+        const worldTransform = this.getWorldTransform()
         const topLeft = new Point({ x: localBox.x, y: localBox.y }).transform(
-            this.getWorldTransform(),
+            worldTransform,
         )
         const topRight = new Point({
             x: localBox.x + localBox.width,
             y: localBox.y,
-        }).transform(this.getWorldTransform())
+        }).transform(worldTransform)
 
         const bottomLeft = new Point({
             x: localBox.x,
             y: localBox.y + localBox.height,
-        }).transform(this.getWorldTransform())
+        }).transform(worldTransform)
 
         const bottomRight = new Point({
             x: localBox.x + localBox.width,
             y: localBox.y + localBox.height,
-        }).transform(this.getWorldTransform())
+        }).transform(worldTransform)
 
         const xs = [topLeft.x, topRight.x, bottomLeft.x, bottomRight.x]
         const ys = [topLeft.y, topRight.y, bottomLeft.y, bottomRight.y]
@@ -476,90 +493,6 @@ export abstract class ContentNode {
     toString() {
         return this.ops.toString()
     }
-}
-
-export class GroupNode extends ContentNode {
-    protected children: ContentNode[] = []
-
-    constructor(page?: PdfPage) {
-        super(page)
-    }
-
-    getLocalTransform(): Matrix {
-        const lastCm = this.ops.findLast('cm')
-        if (lastCm) {
-            const parts = lastCm.split(' ')
-            if (parts.length >= 7) {
-                return new Matrix({
-                    a: parseFloat(parts[0]),
-                    b: parseFloat(parts[1]),
-                    c: parseFloat(parts[2]),
-                    d: parseFloat(parts[3]),
-                    e: parseFloat(parts[4]),
-                    f: parseFloat(parts[5]),
-                })
-            }
-        }
-
-        return Matrix.identity()
-    }
-
-    addChild(node: ContentNode): void {
-        if (node.parent) {
-            throw new Error('Node already has a parent')
-        }
-        node.parent = this
-        this.children.push(node)
-    }
-
-    getChildren(): ContentNode[] {
-        return this.children
-    }
-
-    getLocalBoundingBox(): BoundingBox {
-        if (this.children.length === 0) {
-            return { x: 0, y: 0, width: 0, height: 0 }
-        }
-
-        let minX = Infinity
-        let minY = Infinity
-        let maxX = -Infinity
-        let maxY = -Infinity
-
-        for (const child of this.children) {
-            const bbox = child.getLocalBoundingBox()
-            minX = Math.min(minX, bbox.x)
-            minY = Math.min(minY, bbox.y)
-            maxX = Math.max(maxX, bbox.x + bbox.width)
-            maxY = Math.max(maxY, bbox.y + bbox.height)
-        }
-
-        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
-    }
-
-    toString(): string {
-        const parts: string[] = ['q']
-        const lt = this.getLocalTransform()
-        const isIdentity = lt.isIdentity()
-
-        if (!isIdentity) {
-            parts.push(`${lt.a} ${lt.b} ${lt.c} ${lt.d} ${lt.e} ${lt.f} cm`)
-        }
-
-        for (const child of this.children) {
-            parts.push(child.toString())
-        }
-
-        parts.push('Q')
-        return parts.join('\n')
-    }
-}
-
-export type BoundingBox = {
-    x: number
-    y: number
-    width: number
-    height: number
 }
 
 /**
@@ -1514,45 +1447,23 @@ export class GraphicsBlock extends ContentNode {
     }
 }
 
-export class PdfContentStream extends PdfStream {}
-
-export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> {
-    static ContentNode = ContentNode
-    static GroupNode = GroupNode
-    static GraphicsBlock = GraphicsBlock
-    static TextBlock = TextBlock
-
+export class PdfContentStream extends PdfStream {
+    nodes: ContentNode[]
     page?: PdfPage
 
-    constructor(object?: PdfIndirectObject) {
-        super(object)
+    constructor(rawData?: ByteArray) {
+        super(rawData)
+        this.nodes = this.parseNodes()
     }
 
-    textBlock(): TextBlock {
-        const block = new TextBlock(this.page)
-        return block
+    protected getRawData(): ByteArray | undefined {
+        if (this.nodes === undefined) return undefined
+        const contentString = this.nodes.map((n) => n.toString()).join('\n')
+        return stringToBytes(contentString)
     }
 
-    graphicsBlock(): GraphicsBlock {
-        const block = new GraphicsBlock()
-        block.page = this.page
-        return block
-    }
-
-    add(node: ContentNode) {
-        this.content.dataAsString += node.toString() + '\n'
-    }
-
-    get dataAsString(): string {
-        return this.content.dataAsString
-    }
-
-    set dataAsString(value: string) {
-        this.content.dataAsString = value
-    }
-
-    get nodes(): ContentNode[] {
-        const contentString = this.content.dataAsString
+    private parseNodes(): ContentNode[] {
+        const contentString = this.dataAsString
         if (!contentString) return []
 
         const tokens = tokenizeContentStream(contentString)
@@ -1778,6 +1689,131 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
         }
 
         return root.getChildren()
+    }
+}
+
+export class GroupNode extends ContentNode {
+    protected children: ContentNode[] = []
+
+    constructor(page?: PdfPage) {
+        super(page)
+    }
+
+    getLocalTransform(): Matrix {
+        const lastCm = this.ops.findLast('cm')
+        if (lastCm) {
+            const parts = lastCm.split(' ')
+            if (parts.length >= 7) {
+                return new Matrix({
+                    a: parseFloat(parts[0]),
+                    b: parseFloat(parts[1]),
+                    c: parseFloat(parts[2]),
+                    d: parseFloat(parts[3]),
+                    e: parseFloat(parts[4]),
+                    f: parseFloat(parts[5]),
+                })
+            }
+        }
+
+        return Matrix.identity()
+    }
+
+    addChild(node: ContentNode): void {
+        if (node.parent) {
+            throw new Error('Node already has a parent')
+        }
+        node.parent = this
+        this.children.push(node)
+    }
+
+    getChildren(): ContentNode[] {
+        return this.children
+    }
+
+    getLocalBoundingBox(): BoundingBox {
+        if (this.children.length === 0) {
+            return { x: 0, y: 0, width: 0, height: 0 }
+        }
+
+        let minX = Infinity
+        let minY = Infinity
+        let maxX = -Infinity
+        let maxY = -Infinity
+
+        for (const child of this.children) {
+            const bbox = child.getLocalBoundingBox()
+            minX = Math.min(minX, bbox.x)
+            minY = Math.min(minY, bbox.y)
+            maxX = Math.max(maxX, bbox.x + bbox.width)
+            maxY = Math.max(maxY, bbox.y + bbox.height)
+        }
+
+        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+    }
+
+    toString(): string {
+        const parts: string[] = ['q']
+        const lt = this.getLocalTransform()
+        const isIdentity = lt.isIdentity()
+
+        if (!isIdentity) {
+            parts.push(`${lt.a} ${lt.b} ${lt.c} ${lt.d} ${lt.e} ${lt.f} cm`)
+        }
+
+        for (const child of this.children) {
+            parts.push(child.toString())
+        }
+
+        parts.push('Q')
+        return parts.join('\n')
+    }
+}
+
+export type BoundingBox = {
+    x: number
+    y: number
+    width: number
+    height: number
+}
+
+export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> {
+    static ContentNode = ContentNode
+    static GroupNode = GroupNode
+    static GraphicsBlock = GraphicsBlock
+    static TextBlock = TextBlock
+
+    page?: PdfPage
+
+    constructor(object?: PdfIndirectObject<PdfStream>) {
+        super(object)
+        this.content = new PdfContentStream(object?.content?.raw)
+    }
+
+    textBlock(): TextBlock {
+        const block = new TextBlock(this.page)
+        return block
+    }
+
+    graphicsBlock(): GraphicsBlock {
+        const block = new GraphicsBlock()
+        block.page = this.page
+        return block
+    }
+
+    add(node: ContentNode) {
+        this.content.dataAsString += node.toString() + '\n'
+    }
+
+    get dataAsString(): string {
+        return this.content.dataAsString
+    }
+
+    set dataAsString(value: string) {
+        this.content.dataAsString = value
+    }
+
+    get nodes(): ContentNode[] {
+        return this.content.nodes
     }
 
     get textBlocks(): TextBlock[] {

@@ -1,3 +1,4 @@
+import { PdfFont } from '../..'
 import { PdfHexadecimal, PdfString } from '../../core'
 import { ContentOp } from './base'
 
@@ -242,6 +243,10 @@ export class ShowTextNextLineOp extends TextOp {
 
     set text(value: string) {
         this.raw = `(${value}) '`
+    }
+
+    decode(font: PdfFont): string {
+        return font.decode(new PdfString(this.text))
     }
 }
 

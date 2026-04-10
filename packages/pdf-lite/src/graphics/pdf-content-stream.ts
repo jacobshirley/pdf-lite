@@ -7,178 +7,78 @@ import { Matrix } from './geom/matrix'
 import { Point } from './geom/point'
 import { ByteArray } from '../types'
 import { stringToBytes } from '../utils'
-
-function tokenizeContentStream(content: string): string[] {
-    const tokens: string[] = []
-    let current = ''
-    let inString = false
-    let inArray = false
-    let arrayDepth = 0
-    let arrayContent = ''
-
-    for (let i = 0; i < content.length; i++) {
-        const char = content[i]
-        const nextChar = content[i + 1]
-
-        // Handle arrays
-        if (char === '[') {
-            if (!inString) {
-                inArray = true
-                arrayDepth++
-                arrayContent = char
-                continue
-            }
-        }
-
-        if (inArray) {
-            arrayContent += char
-            if (char === '[' && !inString) arrayDepth++
-            if (char === ']' && !inString) {
-                arrayDepth--
-                if (arrayDepth === 0) {
-                    tokens.push(arrayContent)
-                    arrayContent = ''
-                    inArray = false
-                }
-            }
-            if (char === '(') inString = true
-            if (char === ')') inString = false
-            continue
-        }
-
-        // Handle strings
-        if (char === '(') {
-            inString = true
-            current = char
-            continue
-        }
-
-        if (inString) {
-            current += char
-            if (char === ')' && content[i - 1] !== '\\') {
-                inString = false
-                tokens.push(current)
-                current = ''
-            }
-            continue
-        }
-
-        // Handle hex strings <...>
-        if (char === '<' && nextChar !== '<') {
-            if (current) {
-                tokens.push(current)
-                current = ''
-            }
-            let hexStr = '<'
-            i++
-            while (i < content.length && content[i] !== '>') {
-                hexStr += content[i]
-                i++
-            }
-            hexStr += '>'
-            tokens.push(hexStr)
-            continue
-        }
-
-        // Handle dictionary delimiters << and >>
-        if (char === '<' && nextChar === '<') {
-            if (current) {
-                tokens.push(current)
-                current = ''
-            }
-            // Collect everything from << to >> as a single token
-            let dictStr = '<<'
-            i += 2
-            while (i < content.length) {
-                if (content[i] === '>' && content[i + 1] === '>') {
-                    dictStr += '>>'
-                    i += 1 // outer loop will i++
-                    break
-                }
-                dictStr += content[i]
-                i++
-            }
-            tokens.push(dictStr)
-            continue
-        }
-
-        // Handle stray >> (shouldn't normally happen, but be safe)
-        if (char === '>' && nextChar === '>') {
-            if (current) {
-                tokens.push(current)
-                current = ''
-            }
-            tokens.push('>>')
-            i++ // skip second >
-            continue
-        }
-
-        // Handle regular tokens
-        if (char === ' ' || char === '\n' || char === '\r' || char === '\t') {
-            if (current) {
-                tokens.push(current)
-                current = ''
-            }
-        } else {
-            current += char
-        }
-    }
-
-    if (current) {
-        tokens.push(current)
-    }
-
-    return tokens
-}
-
-function parseNumericOperands(
-    tokens: string[],
-    i: number,
-    count: number,
-): number[] | null {
-    const result: number[] = []
-    for (let j = count; j >= 1; j--) {
-        const v = parseFloat(tokens[i - j])
-        if (isNaN(v)) return null
-        result.push(v)
-    }
-    return result
-}
-
-function extractLiteral(token: string): string {
-    if (token.startsWith('(') && token.endsWith(')')) {
-        return token
-            .slice(1, -1)
-            .replace(/\\n/g, '\n')
-            .replace(/\\r/g, '\r')
-            .replace(/\\t/g, '\t')
-            .replace(/\\\(/g, '(')
-            .replace(/\\\)/g, ')')
-            .replace(/\\\\/g, '\\')
-    }
-    if (token.startsWith('<') && token.endsWith('>')) {
-        const hex = token.slice(1, -1).replace(/\s/g, '')
-        const byteWidth = hex.length % 4 === 0 ? 4 : 2
-        let result = ''
-        for (let i = 0; i < hex.length; i += byteWidth) {
-            result += String.fromCharCode(
-                parseInt(hex.substring(i, i + byteWidth), 16),
-            )
-        }
-        return result
-    }
-    return token
-}
-
-function parsePdfStringOperand(token: string): PdfString | PdfHexadecimal {
-    if (token.startsWith('<') && token.endsWith('>')) {
-        return new PdfHexadecimal(token.slice(1, -1))
-    }
-    if (token.startsWith('(') && token.endsWith(')')) {
-        return new PdfString(token.slice(1, -1))
-    }
-    return new PdfString(token)
-}
+import { ContentOp } from './ops/base'
+import {
+    BeginTextOp,
+    EndTextOp,
+    SetFontOp,
+    SetTextMatrixOp,
+    MoveTextOp,
+    MoveTextLeadingOp,
+    NextLineOp,
+    ShowTextOp,
+    ShowTextArrayOp,
+    SetCharSpacingOp,
+    SetWordSpacingOp,
+    ShowTextNextLineOp,
+    ShowTextNextLineSpacingOp,
+    SetHorizontalScalingOp,
+    SetTextLeadingOp,
+    SetTextRenderingModeOp,
+    SetTextRiseOp,
+    TextOp,
+} from './ops/text'
+import {
+    MoveToOp,
+    LineToOp,
+    CurveToOp,
+    CurveToV,
+    CurveToY,
+    RectangleOp,
+    ClosePathOp,
+} from './ops/path'
+import {
+    StrokeOp,
+    CloseAndStrokeOp,
+    FillOp,
+    FillAlternateOp,
+    FillEvenOddOp,
+    FillAndStrokeOp,
+    CloseFillAndStrokeOp,
+    FillAndStrokeEvenOddOp,
+    CloseFillAndStrokeEvenOddOp,
+    EndPathOp,
+    ClipOp,
+    ClipEvenOddOp,
+} from './ops/paint'
+import {
+    SetFillColorRGBOp,
+    SetStrokeColorRGBOp,
+    SetFillColorGrayOp,
+    SetStrokeColorGrayOp,
+    SetFillColorCMYKOp,
+    SetStrokeColorCMYKOp,
+    SetFillColorSpaceOp,
+    SetStrokeColorSpaceOp,
+    SetFillColorOp,
+    SetStrokeColorOp,
+    SetFillColorExtOp,
+    SetStrokeColorExtOp,
+} from './ops/color'
+import {
+    SaveStateOp,
+    RestoreStateOp,
+    SetMatrixOp,
+    SetLineWidthOp,
+    SetLineCapOp,
+    SetLineJoinOp,
+    SetMiterLimitOp,
+    SetDashPatternOp,
+    SetRenderingIntentOp,
+    SetFlatnessOp,
+    SetGraphicsStateOp,
+    InvokeXObjectOp,
+} from './ops/state'
 
 export class ContentOps {
     ops: string[]
@@ -424,9 +324,9 @@ export class ContentOps {
 export abstract class ContentNode {
     _page?: PdfPage
     parent?: ContentNode
-    ops: ContentOps = new ContentOps()
+    ops: ContentOp[] = []
 
-    constructor(page?: PdfPage) {
+    constructor(ops?: ContentOp[], page?: PdfPage) {
         this._page = page
     }
 
@@ -574,51 +474,30 @@ function computeTJAdvance(
     return total
 }
 
-function decodeTextOperand(
-    op: string,
-    operator: string,
-    font: PdfFont | null,
-): string {
-    const operand = op.slice(0, -(operator.length + 1)).trim()
-    if (operator === 'Tj' || operator === "'") {
-        return font
-            ? font.decode(parsePdfStringOperand(operand))
-            : extractLiteral(operand)
-    }
-    // TJ array like [(Hello) -10 (World)]
-    let result = ''
-    const re = /(\((?:[^()\\]|\\.)*\)|<[^>]*>)/g
-    let m: RegExpExecArray | null
-    while ((m = re.exec(operand)) !== null) {
-        result += font
-            ? font.decode(parsePdfStringOperand(m[1]))
-            : extractLiteral(m[1])
-    }
-    return result
-}
-
 export class Text extends ContentNode {
     prev?: Text
 
     get text(): string {
-        const lastTj = this.ops.findLast('Tj')
+        const lastTj = this.ops.find((x) => x instanceof ShowTextOp)
         if (lastTj) {
-            return decodeTextOperand(lastTj, 'Tj', this.font)
+            return lastTj.text
         } else {
-            const lastTJ = this.ops.findLast('TJ')
+            const lastTJ = this.ops.find((x) => x instanceof ShowTextArrayOp)
             if (lastTJ) {
-                return decodeTextOperand(lastTJ, 'TJ', this.font)
+                return lastTJ.text
             }
         }
 
-        const lastQuote = this.ops.findLast("'")
+        const lastQuote = this.ops.find((x) => x instanceof ShowTextNextLineOp)
         if (lastQuote) {
-            return decodeTextOperand(lastQuote, "'", this.font)
+            return lastQuote.text
         }
 
-        const lastDblQuote = this.ops.findLast('"')
+        const lastDblQuote = this.ops.find(
+            (x) => x instanceof ShowTextNextLineSpacingOp,
+        )
         if (lastDblQuote) {
-            return decodeTextOperand(lastDblQuote, '"', this.font)
+            return lastDblQuote.text
         }
 
         return ''
@@ -626,14 +505,11 @@ export class Text extends ContentNode {
 
     get font(): PdfFont {
         const defaultFont = PdfFont.HELVETICA
-        const lastTf = this.ops.findLast('Tf')
+        const lastTf = this.ops.find((x) => x instanceof SetFontOp)
 
         if (lastTf) {
-            const parts = lastTf.split(' ')
-            if (parts.length >= 2) {
-                const fontName = parts[0].slice(1)
-                return this.page?.fontMap.get(fontName) ?? defaultFont
-            }
+            const fontName = lastTf.fontName
+            return this.page?.fontMap.get(fontName) ?? defaultFont
         }
 
         return this.prev?.font ?? defaultFont
@@ -705,8 +581,15 @@ export class Text extends ContentNode {
     }
 
     set text(newText: string) {
-        const textOp = this.font.writeContentStreamText(newText)
-        this.ops.replace(new ContentOps().tj(textOp))
+        const newTextOp = this.font.writeContentStreamText(newText)
+        const textOpIndex = this.ops.findLastIndex(
+            (x) => x instanceof ShowTextOp || x instanceof ShowTextArrayOp,
+        )
+        if (textOpIndex !== -1) {
+            this.ops[textOpIndex] = newTextOp
+        } else {
+            this.ops.push(newTextOp)
+        }
     }
 
     /**
@@ -875,17 +758,6 @@ export class Text extends ContentNode {
             y: -descenderHeight,
             width: textWidth,
             height: ascenderHeight + descenderHeight,
-        }
-    }
-
-    private replaceOrPrependOp(operator: string, newOp: string): void {
-        const idx = this.ops.ops.findLastIndex((op) =>
-            op.endsWith(` ${operator}`),
-        )
-        if (idx !== -1) {
-            this.ops.ops[idx] = newOp
-        } else {
-            this.ops.ops.unshift(newOp)
         }
     }
 }
@@ -1466,15 +1338,78 @@ export class PdfContentStream extends PdfStream {
         const contentString = this.dataAsString
         if (!contentString) return []
 
-        const tokens = tokenizeContentStream(contentString)
+        const ops = parseContentStream(contentString)
+        return this.buildTree(ops)
+    }
 
-        // Build a tree of ContentNodes rooted at a GroupNode
+    private isPaintOp(op: ContentOp): boolean {
+        return (
+            op instanceof StrokeOp ||
+            op instanceof CloseAndStrokeOp ||
+            op instanceof FillOp ||
+            op instanceof FillAlternateOp ||
+            op instanceof FillEvenOddOp ||
+            op instanceof FillAndStrokeOp ||
+            op instanceof CloseFillAndStrokeOp ||
+            op instanceof FillAndStrokeEvenOddOp ||
+            op instanceof CloseFillAndStrokeEvenOddOp
+        )
+    }
+
+    private isPathOp(op: ContentOp): boolean {
+        return (
+            op instanceof MoveToOp ||
+            op instanceof LineToOp ||
+            op instanceof CurveToOp ||
+            op instanceof CurveToV ||
+            op instanceof CurveToY ||
+            op instanceof RectangleOp ||
+            op instanceof ClosePathOp
+        )
+    }
+
+    private isColorOp(op: ContentOp): boolean {
+        return (
+            op instanceof SetFillColorRGBOp ||
+            op instanceof SetStrokeColorRGBOp ||
+            op instanceof SetFillColorGrayOp ||
+            op instanceof SetStrokeColorGrayOp ||
+            op instanceof SetFillColorCMYKOp ||
+            op instanceof SetStrokeColorCMYKOp ||
+            op instanceof SetFillColorSpaceOp ||
+            op instanceof SetStrokeColorSpaceOp ||
+            op instanceof SetFillColorOp ||
+            op instanceof SetStrokeColorOp ||
+            op instanceof SetFillColorExtOp ||
+            op instanceof SetStrokeColorExtOp
+        )
+    }
+
+    private isTextOp(op: ContentOp): boolean {
+        return op instanceof TextOp
+    }
+
+    private isStateOp(op: ContentOp): boolean {
+        return (
+            op instanceof SetLineWidthOp ||
+            op instanceof SetLineCapOp ||
+            op instanceof SetLineJoinOp ||
+            op instanceof SetMiterLimitOp ||
+            op instanceof SetDashPatternOp ||
+            op instanceof SetRenderingIntentOp ||
+            op instanceof SetFlatnessOp ||
+            op instanceof SetGraphicsStateOp ||
+            op instanceof InvokeXObjectOp
+        )
+    }
+
+    private buildTree(ops: ContentOp[]): ContentNode[] {
         const root = new GroupNode(this.page)
         let currentGroup: GroupNode = root
         const groupStack: GroupNode[] = []
 
         let inTextBlock = false
-        let currentOps: string[] = []
+        let textOps: string[] = []
         let graphicsOps: string[] = []
         let btEtIndex = 0
 
@@ -1484,79 +1419,27 @@ export class PdfContentStream extends PdfStream {
         let currentTc = 0
         let currentTw = 0
 
-        const PAINT_OPS = new Set([
-            'S',
-            's',
-            'f',
-            'F',
-            'f*',
-            'B',
-            'B*',
-            'b',
-            'b*',
-        ])
-        const PATH_OPS = new Set(['m', 'l', 're', 'c', 'v', 'y', 'h'])
-        const COLOR_OPS = new Set([
-            'rg',
-            'RG',
-            'g',
-            'G',
-            'k',
-            'K',
-            'cs',
-            'CS',
-            'sc',
-            'SC',
-            'scn',
-            'SCN',
-        ])
-        const STATE_OPS = new Set(['w', 'J', 'j', 'M', 'd', 'ri', 'i', 'gs'])
-        const TEXT_OPS = new Set([
-            'Tf',
-            'Td',
-            'TD',
-            'Tm',
-            'T*',
-            'Tj',
-            'TJ',
-            "'",
-            '"',
-            'Tc',
-            'Tw',
-            'Tz',
-            'TL',
-            'Tr',
-            'Ts',
-        ])
-
-        // Collect operands preceding the current operator
-        let operandBuffer: string[] = []
-
-        for (let i = 0; i < tokens.length; i++) {
-            const token = tokens[i]
-
-            if (token === 'BT') {
+        for (const op of ops) {
+            if (op instanceof BeginTextOp) {
                 inTextBlock = true
-                currentOps = []
-
-                // Inject carried-over text state if available
+                textOps = []
+                // Inject carried-over text state
                 if (currentFontName && currentFontSize) {
-                    currentOps.push(`/${currentFontName} ${currentFontSize} Tf`)
+                    textOps.push(`/${currentFontName} ${currentFontSize} Tf`)
                 }
                 if (currentTc !== 0) {
-                    currentOps.push(`${currentTc} Tc`)
+                    textOps.push(`${currentTc} Tc`)
                 }
                 if (currentTw !== 0) {
-                    currentOps.push(`${currentTw} Tw`)
+                    textOps.push(`${currentTw} Tw`)
                 }
-                operandBuffer = []
                 continue
             }
 
-            if (token === 'ET') {
-                if (inTextBlock && currentOps.length > 0) {
+            if (op instanceof EndTextOp) {
+                if (inTextBlock && textOps.length > 0) {
                     const blocks = TextBlock.parseFromContentStream(
-                        currentOps,
+                        textOps,
                         this.page,
                     )
                     for (const block of blocks) {
@@ -1566,126 +1449,69 @@ export class PdfContentStream extends PdfStream {
                     btEtIndex++
                 }
                 inTextBlock = false
-                currentOps = []
-                operandBuffer = []
+                textOps = []
                 continue
             }
 
-            // Build tree from q/Q scopes; cm sets local transform
-            if (token === 'q') {
-                if (!inTextBlock) {
-                    const group = new GroupNode(this.page)
-                    currentGroup.addChild(group)
-                    groupStack.push(currentGroup)
-                    currentGroup = group
-                    operandBuffer = []
-                }
+            if (op instanceof SaveStateOp && !inTextBlock) {
+                const group = new GroupNode(this.page)
+                currentGroup.addChild(group)
+                groupStack.push(currentGroup)
+                currentGroup = group
                 continue
             }
-            if (token === 'Q') {
-                if (!inTextBlock && groupStack.length > 0) {
+
+            if (op instanceof RestoreStateOp && !inTextBlock) {
+                if (groupStack.length > 0) {
                     currentGroup = groupStack.pop()!
-                    operandBuffer = []
                 }
                 continue
             }
-            if (token === 'cm') {
-                if (!inTextBlock) {
-                    const nums = parseNumericOperands(tokens, i, 6)
-                    if (nums) {
-                        currentGroup.ops.cm(
-                            nums[0],
-                            nums[1],
-                            nums[2],
-                            nums[3],
-                            nums[4],
-                            nums[5],
-                        )
-                    }
-                    operandBuffer = []
-                }
+
+            if (op instanceof SetMatrixOp && !inTextBlock) {
+                currentGroup.ops.cm(op.a, op.b, op.c, op.d, op.e, op.f)
                 continue
             }
 
             if (inTextBlock) {
-                if (TEXT_OPS.has(token) || COLOR_OPS.has(token)) {
-                    // Push operands + operator as a single op string
-                    const op = [...operandBuffer, token].join(' ')
-                    currentOps.push(op)
-                    // Track Tf for cross-block state
-                    if (token === 'Tf') {
-                        const tfMatch = op.match(/\/(\w+)\s+(\d+(\.\d+)?)\s+Tf/)
-                        if (tfMatch) {
-                            currentFontName = tfMatch[1]
-                            currentFontSize = parseFloat(tfMatch[2])
-                        }
+                if (this.isTextOp(op) || this.isColorOp(op)) {
+                    textOps.push(op.raw!)
+                    // Track text state for cross-block persistence
+                    if (op instanceof SetFontOp) {
+                        currentFontName = op.fontName
+                        currentFontSize = op.fontSize
                     }
-                    // Track Tc/Tw for cross-block state
-                    if (token === 'Tc') {
-                        const tcMatch = op.match(/(-?\d+(\.\d+)?)\s+Tc/)
-                        if (tcMatch) currentTc = parseFloat(tcMatch[1])
+                    if (op instanceof SetCharSpacingOp) {
+                        currentTc = op.charSpace
                     }
-                    if (token === 'Tw') {
-                        const twMatch = op.match(/(-?\d+(\.\d+)?)\s+Tw/)
-                        if (twMatch) currentTw = parseFloat(twMatch[1])
+                    if (op instanceof SetWordSpacingOp) {
+                        currentTw = op.wordSpace
                     }
-                    operandBuffer = []
-                } else if (
-                    token.startsWith('(') ||
-                    token.startsWith('<') ||
-                    token.startsWith('[') ||
-                    token.startsWith('/')
-                ) {
-                    operandBuffer.push(token)
-                } else if (!isNaN(parseFloat(token)) || token === '-') {
-                    operandBuffer.push(token)
                 } else {
-                    // Unknown text operator - include with operands
-                    const op = [...operandBuffer, token].join(' ')
-                    currentOps.push(op)
-                    operandBuffer = []
+                    // Unknown op in text block — include as-is
+                    textOps.push(op.raw!)
                 }
                 continue
             }
 
-            // Outside text block: track graphics operations
-            if (PAINT_OPS.has(token)) {
-                // Painting operator ends a graphics block
-                const op = [...operandBuffer, token].join(' ')
-                graphicsOps.push(op)
-                operandBuffer = []
+            // Outside text block: graphics
+            if (this.isPaintOp(op)) {
+                graphicsOps.push(op.raw!)
                 const gBlock = new GraphicsBlock(graphicsOps)
                 currentGroup.addChild(gBlock)
                 graphicsOps = []
             } else if (
-                PATH_OPS.has(token) ||
-                COLOR_OPS.has(token) ||
-                token === 'W' ||
-                token === 'W*'
+                this.isPathOp(op) ||
+                this.isColorOp(op) ||
+                op instanceof ClipOp ||
+                op instanceof ClipEvenOddOp
             ) {
-                const op = [...operandBuffer, token].join(' ')
-                graphicsOps.push(op)
-                operandBuffer = []
-            } else if (token === 'n') {
-                // End path without painting - discard accumulated graphics
-                operandBuffer = []
+                graphicsOps.push(op.raw!)
+            } else if (op instanceof EndPathOp) {
+                // End path without painting — discard
                 graphicsOps = []
-            } else if (STATE_OPS.has(token)) {
-                // State operators not handled above (w, J, j, M, etc.)
-                operandBuffer = []
-            } else if (
-                token.startsWith('(') ||
-                token.startsWith('<') ||
-                token.startsWith('[') ||
-                token.startsWith('/')
-            ) {
-                operandBuffer.push(token)
-            } else if (!isNaN(parseFloat(token))) {
-                operandBuffer.push(token)
-            } else {
-                // Unknown operator outside text - reset operands
-                operandBuffer = []
             }
+            // State ops outside text are ignored
         }
 
         return root.getChildren()

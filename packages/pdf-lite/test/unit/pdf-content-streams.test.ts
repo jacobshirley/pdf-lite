@@ -361,6 +361,121 @@ describe('TextBlock', () => {
     })
 })
 
+describe('TextBlock.text setter', () => {
+    it('should replace simple Tj text', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.text = 'World'
+        expect(tb.text).toBe('World')
+        expect(s.toString()).toContain('[(W) 30 (or) -15 (ld)]')
+    })
+
+    it('should replace TJ array text', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td [(He) -10 (llo)] TJ ET')
+        const tb = s.textBlocks[0]
+        tb.text = 'Goodbye'
+        expect(tb.text).toBe('Goodbye')
+    })
+
+    it('should preserve non-text ops like Tf and Td', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.text = 'New'
+        const str = tb.toString()
+        expect(str).toContain('/F1 12 Tf')
+        expect(str).toContain('100 700 Td')
+    })
+
+    it('should collapse multiple segments into one', () => {
+        const s = makeStream(
+            'BT /F1 12 Tf 1 0 0 1 100 700 Tm (A) Tj (B) Tj (C) Tj ET',
+        )
+        const tb = s.textBlocks[0]
+        expect(tb.getSegments()).toHaveLength(3)
+        tb.text = 'ABC'
+        // After setting text, extra segments are removed
+        expect(tb.getSegments()).toHaveLength(1)
+        expect(tb.text).toBe('ABC')
+    })
+
+    it('should handle empty string', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.text = ''
+        expect(tb.text).toBe('')
+    })
+
+    it('should handle special PDF characters', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.text = 'Hello (World)'
+        expect(tb.text).toBe('Hello (World)')
+    })
+
+    it('should create a segment when block has none', () => {
+        const tb = new TextBlock()
+        tb.text = 'Created'
+        expect(tb.text).toBe('Created')
+        expect(tb.getSegments()).toHaveLength(1)
+    })
+
+    it('should add text op when no existing text op in segment', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td ET')
+        const tb = s.textBlocks[0]
+        // The segment has Tf and Td but no Tj
+        tb.text = 'Inserted'
+        expect(tb.text).toBe('Inserted')
+    })
+})
+
+describe('Text.font and Text.fontSize setters', () => {
+    it('should set font on a text segment', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const seg = s.textBlocks[0].getSegments()[0]
+        expect(seg.fontSize).toBe(12)
+
+        seg.font = PdfFont.COURIER
+        const str = seg.ops.toString()
+        expect(str).toContain(`/${PdfFont.COURIER.resourceName} 12 Tf`)
+    })
+
+    it('should preserve fontSize when setting font', () => {
+        const s = makeStream('BT /F1 24 Tf 100 700 Td (Hello) Tj ET')
+        const seg = s.textBlocks[0].getSegments()[0]
+        seg.font = PdfFont.TIMES_ROMAN
+        expect(seg.fontSize).toBe(24)
+    })
+
+    it('should set fontSize on a text segment', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const seg = s.textBlocks[0].getSegments()[0]
+        seg.fontSize = 24
+        expect(seg.fontSize).toBe(24)
+        const str = seg.ops.toString()
+        expect(str).toContain('/F1 24 Tf')
+    })
+
+    it('should preserve font when setting fontSize', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const seg = s.textBlocks[0].getSegments()[0]
+        seg.fontSize = 36
+        const str = seg.ops.toString()
+        expect(str).toContain('/F1 36 Tf')
+    })
+
+    it('should prepend Tf when segment has no existing Tf', () => {
+        const s = makeStream(
+            'BT /F1 12 Tf 100 700 Td (Hello) Tj 0 -14 Td (Line2) Tj ET',
+        )
+        const segs = s.textBlocks[1].getSegments()
+        const seg = segs[0]
+        // This segment inherits font from prev, has no own Tf
+        seg.fontSize = 18
+        const str = seg.ops.toString()
+        expect(str).toContain('18 Tf')
+    })
+})
+
 // ---------------------------------------------------------------------------
 // Static factory helpers — GraphicsBlock
 // ---------------------------------------------------------------------------

@@ -335,7 +335,18 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * @returns The raw character width or null if not found
      */
     getRawCharacterWidth(charCode: number): number | null {
-        // Try descriptor's charWidths first (populated for all font types)
+        // For Type1/TrueType fonts, prefer the /Widths array from the PDF
+        // font dictionary.  It contains the authoritative widths for each
+        // character code in the font's encoding, which may differ from the
+        // standard AFM metrics when a custom Encoding/Differences is used.
+        if (this.widths !== undefined && this.firstChar !== undefined) {
+            const widthIndex = charCode - this.firstChar
+            if (widthIndex >= 0 && widthIndex < this.widths.length) {
+                return this.widths[widthIndex]
+            }
+        }
+
+        // Try descriptor's charWidths (AFM / parsed font metrics)
         const metricsWidth = this.metrics.getCharWidth(charCode)
         if (metricsWidth !== undefined) {
             return metricsWidth
@@ -344,16 +355,6 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         // For Type0 fonts, fall back to default width
         if (this.isUnicode) {
             return this.metrics.defaultWidth ?? 1000
-        }
-
-        // For Type1/TrueType fonts, use simple widths array from font dict
-        if (this.widths === undefined || this.firstChar === undefined) {
-            return null
-        }
-
-        const widthIndex = charCode - this.firstChar
-        if (widthIndex >= 0 && widthIndex < this.widths.length) {
-            return this.widths[widthIndex]
         }
 
         return null
@@ -449,6 +450,45 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         }
 
         return new PdfString(text)
+    }
+
+    /**
+     * Extract the glyph codes (the numeric codes used in the font's width
+     * tables) from a raw string operand.  For hex strings this parses the
+     * hex digits into 2-byte CIDs (Type0) or 1-byte codes (simple fonts).
+     * For literal strings the raw byte values are used.
+     */
+    extractGlyphCodes(operand: PdfString | PdfHexadecimal): number[] {
+        if (operand instanceof PdfHexadecimal) {
+            const hex = operand.hexString
+            if (hex.length === 0) return []
+            const codes: number[] = []
+            if (this.isUnicode) {
+                // 2-byte CIDs (4 hex chars each)
+                for (let i = 0; i < hex.length; i += 4) {
+                    codes.push(parseInt(hex.substring(i, i + 4), 16))
+                }
+            } else if (this.encodingMap) {
+                // 1-byte codes
+                for (let i = 0; i < hex.length; i += 2) {
+                    codes.push(parseInt(hex.substring(i, i + 2), 16))
+                }
+            } else {
+                // Fallback: same logic as decode
+                const byteWidth = hex.length % 4 === 0 ? 4 : 2
+                for (let i = 0; i < hex.length; i += byteWidth) {
+                    codes.push(parseInt(hex.substring(i, i + byteWidth), 16))
+                }
+            }
+            return codes
+        }
+        // Literal string — each char's code point is the glyph code
+        const value = operand.value
+        const codes: number[] = []
+        for (const ch of value) {
+            codes.push(ch.charCodeAt(0))
+        }
+        return codes
     }
 
     /**

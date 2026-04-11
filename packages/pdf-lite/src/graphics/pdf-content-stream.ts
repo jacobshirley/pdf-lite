@@ -128,6 +128,10 @@ export abstract class ContentNode {
 export class Text extends ContentNode {
     prev?: Text
 
+    override get page(): PdfPage | undefined {
+        return super.page ?? this.prev?.page
+    }
+
     get text(): string {
         const textOp = this.ops.find(
             (x) =>
@@ -330,14 +334,22 @@ export class Text extends ContentNode {
         const tc = this.charSpace
         const tw = this.wordSpace
 
-        const measure = (text: string): number => {
+        /**
+         * Measure the advance of a string operand using glyph codes
+         * (not decoded Unicode).  For hex strings the raw CID codes are
+         * extracted; for literal strings the raw byte values are used.
+         */
+        const measureOperand = (
+            operand: PdfString | PdfHexadecimal,
+        ): number => {
+            const codes = font.extractGlyphCodes(operand)
             let total = 0
-            for (const ch of [...text]) {
-                total +=
-                    font.getCharacterWidth(ch.charCodeAt(0), fontSize) ??
-                    fontSize * 0.6
+            for (const code of codes) {
+                // Per PDF spec, characters outside the font's Widths range
+                // use MissingWidth from the font descriptor (default 0).
+                total += font.getCharacterWidth(code, fontSize) ?? 0
                 total += tc
-                if (ch === ' ') total += tw
+                if (code === 32) total += tw // ASCII space
             }
             return total
         }
@@ -348,7 +360,8 @@ export class Text extends ContentNode {
         for (const op of this.ops) {
             if (op instanceof ShowTextOp) {
                 sawShowOp = true
-                total += measure(op.text)
+                const operand = op.stringOperand
+                if (operand) total += measureOperand(operand)
             } else if (op instanceof ShowTextArrayOp) {
                 sawShowOp = true
                 for (const segment of op.segments) {
@@ -358,7 +371,7 @@ export class Text extends ContentNode {
                         // *reduce* the advance.
                         total -= (segment / 1000) * fontSize
                     } else {
-                        total += measure(font.decode(segment))
+                        total += measureOperand(segment)
                     }
                 }
             }
@@ -453,17 +466,21 @@ export class Text extends ContentNode {
 
 export class TextBlock extends ContentNode {
     protected segments: Text[] = []
+    prev?: TextBlock
 
-    constructor(page?: PdfPage, ops?: ContentOp[]) {
+    constructor(page?: PdfPage, ops?: ContentOp[], prev?: TextBlock) {
         super(ops)
         this.page = page
+        this.prev = prev
         this.parseSegments()
     }
 
     private parseSegments(): void {
         const segments: Text[] = []
         let currentOps: ContentOp[] = []
-        let lastSegment: Text | undefined = undefined
+        // Link the first segment's prev to the last segment of the previous
+        // TextBlock so that font/size state carries across BT/ET boundaries.
+        let lastSegment: Text | undefined = this.prev?.getSegments().at(-1)
 
         for (const op of this.ops) {
             if (op instanceof BeginTextOp || op instanceof EndTextOp) {
@@ -672,6 +689,7 @@ export class TextBlock extends ContentNode {
         type Descriptor = {
             wtm: Matrix
             font: PdfFont
+            fontResourceName: string
             fontSize: number
             charSpace: number
             wordSpace: number
@@ -691,8 +709,17 @@ export class TextBlock extends ContentNode {
         for (const block of blocks) {
             for (const seg of block.getSegments()) {
                 const text = seg.text
-                // Keep segments even if empty, to preserve formatting/position info
-                // Empty segments can have text added later
+                // Skip segments that have no show operator and no text —
+                // they are pure positioning/state and should not create
+                // their own visual line band.
+                const hasShowOp = seg.ops.some(
+                    (o) =>
+                        o instanceof ShowTextOp ||
+                        o instanceof ShowTextArrayOp ||
+                        o instanceof ShowTextNextLineOp ||
+                        o instanceof ShowTextNextLineSpacingOp,
+                )
+                if (!hasShowOp && !text) continue
 
                 const wtm = seg.getWorldTransform()
                 const len = Math.hypot(wtm.a, wtm.b) || 1
@@ -719,9 +746,27 @@ export class TextBlock extends ContentNode {
                     showOp = ShowTextOp.create(text)
                 }
 
+                // Capture the resource name from the Tf op so we
+                // can faithfully recreate it in the baked segment.
+                // Walk the prev chain like the `font` getter does.
+                let fontResourceName: string | undefined
+                let walk: Text | undefined = seg
+                while (walk) {
+                    const tf = walk.ops.find((o) => o instanceof SetFontOp) as
+                        | SetFontOp
+                        | undefined
+                    if (tf) {
+                        fontResourceName = tf.fontName
+                        break
+                    }
+                    walk = walk.prev
+                }
+                fontResourceName ??= seg.font.resourceName
+
                 descriptors.push({
                     wtm,
                     font: seg.font,
+                    fontResourceName,
                     fontSize: seg.fontSize,
                     charSpace: seg.charSpace,
                     wordSpace: seg.wordSpace,
@@ -799,7 +844,7 @@ export class TextBlock extends ContentNode {
 
             for (const d of sortedSegs) {
                 const newOps: ContentOp[] = []
-                newOps.push(SetFontOp.create(d.font.resourceName, d.fontSize))
+                newOps.push(SetFontOp.create(d.fontResourceName, d.fontSize))
                 if (d.textLeading !== 0) {
                     newOps.push(SetTextLeadingOp.create(d.textLeading))
                 }
@@ -1044,7 +1089,7 @@ export class PdfContentStream extends PdfStream {
         if (!contentString) return []
 
         const ops = PdfContentStreamTokeniser.tokenise(contentString)
-        return PdfContentStream.buildNodeTree(ops).getChildren()
+        return PdfContentStream.buildNodeTree(ops, this.page).getChildren()
     }
 
     static buildNodeTree(ops: ContentOp[], page?: PdfPage): StateNode {
@@ -1055,6 +1100,9 @@ export class PdfContentStream extends PdfStream {
         let graphicsOps: (PaintOp | PathOp | ColorOp)[] = []
         let currentState: StateNode = root
         let inTextBlock = false
+        // Track the previous TextBlock so segments can inherit font state
+        // across BT/ET boundaries without modifying the original ops.
+        let lastTextBlock: TextBlock | undefined
 
         for (const op of ops) {
             if (op instanceof BeginTextOp) {
@@ -1067,9 +1115,10 @@ export class PdfContentStream extends PdfStream {
                 textOps.push(op)
                 inTextBlock = false
                 // Only add non-empty text blocks
-                const block = new TextBlock(page, textOps)
+                const block = new TextBlock(page, textOps, lastTextBlock)
                 if (block.getSegments().length > 0) {
                     currentState.addChild(block)
+                    lastTextBlock = block
                 }
                 textOps = []
                 continue
@@ -1205,7 +1254,16 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
     static GraphicsBlock = GraphicsBlock
     static TextBlock = TextBlock
 
-    page?: PdfPage
+    private _page?: PdfPage
+
+    get page(): PdfPage | undefined {
+        return this._page
+    }
+
+    set page(value: PdfPage | undefined) {
+        this._page = value
+        this.content.page = value
+    }
 
     constructor(object?: PdfIndirectObject) {
         super(object)

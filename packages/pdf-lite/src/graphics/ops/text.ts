@@ -61,9 +61,14 @@ function unescapePdfLiteral(body: string): string {
         .replace(/\\\\/g, '\x00') // \\ → temp marker
         .replace(/\\\(/g, '(') // \( → (
         .replace(/\\\)/g, ')') // \) → )
+        .replace(/\\([0-7]{1,3})/g, (_m, oct: string) =>
+            String.fromCharCode(parseInt(oct, 8)),
+        ) // \ddd → octal char
         .replace(/\\n/g, '\n') // \n → newline
         .replace(/\\r/g, '\r') // \r → CR
         .replace(/\\t/g, '\t') // \t → tab
+        .replace(/\\b/g, '\b') // \b → backspace
+        .replace(/\\f/g, '\f') // \f → form feed
         .replace(/\x00/g, '\\') // restore \
 }
 
@@ -246,6 +251,18 @@ export class ShowTextOp extends TextOp {
 
     set text(value: string) {
         this.raw = `(${value}) Tj`
+    }
+
+    /**
+     * Return the operand as a typed PdfString or PdfHexadecimal.
+     * This preserves the original encoding so callers can measure glyph codes.
+     */
+    get stringOperand(): PdfString | PdfHexadecimal | null {
+        if (!this.raw) return null
+        const s = extractStringOperand(this.raw)
+        if (!s) return null
+        if (s.kind === 'hex') return new PdfHexadecimal(s.body)
+        return new PdfString(unescapePdfLiteral(s.body))
     }
 
     /**

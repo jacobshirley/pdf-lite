@@ -464,7 +464,14 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
 
         let cidWidths: CIDWidth[] | undefined
         let defaultWidth: number | undefined
-        const descFontsArr = dict.get('DescendantFonts') as PdfArray | undefined
+        const descFontsEntry = dict.get('DescendantFonts')
+        // DescendantFonts may be an indirect reference to the array
+        const descFontsArr: PdfArray | undefined =
+            descFontsEntry instanceof PdfArray
+                ? descFontsEntry
+                : descFontsEntry instanceof PdfObjectReference
+                  ? (descFontsEntry.resolve()?.content as PdfArray | undefined)
+                  : undefined
         if (descFontsArr?.items?.length) {
             const cidFontRef = descFontsArr.items[0]
             const cidFont =
@@ -477,7 +484,13 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
                 defaultWidth =
                     dwEntry instanceof PdfNumber ? dwEntry.value : undefined
 
-                const wArr = cidFontDict.get('W') as PdfArray | undefined
+                const wEntry = cidFontDict.get('W')
+                const wArr: PdfArray | undefined =
+                    wEntry instanceof PdfArray
+                        ? wEntry
+                        : wEntry instanceof PdfObjectReference
+                          ? (wEntry.resolve()?.content as PdfArray | undefined)
+                          : undefined
                 if (wArr?.items) {
                     cidWidths = []
                     const items = wArr.items

@@ -164,15 +164,15 @@ export class Text extends ContentNode {
     prev?: Text
 
     get text(): string {
-        const lastTj = this.ops.find(
+        const textOp = this.ops.find(
             (x) =>
                 x instanceof ShowTextOp ||
                 x instanceof ShowTextArrayOp ||
                 x instanceof ShowTextNextLineOp ||
                 x instanceof ShowTextNextLineSpacingOp,
         )
-        if (lastTj) {
-            return lastTj.text
+        if (textOp) {
+            return textOp.text
         }
 
         return ''

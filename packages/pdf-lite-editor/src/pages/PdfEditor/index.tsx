@@ -1073,8 +1073,7 @@ export function PdfEditor() {
             // Find all text blocks that share the same sourceIndex on this page
             const siblings = extractedTextBlocks.filter(
                 (tb) =>
-                    tb.page === textBlock.page &&
-                    (tb.block).sourceIndex === sourceIndex,
+                    tb.page === textBlock.page
             )
 
             // Apply the text change to this block
@@ -1588,6 +1587,7 @@ export function PdfEditor() {
 
                     try {
                         const blocks = page.extractTextBlocks()
+                        console.log(`Extracted ${blocks.length} text blocks from page ${pageNumber}`)
                         for (const block of blocks) {
                             if (block.text.trim().length === 0) continue
                             textBlocks.push({

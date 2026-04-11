@@ -620,7 +620,178 @@ export class TextBlock extends ContentNode {
         }
     }
 
-    static regroupTextBlocks(blocks: TextBlock[]): TextBlock[] {}
+    /**
+     * Regroup `Text` segments from the given blocks into new `TextBlock`s
+     * such that each output block contains segments that appear on the same
+     * visual line when rendered.
+     *
+     * Each baked segment carries standalone state (Tf, Tc, Tw, TL) plus an
+     * absolute `Tm` derived from its original world transform, so the output
+     * blocks are self-contained and safe to re-serialize.
+     *
+     * Contract: because the baked `Tm` is world-absolute, the returned blocks
+     * must be placed under an ancestor whose composed `cm` is identity
+     * (e.g. directly under the content stream root, or an identity
+     * `StateNode`). Otherwise glyphs will be double-transformed.
+     */
+    static regroupTextBlocks(blocks: TextBlock[]): TextBlock[] {
+        type Descriptor = {
+            wtm: Matrix
+            font: PdfFont
+            fontSize: number
+            charSpace: number
+            wordSpace: number
+            textLeading: number
+            text: string
+            showOp: ContentOp
+            orientationKey: string
+            lineCoord: number
+            alongCoord: number
+            effectiveFontSize: number
+            order: number
+        }
+
+        const descriptors: Descriptor[] = []
+        let order = 0
+
+        for (const block of blocks) {
+            for (const seg of block.getSegments()) {
+                const text = seg.text
+                if (text === '') continue
+
+                const wtm = seg.getWorldTransform()
+                const len = Math.hypot(wtm.a, wtm.b) || 1
+                const ux = { x: wtm.a / len, y: wtm.b / len }
+                const py = { x: -wtm.b / len, y: wtm.a / len }
+                const lineCoord = wtm.e * py.x + wtm.f * py.y
+                const alongCoord = wtm.e * ux.x + wtm.f * ux.y
+                const angle = Math.atan2(wtm.b, wtm.a)
+                const orientationKey = (
+                    Math.round(angle * 1000) / 1000
+                ).toFixed(3)
+
+                // Reuse original show op verbatim to preserve kerning.
+                // `'` and `"` operators also advance lines, so fall back to
+                // a plain Tj with the decoded text in that case.
+                let showOp: ContentOp | undefined = seg.ops.findLast(
+                    (o) =>
+                        o instanceof ShowTextOp || o instanceof ShowTextArrayOp,
+                )
+                if (!showOp) {
+                    showOp = ShowTextOp.create(text)
+                }
+
+                descriptors.push({
+                    wtm,
+                    font: seg.font,
+                    fontSize: seg.fontSize,
+                    charSpace: seg.charSpace,
+                    wordSpace: seg.wordSpace,
+                    textLeading: seg.textLeading,
+                    text,
+                    showOp,
+                    orientationKey,
+                    lineCoord,
+                    alongCoord,
+                    effectiveFontSize: seg.fontSize * len,
+                    order: order++,
+                })
+            }
+        }
+
+        // Bucket by orientation so only identically-rotated segments can
+        // share a line.
+        const buckets = new Map<string, Descriptor[]>()
+        for (const d of descriptors) {
+            const arr = buckets.get(d.orientationKey) ?? []
+            arr.push(d)
+            buckets.set(d.orientationKey, arr)
+        }
+
+        type Band = {
+            descriptors: Descriptor[]
+            bandCoord: number
+            bandSize: number
+            firstOrder: number
+        }
+        const bands: Band[] = []
+
+        for (const bucket of buckets.values()) {
+            // Sort by line coord descending (PDF user space is y-up).
+            const sorted = [...bucket].sort((a, b) => b.lineCoord - a.lineCoord)
+
+            const bucketBands: Band[] = []
+            for (const d of sorted) {
+                const current = bucketBands[bucketBands.length - 1]
+                if (current) {
+                    const tolerance =
+                        0.5 * Math.min(current.bandSize, d.effectiveFontSize)
+                    if (
+                        Math.abs(d.lineCoord - current.bandCoord) <= tolerance
+                    ) {
+                        current.descriptors.push(d)
+                        current.firstOrder = Math.min(
+                            current.firstOrder,
+                            d.order,
+                        )
+                        continue
+                    }
+                }
+                bucketBands.push({
+                    descriptors: [d],
+                    bandCoord: d.lineCoord,
+                    bandSize: d.effectiveFontSize,
+                    firstOrder: d.order,
+                })
+            }
+            bands.push(...bucketBands)
+        }
+
+        // Stable output order: follow original segment ordering.
+        bands.sort((a, b) => a.firstOrder - b.firstOrder)
+
+        const firstPage = blocks[0]?.page
+        const result: TextBlock[] = []
+        for (const band of bands) {
+            const sortedSegs = [...band.descriptors].sort(
+                (a, b) => a.alongCoord - b.alongCoord,
+            )
+
+            const newBlock = new TextBlock(firstPage)
+
+            for (const d of sortedSegs) {
+                const newOps: ContentOp[] = []
+                newOps.push(SetFontOp.create(d.font.resourceName, d.fontSize))
+                if (d.textLeading !== 0) {
+                    newOps.push(SetTextLeadingOp.create(d.textLeading))
+                }
+                if (d.charSpace !== 0) {
+                    newOps.push(SetCharSpacingOp.create(d.charSpace))
+                }
+                if (d.wordSpace !== 0) {
+                    newOps.push(SetWordSpacingOp.create(d.wordSpace))
+                }
+                newOps.push(
+                    SetTextMatrixOp.create(
+                        d.wtm.a,
+                        d.wtm.b,
+                        d.wtm.c,
+                        d.wtm.d,
+                        d.wtm.e,
+                        d.wtm.f,
+                    ),
+                )
+                newOps.push(d.showOp)
+
+                const newSeg = new Text(newOps, firstPage)
+                newBlock.addSegment(newSeg)
+            }
+
+            result.push(newBlock)
+        }
+
+        return result
+    }
 }
 
 export class GraphicsBlock extends ContentNode {
@@ -967,8 +1138,13 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
 
     page?: PdfPage
 
-    constructor(object?: PdfIndirectObject<PdfStream>) {
+    constructor(object?: PdfIndirectObject) {
         super(object)
+
+        if (!(object?.content instanceof PdfStream)) {
+            throw new Error('Content stream object must have a stream content')
+        }
+
         this.content = new PdfContentStream(object?.content?.raw)
     }
 
@@ -1010,7 +1186,7 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
             }
             return result
         }
-        return collect(this.nodes)
+        return TextBlock.regroupTextBlocks(collect(this.nodes))
     }
 
     get graphicsBlocks(): GraphicsBlock[] {

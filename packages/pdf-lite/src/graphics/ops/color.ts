@@ -13,13 +13,13 @@ export class SetFillColorRGBOp extends ColorOp {
     }
 
     get r(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get g(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get b(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
 
     set r(v: number) {
@@ -43,13 +43,13 @@ export class SetStrokeColorRGBOp extends ColorOp {
     }
 
     get r(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get g(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get b(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
 
     set r(v: number) {
@@ -73,7 +73,7 @@ export class SetFillColorGrayOp extends ColorOp {
     }
 
     get gray(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set gray(v: number) {
         this.raw = `${v} g`
@@ -90,7 +90,7 @@ export class SetStrokeColorGrayOp extends ColorOp {
     }
 
     get gray(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set gray(v: number) {
         this.raw = `${v} G`
@@ -112,16 +112,16 @@ export class SetFillColorCMYKOp extends ColorOp {
     }
 
     get c(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get m(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get y(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
     get k(): number {
-        return parseFloat(this.parts().operands[3])
+        return this.numberOperand(3)
     }
 
     set c(v: number) {
@@ -153,16 +153,16 @@ export class SetStrokeColorCMYKOp extends ColorOp {
     }
 
     get c(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get m(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get y(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
     get k(): number {
-        return parseFloat(this.parts().operands[3])
+        return this.numberOperand(3)
     }
 
     set c(v: number) {
@@ -189,7 +189,7 @@ export class SetFillColorSpaceOp extends ColorOp {
     }
 
     get name(): string {
-        return this.parts().operands[0]?.slice(1) ?? ''
+        return this.nameOperand(0)
     }
     set name(v: string) {
         this.raw = `/${v} cs`
@@ -206,7 +206,7 @@ export class SetStrokeColorSpaceOp extends ColorOp {
     }
 
     get name(): string {
-        return this.parts().operands[0]?.slice(1) ?? ''
+        return this.nameOperand(0)
     }
     set name(v: string) {
         this.raw = `/${v} CS`

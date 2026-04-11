@@ -13,10 +13,10 @@ export class MoveToOp extends PathOp {
     }
 
     get x(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get y(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
 
     set x(v: number) {
@@ -37,10 +37,10 @@ export class LineToOp extends PathOp {
     }
 
     get x(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get y(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
 
     set x(v: number) {
@@ -68,22 +68,22 @@ export class CurveToOp extends PathOp {
     }
 
     get x1(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get y1(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get x2(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
     get y2(): number {
-        return parseFloat(this.parts().operands[3])
+        return this.numberOperand(3)
     }
     get x3(): number {
-        return parseFloat(this.parts().operands[4])
+        return this.numberOperand(4)
     }
     get y3(): number {
-        return parseFloat(this.parts().operands[5])
+        return this.numberOperand(5)
     }
 
     set x1(v: number) {
@@ -121,16 +121,16 @@ export class RectangleOp extends PathOp {
     }
 
     get x(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get y(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get width(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
     get height(): number {
-        return parseFloat(this.parts().operands[3])
+        return this.numberOperand(3)
     }
 
     set x(v: number) {
@@ -157,16 +157,16 @@ export class CurveToV extends PathOp {
     }
 
     get x2(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get y2(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get x3(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
     get y3(): number {
-        return parseFloat(this.parts().operands[3])
+        return this.numberOperand(3)
     }
 
     set x2(v: number) {
@@ -193,16 +193,16 @@ export class CurveToY extends PathOp {
     }
 
     get x1(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get y1(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get x3(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
     get y3(): number {
-        return parseFloat(this.parts().operands[3])
+        return this.numberOperand(3)
     }
 
     set x1(v: number) {

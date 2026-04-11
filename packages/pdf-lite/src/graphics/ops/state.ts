@@ -33,22 +33,22 @@ export class SetMatrixOp extends StateOp {
     }
 
     get a(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get b(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get c(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
     get d(): number {
-        return parseFloat(this.parts().operands[3])
+        return this.numberOperand(3)
     }
     get e(): number {
-        return parseFloat(this.parts().operands[4])
+        return this.numberOperand(4)
     }
     get f(): number {
-        return parseFloat(this.parts().operands[5])
+        return this.numberOperand(5)
     }
 
     set a(v: number) {
@@ -96,7 +96,7 @@ export class SetLineWidthOp extends StateOp {
     }
 
     get lineWidth(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set lineWidth(v: number) {
         this.raw = `${v} w`
@@ -114,7 +114,7 @@ export class SetGraphicsStateOp extends StateOp {
 
     get name(): string {
         if (!this.raw) return ''
-        return this.parts().operands[0].slice(1)
+        return this.nameOperand(0)
     }
 
     set name(v: string) {
@@ -132,7 +132,7 @@ export class SetLineCapOp extends StateOp {
     }
 
     get cap(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set cap(v: number) {
         this.raw = `${v} J`
@@ -149,7 +149,7 @@ export class SetLineJoinOp extends StateOp {
     }
 
     get join(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set join(v: number) {
         this.raw = `${v} j`
@@ -166,7 +166,7 @@ export class SetMiterLimitOp extends StateOp {
     }
 
     get limit(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set limit(v: number) {
         this.raw = `${v} M`
@@ -193,7 +193,7 @@ export class SetRenderingIntentOp extends StateOp {
     }
 
     get intent(): string {
-        return this.parts().operands[0]?.slice(1) ?? ''
+        return this.nameOperand(0)
     }
     set intent(v: string) {
         this.raw = `/${v} ri`
@@ -210,7 +210,7 @@ export class SetFlatnessOp extends StateOp {
     }
 
     get flatness(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set flatness(v: number) {
         this.raw = `${v} i`
@@ -228,7 +228,7 @@ export class InvokeXObjectOp extends StateOp {
 
     get name(): string {
         if (!this.raw) return ''
-        return this.parts().operands[0].slice(1)
+        return this.nameOperand(0)
     }
 
     set name(v: string) {

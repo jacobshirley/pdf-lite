@@ -1,307 +1,22 @@
 import { PdfFont } from '../..'
-import { PdfHexadecimal, PdfString } from '../../core'
+import { PdfHexadecimal, PdfNumber, PdfString } from '../../core'
 import { ByteArray } from '../../types'
 import { Matrix } from '../geom/matrix'
-import { ContentOp } from './base'
+import { ContentOp, ContentOpOperand } from './base'
 
 export class TextOp extends ContentOp {}
 
-// -- Byte-level PDF string extraction ----------------------------------------
-// These functions operate directly on the raw ContentOp bytes so that binary
-// string content (e.g. CID-encoded literal strings) is never corrupted by
-// string-level regex unescaping.
+// String/number operands are parsed by `PdfContentStreamTokeniser` into
+// `this.operands` as typed `PdfString` / `PdfHexadecimal` / `PdfNumber`
+// values — accessors below read from there directly rather than
+// re-parsing the raw op bytes.
 
-const LPAREN = 0x28 // (
-const RPAREN = 0x29 // )
-const LANGLE = 0x3c // <
-const RANGLE = 0x3e // >
-const BACKSLASH = 0x5c // \
-const LBRACKET = 0x5b // [
-const RBRACKET = 0x5d // ]
-
-/**
- * Unescape a PDF literal-string at the byte level starting at `offset`
- * (the byte *after* the opening parenthesis).  Handles all PDF escape
- * sequences: \\, \(, \), \n, \r, \t, \b, \f, \ddd (octal), and line
- * continuations (\<newline>).  Also normalises bare end-of-line markers
- * inside the string as required by PDF spec 7.3.4.2.
- *
- * Returns the unescaped content bytes (excluding the outer parentheses).
- */
-function unescapeLiteralBytes(bytes: ByteArray, offset: number): ByteArray {
-    const out: number[] = []
-    let i = offset
-    let depth = 1
-
-    while (i < bytes.length && depth > 0) {
-        const b = bytes[i]
-
-        if (b === BACKSLASH) {
-            i++
-            if (i >= bytes.length) break
-            const next = bytes[i]
-            switch (next) {
-                case 0x6e:
-                    out.push(0x0a)
-                    i++
-                    break // \n → LF
-                case 0x72:
-                    out.push(0x0d)
-                    i++
-                    break // \r → CR
-                case 0x74:
-                    out.push(0x09)
-                    i++
-                    break // \t → TAB
-                case 0x62:
-                    out.push(0x08)
-                    i++
-                    break // \b → BS
-                case 0x66:
-                    out.push(0x0c)
-                    i++
-                    break // \f → FF
-                case LPAREN:
-                    out.push(LPAREN)
-                    i++
-                    break // \( → (
-                case RPAREN:
-                    out.push(RPAREN)
-                    i++
-                    break // \) → )
-                case BACKSLASH:
-                    out.push(BACKSLASH)
-                    i++
-                    break // \\ → \
-                case 0x0a: // \LF → line continuation
-                    i++
-                    break
-                case 0x0d: // \CR or \CR+LF
-                    i++
-                    if (i < bytes.length && bytes[i] === 0x0a) i++
-                    break
-                default:
-                    if (next >= 0x30 && next <= 0x37) {
-                        // Octal \ddd
-                        let oct = next - 0x30
-                        i++
-                        if (
-                            i < bytes.length &&
-                            bytes[i] >= 0x30 &&
-                            bytes[i] <= 0x37
-                        ) {
-                            oct = oct * 8 + (bytes[i] - 0x30)
-                            i++
-                            if (
-                                i < bytes.length &&
-                                bytes[i] >= 0x30 &&
-                                bytes[i] <= 0x37
-                            ) {
-                                oct = oct * 8 + (bytes[i] - 0x30)
-                                i++
-                            }
-                        }
-                        out.push(oct & 0xff)
-                    } else {
-                        // Per PDF spec: unknown escape → backslash is ignored
-                        out.push(next)
-                        i++
-                    }
-                    break
-            }
-        } else if (b === LPAREN) {
-            depth++
-            out.push(b)
-            i++
-        } else if (b === RPAREN) {
-            depth--
-            if (depth > 0) out.push(b)
-            i++
-        } else if (b === 0x0d) {
-            // Bare CR or CR+LF → LF (PDF spec 7.3.4.2)
-            out.push(0x0a)
-            i++
-            if (i < bytes.length && bytes[i] === 0x0a) i++
-        } else {
-            out.push(b)
-            i++
-        }
-    }
-    return new Uint8Array(out) as ByteArray
-}
-
-/**
- * Skip the content of a literal string in the byte buffer, starting at
- * `offset` (the byte of the opening `(`).  Returns the index of the byte
- * just past the closing `)`.  Handles backslash escapes and nested parens.
- */
-function skipLiteralString(bytes: Uint8Array, offset: number): number {
-    let i = offset + 1
-    let depth = 1
-    while (i < bytes.length && depth > 0) {
-        const b = bytes[i]
-        if (b === BACKSLASH) {
-            i += 2
-            continue
-        }
-        if (b === LPAREN) depth++
-        else if (b === RPAREN) depth--
-        if (depth === 0) break
-        i++
-    }
-    return i + 1 // past ')'
-}
-
-/**
- * Find the first literal `(…)` or hex `<…>` string operand in a raw op
- * byte buffer and return its properly-unescaped content.  For literal
- * strings the PDF escape sequences are processed at the byte level so
- * binary content is never corrupted.
- */
-function extractStringOperandBytes(
-    bytes: ByteArray,
-): StringOperandResult | null {
-    for (let i = 0; i < bytes.length; i++) {
-        if (bytes[i] === LPAREN) {
-            return {
-                kind: 'literal',
-                rawBytes: unescapeLiteralBytes(bytes, i + 1),
-            }
-        }
-        if (
-            bytes[i] === LANGLE &&
-            (i + 1 >= bytes.length || bytes[i + 1] !== LANGLE)
-        ) {
-            const end = bytes.indexOf(RANGLE, i + 1)
-            if (end === -1) return null
-            let hex = ''
-            for (let j = i + 1; j < end; j++)
-                hex += String.fromCharCode(bytes[j])
-            return { kind: 'hex', rawBytes: new Uint8Array(0), hex }
-        }
-    }
-    return null
-}
-
-type StringOperandResult =
-    | { kind: 'literal'; rawBytes: ByteArray; hex?: undefined }
-    | { kind: 'hex'; rawBytes: ByteArray; hex: string }
-
-/**
- * Parse a TJ `[…]` array operand directly from the op byte buffer.
- * Literal strings are unescaped at the byte level; hex strings and numbers
- * are handled normally.
- */
-function extractArraySegmentsFromBytes(
-    bytes: ByteArray,
-): (PdfString | PdfHexadecimal | number)[] {
-    let start = bytes.indexOf(LBRACKET)
-    if (start === -1) return []
-    let end = bytes.length - 1
-    while (end > start && bytes[end] !== RBRACKET) end--
-    if (end <= start) return []
-
-    const result: (PdfString | PdfHexadecimal | number)[] = []
-    let i = start + 1
-
-    while (i < end) {
-        const b = bytes[i]
-
-        // Skip whitespace
-        if (
-            b === 0x20 ||
-            b === 0x09 ||
-            b === 0x0a ||
-            b === 0x0d ||
-            b === 0x0c ||
-            b === 0x00
-        ) {
-            i++
-            continue
-        }
-
-        if (b === LPAREN) {
-            result.push(new PdfString(unescapeLiteralBytes(bytes, i + 1)))
-            i = skipLiteralString(bytes, i)
-            continue
-        }
-
-        if (b === LANGLE) {
-            const j = bytes.indexOf(RANGLE, i + 1)
-            if (j === -1) break
-            let hex = ''
-            for (let k = i + 1; k < j; k++) hex += String.fromCharCode(bytes[k])
-            result.push(new PdfHexadecimal(hex))
-            i = j + 1
-            continue
-        }
-
-        // Number — read until next delimiter or whitespace
-        let j = i
-        while (
-            j < end &&
-            bytes[j] !== 0x20 &&
-            bytes[j] !== 0x09 &&
-            bytes[j] !== 0x0a &&
-            bytes[j] !== 0x0d &&
-            bytes[j] !== LPAREN &&
-            bytes[j] !== LANGLE
-        ) {
-            j++
-        }
-        let numStr = ''
-        for (let k = i; k < j; k++) numStr += String.fromCharCode(bytes[k])
-        if (numStr.length > 0) {
-            const n = parseFloat(numStr)
-            if (!Number.isNaN(n)) result.push(n)
-        }
-        i = j
-    }
-    return result
-}
-
-// -- Legacy string-based helpers (kept for informal text getters) -----------
-
-/**
- * Extract the first literal `(…)` or hex `<…>` string operand from the
- * Latin-1 string form of op bytes.  Kept for the `text` getter which
- * only needs an approximate display string, not exact binary bytes.
- */
-function extractStringOperand(
-    raw: string,
-): { kind: 'literal' | 'hex'; body: string } | null {
-    const trimmed = raw.trim()
-
-    const hexStart = trimmed.indexOf('<')
-    const litStart = trimmed.indexOf('(')
-
-    const useHex =
-        hexStart !== -1 &&
-        (litStart === -1 || hexStart < litStart) &&
-        trimmed[hexStart + 1] !== '<'
-
-    if (useHex) {
-        const end = trimmed.indexOf('>', hexStart + 1)
-        if (end === -1) return null
-        return { kind: 'hex', body: trimmed.slice(hexStart + 1, end) }
-    }
-
-    if (litStart === -1) return null
-
-    let depth = 1
-    let j = litStart + 1
-    while (j < trimmed.length && depth > 0) {
-        const c = trimmed[j]
-        if (c === '\\') {
-            j += 2
-            continue
-        }
-        if (c === '(') depth++
-        else if (c === ')') depth--
-        if (depth === 0) break
-        j++
-    }
-    return { kind: 'literal', body: trimmed.slice(litStart + 1, j) }
+/** Escape a string for inclusion inside a PDF literal `(...)` operand. */
+function escapeLiteral(value: string): string {
+    return value
+        .replace(/\\/g, '\\\\')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)')
 }
 
 export class SetFontOp extends TextOp {
@@ -315,12 +30,12 @@ export class SetFontOp extends TextOp {
 
     get fontName(): string {
         if (!this.raw) return ''
-        return this.parts().operands[0].slice(1) // remove leading '/'
+        return this.nameOperand(0)
     }
 
     get fontSize(): number {
         if (!this.raw) return 0
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
 
     set fontName(name: string) {
@@ -351,22 +66,22 @@ export class SetTextMatrixOp extends TextOp {
     }
 
     get a(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get b(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
     get c(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
     get d(): number {
-        return parseFloat(this.parts().operands[3])
+        return this.numberOperand(3)
     }
     get e(): number {
-        return parseFloat(this.parts().operands[4])
+        return this.numberOperand(4)
     }
     get f(): number {
-        return parseFloat(this.parts().operands[5])
+        return this.numberOperand(5)
     }
 
     set a(v: number) {
@@ -414,10 +129,10 @@ export class MoveTextOp extends TextOp {
     }
 
     get x(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get y(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
 
     set x(v: number) {
@@ -438,10 +153,10 @@ export class MoveTextLeadingOp extends TextOp {
     }
 
     get x(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get y(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
 
     set x(v: number) {
@@ -464,38 +179,42 @@ export class ShowTextOp extends TextOp {
     }
 
     static create(text: PdfString | PdfHexadecimal | string): ShowTextOp {
+        let operand: PdfString | PdfHexadecimal
+        let raw: string
         if (typeof text === 'string') {
-            return new ShowTextOp(`(${text}) Tj`)
+            operand = new PdfString(text)
+            raw = `(${escapeLiteral(text)}) Tj`
         } else if (text instanceof PdfHexadecimal) {
-            return new ShowTextOp(`<${text.hexString}> Tj`)
+            operand = text
+            raw = `<${text.hexString}> Tj`
         } else if (text instanceof PdfString) {
-            return new ShowTextOp(`(${text.value}) Tj`)
+            operand = text
+            raw = `(${escapeLiteral(text.value)}) Tj`
+        } else {
+            throw new Error('Invalid text type for Tj operator')
         }
-        throw new Error('Invalid text type for Tj operator')
+        const op = new ShowTextOp(raw)
+        op.operands = [operand]
+        return op
     }
 
     get text(): string {
-        if (!this.raw) return ''
-        const s = extractStringOperand(this.raw)
-        if (!s) return ''
-        return s.body
+        const op = this.stringOperand
+        if (!op) return ''
+        return op instanceof PdfString ? op.value : op.hexString
     }
 
     set text(value: string) {
-        this.raw = `(${value}) Tj`
+        this.raw = `(${escapeLiteral(value)}) Tj`
+        this.operands = [new PdfString(value)]
     }
 
     /**
-     * Return the operand as a typed PdfString or PdfHexadecimal.
-     * This preserves the original encoding so callers can measure glyph codes.
-     * Literal strings are unescaped at the byte level to avoid corrupting
-     * binary CID-encoded data.
+     * Return the operand as a typed PdfString or PdfHexadecimal. Preserves
+     * the original encoding so callers can measure glyph codes.
      */
     get stringOperand(): PdfString | PdfHexadecimal | null {
-        const result = extractStringOperandBytes(this.bytes)
-        if (!result) return null
-        if (result.kind === 'hex') return new PdfHexadecimal(result.hex!)
-        return new PdfString(result.rawBytes)
+        return this.stringOperandAt(0)
     }
 
     /**
@@ -508,7 +227,7 @@ export class ShowTextOp extends TextOp {
     }
 }
 
-export type ShowTextSegment = PdfString | PdfHexadecimal | number
+export type ShowTextSegment = PdfString | PdfHexadecimal | PdfNumber
 
 /**
  * `TJ` operator — an array of string/number entries used for text showing
@@ -519,30 +238,44 @@ export class ShowTextArrayOp extends TextOp {
         super(input)
     }
 
-    static create(segments: ShowTextSegment[]): ShowTextArrayOp {
-        return new ShowTextArrayOp(
-            `[${segments.map(ShowTextArrayOp.encodeSegment).join(' ')}] TJ`,
+    static create(segments: (ShowTextSegment | number)[]): ShowTextArrayOp {
+        const normalised = segments.map((s) =>
+            typeof s === 'number' ? new PdfNumber(s) : s,
         )
+        const op = new ShowTextArrayOp(
+            `[${normalised.map(ShowTextArrayOp.encodeSegment).join(' ')}] TJ`,
+        )
+        op.operands = [normalised as ContentOpOperand[]]
+        return op
     }
 
     private static encodeSegment(segment: ShowTextSegment): string {
-        if (typeof segment === 'number') return segment.toString()
+        if (segment instanceof PdfNumber) return segment.value.toString()
         if (segment instanceof PdfHexadecimal) return `<${segment.hexString}>`
         if (segment instanceof PdfString) return `(${segment.value})`
         throw new Error('Invalid segment type for ShowTextArrayOp')
     }
 
     /**
-     * Parse the `[...]` array operand from the raw bytes into a sequence of
-     * typed segments (PdfString, PdfHexadecimal, number).  Literal strings
-     * are unescaped at the byte level so binary CID data is preserved.
+     * The `[...]` array operand as a sequence of typed segments
+     * (PdfString, PdfHexadecimal, PdfNumber). Populated by the
+     * content-stream tokeniser; literal strings are unescaped
+     * byte-safely so binary CID data is preserved.
      */
     get segments(): ShowTextSegment[] {
-        return extractArraySegmentsFromBytes(this.bytes)
+        const arr = this.operands[0]
+        if (!Array.isArray(arr)) return []
+        return arr.filter(
+            (s): s is ShowTextSegment =>
+                s instanceof PdfString ||
+                s instanceof PdfHexadecimal ||
+                s instanceof PdfNumber,
+        )
     }
 
     set segments(value: ShowTextSegment[]) {
         this.raw = `[${value.map(ShowTextArrayOp.encodeSegment).join(' ')}] TJ`
+        this.operands = [value as ContentOpOperand[]]
     }
 
     get text(): string {
@@ -576,7 +309,7 @@ export class SetCharSpacingOp extends TextOp {
     }
 
     get charSpace(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set charSpace(v: number) {
         this.raw = `${v} Tc`
@@ -593,7 +326,7 @@ export class SetWordSpacingOp extends TextOp {
     }
 
     get wordSpace(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set wordSpace(v: number) {
         this.raw = `${v} Tw`
@@ -618,18 +351,20 @@ export class ShowTextNextLineOp extends TextOp {
     }
 
     static create(text: string): ShowTextNextLineOp {
-        return new ShowTextNextLineOp(`(${text}) '`)
+        const op = new ShowTextNextLineOp(`(${escapeLiteral(text)}) '`)
+        op.operands = [new PdfString(text)]
+        return op
     }
 
     get text(): string {
-        if (!this.raw) return ''
-        const s = extractStringOperand(this.raw)
-        if (!s) return ''
-        return s.body
+        const op = this.stringOperand
+        if (!op) return ''
+        return op instanceof PdfString ? op.value : op.hexString
     }
 
     set text(value: string) {
-        this.raw = `(${value}) '`
+        this.raw = `(${escapeLiteral(value)}) '`
+        this.operands = [new PdfString(value)]
     }
 
     decode(font: PdfFont): string {
@@ -638,10 +373,7 @@ export class ShowTextNextLineOp extends TextOp {
     }
 
     get stringOperand(): PdfString | PdfHexadecimal | null {
-        const result = extractStringOperandBytes(this.bytes)
-        if (!result) return null
-        if (result.kind === 'hex') return new PdfHexadecimal(result.hex!)
-        return new PdfString(result.rawBytes)
+        return this.stringOperandAt(0)
     }
 
     /**
@@ -663,34 +395,36 @@ export class ShowTextNextLineSpacingOp extends TextOp {
         charSpace: number,
         text: string,
     ): ShowTextNextLineSpacingOp {
-        return new ShowTextNextLineSpacingOp(
-            `${wordSpace} ${charSpace} (${text}) "`,
+        const op = new ShowTextNextLineSpacingOp(
+            `${wordSpace} ${charSpace} (${escapeLiteral(text)}) "`,
         )
+        op.operands = [
+            new PdfNumber(wordSpace),
+            new PdfNumber(charSpace),
+            new PdfString(text),
+        ]
+        return op
     }
 
     get wordSpace(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     get charSpace(): number {
-        return parseFloat(this.parts().operands[1])
+        return this.numberOperand(1)
     }
 
     get extraLeading(): number {
-        return parseFloat(this.parts().operands[2])
+        return this.numberOperand(2)
     }
 
     get text(): string {
-        if (!this.raw) return ''
-        const s = extractStringOperand(this.raw)
-        if (!s) return ''
-        return s.body
+        const op = this.stringOperand
+        if (!op) return ''
+        return op instanceof PdfString ? op.value : op.hexString
     }
 
     get stringOperand(): PdfString | PdfHexadecimal | null {
-        const result = extractStringOperandBytes(this.bytes)
-        if (!result) return null
-        if (result.kind === 'hex') return new PdfHexadecimal(result.hex!)
-        return new PdfString(result.rawBytes)
+        return this.stringOperandAt(2)
     }
 
     /**
@@ -712,7 +446,7 @@ export class SetHorizontalScalingOp extends TextOp {
     }
 
     get scale(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set scale(v: number) {
         this.raw = `${v} Tz`
@@ -729,7 +463,7 @@ export class SetTextLeadingOp extends TextOp {
     }
 
     get leading(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set leading(v: number) {
         this.raw = `${v} TL`
@@ -746,7 +480,7 @@ export class SetTextRenderingModeOp extends TextOp {
     }
 
     get mode(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set mode(v: number) {
         this.raw = `${v} Tr`
@@ -763,7 +497,7 @@ export class SetTextRiseOp extends TextOp {
     }
 
     get rise(): number {
-        return parseFloat(this.parts().operands[0])
+        return this.numberOperand(0)
     }
     set rise(v: number) {
         this.raw = `${v} Ts`

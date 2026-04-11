@@ -1,7 +1,7 @@
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
 import { PdfStream } from '../core/objects/pdf-stream'
 import { PdfFont } from '../fonts/pdf-font.js'
-import { PdfDictionary, PdfHexadecimal, PdfString } from '../core'
+import { PdfDictionary, PdfHexadecimal, PdfNumber, PdfString } from '../core'
 import { PdfPage } from '../pdf/pdf-page'
 import { Matrix } from './geom/matrix'
 import { Point } from './geom/point'
@@ -18,6 +18,7 @@ import {
     NextLineOp,
     ShowTextOp,
     ShowTextArrayOp,
+    ShowTextSegment,
     SetCharSpacingOp,
     SetWordSpacingOp,
     ShowTextNextLineOp,
@@ -242,7 +243,7 @@ export class Text extends ContentNode {
         const hasKern = m.kernPairs.length > 0
 
         if (!hasKern || text.length <= 1) {
-            return new ShowTextOp(`${this.encodeOperand(text)} Tj`)
+            return ShowTextOp.create(this.font.encode(text))
         }
 
         // Build TJ array: split at kern boundaries
@@ -279,15 +280,14 @@ export class Text extends ContentNode {
 
         // If no kern was actually applied, use simple Tj
         if (entries.length === 1 && 'text' in entries[0]) {
-            return new ShowTextOp(`${this.encodeOperand(entries[0].text)} Tj`)
+            return ShowTextOp.create(this.font.encode(entries[0].text))
         }
 
-        const parts = entries.map((e) => {
-            if ('kern' in e) return String(e.kern)
-            return this.encodeOperand(e.text)
-        })
+        const segments: ShowTextSegment[] = entries.map((e) =>
+            'kern' in e ? new PdfNumber(e.kern) : this.font.encode(e.text),
+        )
 
-        return new ShowTextArrayOp(`[${parts.join(' ')}] TJ`)
+        return ShowTextArrayOp.create(segments)
     }
 
     /**
@@ -365,11 +365,11 @@ export class Text extends ContentNode {
             } else if (op instanceof ShowTextArrayOp) {
                 sawShowOp = true
                 for (const segment of op.segments) {
-                    if (typeof segment === 'number') {
+                    if (segment instanceof PdfNumber) {
                         // TJ numeric entries are kern adjustments in
                         // thousandths of a unit of text space — they
                         // *reduce* the advance.
-                        total -= (segment / 1000) * fontSize
+                        total -= (segment.value / 1000) * fontSize
                     } else {
                         total += measureOperand(segment)
                     }

@@ -374,9 +374,9 @@ describe('PdfContentStreamTokeniser', () => {
             const segs = tj.segments
             expect(segs).toHaveLength(5)
             expect((segs[0] as { value: string }).value).toBe('He')
-            expect(segs[1]).toBe(-10)
+            expect((segs[1] as { value: number }).value).toBe(-10)
             expect((segs[2] as { hexString: string }).hexString).toBe('AB')
-            expect(segs[3]).toBe(5)
+            expect((segs[3] as { value: number }).value).toBe(5)
             expect((segs[4] as { value: string }).value).toBe('llo')
         })
 

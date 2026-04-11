@@ -1,8 +1,10 @@
+import { PdfHexadecimal, PdfName, PdfNumber, PdfString } from '../core'
 import { IncrementalParser } from '../core/parser/incremental-parser'
 import { EofReachedError, NoMoreTokensError } from '../errors'
 import { ByteArray } from '../types'
 import { stringToBytes } from '../utils/stringToBytes'
-import { ContentOp } from './ops/base'
+import { unescapeString } from '../utils/unescapeString'
+import { ContentOp, ContentOpOperand } from './ops/base'
 import {
     SetFillColorCMYKOp,
     SetFillColorExtOp,
@@ -79,7 +81,6 @@ import {
  * a raw `ByteArray` so the original byte span (including surrounding
  * whitespace) is preserved verbatim.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ContentOpCtor = new (bytes: ByteArray) => ContentOp
 const OPERATOR_CLASSES: Record<string, ContentOpCtor> = {
     // --- text object ---
@@ -238,8 +239,25 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
         )
     }
 
-    private readString(): void {
+    private sliceBytes(start: number, end: number): ByteArray {
+        const out = new Uint8Array(end - start)
+        for (let i = 0; i < out.length; i++) {
+            out[i] = this.buffer[start + i] as number
+        }
+        return out
+    }
+
+    private sliceAscii(start: number, end: number): string {
+        let out = ''
+        for (let i = start; i < end; i++) {
+            out += String.fromCharCode(this.buffer[i] as number)
+        }
+        return out
+    }
+
+    private readString(target: ContentOpOperand[]): void {
         this.next() // consume '('
+        const bodyStart = this.bufferIndex
         let nesting = 1
 
         while (nesting > 0) {
@@ -286,18 +304,29 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
                 nesting--
             }
         }
+
+        // `bufferIndex` is now just past the closing `)`. Slice the inner
+        // bytes (including the trailing `)`) and let `unescapeString`
+        // process PDF escape sequences byte-safely.
+        const bodyEnd = this.bufferIndex
+        const inner = this.sliceBytes(bodyStart, bodyEnd)
+        target.push(new PdfString(unescapeString(inner)))
     }
 
-    private readHexString(): void {
+    private readHexString(target: ContentOpOperand[]): void {
         this.next() // consume '<'
+        const bodyStart = this.bufferIndex
         while (this.peek() !== RIGHT_ANGLE) {
             this.next()
         }
+        const bodyEnd = this.bufferIndex
         this.next() // consume '>'
+        target.push(new PdfHexadecimal(this.sliceAscii(bodyStart, bodyEnd)))
     }
 
-    private readArray(): void {
+    private readArray(target: ContentOpOperand[]): void {
         this.next() // consume '['
+        const inner: ContentOpOperand[] = []
         let depth = 1
 
         while (depth > 0) {
@@ -307,6 +336,11 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
                 break
             }
 
+            if (PdfContentStreamTokeniser.isWhitespace(byte)) {
+                this.next()
+                continue
+            }
+
             if (byte === LEFT_BRACKET) {
                 depth++
                 this.next()
@@ -314,12 +348,17 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
                 depth--
                 this.next()
             } else if (byte === LEFT_PAREN) {
-                // nested string — consume whole thing
-                this.readString()
+                this.readString(inner)
+            } else if (byte === LEFT_ANGLE) {
+                this.readHexString(inner)
+            } else if (PdfContentStreamTokeniser.isNumericStart(byte)) {
+                this.readNumber(inner)
             } else {
                 this.next()
             }
         }
+
+        target.push(inner)
     }
 
     private readDictionary(): void {
@@ -341,8 +380,9 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
         this.next() // consume second '>'
     }
 
-    private readName(): void {
+    private readName(target: ContentOpOperand[]): void {
         this.next() // consume '/'
+        const start = this.bufferIndex
         while (
             !PdfContentStreamTokeniser.isWhitespace(this.peek()) &&
             !PdfContentStreamTokeniser.isDelimiter(this.peek()) &&
@@ -350,9 +390,11 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
         ) {
             this.next()
         }
+        target.push(new PdfName(this.sliceAscii(start, this.bufferIndex)))
     }
 
-    private readNumber(): void {
+    private readNumber(target: ContentOpOperand[]): void {
+        const start = this.bufferIndex
         while (
             PdfContentStreamTokeniser.isDigit(this.peek()) ||
             this.peek() === MINUS ||
@@ -360,6 +402,9 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
         ) {
             this.next()
         }
+        const numStr = this.sliceAscii(start, this.bufferIndex)
+        const n = parseFloat(numStr)
+        if (!Number.isNaN(n)) target.push(new PdfNumber(n))
     }
 
     /**
@@ -395,14 +440,20 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
      * subclass for `operator`. Unknown operators (or `''` for the
      * whitespace-only final op at EOF) fall back to the base `ContentOp`.
      */
-    private emitOp(startIndex: number, operator: string): ContentOp {
+    private emitOp(
+        startIndex: number,
+        operator: string,
+        operands: ContentOpOperand[],
+    ): ContentOp {
         const len = this.bufferIndex - startIndex
         const bytes = new Uint8Array(len) as ByteArray
         for (let i = 0; i < len; i++) {
             bytes[i] = this.buffer[startIndex + i] as number
         }
         const SubClass = OPERATOR_CLASSES[operator]
-        return SubClass ? new SubClass(bytes) : new ContentOp(bytes)
+        const op = SubClass ? new SubClass(bytes) : new ContentOp(bytes)
+        op.operands = operands
+        return op
     }
 
     protected parse(): ContentOp {
@@ -410,6 +461,7 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
         // thrown mid-parse causes the base class to restore bufferIndex, so
         // on retry we'll re-scan from the same startIndex.
         const startIndex = this.bufferIndex
+        const operands: ContentOpOperand[] = []
 
         while (true) {
             const byte = this.peek()
@@ -422,7 +474,7 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
                 // consumed at all, signal no-more-tokens so the
                 // generator loop exits.
                 if (this.bufferIndex > startIndex) {
-                    return this.emitOp(startIndex, '')
+                    return this.emitOp(startIndex, '', operands)
                 }
                 throw new NoMoreTokensError('End of content stream')
             }
@@ -433,30 +485,30 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
             }
 
             if (byte === LEFT_PAREN) {
-                this.readString()
+                this.readString(operands)
             } else if (byte === LEFT_ANGLE) {
                 if (this.peek(1) === LEFT_ANGLE) {
                     // dictionary << >> — treat as an opaque operand
                     this.readDictionary()
                 } else {
-                    this.readHexString()
+                    this.readHexString(operands)
                 }
             } else if (byte === LEFT_BRACKET) {
-                this.readArray()
+                this.readArray(operands)
             } else if (byte === SLASH) {
-                this.readName()
+                this.readName(operands)
             } else if (PdfContentStreamTokeniser.isNumericStart(byte)) {
-                this.readNumber()
+                this.readNumber(operands)
             } else if (PdfContentStreamTokeniser.isAlpha(byte)) {
                 // Operator keyword — terminates the op.
                 const keyword = this.readKeyword()
                 this.consumeTrailingWhitespace()
-                return this.emitOp(startIndex, keyword)
+                return this.emitOp(startIndex, keyword, operands)
             } else if (byte === SINGLE_QUOTE || byte === DOUBLE_QUOTE) {
                 // ' and " are single-char operators that terminate the op.
                 const keyword = String.fromCharCode(this.next() as number)
                 this.consumeTrailingWhitespace()
-                return this.emitOp(startIndex, keyword)
+                return this.emitOp(startIndex, keyword, operands)
             } else if (byte === ASTERISK) {
                 // Standalone '*' — shouldn't occur in valid PDF; advance
                 // and keep scanning so we don't get stuck.

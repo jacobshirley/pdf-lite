@@ -6,6 +6,67 @@ import { ContentOp } from './base'
 
 export class TextOp extends ContentOp {}
 
+/**
+ * Extract the first literal `(…)` or hex `<…>` string operand from raw
+ * op bytes using PDF-aware parsing (respects balanced parens and
+ * backslash escapes).  Returns `{ kind, body }` where `body` is the
+ * content between the delimiters, or `null` if no string is found.
+ */
+function extractStringOperand(
+    raw: string,
+): { kind: 'literal' | 'hex'; body: string } | null {
+    const trimmed = raw.trim()
+
+    // Hex string
+    const hexStart = trimmed.indexOf('<')
+    const litStart = trimmed.indexOf('(')
+
+    // Pick whichever delimiter comes first (ignoring -1)
+    const useHex =
+        hexStart !== -1 &&
+        (litStart === -1 || hexStart < litStart) &&
+        // Make sure it's not a dictionary `<<`
+        trimmed[hexStart + 1] !== '<'
+
+    if (useHex) {
+        const end = trimmed.indexOf('>', hexStart + 1)
+        if (end === -1) return null
+        return { kind: 'hex', body: trimmed.slice(hexStart + 1, end) }
+    }
+
+    if (litStart === -1) return null
+
+    // Literal string — walk with balanced parens + backslash escapes
+    let depth = 1
+    let j = litStart + 1
+    while (j < trimmed.length && depth > 0) {
+        const c = trimmed[j]
+        if (c === '\\') {
+            j += 2 // skip escaped char
+            continue
+        }
+        if (c === '(') depth++
+        else if (c === ')') depth--
+        if (depth === 0) break
+        j++
+    }
+    return { kind: 'literal', body: trimmed.slice(litStart + 1, j) }
+}
+
+/**
+ * Unescape a PDF literal-string body (the content between the outer `(…)`).
+ */
+function unescapePdfLiteral(body: string): string {
+    return body
+        .replace(/\\\\/g, '\x00') // \\ → temp marker
+        .replace(/\\\(/g, '(') // \( → (
+        .replace(/\\\)/g, ')') // \) → )
+        .replace(/\\n/g, '\n') // \n → newline
+        .replace(/\\r/g, '\r') // \r → CR
+        .replace(/\\t/g, '\t') // \t → tab
+        .replace(/\x00/g, '\\') // restore \
+}
+
 export class SetFontOp extends TextOp {
     constructor(input: string | ByteArray = '') {
         super(input)
@@ -178,14 +239,9 @@ export class ShowTextOp extends TextOp {
 
     get text(): string {
         if (!this.raw) return ''
-        const operand = this.parts().operands.join(' ')
-        if (operand.startsWith('(') && operand.endsWith(')')) {
-            return operand.slice(1, -1)
-        }
-        if (operand.startsWith('<') && operand.endsWith('>')) {
-            return operand.slice(1, -1)
-        }
-        return operand
+        const s = extractStringOperand(this.raw)
+        if (!s) return ''
+        return s.body
     }
 
     set text(value: string) {
@@ -198,24 +254,12 @@ export class ShowTextOp extends TextOp {
      */
     decodeWithFont(font: PdfFont): string {
         if (!this.raw) return ''
-        const operand = this.parts().operands.join(' ')
-        if (operand.startsWith('(') && operand.endsWith(')')) {
-            // Literal string - unescape PDF escapes before decoding
-            const withoutParens = operand.slice(1, -1)
-            // Unescape PDF escape sequences in correct order
-            // Must process \\ first to avoid double-unescaping
-            const unescaped = withoutParens
-                .replace(/\\\\/g, '\x00') // \\ -> temporary marker
-                .replace(/\\\(/g, '(') // \( -> (
-                .replace(/\\\)/g, ')') // \) -> )
-                .replace(/\x00/g, '\\') // restore \
-            // font.decode expects unescaped text, just return it directly
-            return unescaped
-        } else if (operand.startsWith('<') && operand.endsWith('>')) {
-            // Hex string
-            return font.decode(new PdfHexadecimal(operand.slice(1, -1)))
+        const s = extractStringOperand(this.raw)
+        if (!s) return ''
+        if (s.kind === 'hex') {
+            return font.decode(new PdfHexadecimal(s.body))
         }
-        return this.text
+        return unescapePdfLiteral(s.body)
     }
 }
 
@@ -409,11 +453,9 @@ export class ShowTextNextLineOp extends TextOp {
 
     get text(): string {
         if (!this.raw) return ''
-        const operand = this.parts().operands.join(' ')
-        if (operand.startsWith('(') && operand.endsWith(')')) {
-            return operand.slice(1, -1)
-        }
-        return operand
+        const s = extractStringOperand(this.raw)
+        if (!s) return ''
+        return s.body
     }
 
     set text(value: string) {
@@ -428,7 +470,13 @@ export class ShowTextNextLineOp extends TextOp {
      * Decode the text using the provided font.
      */
     decodeWithFont(font: PdfFont): string {
-        return font.decode(new PdfString(this.text))
+        if (!this.raw) return ''
+        const s = extractStringOperand(this.raw)
+        if (!s) return ''
+        if (s.kind === 'hex') {
+            return font.decode(new PdfHexadecimal(s.body))
+        }
+        return unescapePdfLiteral(s.body)
     }
 }
 
@@ -460,19 +508,22 @@ export class ShowTextNextLineSpacingOp extends TextOp {
 
     get text(): string {
         if (!this.raw) return ''
-        const operands = this.parts().operands
-        const textPart = operands.slice(2).join(' ')
-        if (textPart.startsWith('(') && textPart.endsWith(')')) {
-            return textPart.slice(1, -1)
-        }
-        return textPart
+        const s = extractStringOperand(this.raw)
+        if (!s) return ''
+        return s.body
     }
 
     /**
      * Decode the text using the provided font.
      */
     decodeWithFont(font: PdfFont): string {
-        return font.decode(new PdfString(this.text))
+        if (!this.raw) return ''
+        const s = extractStringOperand(this.raw)
+        if (!s) return ''
+        if (s.kind === 'hex') {
+            return font.decode(new PdfHexadecimal(s.body))
+        }
+        return unescapePdfLiteral(s.body)
     }
 }
 

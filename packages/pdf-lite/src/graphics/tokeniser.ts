@@ -1,5 +1,5 @@
 import { IncrementalParser } from '../core/parser/incremental-parser'
-import { NoMoreTokensError } from '../errors'
+import { EofReachedError, NoMoreTokensError } from '../errors'
 import { ByteArray } from '../types'
 import { stringToBytes } from '../utils/stringToBytes'
 import { ContentOp } from './ops/base'
@@ -243,7 +243,16 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
         let nesting = 1
 
         while (nesting > 0) {
-            const byte = this.next()
+            let byte: number
+            try {
+                byte = this.next()
+            } catch (e) {
+                if (e instanceof EofReachedError) {
+                    // EOF while string unclosed - treat as end of string
+                    break
+                }
+                throw e
+            }
 
             if (byte === BACKSLASH) {
                 // Handle escape sequences according to PDF spec

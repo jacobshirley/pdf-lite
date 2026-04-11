@@ -1,7 +1,7 @@
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
 import { PdfStream } from '../core/objects/pdf-stream'
 import { PdfFont } from '../fonts/pdf-font.js'
-import { PdfHexadecimal, PdfString } from '../core'
+import { PdfDictionary, PdfHexadecimal, PdfString } from '../core'
 import { PdfPage } from '../pdf/pdf-page'
 import { Matrix } from './geom/matrix'
 import { Point } from './geom/point'
@@ -1012,8 +1012,17 @@ export class PdfContentStream extends PdfStream {
     _nodes: ContentNode[] | undefined
     page?: PdfPage
 
-    constructor(rawData?: ByteArray) {
-        super(rawData)
+    constructor(
+        options:
+            | {
+                  header: PdfDictionary
+                  original: ByteArray | string
+                  isModified?: boolean
+              }
+            | ByteArray
+            | string = '',
+    ) {
+        super(options)
     }
 
     get nodes(): ContentNode[] {
@@ -1202,7 +1211,10 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
             throw new Error('Content stream object must have a stream content')
         }
 
-        this.content = new PdfContentStream(object?.content?.raw)
+        this.content = new PdfContentStream({
+            header: object?.content?.header,
+            original: object?.content?.raw,
+        })
     }
 
     textBlock(): TextBlock {

@@ -100,7 +100,8 @@ describe('multi-child-field.pdf — content streams', () => {
         const page = doc.pages.get(0)
         const textBlocks = page.contentStreams.flatMap((s) => s.textBlocks)
         const texts = textBlocks.map((tb) => tb.text)
-        expect(texts).toContain('First Name')
+        // PDF is in Italian - check for actual content
+        expect(texts).toContain('DELEGA ')
     })
 })
 

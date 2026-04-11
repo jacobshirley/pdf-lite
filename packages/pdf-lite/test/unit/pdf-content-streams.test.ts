@@ -286,6 +286,39 @@ describe('TextBlock', () => {
         expect(tb.text).toBe('Hello World')
     })
 
+    it('should preserve spaces inside literal strings', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello World) Tj ET')
+        const tb = s.textBlocks[0]
+        expect(tb.text).toBe('Hello World')
+    })
+
+    it('should preserve a single-space literal string', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td ( ) Tj ET')
+        const tb = s.textBlocks[0]
+        expect(tb.text).toBe(' ')
+    })
+
+    it('should decode escaped parentheses in Tj', () => {
+        const s = makeStream(
+            'BT /F1 12 Tf 100 700 Td (\\(BLOCK CAPITALS\\)) Tj ET',
+        )
+        const tb = s.textBlocks[0]
+        expect(tb.text).toBe('(BLOCK CAPITALS)')
+    })
+
+    it('should decode split escaped-paren Tj ops like template.pdf', () => {
+        // Simulates the real pattern: (\(B)Tj ... (LOCK)Tj ... (\))Tj
+        const s = makeStream(
+            'BT /TT1 1 Tf 12 0 0 12 36 702 Tm (\\(B) Tj 8.4 0 0 8.4 48 702 Tm (LOCK) Tj 12 0 0 12 70 702 Tm ( ) Tj (C) Tj 8.4 0 0 8.4 82 702 Tm [(APIT) 74.4 (ALS)] TJ 12 0 0 12 116 702 Tm (\\)) Tj ET',
+        )
+        const tb = s.textBlocks[0]
+        expect(tb.text).toContain('(B')
+        expect(tb.text).toContain('LOCK')
+        expect(tb.text).toContain(' ')
+        expect(tb.text).toContain('CAPITALS')
+        expect(tb.text).toContain(')')
+    })
+
     it('should have lines for each text segment', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
         const tb = s.nodes[0] as TextBlock

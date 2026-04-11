@@ -164,26 +164,15 @@ export class Text extends ContentNode {
     prev?: Text
 
     get text(): string {
-        const lastTj = this.ops.find((x) => x instanceof ShowTextOp)
+        const lastTj = this.ops.find(
+            (x) =>
+                x instanceof ShowTextOp ||
+                x instanceof ShowTextArrayOp ||
+                x instanceof ShowTextNextLineOp ||
+                x instanceof ShowTextNextLineSpacingOp,
+        )
         if (lastTj) {
             return lastTj.text
-        } else {
-            const lastTJ = this.ops.find((x) => x instanceof ShowTextArrayOp)
-            if (lastTJ) {
-                return lastTJ.text
-            }
-        }
-
-        const lastQuote = this.ops.find((x) => x instanceof ShowTextNextLineOp)
-        if (lastQuote) {
-            return lastQuote.text
-        }
-
-        const lastDblQuote = this.ops.find(
-            (x) => x instanceof ShowTextNextLineSpacingOp,
-        )
-        if (lastDblQuote) {
-            return lastDblQuote.text
         }
 
         return ''

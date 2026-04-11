@@ -6,26 +6,278 @@ import { ContentOp } from './base'
 
 export class TextOp extends ContentOp {}
 
+// -- Byte-level PDF string extraction ----------------------------------------
+// These functions operate directly on the raw ContentOp bytes so that binary
+// string content (e.g. CID-encoded literal strings) is never corrupted by
+// string-level regex unescaping.
+
+const LPAREN = 0x28 // (
+const RPAREN = 0x29 // )
+const LANGLE = 0x3c // <
+const RANGLE = 0x3e // >
+const BACKSLASH = 0x5c // \
+const LBRACKET = 0x5b // [
+const RBRACKET = 0x5d // ]
+
 /**
- * Extract the first literal `(…)` or hex `<…>` string operand from raw
- * op bytes using PDF-aware parsing (respects balanced parens and
- * backslash escapes).  Returns `{ kind, body }` where `body` is the
- * content between the delimiters, or `null` if no string is found.
+ * Unescape a PDF literal-string at the byte level starting at `offset`
+ * (the byte *after* the opening parenthesis).  Handles all PDF escape
+ * sequences: \\, \(, \), \n, \r, \t, \b, \f, \ddd (octal), and line
+ * continuations (\<newline>).  Also normalises bare end-of-line markers
+ * inside the string as required by PDF spec 7.3.4.2.
+ *
+ * Returns the unescaped content bytes (excluding the outer parentheses).
+ */
+function unescapeLiteralBytes(bytes: ByteArray, offset: number): ByteArray {
+    const out: number[] = []
+    let i = offset
+    let depth = 1
+
+    while (i < bytes.length && depth > 0) {
+        const b = bytes[i]
+
+        if (b === BACKSLASH) {
+            i++
+            if (i >= bytes.length) break
+            const next = bytes[i]
+            switch (next) {
+                case 0x6e:
+                    out.push(0x0a)
+                    i++
+                    break // \n → LF
+                case 0x72:
+                    out.push(0x0d)
+                    i++
+                    break // \r → CR
+                case 0x74:
+                    out.push(0x09)
+                    i++
+                    break // \t → TAB
+                case 0x62:
+                    out.push(0x08)
+                    i++
+                    break // \b → BS
+                case 0x66:
+                    out.push(0x0c)
+                    i++
+                    break // \f → FF
+                case LPAREN:
+                    out.push(LPAREN)
+                    i++
+                    break // \( → (
+                case RPAREN:
+                    out.push(RPAREN)
+                    i++
+                    break // \) → )
+                case BACKSLASH:
+                    out.push(BACKSLASH)
+                    i++
+                    break // \\ → \
+                case 0x0a: // \LF → line continuation
+                    i++
+                    break
+                case 0x0d: // \CR or \CR+LF
+                    i++
+                    if (i < bytes.length && bytes[i] === 0x0a) i++
+                    break
+                default:
+                    if (next >= 0x30 && next <= 0x37) {
+                        // Octal \ddd
+                        let oct = next - 0x30
+                        i++
+                        if (
+                            i < bytes.length &&
+                            bytes[i] >= 0x30 &&
+                            bytes[i] <= 0x37
+                        ) {
+                            oct = oct * 8 + (bytes[i] - 0x30)
+                            i++
+                            if (
+                                i < bytes.length &&
+                                bytes[i] >= 0x30 &&
+                                bytes[i] <= 0x37
+                            ) {
+                                oct = oct * 8 + (bytes[i] - 0x30)
+                                i++
+                            }
+                        }
+                        out.push(oct & 0xff)
+                    } else {
+                        // Per PDF spec: unknown escape → backslash is ignored
+                        out.push(next)
+                        i++
+                    }
+                    break
+            }
+        } else if (b === LPAREN) {
+            depth++
+            out.push(b)
+            i++
+        } else if (b === RPAREN) {
+            depth--
+            if (depth > 0) out.push(b)
+            i++
+        } else if (b === 0x0d) {
+            // Bare CR or CR+LF → LF (PDF spec 7.3.4.2)
+            out.push(0x0a)
+            i++
+            if (i < bytes.length && bytes[i] === 0x0a) i++
+        } else {
+            out.push(b)
+            i++
+        }
+    }
+    return new Uint8Array(out) as ByteArray
+}
+
+/**
+ * Skip the content of a literal string in the byte buffer, starting at
+ * `offset` (the byte of the opening `(`).  Returns the index of the byte
+ * just past the closing `)`.  Handles backslash escapes and nested parens.
+ */
+function skipLiteralString(bytes: Uint8Array, offset: number): number {
+    let i = offset + 1
+    let depth = 1
+    while (i < bytes.length && depth > 0) {
+        const b = bytes[i]
+        if (b === BACKSLASH) {
+            i += 2
+            continue
+        }
+        if (b === LPAREN) depth++
+        else if (b === RPAREN) depth--
+        if (depth === 0) break
+        i++
+    }
+    return i + 1 // past ')'
+}
+
+/**
+ * Find the first literal `(…)` or hex `<…>` string operand in a raw op
+ * byte buffer and return its properly-unescaped content.  For literal
+ * strings the PDF escape sequences are processed at the byte level so
+ * binary content is never corrupted.
+ */
+function extractStringOperandBytes(
+    bytes: ByteArray,
+): StringOperandResult | null {
+    for (let i = 0; i < bytes.length; i++) {
+        if (bytes[i] === LPAREN) {
+            return {
+                kind: 'literal',
+                rawBytes: unescapeLiteralBytes(bytes, i + 1),
+            }
+        }
+        if (
+            bytes[i] === LANGLE &&
+            (i + 1 >= bytes.length || bytes[i + 1] !== LANGLE)
+        ) {
+            const end = bytes.indexOf(RANGLE, i + 1)
+            if (end === -1) return null
+            let hex = ''
+            for (let j = i + 1; j < end; j++)
+                hex += String.fromCharCode(bytes[j])
+            return { kind: 'hex', rawBytes: new Uint8Array(0), hex }
+        }
+    }
+    return null
+}
+
+type StringOperandResult =
+    | { kind: 'literal'; rawBytes: ByteArray; hex?: undefined }
+    | { kind: 'hex'; rawBytes: ByteArray; hex: string }
+
+/**
+ * Parse a TJ `[…]` array operand directly from the op byte buffer.
+ * Literal strings are unescaped at the byte level; hex strings and numbers
+ * are handled normally.
+ */
+function extractArraySegmentsFromBytes(
+    bytes: ByteArray,
+): (PdfString | PdfHexadecimal | number)[] {
+    let start = bytes.indexOf(LBRACKET)
+    if (start === -1) return []
+    let end = bytes.length - 1
+    while (end > start && bytes[end] !== RBRACKET) end--
+    if (end <= start) return []
+
+    const result: (PdfString | PdfHexadecimal | number)[] = []
+    let i = start + 1
+
+    while (i < end) {
+        const b = bytes[i]
+
+        // Skip whitespace
+        if (
+            b === 0x20 ||
+            b === 0x09 ||
+            b === 0x0a ||
+            b === 0x0d ||
+            b === 0x0c ||
+            b === 0x00
+        ) {
+            i++
+            continue
+        }
+
+        if (b === LPAREN) {
+            result.push(new PdfString(unescapeLiteralBytes(bytes, i + 1)))
+            i = skipLiteralString(bytes, i)
+            continue
+        }
+
+        if (b === LANGLE) {
+            const j = bytes.indexOf(RANGLE, i + 1)
+            if (j === -1) break
+            let hex = ''
+            for (let k = i + 1; k < j; k++) hex += String.fromCharCode(bytes[k])
+            result.push(new PdfHexadecimal(hex))
+            i = j + 1
+            continue
+        }
+
+        // Number — read until next delimiter or whitespace
+        let j = i
+        while (
+            j < end &&
+            bytes[j] !== 0x20 &&
+            bytes[j] !== 0x09 &&
+            bytes[j] !== 0x0a &&
+            bytes[j] !== 0x0d &&
+            bytes[j] !== LPAREN &&
+            bytes[j] !== LANGLE
+        ) {
+            j++
+        }
+        let numStr = ''
+        for (let k = i; k < j; k++) numStr += String.fromCharCode(bytes[k])
+        if (numStr.length > 0) {
+            const n = parseFloat(numStr)
+            if (!Number.isNaN(n)) result.push(n)
+        }
+        i = j
+    }
+    return result
+}
+
+// -- Legacy string-based helpers (kept for informal text getters) -----------
+
+/**
+ * Extract the first literal `(…)` or hex `<…>` string operand from the
+ * Latin-1 string form of op bytes.  Kept for the `text` getter which
+ * only needs an approximate display string, not exact binary bytes.
  */
 function extractStringOperand(
     raw: string,
 ): { kind: 'literal' | 'hex'; body: string } | null {
     const trimmed = raw.trim()
 
-    // Hex string
     const hexStart = trimmed.indexOf('<')
     const litStart = trimmed.indexOf('(')
 
-    // Pick whichever delimiter comes first (ignoring -1)
     const useHex =
         hexStart !== -1 &&
         (litStart === -1 || hexStart < litStart) &&
-        // Make sure it's not a dictionary `<<`
         trimmed[hexStart + 1] !== '<'
 
     if (useHex) {
@@ -36,13 +288,12 @@ function extractStringOperand(
 
     if (litStart === -1) return null
 
-    // Literal string — walk with balanced parens + backslash escapes
     let depth = 1
     let j = litStart + 1
     while (j < trimmed.length && depth > 0) {
         const c = trimmed[j]
         if (c === '\\') {
-            j += 2 // skip escaped char
+            j += 2
             continue
         }
         if (c === '(') depth++
@@ -51,25 +302,6 @@ function extractStringOperand(
         j++
     }
     return { kind: 'literal', body: trimmed.slice(litStart + 1, j) }
-}
-
-/**
- * Unescape a PDF literal-string body (the content between the outer `(…)`).
- */
-function unescapePdfLiteral(body: string): string {
-    return body
-        .replace(/\\\\/g, '\x00') // \\ → temp marker
-        .replace(/\\\(/g, '(') // \( → (
-        .replace(/\\\)/g, ')') // \) → )
-        .replace(/\\([0-7]{1,3})/g, (_m, oct: string) =>
-            String.fromCharCode(parseInt(oct, 8)),
-        ) // \ddd → octal char
-        .replace(/\\n/g, '\n') // \n → newline
-        .replace(/\\r/g, '\r') // \r → CR
-        .replace(/\\t/g, '\t') // \t → tab
-        .replace(/\\b/g, '\b') // \b → backspace
-        .replace(/\\f/g, '\f') // \f → form feed
-        .replace(/\x00/g, '\\') // restore \
 }
 
 export class SetFontOp extends TextOp {
@@ -256,13 +488,14 @@ export class ShowTextOp extends TextOp {
     /**
      * Return the operand as a typed PdfString or PdfHexadecimal.
      * This preserves the original encoding so callers can measure glyph codes.
+     * Literal strings are unescaped at the byte level to avoid corrupting
+     * binary CID-encoded data.
      */
     get stringOperand(): PdfString | PdfHexadecimal | null {
-        if (!this.raw) return null
-        const s = extractStringOperand(this.raw)
-        if (!s) return null
-        if (s.kind === 'hex') return new PdfHexadecimal(s.body)
-        return new PdfString(unescapePdfLiteral(s.body))
+        const result = extractStringOperandBytes(this.bytes)
+        if (!result) return null
+        if (result.kind === 'hex') return new PdfHexadecimal(result.hex!)
+        return new PdfString(result.rawBytes)
     }
 
     /**
@@ -270,13 +503,8 @@ export class ShowTextOp extends TextOp {
      * Handles both literal strings (parentheses) and hex strings (angle brackets).
      */
     decodeWithFont(font: PdfFont): string {
-        if (!this.raw) return ''
-        const s = extractStringOperand(this.raw)
-        if (!s) return ''
-        if (s.kind === 'hex') {
-            return font.decode(new PdfHexadecimal(s.body))
-        }
-        return unescapePdfLiteral(s.body)
+        const op = this.stringOperand
+        return op ? font.decode(op) : ''
     }
 }
 
@@ -306,86 +534,11 @@ export class ShowTextArrayOp extends TextOp {
 
     /**
      * Parse the `[...]` array operand from the raw bytes into a sequence of
-     * typed segments (PdfString, PdfHexadecimal, number). Whitespace inside
-     * the array is ignored; literal strings honour balanced parens and
-     * backslash escapes.
+     * typed segments (PdfString, PdfHexadecimal, number).  Literal strings
+     * are unescaped at the byte level so binary CID data is preserved.
      */
     get segments(): ShowTextSegment[] {
-        const raw = this.raw
-        const start = raw.indexOf('[')
-        const end = raw.lastIndexOf(']')
-        if (start === -1 || end === -1 || end <= start) return []
-
-        const body = raw.slice(start + 1, end)
-        const result: ShowTextSegment[] = []
-        let i = 0
-
-        while (i < body.length) {
-            const ch = body[i]
-
-            // Skip whitespace
-            if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
-                i++
-                continue
-            }
-
-            if (ch === '(') {
-                // Literal string — honour balanced parens and backslash escapes.
-                let depth = 1
-                let j = i + 1
-                while (j < body.length && depth > 0) {
-                    const c = body[j]
-                    if (c === '\\') {
-                        j += 2
-                        continue
-                    }
-                    if (c === '(') depth++
-                    else if (c === ')') depth--
-                    if (depth === 0) break
-                    j++
-                }
-                // Unescape PDF escape sequences before creating PdfString
-                const escaped = body.slice(i + 1, j)
-                const unescaped = escaped
-                    .replace(/\\\\/g, '\x00') // \\ -> temporary marker
-                    .replace(/\\\(/g, '(') // \( -> (
-                    .replace(/\\\)/g, ')') // \) -> )
-                    .replace(/\x00/g, '\\') // restore \
-                result.push(new PdfString(unescaped))
-                i = j + 1
-                continue
-            }
-
-            if (ch === '<') {
-                const j = body.indexOf('>', i + 1)
-                if (j === -1) break
-                result.push(new PdfHexadecimal(body.slice(i + 1, j)))
-                i = j + 1
-                continue
-            }
-
-            // Number — read until next whitespace / delimiter.
-            let j = i
-            while (
-                j < body.length &&
-                body[j] !== ' ' &&
-                body[j] !== '\t' &&
-                body[j] !== '\n' &&
-                body[j] !== '\r' &&
-                body[j] !== '(' &&
-                body[j] !== '<'
-            ) {
-                j++
-            }
-            const numStr = body.slice(i, j)
-            if (numStr.length > 0) {
-                const n = parseFloat(numStr)
-                if (!Number.isNaN(n)) result.push(n)
-            }
-            i = j
-        }
-
-        return result
+        return extractArraySegmentsFromBytes(this.bytes)
     }
 
     set segments(value: ShowTextSegment[]) {
@@ -480,20 +633,23 @@ export class ShowTextNextLineOp extends TextOp {
     }
 
     decode(font: PdfFont): string {
-        return font.decode(new PdfString(this.text))
+        const op = this.stringOperand
+        return op ? font.decode(op) : ''
+    }
+
+    get stringOperand(): PdfString | PdfHexadecimal | null {
+        const result = extractStringOperandBytes(this.bytes)
+        if (!result) return null
+        if (result.kind === 'hex') return new PdfHexadecimal(result.hex!)
+        return new PdfString(result.rawBytes)
     }
 
     /**
      * Decode the text using the provided font.
      */
     decodeWithFont(font: PdfFont): string {
-        if (!this.raw) return ''
-        const s = extractStringOperand(this.raw)
-        if (!s) return ''
-        if (s.kind === 'hex') {
-            return font.decode(new PdfHexadecimal(s.body))
-        }
-        return unescapePdfLiteral(s.body)
+        const op = this.stringOperand
+        return op ? font.decode(op) : ''
     }
 }
 
@@ -530,17 +686,19 @@ export class ShowTextNextLineSpacingOp extends TextOp {
         return s.body
     }
 
+    get stringOperand(): PdfString | PdfHexadecimal | null {
+        const result = extractStringOperandBytes(this.bytes)
+        if (!result) return null
+        if (result.kind === 'hex') return new PdfHexadecimal(result.hex!)
+        return new PdfString(result.rawBytes)
+    }
+
     /**
      * Decode the text using the provided font.
      */
     decodeWithFont(font: PdfFont): string {
-        if (!this.raw) return ''
-        const s = extractStringOperand(this.raw)
-        if (!s) return ''
-        if (s.kind === 'hex') {
-            return font.decode(new PdfHexadecimal(s.body))
-        }
-        return unescapePdfLiteral(s.body)
+        const op = this.stringOperand
+        return op ? font.decode(op) : ''
     }
 }
 

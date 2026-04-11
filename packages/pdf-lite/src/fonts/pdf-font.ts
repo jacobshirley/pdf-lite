@@ -482,11 +482,20 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             }
             return codes
         }
-        // Literal string — each char's code point is the glyph code
-        const value = operand.value
+        // Literal string — use raw bytes for glyph codes.
+        // Simple fonts (Type1, TrueType) always use 1-byte character codes.
+        // Only Type0 (composite/CID) fonts use 2-byte codes.
+        const raw = operand.raw
         const codes: number[] = []
-        for (const ch of value) {
-            codes.push(ch.charCodeAt(0))
+        const twoBytes = this.isUnicode
+        if (twoBytes) {
+            for (let i = 0; i + 1 < raw.length; i += 2) {
+                codes.push((raw[i] << 8) | raw[i + 1])
+            }
+        } else {
+            for (let i = 0; i < raw.length; i++) {
+                codes.push(raw[i])
+            }
         }
         return codes
     }
@@ -533,6 +542,29 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                 result += String.fromCharCode(
                     parseInt(cleaned.substring(i, i + byteWidth), 16),
                 )
+            }
+            return result
+        }
+
+        // Literal string — simple fonts (Type1, TrueType) always use
+        // 1-byte character codes.  Only Type0 (composite) fonts are 2-byte.
+        const raw = encoded.raw
+        const twoBytes = this.isUnicode
+        if (twoBytes) {
+            const umap = this.toUnicodeMap
+            let result = ''
+            for (let i = 0; i + 1 < raw.length; i += 2) {
+                const code = (raw[i] << 8) | raw[i + 1]
+                result += umap?.get(code) ?? String.fromCodePoint(code)
+            }
+            return result
+        }
+
+        const umap = this.toUnicodeMap
+        if (umap) {
+            let result = ''
+            for (let i = 0; i < raw.length; i++) {
+                result += umap.get(raw[i]) ?? String.fromCharCode(raw[i])
             }
             return result
         }

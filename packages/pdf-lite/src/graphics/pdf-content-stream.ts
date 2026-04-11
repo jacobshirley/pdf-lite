@@ -1103,6 +1103,9 @@ export class PdfContentStream extends PdfStream {
         // Track the previous TextBlock so segments can inherit font state
         // across BT/ET boundaries without modifying the original ops.
         let lastTextBlock: TextBlock | undefined
+        // Save/restore lastTextBlock along with the graphics state stack
+        // so that q/Q correctly revert font inheritance across BT blocks.
+        const textBlockStack: (TextBlock | undefined)[] = []
 
         for (const op of ops) {
             if (op instanceof BeginTextOp) {
@@ -1135,6 +1138,7 @@ export class PdfContentStream extends PdfStream {
                 const group = new StateNode(page)
                 currentState.addChild(group)
                 stateStack.push(currentState)
+                textBlockStack.push(lastTextBlock)
                 currentState = group
                 continue
             }
@@ -1142,6 +1146,7 @@ export class PdfContentStream extends PdfStream {
             if (op instanceof RestoreStateOp) {
                 if (stateStack.length > 0) {
                     currentState = stateStack.pop()!
+                    lastTextBlock = textBlockStack.pop()
                 }
                 continue
             }

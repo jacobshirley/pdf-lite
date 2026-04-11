@@ -1,3 +1,5 @@
+import { ByteArray } from '../..'
+
 /**
  * A single PDF content-stream operation.
  *
@@ -11,9 +13,9 @@
  * text from structured fields (e.g. `this.raw = \`${x} ${y} m\``).
  */
 export class ContentOp {
-    bytes: Uint8Array
+    bytes: ByteArray
 
-    constructor(input: string | Uint8Array = '') {
+    constructor(input: string | ByteArray = '') {
         if (typeof input === 'string') {
             this.bytes = ContentOp.stringToLatin1Bytes(input)
         } else {
@@ -47,11 +49,11 @@ export class ContentOp {
         return this.raw
     }
 
-    toBytes(): Uint8Array {
+    toBytes(): ByteArray {
         return this.bytes
     }
 
-    private static stringToLatin1Bytes(value: string): Uint8Array {
+    private static stringToLatin1Bytes(value: string): ByteArray {
         const out = new Uint8Array(value.length)
         for (let i = 0; i < value.length; i++) {
             out[i] = value.charCodeAt(i) & 0xff
@@ -59,7 +61,7 @@ export class ContentOp {
         return out
     }
 
-    private static latin1BytesToString(bytes: Uint8Array): string {
+    private static latin1BytesToString(bytes: ByteArray): string {
         // Avoid `String.fromCharCode(...bytes)` because large ops would
         // exceed the call-stack argument limit.
         let out = ''

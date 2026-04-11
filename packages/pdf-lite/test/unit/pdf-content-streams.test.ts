@@ -23,8 +23,8 @@ const base64ToBytes = (b64: string): ByteArray => {
     return bytes
 }
 
-async function loadFixture(): Promise<PdfDocument> {
-    const b64 = await server.commands.readFile(FIXTURE, { encoding: 'base64' })
+async function loadFixture(path: string = FIXTURE): Promise<PdfDocument> {
+    const b64 = await server.commands.readFile(path, { encoding: 'base64' })
     return await PdfDocument.fromBytes([base64ToBytes(b64)])
 }
 
@@ -102,6 +102,32 @@ describe('multi-child-field.pdf — content streams', () => {
         const texts = textBlocks.map((tb) => tb.text)
         // PDF is in Italian - check for actual content
         expect(texts).toContain('DELEGA ')
+    })
+})
+
+describe('template.pdf — content streams', () => {
+    let doc: PdfDocument
+
+    beforeAll(async () => {
+        doc = await loadFixture('./test/unit/fixtures/template.pdf')
+    })
+
+    it('should keep a snapshot of content nodes and their bounding boxes', async () => {
+        const page = doc.pages.get(0)
+        const textBlocks = page.extractTextBlocks()
+        const graphicsBlocks = page.extractGraphicLines()
+
+        const regroupedBlocks = TextBlock.regroupTextBlocks(textBlocks)
+        const textInfo = regroupedBlocks.map((x) => ({
+            text: x.text,
+            bbox: x.getWorldBoundingBox(),
+        }))
+
+        expect(textInfo).toMatchSnapshot()
+        const graphicInfo = graphicsBlocks.map((x) => ({
+            bbox: x.getWorldBoundingBox(),
+        }))
+        expect(graphicInfo).toMatchSnapshot()
     })
 })
 

@@ -7,6 +7,7 @@ import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfStream } from '../core/objects/pdf-stream.js'
+import { parseFont } from './parsers/font-parser.js'
 
 export interface GlyphMetrics {
     width: number
@@ -526,6 +527,39 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
                         } else {
                             i++
                         }
+                    }
+                }
+            }
+        }
+
+        // Supplement charWidths from the embedded font program (FontFile2)
+        // when the /Widths array is incomplete (e.g. subset fonts whose
+        // LastChar doesn't cover all used character codes).
+        if (fd) {
+            const fontFileRef =
+                fd.get('FontFile2') ?? fd.get('FontFile') ?? fd.get('FontFile3')
+            if (fontFileRef instanceof PdfObjectReference) {
+                const fontFileObj = fontFileRef.resolve()
+                if (fontFileObj?.content instanceof PdfStream) {
+                    try {
+                        const fontData = fontFileObj.content.data
+                        const parser = parseFont(fontData)
+                        const info = parser.getFontInfo()
+                        const scale = 1000 / info.unitsPerEm
+                        const cmap = parser.parseCmap()
+                        const hmtx = parser.parseHmtx()
+                        for (const [charCode, glyphId] of cmap) {
+                            if (!charWidths.has(charCode)) {
+                                const rawWidth = hmtx.get(glyphId) ?? 0
+                                charWidths.set(
+                                    charCode,
+                                    Math.round(rawWidth * scale),
+                                )
+                            }
+                        }
+                    } catch {
+                        // Font program may be corrupt or unsupported; continue
+                        // with whatever widths we already have.
                     }
                 }
             }

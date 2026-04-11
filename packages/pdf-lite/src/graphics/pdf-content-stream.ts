@@ -1009,12 +1009,16 @@ export class GraphicsBlock extends ContentNode {
 }
 
 export class PdfContentStream extends PdfStream {
-    nodes: ContentNode[]
+    _nodes: ContentNode[] | undefined
     page?: PdfPage
 
     constructor(rawData?: ByteArray) {
         super(rawData)
-        this.nodes = this.parseNodes()
+    }
+
+    get nodes(): ContentNode[] {
+        this._nodes = this.parseNodes()
+        return this._nodes
     }
 
     protected getRawData(): ByteArray | undefined {
@@ -1225,6 +1229,8 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
     }
 
     get nodes(): ContentNode[] {
+        console.log('nodes', this.content.nodes, this.content)
+
         return this.content.nodes
     }
 
@@ -1239,7 +1245,17 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
             }
             return result
         }
-        return TextBlock.regroupTextBlocks(collect(this.nodes))
+        // Return text blocks as-is for round-trip preservation
+        // Users can call regroupTextBlocksByLine() explicitly if they want visual regrouping
+        return collect(this.nodes)
+    }
+
+    /**
+     * Regroup text blocks by visual line position.
+     * This converts positioning operators (Td, TD) to absolute matrices (Tm) for each segment.
+     */
+    regroupTextBlocksByLine(): TextBlock[] {
+        return TextBlock.regroupTextBlocks(this.textBlocks)
     }
 
     get graphicsBlocks(): GraphicsBlock[] {

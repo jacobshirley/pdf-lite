@@ -294,10 +294,11 @@ describe('TextBlock', () => {
         const s = makeStream(
             'BT /F1 12 Tf 100 700 Td (Line1) Tj 0 -14 Td (Line2) Tj ET',
         )
-        // Per-line splitting: each line becomes its own TextBlock
-        expect(s.nodes).toHaveLength(2)
-        const tb1 = s.nodes[0] as TextBlock
-        const tb2 = s.nodes[1] as TextBlock
+        // Per-line splitting: use regroupTextBlocksByLine() to split by visual lines
+        const regrouped = s.regroupTextBlocksByLine()
+        expect(regrouped).toHaveLength(2)
+        const tb1 = regrouped[0] as TextBlock
+        const tb2 = regrouped[1] as TextBlock
         expect(tb1.getSegments()).toHaveLength(1)
         expect(tb1.getSegments()[0].text).toBe('Line1')
         expect(tb2.getSegments()).toHaveLength(1)
@@ -322,10 +323,11 @@ describe('TextBlock', () => {
         const s = makeStream(
             'BT /F1 12 Tf 100 700 Td (Hello) Tj 0 -14 Td ( World) Tj ET',
         )
-        // Per-line splitting: each line is a separate TextBlock
-        expect(s.nodes).toHaveLength(2)
-        const tb1 = s.nodes[0] as TextBlock
-        const tb2 = s.nodes[1] as TextBlock
+        // Per-line splitting: use regroupTextBlocksByLine() to split by visual lines
+        const regrouped = s.regroupTextBlocksByLine()
+        expect(regrouped).toHaveLength(2)
+        const tb1 = regrouped[0] as TextBlock
+        const tb2 = regrouped[1] as TextBlock
         expect(tb1.text).toBe('Hello')
         expect(tb2.text).toBe(' World')
     })
@@ -376,7 +378,8 @@ describe('TextBlock.text setter', () => {
         const tb = s.textBlocks[0]
         tb.text = 'World'
         expect(tb.text).toBe('World')
-        expect(s.toString()).toContain('[(W) 30 (or) -15 (ld)]')
+        // Check the text block's output directly (stream's nodes are re-parsed on each access)
+        expect(tb.toString()).toContain('[(W) 30 (or) -15 (ld)]')
     })
 
     it('should replace TJ array text', () => {
@@ -476,7 +479,8 @@ describe('Text.font and Text.fontSize setters', () => {
         const s = makeStream(
             'BT /F1 12 Tf 100 700 Td (Hello) Tj 0 -14 Td (Line2) Tj ET',
         )
-        const segs = s.textBlocks[1].getSegments()
+        const regrouped = s.regroupTextBlocksByLine()
+        const segs = regrouped[1].getSegments()
         const seg = segs[0]
         // This segment inherits font from prev, has no own Tf
         seg.fontSize = 18

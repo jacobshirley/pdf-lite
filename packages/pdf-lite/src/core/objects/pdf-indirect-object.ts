@@ -224,7 +224,11 @@ export class PdfIndirectObject<
         this.objectNumber = savedObjectNumber
         this.generationNumber = savedGenerationNumber
         this.offset = savedOffset
-        this.content = savedContent
+        if (!(newObject.content instanceof PdfNull)) {
+            this.content = newObject.content as any
+        } else {
+            this.content = savedContent
+        }
         this.modified = savedModified
         this.encryptable = savedEncryptable
         this.compressed = savedCompressed

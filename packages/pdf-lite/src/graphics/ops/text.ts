@@ -1,12 +1,18 @@
 import { PdfFont } from '../..'
 import { PdfHexadecimal, PdfString } from '../../core'
+import { ByteArray } from '../../types'
+import { Matrix } from '../geom/matrix'
 import { ContentOp } from './base'
 
 export class TextOp extends ContentOp {}
 
 export class SetFontOp extends TextOp {
-    constructor(fontName: string, fontSize: number) {
-        super(`/${fontName} ${fontSize} Tf`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(fontName: string, fontSize: number): SetFontOp {
+        return new SetFontOp(`/${fontName} ${fontSize} Tf`)
     }
 
     get fontName(): string {
@@ -31,15 +37,19 @@ export class SetFontOp extends TextOp {
 }
 
 export class SetTextMatrixOp extends TextOp {
-    constructor(
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(
         a: number,
         b: number,
         c: number,
         d: number,
         e: number,
         f: number,
-    ) {
-        super(`${a} ${b} ${c} ${d} ${e} ${f} Tm`)
+    ): SetTextMatrixOp {
+        return new SetTextMatrixOp(`${a} ${b} ${c} ${d} ${e} ${f} Tm`)
     }
 
     get a(): number {
@@ -79,11 +89,30 @@ export class SetTextMatrixOp extends TextOp {
     set f(v: number) {
         this.raw = `${this.a} ${this.b} ${this.c} ${this.d} ${this.e} ${v} Tm`
     }
+
+    get matrix(): Matrix {
+        return new Matrix({
+            a: this.a,
+            b: this.b,
+            c: this.c,
+            d: this.d,
+            e: this.e,
+            f: this.f,
+        })
+    }
+
+    set matrix(m: Matrix) {
+        this.raw = `${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f} cm`
+    }
 }
 
 export class MoveTextOp extends TextOp {
-    constructor(x: number, y: number) {
-        super(`${x} ${y} Td`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(x: number, y: number): MoveTextOp {
+        return new MoveTextOp(`${x} ${y} Td`)
     }
 
     get x(): number {
@@ -102,8 +131,12 @@ export class MoveTextOp extends TextOp {
 }
 
 export class MoveTextLeadingOp extends TextOp {
-    constructor(x: number, y: number) {
-        super(`${x} ${y} TD`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(x: number, y: number): MoveTextLeadingOp {
+        return new MoveTextLeadingOp(`${x} ${y} TD`)
     }
 
     get x(): number {
@@ -122,22 +155,25 @@ export class MoveTextLeadingOp extends TextOp {
 }
 
 export class NextLineOp extends TextOp {
-    constructor() {
-        super('T*')
+    constructor(input: string | ByteArray = 'T*') {
+        super(input)
     }
 }
 
 export class ShowTextOp extends TextOp {
-    constructor(text: PdfString | PdfHexadecimal | string) {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(text: PdfString | PdfHexadecimal | string): ShowTextOp {
         if (typeof text === 'string') {
-            super(`(${text}) Tj`)
+            return new ShowTextOp(`(${text}) Tj`)
         } else if (text instanceof PdfHexadecimal) {
-            super(`<${text.hexString}> Tj`)
+            return new ShowTextOp(`<${text.hexString}> Tj`)
         } else if (text instanceof PdfString) {
-            super(`(${text.value}) Tj`)
-        } else {
-            throw new Error('Invalid text type for Tj operator')
+            return new ShowTextOp(`(${text.value}) Tj`)
         }
+        throw new Error('Invalid text type for Tj operator')
     }
 
     get text(): string {
@@ -157,41 +193,126 @@ export class ShowTextOp extends TextOp {
     }
 }
 
+export type ShowTextSegment = PdfString | PdfHexadecimal | number
+
+/**
+ * `TJ` operator — an array of string/number entries used for text showing
+ * with per-glyph positioning adjustments.
+ */
 export class ShowTextArrayOp extends TextOp {
-    constructor(array: string) {
-        super(`${array} TJ`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
     }
 
-    get array(): string {
-        if (!this.raw) return ''
-        const parts = this.parts()
-        return parts.operands.join(' ')
+    static create(segments: ShowTextSegment[]): ShowTextArrayOp {
+        return new ShowTextArrayOp(
+            `[${segments.map(ShowTextArrayOp.encodeSegment).join(' ')}] TJ`,
+        )
     }
 
-    set array(value: string) {
-        this.raw = `${value} TJ`
+    private static encodeSegment(segment: ShowTextSegment): string {
+        if (typeof segment === 'number') return segment.toString()
+        if (segment instanceof PdfHexadecimal) return `<${segment.hexString}>`
+        if (segment instanceof PdfString) return `(${segment.value})`
+        throw new Error('Invalid segment type for ShowTextArrayOp')
+    }
+
+    /**
+     * Parse the `[...]` array operand from the raw bytes into a sequence of
+     * typed segments (PdfString, PdfHexadecimal, number). Whitespace inside
+     * the array is ignored; literal strings honour balanced parens and
+     * backslash escapes.
+     */
+    get segments(): ShowTextSegment[] {
+        const raw = this.raw
+        const start = raw.indexOf('[')
+        const end = raw.lastIndexOf(']')
+        if (start === -1 || end === -1 || end <= start) return []
+
+        const body = raw.slice(start + 1, end)
+        const result: ShowTextSegment[] = []
+        let i = 0
+
+        while (i < body.length) {
+            const ch = body[i]
+
+            // Skip whitespace
+            if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
+                i++
+                continue
+            }
+
+            if (ch === '(') {
+                // Literal string — honour balanced parens and backslash escapes.
+                let depth = 1
+                let j = i + 1
+                while (j < body.length && depth > 0) {
+                    const c = body[j]
+                    if (c === '\\') {
+                        j += 2
+                        continue
+                    }
+                    if (c === '(') depth++
+                    else if (c === ')') depth--
+                    if (depth === 0) break
+                    j++
+                }
+                result.push(new PdfString(body.slice(i + 1, j)))
+                i = j + 1
+                continue
+            }
+
+            if (ch === '<') {
+                const j = body.indexOf('>', i + 1)
+                if (j === -1) break
+                result.push(new PdfHexadecimal(body.slice(i + 1, j)))
+                i = j + 1
+                continue
+            }
+
+            // Number — read until next whitespace / delimiter.
+            let j = i
+            while (
+                j < body.length &&
+                body[j] !== ' ' &&
+                body[j] !== '\t' &&
+                body[j] !== '\n' &&
+                body[j] !== '\r' &&
+                body[j] !== '(' &&
+                body[j] !== '<'
+            ) {
+                j++
+            }
+            const numStr = body.slice(i, j)
+            if (numStr.length > 0) {
+                const n = parseFloat(numStr)
+                if (!Number.isNaN(n)) result.push(n)
+            }
+            i = j
+        }
+
+        return result
+    }
+
+    set segments(value: ShowTextSegment[]) {
+        this.raw = `[${value.map(ShowTextArrayOp.encodeSegment).join(' ')}] TJ`
     }
 
     get text(): string {
-        const arr = this.array
-        let result = ''
-        const re = /\((?:[^()\\]|\\.)*\)|<[^>]*>/g
-        let m: RegExpExecArray | null
-        while ((m = re.exec(arr)) !== null) {
-            const token = m[0]
-            if (token.startsWith('(') && token.endsWith(')')) {
-                result += token.slice(1, -1)
-            } else if (token.startsWith('<') && token.endsWith('>')) {
-                result += token.slice(1, -1)
-            }
-        }
-        return result
+        return this.segments
+            .filter((s): s is PdfString => s instanceof PdfString)
+            .map((s) => s.value)
+            .join('')
     }
 }
 
 export class SetCharSpacingOp extends TextOp {
-    constructor(charSpace: number) {
-        super(`${charSpace} Tc`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(charSpace: number): SetCharSpacingOp {
+        return new SetCharSpacingOp(`${charSpace} Tc`)
     }
 
     get charSpace(): number {
@@ -203,8 +324,12 @@ export class SetCharSpacingOp extends TextOp {
 }
 
 export class SetWordSpacingOp extends TextOp {
-    constructor(wordSpace: number) {
-        super(`${wordSpace} Tw`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(wordSpace: number): SetWordSpacingOp {
+        return new SetWordSpacingOp(`${wordSpace} Tw`)
     }
 
     get wordSpace(): number {
@@ -216,20 +341,24 @@ export class SetWordSpacingOp extends TextOp {
 }
 
 export class BeginTextOp extends TextOp {
-    constructor() {
-        super('BT')
+    constructor(input: string | ByteArray = 'BT') {
+        super(input)
     }
 }
 
 export class EndTextOp extends TextOp {
-    constructor() {
-        super('ET')
+    constructor(input: string | ByteArray = 'ET') {
+        super(input)
     }
 }
 
 export class ShowTextNextLineOp extends TextOp {
-    constructor(text: string) {
-        super(`(${text}) '`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(text: string): ShowTextNextLineOp {
+        return new ShowTextNextLineOp(`(${text}) '`)
     }
 
     get text(): string {
@@ -251,8 +380,18 @@ export class ShowTextNextLineOp extends TextOp {
 }
 
 export class ShowTextNextLineSpacingOp extends TextOp {
-    constructor(wordSpace: number, charSpace: number, text: string) {
-        super(`${wordSpace} ${charSpace} (${text}) "`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(
+        wordSpace: number,
+        charSpace: number,
+        text: string,
+    ): ShowTextNextLineSpacingOp {
+        return new ShowTextNextLineSpacingOp(
+            `${wordSpace} ${charSpace} (${text}) "`,
+        )
     }
 
     get wordSpace(): number {
@@ -260,6 +399,10 @@ export class ShowTextNextLineSpacingOp extends TextOp {
     }
     get charSpace(): number {
         return parseFloat(this.parts().operands[1])
+    }
+
+    get extraLeading(): number {
+        return parseFloat(this.parts().operands[2])
     }
 
     get text(): string {
@@ -274,8 +417,12 @@ export class ShowTextNextLineSpacingOp extends TextOp {
 }
 
 export class SetHorizontalScalingOp extends TextOp {
-    constructor(scale: number) {
-        super(`${scale} Tz`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(scale: number): SetHorizontalScalingOp {
+        return new SetHorizontalScalingOp(`${scale} Tz`)
     }
 
     get scale(): number {
@@ -287,8 +434,12 @@ export class SetHorizontalScalingOp extends TextOp {
 }
 
 export class SetTextLeadingOp extends TextOp {
-    constructor(leading: number) {
-        super(`${leading} TL`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(leading: number): SetTextLeadingOp {
+        return new SetTextLeadingOp(`${leading} TL`)
     }
 
     get leading(): number {
@@ -300,8 +451,12 @@ export class SetTextLeadingOp extends TextOp {
 }
 
 export class SetTextRenderingModeOp extends TextOp {
-    constructor(mode: number) {
-        super(`${mode} Tr`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(mode: number): SetTextRenderingModeOp {
+        return new SetTextRenderingModeOp(`${mode} Tr`)
     }
 
     get mode(): number {
@@ -313,8 +468,12 @@ export class SetTextRenderingModeOp extends TextOp {
 }
 
 export class SetTextRiseOp extends TextOp {
-    constructor(rise: number) {
-        super(`${rise} Ts`)
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(rise: number): SetTextRiseOp {
+        return new SetTextRiseOp(`${rise} Ts`)
     }
 
     get rise(): number {

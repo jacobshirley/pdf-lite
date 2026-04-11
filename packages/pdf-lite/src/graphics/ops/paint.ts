@@ -1,73 +1,76 @@
+import { ByteArray } from '../../types'
 import { ContentOp } from './base'
 
-export class StrokeOp extends ContentOp {
-    constructor() {
-        super('S')
+export class PaintOp extends ContentOp {}
+
+export class StrokeOp extends PaintOp {
+    constructor(input: string | ByteArray = 'S') {
+        super(input)
     }
 }
 
-export class CloseAndStrokeOp extends ContentOp {
-    constructor() {
-        super('s')
+export class CloseAndStrokeOp extends PaintOp {
+    constructor(input: string | ByteArray = 's') {
+        super(input)
     }
 }
 
-export class FillOp extends ContentOp {
-    constructor() {
-        super('f')
+export class FillOp extends PaintOp {
+    constructor(input: string | ByteArray = 'f') {
+        super(input)
     }
 }
 
-export class FillAlternateOp extends ContentOp {
-    constructor() {
-        super('F')
+export class FillAlternateOp extends PaintOp {
+    constructor(input: string | ByteArray = 'F') {
+        super(input)
     }
 }
 
-export class FillEvenOddOp extends ContentOp {
-    constructor() {
-        super('f*')
+export class FillEvenOddOp extends PaintOp {
+    constructor(input: string | ByteArray = 'f*') {
+        super(input)
     }
 }
 
-export class FillAndStrokeOp extends ContentOp {
-    constructor() {
-        super('B')
+export class FillAndStrokeOp extends PaintOp {
+    constructor(input: string | ByteArray = 'B') {
+        super(input)
     }
 }
 
-export class CloseFillAndStrokeOp extends ContentOp {
-    constructor() {
-        super('b')
+export class CloseFillAndStrokeOp extends PaintOp {
+    constructor(input: string | ByteArray = 'b') {
+        super(input)
     }
 }
 
-export class FillAndStrokeEvenOddOp extends ContentOp {
-    constructor() {
-        super('B*')
+export class FillAndStrokeEvenOddOp extends PaintOp {
+    constructor(input: string | ByteArray = 'B*') {
+        super(input)
     }
 }
 
-export class CloseFillAndStrokeEvenOddOp extends ContentOp {
-    constructor() {
-        super('b*')
+export class CloseFillAndStrokeEvenOddOp extends PaintOp {
+    constructor(input: string | ByteArray = 'b*') {
+        super(input)
     }
 }
 
-export class EndPathOp extends ContentOp {
-    constructor() {
-        super('n')
+export class EndPathOp extends PaintOp {
+    constructor(input: string | ByteArray = 'n') {
+        super(input)
     }
 }
 
-export class ClipOp extends ContentOp {
-    constructor() {
-        super('W')
+export class ClipOp extends PaintOp {
+    constructor(input: string | ByteArray = 'W') {
+        super(input)
     }
 }
 
-export class ClipEvenOddOp extends ContentOp {
-    constructor() {
-        super('W*')
+export class ClipEvenOddOp extends PaintOp {
+    constructor(input: string | ByteArray = 'W*') {
+        super(input)
     }
 }

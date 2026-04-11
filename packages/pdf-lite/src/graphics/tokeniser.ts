@@ -1,6 +1,158 @@
 import { IncrementalParser } from '../core/parser/incremental-parser'
 import { NoMoreTokensError } from '../errors'
+import { ByteArray } from '../types'
+import { stringToBytes } from '../utils/stringToBytes'
 import { ContentOp } from './ops/base'
+import {
+    SetFillColorCMYKOp,
+    SetFillColorExtOp,
+    SetFillColorGrayOp,
+    SetFillColorOp,
+    SetFillColorRGBOp,
+    SetFillColorSpaceOp,
+    SetStrokeColorCMYKOp,
+    SetStrokeColorExtOp,
+    SetStrokeColorGrayOp,
+    SetStrokeColorOp,
+    SetStrokeColorRGBOp,
+    SetStrokeColorSpaceOp,
+} from './ops/color'
+import {
+    CloseAndStrokeOp,
+    CloseFillAndStrokeEvenOddOp,
+    CloseFillAndStrokeOp,
+    ClipEvenOddOp,
+    ClipOp,
+    EndPathOp,
+    FillAlternateOp,
+    FillAndStrokeEvenOddOp,
+    FillAndStrokeOp,
+    FillEvenOddOp,
+    FillOp,
+    StrokeOp,
+} from './ops/paint'
+import {
+    ClosePathOp,
+    CurveToOp,
+    CurveToV,
+    CurveToY,
+    LineToOp,
+    MoveToOp,
+    RectangleOp,
+} from './ops/path'
+import {
+    InvokeXObjectOp,
+    RestoreStateOp,
+    SaveStateOp,
+    SetDashPatternOp,
+    SetFlatnessOp,
+    SetGraphicsStateOp,
+    SetLineCapOp,
+    SetLineJoinOp,
+    SetLineWidthOp,
+    SetMatrixOp,
+    SetMiterLimitOp,
+    SetRenderingIntentOp,
+} from './ops/state'
+import {
+    BeginTextOp,
+    EndTextOp,
+    MoveTextLeadingOp,
+    MoveTextOp,
+    NextLineOp,
+    SetCharSpacingOp,
+    SetFontOp,
+    SetHorizontalScalingOp,
+    SetTextLeadingOp,
+    SetTextMatrixOp,
+    SetTextRenderingModeOp,
+    SetTextRiseOp,
+    SetWordSpacingOp,
+    ShowTextArrayOp,
+    ShowTextNextLineOp,
+    ShowTextNextLineSpacingOp,
+    ShowTextOp,
+} from './ops/text'
+
+/**
+ * Map of operator keyword → subclass constructor. Each constructor accepts
+ * a raw `ByteArray` so the original byte span (including surrounding
+ * whitespace) is preserved verbatim.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ContentOpCtor = new (bytes: ByteArray) => ContentOp
+const OPERATOR_CLASSES: Record<string, ContentOpCtor> = {
+    // --- text object ---
+    BT: BeginTextOp,
+    ET: EndTextOp,
+    // --- text state ---
+    Tc: SetCharSpacingOp,
+    Tw: SetWordSpacingOp,
+    Tz: SetHorizontalScalingOp,
+    TL: SetTextLeadingOp,
+    Tf: SetFontOp,
+    Tr: SetTextRenderingModeOp,
+    Ts: SetTextRiseOp,
+    // --- text positioning ---
+    Td: MoveTextOp,
+    TD: MoveTextLeadingOp,
+    Tm: SetTextMatrixOp,
+    'T*': NextLineOp,
+    // --- text showing ---
+    Tj: ShowTextOp,
+    TJ: ShowTextArrayOp,
+    "'": ShowTextNextLineOp,
+    '"': ShowTextNextLineSpacingOp,
+    // --- path construction ---
+    m: MoveToOp,
+    l: LineToOp,
+    c: CurveToOp,
+    v: CurveToV,
+    y: CurveToY,
+    re: RectangleOp,
+    h: ClosePathOp,
+    // --- path painting ---
+    S: StrokeOp,
+    s: CloseAndStrokeOp,
+    f: FillOp,
+    F: FillAlternateOp,
+    'f*': FillEvenOddOp,
+    B: FillAndStrokeOp,
+    b: CloseFillAndStrokeOp,
+    'B*': FillAndStrokeEvenOddOp,
+    'b*': CloseFillAndStrokeEvenOddOp,
+    n: EndPathOp,
+    // --- clipping paths ---
+    W: ClipOp,
+    'W*': ClipEvenOddOp,
+    // --- colour ---
+    rg: SetFillColorRGBOp,
+    RG: SetStrokeColorRGBOp,
+    g: SetFillColorGrayOp,
+    G: SetStrokeColorGrayOp,
+    k: SetFillColorCMYKOp,
+    K: SetStrokeColorCMYKOp,
+    cs: SetFillColorSpaceOp,
+    CS: SetStrokeColorSpaceOp,
+    sc: SetFillColorOp,
+    SC: SetStrokeColorOp,
+    scn: SetFillColorExtOp,
+    SCN: SetStrokeColorExtOp,
+    // --- graphics state ---
+    q: SaveStateOp,
+    Q: RestoreStateOp,
+    cm: SetMatrixOp,
+    w: SetLineWidthOp,
+    J: SetLineCapOp,
+    j: SetLineJoinOp,
+    M: SetMiterLimitOp,
+    d: SetDashPatternOp,
+    ri: SetRenderingIntentOp,
+    i: SetFlatnessOp,
+    gs: SetGraphicsStateOp,
+    // --- xobject ---
+    Do: InvokeXObjectOp,
+}
 
 const SPACE = 0x20
 const TAB = 0x09
@@ -41,14 +193,6 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
         for (const byte of bytes) {
             this.feed(byte)
         }
-    }
-
-    /**
-     * Hook for subclasses to specialise raw bytes into typed ContentOp
-     * subclasses. Default implementation wraps the bytes verbatim.
-     */
-    protected parseContentOp(bytes: Uint8Array): ContentOp {
-        return new ContentOp(bytes)
     }
 
     private static isWhitespace(byte: number | null): boolean {
@@ -173,10 +317,20 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
         }
     }
 
-    private readKeyword(): void {
+    /**
+     * Consume an operator keyword (alpha chars, optionally followed by a
+     * `*` suffix like `f*`, `B*`, `W*`) and return it as a string.
+     */
+    private readKeyword(): string {
+        let keyword = ''
         while (PdfContentStreamTokeniser.isAlpha(this.peek())) {
-            this.next()
+            keyword += String.fromCharCode(this.next() as number)
         }
+        if (this.peek() === ASTERISK) {
+            this.next()
+            keyword += '*'
+        }
+        return keyword
     }
 
     /**
@@ -192,15 +346,18 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
 
     /**
      * Slice the byte span [startIndex, bufferIndex) out of the buffer into
-     * a standalone Uint8Array and hand it to `parseContentOp`.
+     * a standalone ByteArray and instantiate the correct typed ContentOp
+     * subclass for `operator`. Unknown operators (or `''` for the
+     * whitespace-only final op at EOF) fall back to the base `ContentOp`.
      */
-    private emitOp(startIndex: number): ContentOp {
+    private emitOp(startIndex: number, operator: string): ContentOp {
         const len = this.bufferIndex - startIndex
-        const bytes = new Uint8Array(len)
+        const bytes = new Uint8Array(len) as ByteArray
         for (let i = 0; i < len; i++) {
             bytes[i] = this.buffer[startIndex + i] as number
         }
-        return this.parseContentOp(bytes)
+        const SubClass = OPERATOR_CLASSES[operator]
+        return SubClass ? new SubClass(bytes) : new ContentOp(bytes)
     }
 
     protected parse(): ContentOp {
@@ -216,11 +373,11 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
                 // EOF. If we consumed any bytes (even just whitespace),
                 // emit them as a final op so that trailing whitespace
                 // after the last operator is preserved byte-for-byte.
-                // This final op has an empty operator (`parts().operator
-                // === ''`). If nothing was consumed at all, signal
-                // no-more-tokens so the generator loop exits.
+                // This final op has an empty operator. If nothing was
+                // consumed at all, signal no-more-tokens so the
+                // generator loop exits.
                 if (this.bufferIndex > startIndex) {
-                    return this.emitOp(startIndex)
+                    return this.emitOp(startIndex, '')
                 }
                 throw new NoMoreTokensError('End of content stream')
             }
@@ -247,18 +404,14 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
                 this.readNumber()
             } else if (PdfContentStreamTokeniser.isAlpha(byte)) {
                 // Operator keyword — terminates the op.
-                this.readKeyword()
-                // Handle '*' suffix operators (f*, b*, B*, W*)
-                if (this.peek() === ASTERISK) {
-                    this.next()
-                }
+                const keyword = this.readKeyword()
                 this.consumeTrailingWhitespace()
-                return this.emitOp(startIndex)
+                return this.emitOp(startIndex, keyword)
             } else if (byte === SINGLE_QUOTE || byte === DOUBLE_QUOTE) {
                 // ' and " are single-char operators that terminate the op.
-                this.next()
+                const keyword = String.fromCharCode(this.next() as number)
                 this.consumeTrailingWhitespace()
-                return this.emitOp(startIndex)
+                return this.emitOp(startIndex, keyword)
             } else if (byte === ASTERISK) {
                 // Standalone '*' — shouldn't occur in valid PDF; advance
                 // and keep scanning so we don't get stuck.
@@ -268,5 +421,23 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
                 this.next()
             }
         }
+    }
+
+    /**
+     * Tokenise a full content stream in one shot and return the list of
+     * typed ContentOps. Accepts either a raw `ByteArray` (preferred —
+     * byte-exact) or a string (encoded latin-1 so binary bytes inside
+     * literal/hex strings round-trip cleanly).
+     */
+    static tokenise(input: string | ByteArray): ContentOp[] {
+        const bytes = typeof input === 'string' ? stringToBytes(input) : input
+        const tokeniser = new PdfContentStreamTokeniser()
+        tokeniser.feedBytes(bytes)
+        tokeniser.eof = true
+        const ops: ContentOp[] = []
+        for (const op of tokeniser.nextItems()) {
+            ops.push(op)
+        }
+        return ops
     }
 }

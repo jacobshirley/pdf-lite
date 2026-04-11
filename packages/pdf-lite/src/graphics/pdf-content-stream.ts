@@ -36,6 +36,7 @@ import {
     CurveToY,
     RectangleOp,
     ClosePathOp,
+    PathOp,
 } from './ops/path'
 import {
     StrokeOp,
@@ -50,6 +51,7 @@ import {
     EndPathOp,
     ClipOp,
     ClipEvenOddOp,
+    PaintOp,
 } from './ops/paint'
 import {
     SetFillColorRGBOp,
@@ -64,6 +66,7 @@ import {
     SetStrokeColorOp,
     SetFillColorExtOp,
     SetStrokeColorExtOp,
+    ColorOp,
 } from './ops/color'
 import {
     SaveStateOp,
@@ -78,255 +81,17 @@ import {
     SetFlatnessOp,
     SetGraphicsStateOp,
     InvokeXObjectOp,
+    StateOp,
 } from './ops/state'
-
-export class ContentOps {
-    ops: string[]
-
-    constructor(ops?: string[]) {
-        this.ops = ops ?? []
-    }
-
-    toString(): string {
-        return this.ops.join(' ')
-    }
-
-    toJSON() {
-        return this.ops
-    }
-
-    td(x: number, y: number): this {
-        this.ops.push(`${x} ${y} Td`)
-        return this
-    }
-
-    tD(x: number, y: number): this {
-        this.ops.push(`${x} ${y} TD`)
-        return this
-    }
-
-    tj(text: PdfString | PdfHexadecimal | string): this {
-        if (typeof text === 'string') {
-            this.tj(new PdfString(text))
-            return this
-        }
-
-        if (text instanceof PdfHexadecimal) {
-            this.ops.push(`<${text.hexString}> Tj`)
-        } else if (text instanceof PdfString) {
-            this.ops.push(`(${text.value}) Tj`)
-        } else {
-            throw new Error('Invalid text type for Tj operator')
-        }
-
-        return this
-    }
-
-    tJ(array: string): this {
-        this.ops.push(`${array} TJ`)
-        return this
-    }
-
-    tf(fontName: string, fontSize: number): this {
-        this.ops.push(`/${fontName} ${fontSize} Tf`)
-        return this
-    }
-
-    tm(a: number, b: number, c: number, d: number, e: number, f: number): this {
-        this.ops.push(`${a} ${b} ${c} ${d} ${e} ${f} Tm`)
-        return this
-    }
-
-    tc(charSpace: number): this {
-        this.ops.push(`${charSpace} Tc`)
-        return this
-    }
-
-    tw(wordSpace: number): this {
-        this.ops.push(`${wordSpace} Tw`)
-        return this
-    }
-
-    tStar(): this {
-        this.ops.push('T*')
-        return this
-    }
-
-    quote(text: string): this {
-        this.ops.push(`(${text}) '`)
-        return this
-    }
-
-    bt(): this {
-        this.ops.push('BT')
-        return this
-    }
-
-    et(): this {
-        this.ops.push('ET')
-        return this
-    }
-
-    rg(r: number, g: number, b: number): this {
-        this.ops.push(`${r} ${g} ${b} rg`)
-        return this
-    }
-
-    RG(r: number, g: number, b: number): this {
-        this.ops.push(`${r} ${g} ${b} RG`)
-        return this
-    }
-
-    m(x: number, y: number): this {
-        this.ops.push(`${x} ${y} m`)
-        return this
-    }
-
-    l(x: number, y: number): this {
-        this.ops.push(`${x} ${y} l`)
-        return this
-    }
-
-    re(x: number, y: number, width: number, height: number): this {
-        this.ops.push(`${x} ${y} ${width} ${height} re`)
-        return this
-    }
-
-    h(): this {
-        this.ops.push('h')
-        return this
-    }
-
-    c(
-        x1: number,
-        y1: number,
-        x2: number,
-        y2: number,
-        x3: number,
-        y3: number,
-    ): this {
-        this.ops.push(`${x1} ${y1} ${x2} ${y2} ${x3} ${y3} c`)
-        return this
-    }
-
-    s(): this {
-        this.ops.push('S')
-        return this
-    }
-
-    f(): this {
-        this.ops.push('f')
-        return this
-    }
-
-    fStar(): this {
-        this.ops.push('f*')
-        return this
-    }
-
-    b(): this {
-        this.ops.push('b')
-        return this
-    }
-
-    B(): this {
-        this.ops.push('B')
-        return this
-    }
-
-    bStar(): this {
-        this.ops.push('b*')
-        return this
-    }
-
-    BStar(): this {
-        this.ops.push('B*')
-        return this
-    }
-
-    n(): this {
-        this.ops.push('n')
-        return this
-    }
-
-    W(): this {
-        this.ops.push('W')
-        return this
-    }
-
-    WStar(): this {
-        this.ops.push('W*')
-        return this
-    }
-
-    q(): this {
-        this.ops.push('q')
-        return this
-    }
-
-    Q(): this {
-        this.ops.push('Q')
-        return this
-    }
-
-    cm(a: number, b: number, c: number, d: number, e: number, f: number): this {
-        this.ops.push(`${a} ${b} ${c} ${d} ${e} ${f} cm`)
-        return this
-    }
-
-    w(lineWidth: number): this {
-        this.ops.push(`${lineWidth} w`)
-        return this
-    }
-
-    gs(name: string): this {
-        this.ops.push(`/${name} gs`)
-        return this
-    }
-
-    Do(name: string): this {
-        this.ops.push(`/${name} Do`)
-        return this
-    }
-
-    has(operator: string): boolean {
-        return this.ops.some((op) => op.endsWith(` ${operator}`))
-    }
-
-    findLast(operator: string): string | null {
-        return this.ops.findLast((op) => op.endsWith(` ${operator}`)) ?? null
-    }
-
-    prepend(ops: ContentOps): this {
-        this.ops = [...ops.ops, ...this.ops]
-        return this
-    }
-
-    append(ops: ContentOps): this {
-        this.ops = [...this.ops, ...ops.ops]
-        return this
-    }
-
-    replace(ops: ContentOps): this {
-        for (const op of ops.ops) {
-            const operator = op.split(' ').slice(-1)[0]
-            const index = this.ops.findIndex((o) => o.endsWith(` ${operator}`))
-            if (index !== -1) {
-                this.ops[index] = op
-            } else {
-                this.ops.push(op)
-            }
-        }
-        return this
-    }
-}
+import { PdfContentStreamTokeniser } from './tokeniser'
 
 export abstract class ContentNode {
     _page?: PdfPage
     parent?: ContentNode
-    ops: ContentOp[] = []
+    ops: ContentOp[]
 
     constructor(ops?: ContentOp[], page?: PdfPage) {
+        this.ops = ops ?? []
         this._page = page
     }
 
@@ -395,85 +160,6 @@ export abstract class ContentNode {
     }
 }
 
-/**
- * Compute the text-space advance width for a Tj operator operand.
- * Returns advance in text-space units (before Tm scaling).
- */
-function computeTjAdvance(
-    operand: string,
-    font: PdfFont | null,
-    fontSize: number,
-    tc: number,
-    tw: number,
-): number {
-    let total = 0
-    if (font) {
-        const pdfStr = parsePdfStringOperand(operand)
-        if (font.isUnicode && pdfStr instanceof PdfHexadecimal) {
-            // For CID fonts, use raw CID values for width lookup
-            const hex = pdfStr.hexString
-            for (let i = 0; i < hex.length; i += 4) {
-                const cid = parseInt(hex.substring(i, i + 4), 16)
-                const w = font.getCharacterWidth(cid, fontSize)
-                total += w ?? fontSize * 0.6
-                total += tc
-                // Check if this CID maps to a space character
-                const umap = font.toUnicodeMap
-                const ch = umap?.get(cid) ?? String.fromCodePoint(cid)
-                if (ch === ' ') total += tw
-            }
-        } else {
-            const decoded = font.decode(pdfStr)
-            const chars = [...decoded]
-            for (let i = 0; i < chars.length; i++) {
-                const charCode = chars[i].charCodeAt(0)
-                const w = font.getCharacterWidth(charCode, fontSize)
-                total += w ?? fontSize * 0.6
-                total += tc
-                if (chars[i] === ' ') total += tw
-            }
-        }
-    } else {
-        const literal = extractLiteral(operand)
-        const chars = [...literal]
-        for (let i = 0; i < chars.length; i++) {
-            total += fontSize * 0.6
-            total += tc
-            if (chars[i] === ' ') total += tw
-        }
-    }
-    return total
-}
-
-/**
- * Compute the text-space advance width for a TJ operator operand.
- * Handles both string elements and numeric kerning adjustments.
- * Returns advance in text-space units (before Tm scaling).
- */
-function computeTJAdvance(
-    operand: string,
-    font: PdfFont | null,
-    fontSize: number,
-    tc: number,
-    tw: number,
-): number {
-    let total = 0
-    // Parse TJ array elements: strings and numbers alternating
-    // String regex handles escaped parens like \) inside (C\))
-    const re = /(\((?:[^()\\]|\\.)*\)|<[^>]*>)|(-?\d+(?:\.\d+)?)/g
-    let m: RegExpExecArray | null
-    while ((m = re.exec(operand)) !== null) {
-        if (m[1]) {
-            // String element — compute its advance
-            total += computeTjAdvance(m[1], font, fontSize, tc, tw)
-        } else if (m[2] !== undefined) {
-            // Numeric kerning: value in thousandths of text space, positive = move left
-            total -= (parseFloat(m[2]) / 1000) * fontSize
-        }
-    }
-    return total
-}
-
 export class Text extends ContentNode {
     prev?: Text
 
@@ -517,40 +203,36 @@ export class Text extends ContentNode {
 
     set font(font: PdfFont) {
         const size = this.fontSize
-        const tfOp = `/${font.resourceName} ${size} Tf`
-        this.replaceOrPrependOp('Tf', tfOp)
+        const tfOp = this.ops.find((x) => x instanceof SetFontOp)
+        if (!tfOp) {
+            const newTfOp = SetFontOp.create(font.resourceName, size)
+            this.ops.unshift(newTfOp)
+        } else {
+            tfOp.fontName = font.resourceName
+        }
     }
 
     get charSpace(): number {
-        const lastTc = this.ops.findLast('Tc')
+        const lastTc = this.ops.findLast((x) => x instanceof SetCharSpacingOp)
         if (lastTc) {
-            const parts = lastTc.split(' ')
-            if (parts.length >= 1) {
-                return parseFloat(parts[0])
-            }
+            return lastTc.charSpace
         }
         return this.prev?.charSpace ?? 0
     }
 
     get wordSpace(): number {
-        const lastTw = this.ops.findLast('Tw')
+        const lastTw = this.ops.findLast((x) => x instanceof SetWordSpacingOp)
         if (lastTw) {
-            const parts = lastTw.split(' ')
-            if (parts.length >= 1) {
-                return parseFloat(parts[0])
-            }
+            return lastTw.wordSpace
         }
 
         return this.prev?.wordSpace ?? 0
     }
 
     get fontSize(): number {
-        const lastTf = this.ops.findLast('Tf')
+        const lastTf = this.ops.findLast((x) => x instanceof SetFontOp)
         if (lastTf) {
-            const parts = lastTf.split(' ')
-            if (parts.length >= 2) {
-                return parseFloat(parts[1])
-            }
+            return lastTf.fontSize
         }
 
         return this.prev?.fontSize ?? 12
@@ -558,30 +240,114 @@ export class Text extends ContentNode {
 
     set fontSize(size: number) {
         const fontName = this.font.resourceName
-        const tfOp = `/${fontName} ${size} Tf`
-        this.replaceOrPrependOp('Tf', tfOp)
+        const tfOp = this.ops.find((x) => x instanceof SetFontOp)
+        if (!tfOp) {
+            const newTfOp = SetFontOp.create(fontName, size)
+            this.ops.unshift(newTfOp)
+        } else {
+            tfOp.fontSize = size
+        }
     }
 
     get textLeading(): number {
-        const lastTL = this.ops.findLast('TL')
+        const lastTL = this.ops.findLast((x) => x instanceof SetTextLeadingOp)
         if (lastTL) {
-            return parseFloat(lastTL.split(' ')[0])
+            return lastTL.leading
         }
         // TD also sets TL = -ty (PDF spec Table 108)
-        const lastTD = this.ops.findLast('TD')
+        const lastTD = this.ops.findLast((x) => x instanceof MoveTextLeadingOp)
         if (lastTD) {
-            const match = lastTD.match(
-                /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+TD/,
-            )
-            if (match) {
-                return -parseFloat(match[2])
-            }
+            return -lastTD.y
         }
         return this.prev?.textLeading ?? 0
     }
 
+    /**
+     * Produces a Tj or TJ content stream operator for the given text.
+     * Uses the TJ operator with kern adjustments when kern data is available,
+     * otherwise falls back to a simple Tj.
+     *
+     * The returned string is ready to be inserted into a content stream, e.g.:
+     * ```
+     * BT /F1 12 Tf 100 700 Td <TJ output> ET
+     * ```
+     *
+     * @param text - The text to render
+     * @returns A string like `(Hello) Tj` or `[(H) 40 (ello)] TJ`
+     */
+    writeContentStreamText(text: string): ContentOp {
+        const m = this.font.metrics
+        const hasKern = m.kernPairs.length > 0
+
+        if (!hasKern || text.length <= 1) {
+            return new ShowTextOp(`${this.encodeOperand(text)} Tj`)
+        }
+
+        // Build TJ array: split at kern boundaries
+        type TJEntry = { text: string } | { kern: number }
+        const entries: TJEntry[] = []
+        let run = ''
+
+        const chars = [...text]
+        for (let i = 0; i < chars.length; i++) {
+            run += chars[i]
+
+            if (i < chars.length - 1) {
+                const leftCode = chars[i].codePointAt(0)!
+                const rightCode = chars[i + 1].codePointAt(0)!
+                const leftName = m.getGlyphMetrics(leftCode)?.name
+                const rightName = m.getGlyphMetrics(rightCode)?.name
+
+                if (leftName && rightName) {
+                    const kern = m.getKernAdjustment(leftName, rightName)
+                    if (kern !== 0) {
+                        entries.push({ text: run })
+                        // PDF TJ kern values: positive moves left (tightens),
+                        // AFM dx is negative for tightening, so negate
+                        entries.push({ kern: -kern })
+                        run = ''
+                    }
+                }
+            }
+        }
+
+        if (run) {
+            entries.push({ text: run })
+        }
+
+        // If no kern was actually applied, use simple Tj
+        if (entries.length === 1 && 'text' in entries[0]) {
+            return new ShowTextOp(`${this.encodeOperand(entries[0].text)} Tj`)
+        }
+
+        const parts = entries.map((e) => {
+            if ('kern' in e) return String(e.kern)
+            return this.encodeOperand(e.text)
+        })
+
+        return new ShowTextArrayOp(`[${parts.join(' ')}] TJ`)
+    }
+
+    /**
+     * Encodes text as a PDF string operand for use in content streams.
+     * Returns `(escaped text)` for literal strings or `<hex>` for hex strings.
+     */
+    private encodeOperand(text: string): string {
+        const encoded = this.font.encode(text)
+        if (encoded instanceof PdfHexadecimal) {
+            return `<${encoded.hexString}>`
+        }
+        // PdfString — escape special chars for PDF literal string
+        const val = encoded.value
+        const escaped = val
+            .replace(/\\/g, '\\\\')
+            .replace(/\(/g, '\\(')
+            .replace(/\)/g, '\\)')
+        return `(${escaped})`
+    }
+
     set text(newText: string) {
-        const newTextOp = this.font.writeContentStreamText(newText)
+        const newTextOp = this.writeContentStreamText(newText)
         const textOpIndex = this.ops.findLastIndex(
             (x) => x instanceof ShowTextOp || x instanceof ShowTextArrayOp,
         )
@@ -595,6 +361,10 @@ export class Text extends ContentNode {
     /**
      * Compute the text-space advance width of this segment's show operator.
      * After Tj/TJ, the text position advances by this amount.
+     *
+     * For Tj: sum of glyph widths, plus Tc per glyph and Tw per space.
+     * For TJ: same, summed across string segments, with each numeric
+     *   segment `n` contributing `-n/1000 * fontSize` (per PDF spec).
      */
     getTextAdvance(): number {
         const fontSize = this.fontSize
@@ -602,48 +372,9 @@ export class Text extends ContentNode {
         const tc = this.charSpace
         const tw = this.wordSpace
 
-        const lastTJ = this.ops.findLast('TJ')
-        const lastTj = this.ops.findLast('Tj')
-        const lastQuote = this.ops.findLast("'")
-        const lastDblQuote = this.ops.findLast('"')
-
-        if (lastTJ) {
-            return computeTJAdvance(
-                lastTJ.slice(0, -3).trim(),
-                font,
-                fontSize,
-                tc,
-                tw,
-            )
-        }
-        if (lastTj) {
-            return computeTjAdvance(
-                lastTj.slice(0, -3).trim(),
-                font,
-                fontSize,
-                tc,
-                tw,
-            )
-        }
-        if (lastQuote) {
-            return computeTjAdvance(
-                lastQuote.slice(0, -2).trim(),
-                font,
-                fontSize,
-                tc,
-                tw,
-            )
-        }
-        if (lastDblQuote) {
-            const operand = lastDblQuote.slice(0, -2).trim()
-            const strMatch = operand.match(/(\((?:[^()\\]|\\.)*\)|<[^>]*>)\s*$/)
-            if (strMatch) {
-                return computeTjAdvance(strMatch[1], font, fontSize, tc, tw)
-            }
-        }
-        if (font && this.text) {
+        const measure = (text: string): number => {
             let total = 0
-            for (const ch of [...this.text]) {
+            for (const ch of [...text]) {
                 total +=
                     font.getCharacterWidth(ch.charCodeAt(0), fontSize) ??
                     fontSize * 0.6
@@ -652,6 +383,33 @@ export class Text extends ContentNode {
             }
             return total
         }
+
+        let total = 0
+        let sawShowOp = false
+
+        for (const op of this.ops) {
+            if (op instanceof ShowTextOp) {
+                sawShowOp = true
+                total += measure(op.text)
+            } else if (op instanceof ShowTextArrayOp) {
+                sawShowOp = true
+                for (const segment of op.segments) {
+                    if (typeof segment === 'number') {
+                        // TJ numeric entries are kern adjustments in
+                        // thousandths of a unit of text space — they
+                        // *reduce* the advance.
+                        total -= (segment / 1000) * fontSize
+                    } else {
+                        total += measure(font.decode(segment))
+                    }
+                }
+            }
+        }
+
+        if (sawShowOp) return total
+
+        // Fallback for segments without an explicit show op: estimate from
+        // `this.text` using a rough average glyph width.
         if (this.text) {
             return this.text.length * fontSize * 0.6
         }
@@ -681,62 +439,35 @@ export class Text extends ContentNode {
         }
 
         // Process positioning operators in this segment
-        for (const op of this.ops.ops) {
-            switch (op.split(' ').at(-1)) {
-                case 'Tm': {
-                    // Tm is absolute — sets both Tm and Tlm
-                    const parts = op.split(/\s+/)
-                    if (parts.length >= 7) {
-                        const m = new Matrix({
-                            a: parseFloat(parts[0]),
-                            b: parseFloat(parts[1]),
-                            c: parseFloat(parts[2]),
-                            d: parseFloat(parts[3]),
-                            e: parseFloat(parts[4]),
-                            f: parseFloat(parts[5]),
-                        })
-                        tm = m
-                        tlm = m
-                    }
-                    break
-                }
-                case 'Td': {
-                    // Td is relative to Tlm, sets both Tlm and Tm
-                    const match = op.match(
-                        /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+Td/,
-                    )
-                    if (match) {
-                        tlm = tlm.translate(
-                            parseFloat(match[1]),
-                            parseFloat(match[2]),
-                        )
-                        tm = tlm
-                    }
-                    break
-                }
-                case 'TD': {
-                    // TD is like Td (also sets TL = -ty)
-                    const match = op.match(
-                        /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+TD/,
-                    )
-                    if (match) {
-                        tlm = tlm.translate(
-                            parseFloat(match[1]),
-                            parseFloat(match[2]),
-                        )
-                        tm = tlm
-                    }
-                    break
-                }
-                case 'T*':
-                case "'":
-                case '"': {
-                    // Move to next line: Tlm += (0, -TL), Tm = Tlm
-                    const tl = this.textLeading
-                    tlm = tlm.translate(0, -tl)
-                    tm = tlm
-                    break
-                }
+        for (const op of this.ops) {
+            if (op instanceof SetTextMatrixOp) {
+                // Tm is absolute — sets both Tm and Tlm
+                const m = op.matrix
+                tm = m
+                tlm = m
+            } else if (op instanceof MoveTextOp) {
+                tlm = tlm.translate(op.x, op.y)
+                tm = tlm
+            } else if (op instanceof MoveTextLeadingOp) {
+                tlm = tlm.translate(op.x, op.y)
+                tm = tlm
+            } else if (
+                op instanceof NextLineOp ||
+                op instanceof ShowTextNextLineOp
+            ) {
+                // Move to next line: Tlm += (0, -TL), Tm = Tlm
+                const tl = this.textLeading
+                tlm = tlm.translate(0, -tl)
+                tm = tlm
+            } else if (op instanceof ShowTextNextLineSpacingOp) {
+                // Move to next line with extra spacing: Tlm += (0, -TL - leading), Tm = Tlm
+                const tl = this.textLeading
+                tlm = tlm.translate(0, -tl - op.extraLeading)
+                tm = tlm
+            } else if (op instanceof SetTextLeadingOp) {
+                // If TL changes mid-line, it affects subsequent T*, Td, TD
+                tlm = tlm.translate(0, -op.leading)
+                tm = tlm
             }
         }
 
@@ -764,10 +495,10 @@ export class Text extends ContentNode {
 
 export class TextBlock extends ContentNode {
     protected segments: Text[] = []
-    sourceIndex?: number
 
-    constructor(page?: PdfPage) {
-        super(page)
+    constructor(page?: PdfPage, ops?: ContentOp[]) {
+        super(ops)
+        this.page = page
     }
 
     getSegments() {
@@ -782,16 +513,6 @@ export class TextBlock extends ContentNode {
 
     get text(): string {
         return this.segments.map((l) => l.text).join('')
-    }
-
-    toString(): string {
-        const ops = new ContentOps()
-        ops.bt()
-        for (const line of this.segments) {
-            ops.append(line.ops)
-        }
-        ops.et()
-        return ops.toString()
     }
 
     getLocalTransform(): Matrix {
@@ -855,8 +576,7 @@ export class TextBlock extends ContentNode {
 
     set text(newText: string) {
         if (this.segments.length === 0) {
-            const text = new Text(this.page)
-            text.ops = new ContentOps()
+            const text = new Text([], this.page)
             text.font = PdfFont.HELVETICA
             text.fontSize = 12
             text.text = newText
@@ -865,42 +585,13 @@ export class TextBlock extends ContentNode {
         }
 
         const firstSeg = this.segments[0]
-        const textOp = firstSeg.font.writeContentStreamText(newText)
-        const newOps: string[] = []
-        let replaced = false
+        const textOp = firstSeg.writeContentStreamText(newText)
+        let textOpIndex = firstSeg.ops.findIndex(
+            (x) => x instanceof ShowTextOp || x instanceof ShowTextArrayOp,
+        )
 
-        for (const op of firstSeg.ops.ops) {
-            const parts = op.split(/\s+/)
-            const operator = parts[parts.length - 1]
-
-            if (
-                !replaced &&
-                (operator === 'Tj' ||
-                    operator === 'TJ' ||
-                    operator === "'" ||
-                    operator === '"')
-            ) {
-                newOps.push(textOp)
-                replaced = true
-            } else if (
-                replaced &&
-                (operator === 'Tj' ||
-                    operator === 'TJ' ||
-                    operator === "'" ||
-                    operator === '"')
-            ) {
-                // Skip additional text show ops in the first segment
-                continue
-            } else {
-                newOps.push(op)
-            }
-        }
-
-        if (!replaced) {
-            newOps.push(textOp)
-        }
-
-        firstSeg.ops = new ContentOps(newOps)
+        const newOps = firstSeg.ops.slice(0, textOpIndex).concat([textOp])
+        firstSeg.ops = newOps
         this.segments.splice(1)
     }
 
@@ -914,10 +605,8 @@ export class TextBlock extends ContentNode {
         // resolveTextState() follows the prev chain to the already-shifted N,
         // causing double-shifting and characters spreading apart.
         const resolved = this.segments.map((seg) => {
-            const hasTm = seg.ops.ops.some((op) => {
-                const parts = op.split(/\s+/)
-                return parts[parts.length - 1] === 'Tm' && parts.length >= 7
-            })
+            const hasTm = seg.ops.some((x) => x instanceof SetTextMatrixOp)
+
             return { hasTm, tm: hasTm ? null : seg.getLocalTransform() }
         })
 
@@ -926,206 +615,29 @@ export class TextBlock extends ContentNode {
             const { hasTm, tm } = resolved[i]
             const newOps: string[] = []
 
-            if (hasTm) {
-                for (const op of seg.ops.ops) {
-                    const parts = op.split(/\s+/)
-                    const operator = parts[parts.length - 1]
-
-                    if (operator === 'Tm' && parts.length >= 7) {
-                        const a = parts[0]
-                        const b = parts[1]
-                        const c = parts[2]
-                        const d = parts[3]
-                        const e = parseFloat(parts[4]) + dx
-                        const f = parseFloat(parts[5]) + dy
-                        newOps.push(`${a} ${b} ${c} ${d} ${e} ${f} Tm`)
-                    } else {
-                        newOps.push(op)
-                    }
-                }
-                seg.ops = new ContentOps(newOps)
-            } else {
-                for (const op of seg.ops.ops) {
-                    newOps.push(op)
-                }
-                newOps.unshift(
-                    `${tm!.a} ${tm!.b} ${tm!.c} ${tm!.d} ${tm!.e + dx} ${tm!.f + dy} Tm`,
-                )
-                seg.ops = new ContentOps(
-                    newOps.filter((op) => {
-                        const o = op.split(/\s+/).at(-1)
-                        return o !== 'Td' && o !== 'TD' && o !== 'T*'
-                    }),
-                )
+            const tmOps = seg.ops.filter((o) => o instanceof SetTextMatrixOp)
+            for (const op of tmOps) {
+                op.matrix = op.matrix.translate(dx, dy)
             }
-        }
-    }
 
-    static parseFromContentStream(ops: string[], page?: PdfPage): TextBlock[] {
-        // Build a full block first to establish proper prev chains for position resolution
-        const fullBlock = new TextBlock(page)
-
-        let currentLineOps: string[] = []
-
-        const flushLine = () => {
-            if (
-                currentLineOps.some(
+            if (!hasTm) {
+                seg.ops = seg.ops.filter(
                     (o) =>
-                        o.endsWith(' Tj') ||
-                        o.endsWith(' TJ') ||
-                        o.endsWith(" '") ||
-                        o.endsWith(' "'),
+                        !(o instanceof MoveTextOp) &&
+                        !(o instanceof MoveTextLeadingOp) &&
+                        !(o instanceof NextLineOp),
                 )
-            ) {
-                const text = new Text(page)
-                text.ops = new ContentOps(currentLineOps)
-                fullBlock.addSegment(text)
-            }
-            currentLineOps = []
-        }
-
-        for (const op of ops) {
-            currentLineOps.push(op)
-            if (
-                op.endsWith(' Tj') ||
-                op.endsWith(' TJ') ||
-                op.endsWith(" '") ||
-                op.endsWith(' "')
-            ) {
-                flushLine()
             }
         }
-
-        flushLine()
-
-        const segments = fullBlock.getSegments()
-        if (segments.length <= 1) return [fullBlock]
-
-        // Compute absolute positions using the full prev chain
-        const positions = segments.map((s) => s.getLocalTransform())
-
-        // Find split points where position changes significantly
-        const Y_THRESHOLD = 0.5
-        const X_THRESHOLD = 50
-        const splitIndices: number[] = [0]
-        for (let i = 1; i < segments.length; i++) {
-            const dy = Math.abs(positions[i].f - positions[i - 1].f)
-            const prevEndX =
-                positions[i - 1].e + segments[i - 1].getTextAdvance()
-            const dx = positions[i].e - prevEndX
-            if (dy > Y_THRESHOLD || dx > X_THRESHOLD) {
-                splitIndices.push(i)
-            }
-        }
-
-        if (splitIndices.length <= 1) return [fullBlock]
-
-        // Split into separate TextBlocks for each group
-        const results: TextBlock[] = []
-        for (let g = 0; g < splitIndices.length; g++) {
-            const startIdx = splitIndices[g]
-            const endIdx =
-                g + 1 < splitIndices.length
-                    ? splitIndices[g + 1]
-                    : segments.length
-
-            const block = new TextBlock(page)
-            for (let i = startIdx; i < endIdx; i++) {
-                const seg = segments[i]
-                const text = new Text(page)
-
-                if (i === startIdx && g > 0) {
-                    // First segment of a split group: inject absolute Tm
-                    // and inherited font state so prev chain isn't needed
-                    const tm = positions[i]
-                    const newOps: string[] = []
-
-                    // Keep non-positioning ops from original segment
-                    for (const op of seg.ops.ops) {
-                        const operator = op.split(/\s+/).at(-1)
-                        if (
-                            operator === 'Td' ||
-                            operator === 'TD' ||
-                            operator === 'T*' ||
-                            operator === 'Tm'
-                        ) {
-                            continue
-                        }
-                        newOps.push(op)
-                    }
-
-                    // Inject inherited Tf/Tc/Tw from previous segments if missing
-                    const hasTf = newOps.some((op) => op.endsWith(' Tf'))
-                    const hasTc = newOps.some((op) => op.endsWith(' Tc'))
-                    const hasTw = newOps.some((op) => op.endsWith(' Tw'))
-                    const inject: string[] = []
-
-                    for (let j = i - 1; j >= 0; j--) {
-                        const segOps = segments[j].ops.ops
-                        for (let k = segOps.length - 1; k >= 0; k--) {
-                            if (
-                                !hasTf &&
-                                !inject.some((o) => o.endsWith(' Tf')) &&
-                                segOps[k].endsWith(' Tf')
-                            )
-                                inject.push(segOps[k])
-                            if (
-                                !hasTc &&
-                                !inject.some((o) => o.endsWith(' Tc')) &&
-                                segOps[k].endsWith(' Tc')
-                            )
-                                inject.push(segOps[k])
-                            if (
-                                !hasTw &&
-                                !inject.some((o) => o.endsWith(' Tw')) &&
-                                segOps[k].endsWith(' Tw')
-                            )
-                                inject.push(segOps[k])
-                        }
-                    }
-
-                    // Insert inherited state at the beginning, then absolute Tm before show op
-                    newOps.unshift(...inject)
-
-                    const showIdx = newOps.findIndex((op) => {
-                        const operator = op.split(/\s+/).at(-1)
-                        return (
-                            operator === 'Tj' ||
-                            operator === 'TJ' ||
-                            operator === "'" ||
-                            operator === '"'
-                        )
-                    })
-                    const tmStr = `${tm.a} ${tm.b} ${tm.c} ${tm.d} ${tm.e} ${tm.f} Tm`
-                    if (showIdx >= 0) {
-                        newOps.splice(showIdx, 0, tmStr)
-                    } else {
-                        newOps.push(tmStr)
-                    }
-
-                    text.ops = new ContentOps(newOps)
-                } else {
-                    text.ops = new ContentOps([...seg.ops.ops])
-                }
-
-                block.addSegment(text)
-            }
-
-            if (block.getSegments().length > 0) {
-                results.push(block)
-            }
-        }
-
-        return results
     }
+
+    static regroupTextBlocks(blocks: TextBlock[]): TextBlock[] {}
 }
 
 export class GraphicsBlock extends ContentNode {
-    ops: ContentOps
-
-    constructor(ops?: string[], page?: PdfPage) {
-        super(page)
-        this.ops = new ContentOps(ops)
+    constructor(page?: PdfPage, ops?: ContentOp[]) {
+        super(ops)
+        this.page = page
     }
 
     toString(): string {
@@ -1217,23 +729,24 @@ export class GraphicsBlock extends ContentNode {
     }
 
     moveTo(x: number, y: number) {
-        this.ops.m(x, y)
+        this.ops.push(MoveToOp.create(x, y))
     }
 
     lineTo(x: number, y: number) {
-        this.ops.l(x, y)
+        this.ops.push(LineToOp.create(x, y))
     }
 
     stroke() {
-        this.ops.s()
+        this.ops.push(new StrokeOp())
     }
 
     fill() {
-        this.ops.f()
+        this.ops.push(new FillOp())
     }
 
     rgb(r: number, g: number, b: number) {
-        this.ops.rg(r, g, b)
+        this.ops.push(SetStrokeColorRGBOp.create(r, g, b))
+        this.ops.push(SetFillColorRGBOp.create(r, g, b))
     }
 
     getLocalTransform(): Matrix {
@@ -1253,56 +766,35 @@ export class GraphicsBlock extends ContentNode {
             maxY = Math.max(maxY, y)
         }
 
-        for (const op of this.ops.ops) {
-            const parts = op.split(/\s+/)
-            const operator = parts[parts.length - 1]
+        for (const op of this.ops) {
+            if (op instanceof MoveToOp || op instanceof LineToOp) {
+                track(op.x, op.y)
+                continue
+            }
 
-            switch (operator) {
-                case 'm': // moveTo: x y m
-                case 'l': {
-                    // lineTo: x y l
-                    if (parts.length >= 3) {
-                        track(parseFloat(parts[0]), parseFloat(parts[1]))
-                    }
-                    break
-                }
-                case 're': {
-                    // rectangle: x y w h re
-                    if (parts.length >= 5) {
-                        const x = parseFloat(parts[0])
-                        const y = parseFloat(parts[1])
-                        const w = parseFloat(parts[2])
-                        const h = parseFloat(parts[3])
-                        track(x, y)
-                        track(x + w, y + h)
-                    }
-                    break
-                }
-                case 'c': {
-                    // cubic bezier: x1 y1 x2 y2 x3 y3 c
-                    if (parts.length >= 7) {
-                        track(parseFloat(parts[0]), parseFloat(parts[1]))
-                        track(parseFloat(parts[2]), parseFloat(parts[3]))
-                        track(parseFloat(parts[4]), parseFloat(parts[5]))
-                    }
-                    break
-                }
-                case 'v': {
-                    // cubic bezier (cp1=current): x2 y2 x3 y3 v
-                    if (parts.length >= 5) {
-                        track(parseFloat(parts[0]), parseFloat(parts[1]))
-                        track(parseFloat(parts[2]), parseFloat(parts[3]))
-                    }
-                    break
-                }
-                case 'y': {
-                    // cubic bezier (cp2=endpoint): x1 y1 x3 y3 y
-                    if (parts.length >= 5) {
-                        track(parseFloat(parts[0]), parseFloat(parts[1]))
-                        track(parseFloat(parts[2]), parseFloat(parts[3]))
-                    }
-                    break
-                }
+            if (op instanceof RectangleOp) {
+                track(op.x, op.y)
+                track(op.x + op.width, op.y + op.height)
+                continue
+            }
+
+            if (op instanceof CurveToOp) {
+                track(op.x1, op.y1)
+                track(op.x2, op.y2)
+                track(op.x3, op.y3)
+                continue
+            }
+
+            if (op instanceof CurveToV) {
+                track(op.x2, op.y2)
+                track(op.x3, op.y3)
+                continue
+            }
+
+            if (op instanceof CurveToY) {
+                track(op.x1, op.y1)
+                track(op.x3, op.y3)
+                continue
             }
         }
 
@@ -1338,207 +830,83 @@ export class PdfContentStream extends PdfStream {
         const contentString = this.dataAsString
         if (!contentString) return []
 
-        const ops = parseContentStream(contentString)
-        return this.buildTree(ops)
+        const ops = PdfContentStreamTokeniser.tokenise(contentString)
+        return PdfContentStream.buildNodeTree(ops).getChildren()
     }
 
-    private isPaintOp(op: ContentOp): boolean {
-        return (
-            op instanceof StrokeOp ||
-            op instanceof CloseAndStrokeOp ||
-            op instanceof FillOp ||
-            op instanceof FillAlternateOp ||
-            op instanceof FillEvenOddOp ||
-            op instanceof FillAndStrokeOp ||
-            op instanceof CloseFillAndStrokeOp ||
-            op instanceof FillAndStrokeEvenOddOp ||
-            op instanceof CloseFillAndStrokeEvenOddOp
-        )
-    }
+    static buildNodeTree(ops: ContentOp[], page?: PdfPage): StateNode {
+        const root = new StateNode(page)
+        const stateStack: StateNode[] = []
 
-    private isPathOp(op: ContentOp): boolean {
-        return (
-            op instanceof MoveToOp ||
-            op instanceof LineToOp ||
-            op instanceof CurveToOp ||
-            op instanceof CurveToV ||
-            op instanceof CurveToY ||
-            op instanceof RectangleOp ||
-            op instanceof ClosePathOp
-        )
-    }
-
-    private isColorOp(op: ContentOp): boolean {
-        return (
-            op instanceof SetFillColorRGBOp ||
-            op instanceof SetStrokeColorRGBOp ||
-            op instanceof SetFillColorGrayOp ||
-            op instanceof SetStrokeColorGrayOp ||
-            op instanceof SetFillColorCMYKOp ||
-            op instanceof SetStrokeColorCMYKOp ||
-            op instanceof SetFillColorSpaceOp ||
-            op instanceof SetStrokeColorSpaceOp ||
-            op instanceof SetFillColorOp ||
-            op instanceof SetStrokeColorOp ||
-            op instanceof SetFillColorExtOp ||
-            op instanceof SetStrokeColorExtOp
-        )
-    }
-
-    private isTextOp(op: ContentOp): boolean {
-        return op instanceof TextOp
-    }
-
-    private isStateOp(op: ContentOp): boolean {
-        return (
-            op instanceof SetLineWidthOp ||
-            op instanceof SetLineCapOp ||
-            op instanceof SetLineJoinOp ||
-            op instanceof SetMiterLimitOp ||
-            op instanceof SetDashPatternOp ||
-            op instanceof SetRenderingIntentOp ||
-            op instanceof SetFlatnessOp ||
-            op instanceof SetGraphicsStateOp ||
-            op instanceof InvokeXObjectOp
-        )
-    }
-
-    private buildTree(ops: ContentOp[]): ContentNode[] {
-        const root = new GroupNode(this.page)
-        let currentGroup: GroupNode = root
-        const groupStack: GroupNode[] = []
-
-        let inTextBlock = false
-        let textOps: string[] = []
-        let graphicsOps: string[] = []
-        let btEtIndex = 0
-
-        // Text state persists across BT/ET blocks (PDF spec 9.3)
-        let currentFontName = ''
-        let currentFontSize = 0
-        let currentTc = 0
-        let currentTw = 0
+        let textOps: TextOp[] = []
+        let graphicsOps: (PaintOp | PathOp | ColorOp)[] = []
+        let currentState: StateNode = root
 
         for (const op of ops) {
             if (op instanceof BeginTextOp) {
-                inTextBlock = true
-                textOps = []
-                // Inject carried-over text state
-                if (currentFontName && currentFontSize) {
-                    textOps.push(`/${currentFontName} ${currentFontSize} Tf`)
-                }
-                if (currentTc !== 0) {
-                    textOps.push(`${currentTc} Tc`)
-                }
-                if (currentTw !== 0) {
-                    textOps.push(`${currentTw} Tw`)
-                }
-                continue
+                textOps.push(op)
             }
 
             if (op instanceof EndTextOp) {
-                if (inTextBlock && textOps.length > 0) {
-                    const blocks = TextBlock.parseFromContentStream(
-                        textOps,
-                        this.page,
-                    )
-                    for (const block of blocks) {
-                        block.sourceIndex = btEtIndex
-                        currentGroup.addChild(block)
-                    }
-                    btEtIndex++
-                }
-                inTextBlock = false
+                currentState.addChild(new TextBlock(page, textOps))
                 textOps = []
                 continue
             }
 
-            if (op instanceof SaveStateOp && !inTextBlock) {
-                const group = new GroupNode(this.page)
-                currentGroup.addChild(group)
-                groupStack.push(currentGroup)
-                currentGroup = group
+            if (op instanceof SaveStateOp) {
+                const group = new StateNode(page)
+                currentState.addChild(group)
+                stateStack.push(currentState)
+                currentState = group
                 continue
             }
 
-            if (op instanceof RestoreStateOp && !inTextBlock) {
-                if (groupStack.length > 0) {
-                    currentGroup = groupStack.pop()!
+            if (op instanceof RestoreStateOp) {
+                if (stateStack.length > 0) {
+                    currentState = stateStack.pop()!
                 }
                 continue
             }
 
-            if (op instanceof SetMatrixOp && !inTextBlock) {
-                currentGroup.ops.cm(op.a, op.b, op.c, op.d, op.e, op.f)
-                continue
-            }
-
-            if (inTextBlock) {
-                if (this.isTextOp(op) || this.isColorOp(op)) {
-                    textOps.push(op.raw!)
-                    // Track text state for cross-block persistence
-                    if (op instanceof SetFontOp) {
-                        currentFontName = op.fontName
-                        currentFontSize = op.fontSize
-                    }
-                    if (op instanceof SetCharSpacingOp) {
-                        currentTc = op.charSpace
-                    }
-                    if (op instanceof SetWordSpacingOp) {
-                        currentTw = op.wordSpace
-                    }
-                } else {
-                    // Unknown op in text block — include as-is
-                    textOps.push(op.raw!)
-                }
+            if (op instanceof StateOp) {
+                currentState.ops.push(op)
                 continue
             }
 
             // Outside text block: graphics
-            if (this.isPaintOp(op)) {
-                graphicsOps.push(op.raw!)
-                const gBlock = new GraphicsBlock(graphicsOps)
-                currentGroup.addChild(gBlock)
+            if (op instanceof PaintOp) {
+                graphicsOps.push(op)
+                const gBlock = new GraphicsBlock(page, graphicsOps)
+                currentState.addChild(gBlock)
                 graphicsOps = []
             } else if (
-                this.isPathOp(op) ||
-                this.isColorOp(op) ||
+                op instanceof PathOp ||
+                op instanceof ColorOp ||
                 op instanceof ClipOp ||
                 op instanceof ClipEvenOddOp
             ) {
-                graphicsOps.push(op.raw!)
+                graphicsOps.push(op)
             } else if (op instanceof EndPathOp) {
-                // End path without painting — discard
                 graphicsOps = []
             }
-            // State ops outside text are ignored
         }
 
-        return root.getChildren()
+        return root
     }
 }
 
-export class GroupNode extends ContentNode {
+export class StateNode extends ContentNode {
     protected children: ContentNode[] = []
 
     constructor(page?: PdfPage) {
-        super(page)
+        super()
+        this.page = page
     }
 
     getLocalTransform(): Matrix {
-        const lastCm = this.ops.findLast('cm')
+        const lastCm = this.ops.findLast((x) => x instanceof SetMatrixOp)
         if (lastCm) {
-            const parts = lastCm.split(' ')
-            if (parts.length >= 7) {
-                return new Matrix({
-                    a: parseFloat(parts[0]),
-                    b: parseFloat(parts[1]),
-                    c: parseFloat(parts[2]),
-                    d: parseFloat(parts[3]),
-                    e: parseFloat(parts[4]),
-                    f: parseFloat(parts[5]),
-                })
-            }
+            return lastCm.matrix
         }
 
         return Matrix.identity()
@@ -1604,7 +972,7 @@ export type BoundingBox = {
 
 export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> {
     static ContentNode = ContentNode
-    static GroupNode = GroupNode
+    static StateNode = StateNode
     static GraphicsBlock = GraphicsBlock
     static TextBlock = TextBlock
 
@@ -1647,7 +1015,7 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
             const result: TextBlock[] = []
             for (const node of nodes) {
                 if (node instanceof TextBlock) result.push(node)
-                else if (node instanceof GroupNode) {
+                else if (node instanceof StateNode) {
                     result.push(...collect(node.getChildren()))
                 }
             }
@@ -1661,7 +1029,7 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
             const result: GraphicsBlock[] = []
             for (const node of nodes) {
                 if (node instanceof GraphicsBlock) result.push(node)
-                else if (node instanceof GroupNode) {
+                else if (node instanceof StateNode) {
                     result.push(...collect(node.getChildren()))
                 }
             }

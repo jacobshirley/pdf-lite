@@ -1,6 +1,27 @@
 import { describe, it, expect } from 'vitest'
 import { PdfContentStreamTokeniser } from '../../src/graphics/tokeniser'
 import { ContentOp } from '../../src/graphics/ops/base'
+import {
+    BeginTextOp,
+    EndTextOp,
+    SetFontOp,
+    MoveTextOp,
+    ShowTextOp,
+    ShowTextArrayOp,
+} from '../../src/graphics/ops/text'
+import { MoveToOp, LineToOp, RectangleOp } from '../../src/graphics/ops/path'
+import {
+    SaveStateOp,
+    RestoreStateOp,
+    SetMatrixOp,
+} from '../../src/graphics/ops/state'
+import {
+    StrokeOp,
+    FillEvenOddOp,
+    FillAndStrokeEvenOddOp,
+    ClipEvenOddOp,
+    EndPathOp,
+} from '../../src/graphics/ops/paint'
 import { stringToBytes } from '../../src/utils/stringToBytes'
 import { ByteArray } from '../../src/types'
 
@@ -265,6 +286,111 @@ describe('PdfContentStreamTokeniser', () => {
             expect(toString(tokenise('1 2 (Hello) "\n'))).toEqual([
                 '1 2 (Hello) "\n',
             ])
+        })
+    })
+
+    describe('typed op dispatch', () => {
+        it('emits a SaveStateOp for `q`', () => {
+            const ops = tokenise('q\n')
+            expect(ops[0]).toBeInstanceOf(SaveStateOp)
+        })
+
+        it('emits a RestoreStateOp for `Q`', () => {
+            const ops = tokenise('Q\n')
+            expect(ops[0]).toBeInstanceOf(RestoreStateOp)
+        })
+
+        it('emits the correct typed op for each token in a mixed stream', () => {
+            const ops = tokenise(
+                '1 0 0 1 10 20 cm\n10 20 m\n30 40 l\nS\n10 20 30 40 re\nf*\nQ\n',
+            )
+            expect(ops[0]).toBeInstanceOf(SetMatrixOp)
+            expect(ops[1]).toBeInstanceOf(MoveToOp)
+            expect(ops[2]).toBeInstanceOf(LineToOp)
+            expect(ops[3]).toBeInstanceOf(StrokeOp)
+            expect(ops[4]).toBeInstanceOf(RectangleOp)
+            expect(ops[5]).toBeInstanceOf(FillEvenOddOp)
+            expect(ops[6]).toBeInstanceOf(RestoreStateOp)
+        })
+
+        it('emits typed text ops for a BT/ET block', () => {
+            const ops = tokenise(
+                'BT /F1 12 Tf 100 700 Td (Hello) Tj [(He) -10 (llo)] TJ ET\n',
+            )
+            expect(ops[0]).toBeInstanceOf(BeginTextOp)
+            expect(ops[1]).toBeInstanceOf(SetFontOp)
+            expect(ops[2]).toBeInstanceOf(MoveTextOp)
+            expect(ops[3]).toBeInstanceOf(ShowTextOp)
+            expect(ops[4]).toBeInstanceOf(ShowTextArrayOp)
+            expect(ops[5]).toBeInstanceOf(EndTextOp)
+        })
+
+        it('reads structured fields off the typed ops', () => {
+            const ops = tokenise('10 20 m\n/F1 12 Tf\n')
+            const move = ops[0] as MoveToOp
+            expect(move).toBeInstanceOf(MoveToOp)
+            expect(move.x).toBe(10)
+            expect(move.y).toBe(20)
+
+            const tf = ops[1] as SetFontOp
+            expect(tf).toBeInstanceOf(SetFontOp)
+            expect(tf.fontName).toBe('F1')
+            expect(tf.fontSize).toBe(12)
+        })
+
+        it('emits typed ops for star-suffix operators', () => {
+            const ops = tokenise('W* n B*\n')
+            expect(ops[0]).toBeInstanceOf(ClipEvenOddOp)
+            expect(ops[1]).toBeInstanceOf(EndPathOp)
+            expect(ops[2]).toBeInstanceOf(FillAndStrokeEvenOddOp)
+        })
+
+        it('typed ops still round-trip their original bytes exactly', () => {
+            const input =
+                'q\n1 0 0 1 100 200 cm\nBT\n\t/F1 12 Tf\n\t100 700 Td\n\t(Hello) Tj\nET\n[(a) -10 (b)] TJ\nQ\n'
+            const ops = tokenise(input)
+            // Sanity: these are actually typed subclasses, not bare ContentOps.
+            expect(ops[0]).toBeInstanceOf(SaveStateOp)
+            expect(ops[1]).toBeInstanceOf(SetMatrixOp)
+            expect(ops[2]).toBeInstanceOf(BeginTextOp)
+            expect(ops[3]).toBeInstanceOf(SetFontOp)
+            // And yet every byte is preserved.
+            expect(concatBytes(ops)).toEqual(stringToBytes(input))
+        })
+
+        it('falls back to ContentOp for unknown operators', () => {
+            const ops = tokenise('42 xyzzy\n')
+            expect(ops[0]).toBeInstanceOf(ContentOp)
+            // Not one of the typed subclasses.
+            expect(ops[0]).not.toBeInstanceOf(SaveStateOp)
+        })
+    })
+
+    describe('ShowTextArrayOp segments', () => {
+        it('parses mixed string/hex/number segments from [...] TJ', () => {
+            const ops = tokenise('[(He) -10 <AB> 5 (llo)] TJ\n')
+            const tj = ops[0] as ShowTextArrayOp
+            expect(tj).toBeInstanceOf(ShowTextArrayOp)
+            const segs = tj.segments
+            expect(segs).toHaveLength(5)
+            expect((segs[0] as { value: string }).value).toBe('He')
+            expect(segs[1]).toBe(-10)
+            expect((segs[2] as { hexString: string }).hexString).toBe('AB')
+            expect(segs[3]).toBe(5)
+            expect((segs[4] as { value: string }).value).toBe('llo')
+        })
+
+        it('returns an empty array for an empty TJ operand', () => {
+            const ops = tokenise('[] TJ\n')
+            expect((ops[0] as ShowTextArrayOp).segments).toEqual([])
+        })
+
+        it('honours balanced parens and backslash escapes inside segments', () => {
+            const ops = tokenise('[(a\\)b) (c(d)e)] TJ\n')
+            const segs = (ops[0] as ShowTextArrayOp).segments
+            expect(segs).toHaveLength(2)
+            expect((segs[0] as { value: string }).value).toBe('a\\)b')
+            expect((segs[1] as { value: string }).value).toBe('c(d)e')
         })
     })
 

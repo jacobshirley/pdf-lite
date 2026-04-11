@@ -1,8 +1,15 @@
+import { ByteArray } from '../../types'
 import { ContentOp } from './base'
 
-export class SetFillColorRGBOp extends ContentOp {
-    constructor(r: number, g: number, b: number) {
-        super(`${r} ${g} ${b} rg`)
+export class ColorOp extends ContentOp {}
+
+export class SetFillColorRGBOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(r: number, g: number, b: number): SetFillColorRGBOp {
+        return new SetFillColorRGBOp(`${r} ${g} ${b} rg`)
     }
 
     get r(): number {
@@ -26,9 +33,13 @@ export class SetFillColorRGBOp extends ContentOp {
     }
 }
 
-export class SetStrokeColorRGBOp extends ContentOp {
-    constructor(r: number, g: number, b: number) {
-        super(`${r} ${g} ${b} RG`)
+export class SetStrokeColorRGBOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(r: number, g: number, b: number): SetStrokeColorRGBOp {
+        return new SetStrokeColorRGBOp(`${r} ${g} ${b} RG`)
     }
 
     get r(): number {
@@ -52,9 +63,13 @@ export class SetStrokeColorRGBOp extends ContentOp {
     }
 }
 
-export class SetFillColorGrayOp extends ContentOp {
-    constructor(gray: number) {
-        super(`${gray} g`)
+export class SetFillColorGrayOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(gray: number): SetFillColorGrayOp {
+        return new SetFillColorGrayOp(`${gray} g`)
     }
 
     get gray(): number {
@@ -65,9 +80,13 @@ export class SetFillColorGrayOp extends ContentOp {
     }
 }
 
-export class SetStrokeColorGrayOp extends ContentOp {
-    constructor(gray: number) {
-        super(`${gray} G`)
+export class SetStrokeColorGrayOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(gray: number): SetStrokeColorGrayOp {
+        return new SetStrokeColorGrayOp(`${gray} G`)
     }
 
     get gray(): number {
@@ -78,9 +97,18 @@ export class SetStrokeColorGrayOp extends ContentOp {
     }
 }
 
-export class SetFillColorCMYKOp extends ContentOp {
-    constructor(c: number, m: number, y: number, k: number) {
-        super(`${c} ${m} ${y} ${k} k`)
+export class SetFillColorCMYKOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(
+        c: number,
+        m: number,
+        y: number,
+        k: number,
+    ): SetFillColorCMYKOp {
+        return new SetFillColorCMYKOp(`${c} ${m} ${y} ${k} k`)
     }
 
     get c(): number {
@@ -110,9 +138,18 @@ export class SetFillColorCMYKOp extends ContentOp {
     }
 }
 
-export class SetStrokeColorCMYKOp extends ContentOp {
-    constructor(c: number, m: number, y: number, k: number) {
-        super(`${c} ${m} ${y} ${k} K`)
+export class SetStrokeColorCMYKOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(
+        c: number,
+        m: number,
+        y: number,
+        k: number,
+    ): SetStrokeColorCMYKOp {
+        return new SetStrokeColorCMYKOp(`${c} ${m} ${y} ${k} K`)
     }
 
     get c(): number {
@@ -142,9 +179,13 @@ export class SetStrokeColorCMYKOp extends ContentOp {
     }
 }
 
-export class SetFillColorSpaceOp extends ContentOp {
-    constructor(name: string) {
-        super(`/${name} cs`)
+export class SetFillColorSpaceOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(name: string): SetFillColorSpaceOp {
+        return new SetFillColorSpaceOp(`/${name} cs`)
     }
 
     get name(): string {
@@ -155,9 +196,13 @@ export class SetFillColorSpaceOp extends ContentOp {
     }
 }
 
-export class SetStrokeColorSpaceOp extends ContentOp {
-    constructor(name: string) {
-        super(`/${name} CS`)
+export class SetStrokeColorSpaceOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(name: string): SetStrokeColorSpaceOp {
+        return new SetStrokeColorSpaceOp(`/${name} CS`)
     }
 
     get name(): string {
@@ -168,26 +213,42 @@ export class SetStrokeColorSpaceOp extends ContentOp {
     }
 }
 
-export class SetFillColorOp extends ContentOp {
-    constructor(...components: number[]) {
-        super(`${components.join(' ')} sc`)
+export class SetFillColorOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(...components: number[]): SetFillColorOp {
+        return new SetFillColorOp(`${components.join(' ')} sc`)
     }
 }
 
-export class SetStrokeColorOp extends ContentOp {
-    constructor(...components: number[]) {
-        super(`${components.join(' ')} SC`)
+export class SetStrokeColorOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(...components: number[]): SetStrokeColorOp {
+        return new SetStrokeColorOp(`${components.join(' ')} SC`)
     }
 }
 
-export class SetFillColorExtOp extends ContentOp {
-    constructor(...components: (number | string)[]) {
-        super(`${components.join(' ')} scn`)
+export class SetFillColorExtOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(...components: (number | string)[]): SetFillColorExtOp {
+        return new SetFillColorExtOp(`${components.join(' ')} scn`)
     }
 }
 
-export class SetStrokeColorExtOp extends ContentOp {
-    constructor(...components: (number | string)[]) {
-        super(`${components.join(' ')} SCN`)
+export class SetStrokeColorExtOp extends ColorOp {
+    constructor(input: string | ByteArray = '') {
+        super(input)
+    }
+
+    static create(...components: (number | string)[]): SetStrokeColorExtOp {
+        return new SetStrokeColorExtOp(`${components.join(' ')} SCN`)
     }
 }

@@ -200,8 +200,17 @@ export class ShowTextOp extends TextOp {
         if (!this.raw) return ''
         const operand = this.parts().operands.join(' ')
         if (operand.startsWith('(') && operand.endsWith(')')) {
-            // Literal string
-            return font.decode(new PdfString(operand.slice(1, -1)))
+            // Literal string - unescape PDF escapes before decoding
+            const withoutParens = operand.slice(1, -1)
+            // Unescape PDF escape sequences in correct order
+            // Must process \\ first to avoid double-unescaping
+            const unescaped = withoutParens
+                .replace(/\\\\/g, '\x00') // \\ -> temporary marker
+                .replace(/\\\(/g, '(') // \( -> (
+                .replace(/\\\)/g, ')') // \) -> )
+                .replace(/\x00/g, '\\') // restore \
+            // font.decode expects unescaped text, just return it directly
+            return unescaped
         } else if (operand.startsWith('<') && operand.endsWith('>')) {
             // Hex string
             return font.decode(new PdfHexadecimal(operand.slice(1, -1)))
@@ -274,7 +283,14 @@ export class ShowTextArrayOp extends TextOp {
                     if (depth === 0) break
                     j++
                 }
-                result.push(new PdfString(body.slice(i + 1, j)))
+                // Unescape PDF escape sequences before creating PdfString
+                const escaped = body.slice(i + 1, j)
+                const unescaped = escaped
+                    .replace(/\\\\/g, '\x00') // \\ -> temporary marker
+                    .replace(/\\\(/g, '(') // \( -> (
+                    .replace(/\\\)/g, ')') // \) -> )
+                    .replace(/\x00/g, '\\') // restore \
+                result.push(new PdfString(unescaped))
                 i = j + 1
                 continue
             }

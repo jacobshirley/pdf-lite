@@ -477,6 +477,14 @@ export class TextBlock extends ContentNode {
             }
         }
 
+        // If there are leftover ops without a show operator, create an empty segment
+        // This preserves positioning and font ops even without text
+        if (currentOps.length > 0) {
+            const segment = new Text(currentOps, this.page)
+            segment.prev = lastSegment ?? undefined
+            segments.push(segment)
+        }
+
         this.segments = segments
     }
 
@@ -488,6 +496,8 @@ export class TextBlock extends ContentNode {
         segment.parent = this
         segment.prev = this.segments[this.segments.length - 1]
         this.segments.push(segment)
+        // Rebuild ops to keep it in sync with segments
+        this.rebuildOpsFromSegments()
     }
 
     get text(): string {
@@ -587,6 +597,22 @@ export class TextBlock extends ContentNode {
         const newOps = firstSeg.ops.slice(0, textOpIndex).concat([textOp])
         firstSeg.ops = newOps
         this.segments.splice(1)
+
+        // Rebuild ops array from segments to keep it in sync
+        this.rebuildOpsFromSegments()
+    }
+
+    /**
+     * Rebuild the ops array from segments.
+     * Used after programmatic modifications to keep ops in sync.
+     */
+    private rebuildOpsFromSegments(): void {
+        const newOps: ContentOp[] = [new BeginTextOp()]
+        for (const seg of this.segments) {
+            newOps.push(...seg.ops)
+        }
+        newOps.push(new EndTextOp())
+        this.ops = newOps
     }
 
     /**
@@ -648,7 +674,7 @@ export class TextBlock extends ContentNode {
             wordSpace: number
             textLeading: number
             text: string
-            showOp: ContentOp
+            showOp: ContentOp | null
             orientationKey: string
             lineCoord: number
             alongCoord: number
@@ -662,7 +688,8 @@ export class TextBlock extends ContentNode {
         for (const block of blocks) {
             for (const seg of block.getSegments()) {
                 const text = seg.text
-                if (text === '') continue
+                // Keep segments even if empty, to preserve formatting/position info
+                // Empty segments can have text added later
 
                 const wtm = seg.getWorldTransform()
                 const len = Math.hypot(wtm.a, wtm.b) || 1
@@ -678,11 +705,14 @@ export class TextBlock extends ContentNode {
                 // Reuse original show op verbatim to preserve kerning.
                 // `'` and `"` operators also advance lines, so fall back to
                 // a plain Tj with the decoded text in that case.
-                let showOp: ContentOp | undefined = seg.ops.findLast(
-                    (o) =>
-                        o instanceof ShowTextOp || o instanceof ShowTextArrayOp,
-                )
-                if (!showOp) {
+                // For empty segments, showOp can be null
+                let showOp: ContentOp | null =
+                    seg.ops.findLast(
+                        (o) =>
+                            o instanceof ShowTextOp ||
+                            o instanceof ShowTextArrayOp,
+                    ) ?? null
+                if (!showOp && text) {
                     showOp = ShowTextOp.create(text)
                 }
 
@@ -786,7 +816,9 @@ export class TextBlock extends ContentNode {
                         d.wtm.f,
                     ),
                 )
-                newOps.push(d.showOp)
+                if (d.showOp) {
+                    newOps.push(d.showOp)
+                }
 
                 const newSeg = new Text(newOps, firstPage)
                 newBlock.addSegment(newSeg)

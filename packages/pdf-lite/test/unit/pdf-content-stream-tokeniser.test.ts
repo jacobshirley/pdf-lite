@@ -389,7 +389,7 @@ describe('PdfContentStreamTokeniser', () => {
             const ops = tokenise('[(a\\)b) (c(d)e)] TJ\n')
             const segs = (ops[0] as ShowTextArrayOp).segments
             expect(segs).toHaveLength(2)
-            expect((segs[0] as { value: string }).value).toBe('a\\)b')
+            expect((segs[0] as { value: string }).value).toBe('a)b')
             expect((segs[1] as { value: string }).value).toBe('c(d)e')
         })
     })

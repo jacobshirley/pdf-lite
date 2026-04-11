@@ -1090,7 +1090,8 @@ export function PdfEditor() {
                 const p = pages[i]
                 const pageNumber = i + 1
                 try {
-                    const blocks = p.extractTextBlocks()
+                    const rawBlocks = p.extractTextBlocks()
+                    const blocks = TextBlock.regroupTextBlocks(rawBlocks)
                     for (const block of blocks) {
                         if (block.text.trim().length === 0) continue
                         newTextBlocks.push({
@@ -1167,7 +1168,8 @@ export function PdfEditor() {
                 const p = pages[i]
                 const pageNumber = i + 1
                 try {
-                    const blocks = p.extractTextBlocks()
+                    const rawBlocks = p.extractTextBlocks()
+                    const blocks = TextBlock.regroupTextBlocks(rawBlocks)
                     for (const block of blocks) {
                         if (block.text.trim().length === 0) continue
                         newTextBlocks.push({
@@ -1586,8 +1588,8 @@ export function PdfEditor() {
                     const pageNumber = i + 1
 
                     try {
-                        const blocks = page.extractTextBlocks()
-                        console.log(`Extracted ${blocks.length} text blocks from page ${pageNumber}`)
+                        const rawBlocks = page.extractTextBlocks()
+                        const blocks = TextBlock.regroupTextBlocks(rawBlocks)
                         for (const block of blocks) {
                             if (block.text.trim().length === 0) continue
                             textBlocks.push({

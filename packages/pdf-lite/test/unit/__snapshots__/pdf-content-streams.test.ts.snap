@@ -49,12 +49,12 @@ exports[`template.pdf — content streams > should keep a snapshot of content no
   },
   {
     "bbox": {
-      "height": 16.25,
-      "width": 191.8261,
+      "height": 15,
+      "width": 112.69200000000001,
       "x": 36,
-      "y": 633.4489,
+      "y": 634.3308,
     },
-    "text": "Intermediary NumberIN",
+    "text": "Intermediary Number",
   },
   {
     "bbox": {
@@ -113,11 +113,20 @@ exports[`template.pdf — content streams > should keep a snapshot of content no
   {
     "bbox": {
       "height": 15,
-      "width": 458.48440000000005,
+      "width": 37.35600000000001,
       "x": 36,
       "y": 428.0259,
     },
-    "text": "SignedDate        D    D      M    M       Y     Y    Y     Y",
+    "text": "Signed",
+  },
+  {
+    "bbox": {
+      "height": 15,
+      "width": 200.95240000000007,
+      "x": 293.532,
+      "y": 428.0259,
+    },
+    "text": "Date        D    D      M    M       Y     Y    Y     Y",
   },
   {
     "bbox": {
@@ -130,12 +139,21 @@ exports[`template.pdf — content streams > should keep a snapshot of content no
   },
   {
     "bbox": {
-      "height": 15.737599999999986,
-      "width": 458.48440000000005,
+      "height": 15,
+      "width": 37.35600000000001,
       "x": 35.999999999999986,
       "y": 382.2219,
     },
-    "text": "SignedDate D    D      M    M       Y     Y    Y     Y",
+    "text": "Signed",
+  },
+  {
+    "bbox": {
+      "height": 15.737599999999986,
+      "width": 200.95240000000007,
+      "x": 293.532,
+      "y": 382.2219,
+    },
+    "text": "Date D    D      M    M       Y     Y    Y     Y",
   },
   {
     "bbox": {
@@ -158,20 +176,56 @@ exports[`template.pdf — content streams > should keep a snapshot of content no
   {
     "bbox": {
       "height": 15,
-      "width": 297.18,
+      "width": 32.00399999999999,
       "x": 36,
       "y": 322.0179,
     },
-    "text": "NameTel / Email",
+    "text": "Name",
+  },
+  {
+    "bbox": {
+      "height": 15,
+      "width": 55.343999999999994,
+      "x": 277.836,
+      "y": 322.0179,
+    },
+    "text": "Tel / Email",
   },
   {
     "bbox": {
       "height": 13.75,
-      "width": 514.778,
+      "width": 89.89200000000002,
       "x": 36,
       "y": 292.1022,
     },
-    "text": "*Please note that incomplete forms may result in the cancellation of the Intermediary Link without notice.",
+    "text": "*Please note that ",
+  },
+  {
+    "bbox": {
+      "height": 13.75,
+      "width": 58.06900000000002,
+      "x": 125.89200000000002,
+      "y": 292.1022,
+    },
+    "text": "incomplete",
+  },
+  {
+    "bbox": {
+      "height": 13.75,
+      "width": 366.817,
+      "x": 183.96100000000004,
+      "y": 292.1022,
+    },
+    "text": " forms may result in the cancellation of the Intermediary Link without notice.",
+  },
+  {
+    "bbox": {
+      "height": 16.25,
+      "width": 28.769000000000005,
+      "x": 199.0571,
+      "y": 633.4489,
+    },
+    "text": "IN",
   },
   {
     "bbox": {
@@ -212,20 +266,56 @@ exports[`template.pdf — content streams > should keep a snapshot of content no
   {
     "bbox": {
       "height": 12.5,
-      "width": 521.97,
+      "width": 483.5399999999994,
       "x": 36,
       "y": 130.2237,
     },
-    "text": "will use your personal data as well as information regarding your rights as a data subject are available on our Privacy ",
+    "text": "will use your personal data as well as information regarding your rights as a data subject are available on our ",
   },
   {
     "bbox": {
       "height": 12.5,
-      "width": 409.83400000000006,
+      "width": 35.58000000000004,
+      "x": 519.6,
+      "y": 130.2237,
+    },
+    "text": "Privacy",
+  },
+  {
+    "bbox": {
+      "height": 12.5,
+      "width": 2.7799999999999727,
+      "x": 555.19,
+      "y": 130.2237,
+    },
+    "text": " ",
+  },
+  {
+    "bbox": {
+      "height": 12.5,
+      "width": 38.92,
       "x": 36.010000000000105,
       "y": 118.22370000000001,
     },
-    "text": "page on www.revenue.ie. Details of this policy are also available in hard copy upon request.",
+    "text": "page on ",
+  },
+  {
+    "bbox": {
+      "height": 12.5,
+      "width": 75.214,
+      "x": 74.94000000000011,
+      "y": 118.22370000000001,
+    },
+    "text": "www.revenue.ie",
+  },
+  {
+    "bbox": {
+      "height": 12.5,
+      "width": 295.69000000000005,
+      "x": 150.1540000000001,
+      "y": 118.22370000000001,
+    },
+    "text": ". Details of this policy are also available in hard copy upon request.",
   },
   {
     "bbox": {

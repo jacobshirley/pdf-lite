@@ -36,7 +36,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         const block = new TextBlock()
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
         block.addSegment(upright('F1', 12, 100, 680, 'B'))
-        block.addSegment(upright('F1', 12, 300, 700, 'C'))
+        block.addSegment(upright('F1', 12, 110, 700, 'C'))
 
         const regrouped = TextBlock.regroupTextBlocks([block])
 
@@ -47,9 +47,9 @@ describe('TextBlock.regroupTextBlocks', () => {
 
     it('sorts segments within a line by x ascending', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 300, 700, 'C'))
+        block.addSegment(upright('F1', 12, 120, 700, 'C'))
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
-        block.addSegment(upright('F1', 12, 200, 700, 'B'))
+        block.addSegment(upright('F1', 12, 110, 700, 'B'))
 
         const regrouped = TextBlock.regroupTextBlocks([block])
 
@@ -63,8 +63,8 @@ describe('TextBlock.regroupTextBlocks', () => {
         block1.addSegment(upright('F1', 12, 100, 680, 'Bottom '))
 
         const block2 = new TextBlock()
-        block2.addSegment(upright('F1', 12, 200, 700, 'World'))
-        block2.addSegment(upright('F1', 12, 200, 680, 'Line'))
+        block2.addSegment(upright('F1', 12, 145, 700, 'World'))
+        block2.addSegment(upright('F1', 12, 155, 680, 'Line'))
 
         const regrouped = TextBlock.regroupTextBlocks([block1, block2])
 
@@ -77,7 +77,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         const block = new TextBlock()
         // 2pt baseline jitter at 12pt fontSize → tolerance 6 → same line.
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
-        block.addSegment(upright('F1', 12, 150, 702, 'B'))
+        block.addSegment(upright('F1', 12, 110, 702, 'B'))
 
         const regrouped = TextBlock.regroupTextBlocks([block])
 
@@ -122,7 +122,7 @@ describe('TextBlock.regroupTextBlocks', () => {
     it('bakes standalone state + absolute Tm into each output segment', () => {
         const block = new TextBlock()
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
-        block.addSegment(upright('F1', 12, 200, 700, 'B'))
+        block.addSegment(upright('F1', 12, 110, 700, 'B'))
 
         const regrouped = TextBlock.regroupTextBlocks([block])
         const segs = regrouped[0].getSegments()
@@ -144,7 +144,7 @@ describe('TextBlock.regroupTextBlocks', () => {
     it('allows text replacement on a regrouped block', () => {
         const block = new TextBlock()
         block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
-        block.addSegment(upright('F1', 12, 200, 700, 'World'))
+        block.addSegment(upright('F1', 12, 145, 700, 'World'))
 
         const regrouped = TextBlock.regroupTextBlocks([block])
         expect(regrouped[0].text).toBe('Hello World')
@@ -155,5 +155,86 @@ describe('TextBlock.regroupTextBlocks', () => {
 
     it('returns an empty array for empty input', () => {
         expect(TextBlock.regroupTextBlocks([])).toEqual([])
+    })
+
+    it('splits segments with different fonts on the same line into separate blocks', () => {
+        const block = new TextBlock()
+        block.addSegment(upright('F1', 12, 100, 700, 'Intermediary Number'))
+        block.addSegment(upright('F2', 12, 300, 700, 'IN'))
+
+        const regrouped = TextBlock.regroupTextBlocks([block])
+
+        expect(regrouped).toHaveLength(2)
+        expect(regrouped[0].text).toBe('Intermediary Number')
+        expect(regrouped[1].text).toBe('IN')
+    })
+
+    it('keeps same-font segments together when splitting by font', () => {
+        const block = new TextBlock()
+        block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
+        block.addSegment(upright('F1', 12, 145, 700, 'World'))
+        block.addSegment(upright('F2', 12, 185, 700, 'Bold'))
+
+        const regrouped = TextBlock.regroupTextBlocks([block])
+
+        expect(regrouped).toHaveLength(2)
+        expect(regrouped[0].text).toBe('Hello World')
+        expect(regrouped[1].text).toBe('Bold')
+    })
+
+    it('splits by font across different lines independently', () => {
+        const block = new TextBlock()
+        block.addSegment(upright('F1', 12, 100, 700, 'A'))
+        block.addSegment(upright('F2', 12, 200, 700, 'B'))
+        block.addSegment(upright('F1', 12, 100, 680, 'C'))
+        block.addSegment(upright('F2', 12, 200, 680, 'D'))
+
+        const regrouped = TextBlock.regroupTextBlocks([block])
+
+        expect(regrouped).toHaveLength(4)
+        const texts = regrouped.map((r) => r.text)
+        expect(texts).toContain('A')
+        expect(texts).toContain('B')
+        expect(texts).toContain('C')
+        expect(texts).toContain('D')
+    })
+
+    it('splits same-font segments that are far apart horizontally', () => {
+        const block = new TextBlock()
+        // "Left" at x=100, "Right" at x=500 — gap far exceeds 3× fontSize
+        block.addSegment(upright('F1', 12, 100, 700, 'Left'))
+        block.addSegment(upright('F1', 12, 500, 700, 'Right'))
+
+        const regrouped = TextBlock.regroupTextBlocks([block])
+
+        expect(regrouped).toHaveLength(2)
+        expect(regrouped[0].text).toBe('Left')
+        expect(regrouped[1].text).toBe('Right')
+    })
+
+    it('keeps close same-font segments together despite small gaps', () => {
+        const block = new TextBlock()
+        // "Hello " at x=100, "World" at x=140 — gap well within 3× fontSize
+        block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
+        block.addSegment(upright('F1', 12, 140, 700, 'World'))
+
+        const regrouped = TextBlock.regroupTextBlocks([block])
+
+        expect(regrouped).toHaveLength(1)
+        expect(regrouped[0].text).toBe('Hello World')
+    })
+
+    it('splits into three groups with two large gaps', () => {
+        const block = new TextBlock()
+        block.addSegment(upright('F1', 12, 50, 700, 'A'))
+        block.addSegment(upright('F1', 12, 250, 700, 'B'))
+        block.addSegment(upright('F1', 12, 450, 700, 'C'))
+
+        const regrouped = TextBlock.regroupTextBlocks([block])
+
+        expect(regrouped).toHaveLength(3)
+        expect(regrouped[0].text).toBe('A')
+        expect(regrouped[1].text).toBe('B')
+        expect(regrouped[2].text).toBe('C')
     })
 })

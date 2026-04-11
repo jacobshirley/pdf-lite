@@ -653,22 +653,50 @@ export class TextBlock extends ContentNode {
         for (let i = 0; i < this.segments.length; i++) {
             const seg = this.segments[i]
             const { hasTm, tm } = resolved[i]
-            const newOps: string[] = []
 
-            const tmOps = seg.ops.filter((o) => o instanceof SetTextMatrixOp)
-            for (const op of tmOps) {
-                op.matrix = op.matrix.translate(dx, dy)
-            }
-
-            if (!hasTm) {
+            if (hasTm) {
+                // Shift every existing Tm in-place
+                const tmOps = seg.ops.filter(
+                    (o) => o instanceof SetTextMatrixOp,
+                )
+                for (const op of tmOps) {
+                    op.matrix = op.matrix.translate(dx, dy)
+                }
+            } else {
+                // Replace relative positioning ops (Td/TD/T*) with an
+                // absolute Tm derived from the pre-resolved position.
+                const shifted = tm!.translate(dx, dy)
                 seg.ops = seg.ops.filter(
                     (o) =>
                         !(o instanceof MoveTextOp) &&
                         !(o instanceof MoveTextLeadingOp) &&
                         !(o instanceof NextLineOp),
                 )
+                // Insert the new absolute Tm before the first show op
+                const showIdx = seg.ops.findIndex(
+                    (o) =>
+                        o instanceof ShowTextOp ||
+                        o instanceof ShowTextArrayOp ||
+                        o instanceof ShowTextNextLineOp ||
+                        o instanceof ShowTextNextLineSpacingOp,
+                )
+                const tmOp = SetTextMatrixOp.create(
+                    shifted.a,
+                    shifted.b,
+                    shifted.c,
+                    shifted.d,
+                    shifted.e,
+                    shifted.f,
+                )
+                if (showIdx !== -1) {
+                    seg.ops.splice(showIdx, 0, tmOp)
+                } else {
+                    seg.ops.push(tmOp)
+                }
             }
         }
+
+        this.rebuildOpsFromSegments()
     }
 
     /**
@@ -699,6 +727,7 @@ export class TextBlock extends ContentNode {
             orientationKey: string
             lineCoord: number
             alongCoord: number
+            textAdvance: number
             effectiveFontSize: number
             order: number
         }
@@ -776,6 +805,7 @@ export class TextBlock extends ContentNode {
                     orientationKey,
                     lineCoord,
                     alongCoord,
+                    textAdvance: seg.getTextAdvance() * len,
                     effectiveFontSize: seg.fontSize * len,
                     order: order++,
                 })
@@ -830,12 +860,71 @@ export class TextBlock extends ContentNode {
             bands.push(...bucketBands)
         }
 
+        // Sub-split each band by font resource name so segments with
+        // different fonts (e.g. regular vs bold) become separate TextBlocks.
+        const splitBands: Band[] = []
+        for (const band of bands) {
+            const byFont = new Map<string, Descriptor[]>()
+            for (const d of band.descriptors) {
+                const arr = byFont.get(d.fontResourceName) ?? []
+                arr.push(d)
+                byFont.set(d.fontResourceName, arr)
+            }
+            for (const descs of byFont.values()) {
+                splitBands.push({
+                    descriptors: descs,
+                    bandCoord: band.bandCoord,
+                    bandSize: band.bandSize,
+                    firstOrder: Math.min(...descs.map((d) => d.order)),
+                })
+            }
+        }
+
+        // Sub-split each font band by horizontal gap so segments that
+        // are far apart along the text direction become separate TextBlocks.
+        // Threshold: a gap larger than 3× the effective font size.
+        const gapBands: Band[] = []
+        for (const band of splitBands) {
+            const sorted = [...band.descriptors].sort(
+                (a, b) => a.alongCoord - b.alongCoord,
+            )
+            let current: Descriptor[] = [sorted[0]]
+            for (let i = 1; i < sorted.length; i++) {
+                const prev = current[current.length - 1]
+                const prevEnd = prev.alongCoord + prev.textAdvance
+                const gap = sorted[i].alongCoord - prevEnd
+                const threshold =
+                    3 *
+                    Math.min(
+                        prev.effectiveFontSize,
+                        sorted[i].effectiveFontSize,
+                    )
+                if (gap > threshold) {
+                    gapBands.push({
+                        descriptors: current,
+                        bandCoord: band.bandCoord,
+                        bandSize: band.bandSize,
+                        firstOrder: Math.min(...current.map((d) => d.order)),
+                    })
+                    current = [sorted[i]]
+                } else {
+                    current.push(sorted[i])
+                }
+            }
+            gapBands.push({
+                descriptors: current,
+                bandCoord: band.bandCoord,
+                bandSize: band.bandSize,
+                firstOrder: Math.min(...current.map((d) => d.order)),
+            })
+        }
+
         // Stable output order: follow original segment ordering.
-        bands.sort((a, b) => a.firstOrder - b.firstOrder)
+        gapBands.sort((a, b) => a.firstOrder - b.firstOrder)
 
         const firstPage = blocks[0]?.page
         const result: TextBlock[] = []
-        for (const band of bands) {
+        for (const band of gapBands) {
             const sortedSegs = [...band.descriptors].sort(
                 (a, b) => a.alongCoord - b.alongCoord,
             )

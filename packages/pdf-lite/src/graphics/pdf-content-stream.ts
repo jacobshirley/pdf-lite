@@ -121,7 +121,7 @@ export abstract class ContentNode {
     }
 
     toString() {
-        return this.ops.toString()
+        return this.ops.map((o) => o.toString()).join('\n')
     }
 }
 
@@ -136,11 +136,12 @@ export class Text extends ContentNode {
                 x instanceof ShowTextNextLineOp ||
                 x instanceof ShowTextNextLineSpacingOp,
         )
-        if (textOp) {
-            return textOp.text
+        if (!textOp) {
+            return ''
         }
 
-        return ''
+        // All text ops now have decodeWithFont method
+        return textOp.decodeWithFont(this.font)
     }
 
     get font(): PdfFont {
@@ -491,6 +492,21 @@ export class TextBlock extends ContentNode {
 
     get text(): string {
         return this.segments.map((l) => l.text).join('')
+    }
+
+    toString(): string {
+        if (this.segments.length === 0) {
+            return this.ops.map((o) => o.toString()).join('\n')
+        }
+        // Serialize as BT <all ops> ET
+        // We serialize from this.ops to preserve order and include non-segment ops
+        const parts: string[] = []
+        for (const op of this.ops) {
+            if (!(op instanceof BeginTextOp) && !(op instanceof EndTextOp)) {
+                parts.push(op.toString())
+            }
+        }
+        return `BT\n${parts.join('\n')}\nET`
     }
 
     getLocalTransform(): Matrix {
@@ -987,18 +1003,34 @@ export class PdfContentStream extends PdfStream {
         const root = new StateNode(page)
         const stateStack: StateNode[] = []
 
-        let textOps: TextOp[] = []
+        let textOps: ContentOp[] = []
         let graphicsOps: (PaintOp | PathOp | ColorOp)[] = []
         let currentState: StateNode = root
+        let inTextBlock = false
 
         for (const op of ops) {
             if (op instanceof BeginTextOp) {
                 textOps.push(op)
+                inTextBlock = true
+                continue
             }
 
             if (op instanceof EndTextOp) {
-                currentState.addChild(new TextBlock(page, textOps))
+                textOps.push(op)
+                inTextBlock = false
+                // Only add non-empty text blocks
+                const block = new TextBlock(page, textOps)
+                if (block.getSegments().length > 0) {
+                    currentState.addChild(block)
+                }
                 textOps = []
+                continue
+            }
+
+            // If we're inside a text block, collect ALL ops (not just TextOps)
+            // This includes marked content operators like BDC, EMC
+            if (inTextBlock) {
+                textOps.push(op)
                 continue
             }
 

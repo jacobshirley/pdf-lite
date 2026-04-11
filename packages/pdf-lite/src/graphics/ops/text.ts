@@ -191,6 +191,23 @@ export class ShowTextOp extends TextOp {
     set text(value: string) {
         this.raw = `(${value}) Tj`
     }
+
+    /**
+     * Decode the text using the provided font.
+     * Handles both literal strings (parentheses) and hex strings (angle brackets).
+     */
+    decodeWithFont(font: PdfFont): string {
+        if (!this.raw) return ''
+        const operand = this.parts().operands.join(' ')
+        if (operand.startsWith('(') && operand.endsWith(')')) {
+            // Literal string
+            return font.decode(new PdfString(operand.slice(1, -1)))
+        } else if (operand.startsWith('<') && operand.endsWith('>')) {
+            // Hex string
+            return font.decode(new PdfHexadecimal(operand.slice(1, -1)))
+        }
+        return this.text
+    }
 }
 
 export type ShowTextSegment = PdfString | PdfHexadecimal | number
@@ -304,6 +321,19 @@ export class ShowTextArrayOp extends TextOp {
             .map((s) => s.value)
             .join('')
     }
+
+    /**
+     * Decode all text segments using the provided font.
+     */
+    decodeWithFont(font: PdfFont): string {
+        return this.segments
+            .filter(
+                (s): s is PdfString | PdfHexadecimal =>
+                    s instanceof PdfString || s instanceof PdfHexadecimal,
+            )
+            .map((s) => font.decode(s))
+            .join('')
+    }
 }
 
 export class SetCharSpacingOp extends TextOp {
@@ -377,6 +407,13 @@ export class ShowTextNextLineOp extends TextOp {
     decode(font: PdfFont): string {
         return font.decode(new PdfString(this.text))
     }
+
+    /**
+     * Decode the text using the provided font.
+     */
+    decodeWithFont(font: PdfFont): string {
+        return font.decode(new PdfString(this.text))
+    }
 }
 
 export class ShowTextNextLineSpacingOp extends TextOp {
@@ -413,6 +450,13 @@ export class ShowTextNextLineSpacingOp extends TextOp {
             return textPart.slice(1, -1)
         }
         return textPart
+    }
+
+    /**
+     * Decode the text using the provided font.
+     */
+    decodeWithFont(font: PdfFont): string {
+        return font.decode(new PdfString(this.text))
     }
 }
 

@@ -12,7 +12,7 @@ import { PdfStream } from '../../src/core/objects/pdf-stream'
 import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
 import { PdfFont } from '../../src/fonts/pdf-font'
 import { ByteArray } from '../../src/types'
-import { MoveToOp } from '../../dist/graphics/ops'
+import { MoveToOp } from '../../src/graphics/ops/path'
 
 const FIXTURE = './test/unit/fixtures/multi-child-field.pdf'
 

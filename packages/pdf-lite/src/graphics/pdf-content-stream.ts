@@ -190,7 +190,10 @@ export class Text extends ContentNode {
             return lastTf.fontSize
         }
 
-        return this.prev?.fontSize ?? 12
+        // Default to 1 rather than 12 — when no Tf is set, the text
+        // matrix (Tm) typically encodes the effective font size.  Using 1
+        // avoids double-scaling in getLocalBoundingBox / getTextAdvance.
+        return this.prev?.fontSize ?? 1
     }
 
     set fontSize(size: number) {

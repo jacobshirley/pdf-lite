@@ -40,49 +40,14 @@ import {
 } from './ops/path'
 import {
     StrokeOp,
-    CloseAndStrokeOp,
     FillOp,
-    FillAlternateOp,
-    FillEvenOddOp,
-    FillAndStrokeOp,
-    CloseFillAndStrokeOp,
-    FillAndStrokeEvenOddOp,
-    CloseFillAndStrokeEvenOddOp,
     EndPathOp,
     ClipOp,
     ClipEvenOddOp,
     PaintOp,
 } from './ops/paint'
-import {
-    SetFillColorRGBOp,
-    SetStrokeColorRGBOp,
-    SetFillColorGrayOp,
-    SetStrokeColorGrayOp,
-    SetFillColorCMYKOp,
-    SetStrokeColorCMYKOp,
-    SetFillColorSpaceOp,
-    SetStrokeColorSpaceOp,
-    SetFillColorOp,
-    SetStrokeColorOp,
-    SetFillColorExtOp,
-    SetStrokeColorExtOp,
-    ColorOp,
-} from './ops/color'
-import {
-    SaveStateOp,
-    RestoreStateOp,
-    SetMatrixOp,
-    SetLineWidthOp,
-    SetLineCapOp,
-    SetLineJoinOp,
-    SetMiterLimitOp,
-    SetDashPatternOp,
-    SetRenderingIntentOp,
-    SetFlatnessOp,
-    SetGraphicsStateOp,
-    InvokeXObjectOp,
-    StateOp,
-} from './ops/state'
+import { SetFillColorRGBOp, SetStrokeColorRGBOp, ColorOp } from './ops/color'
+import { SaveStateOp, RestoreStateOp, SetMatrixOp, StateOp } from './ops/state'
 import { PdfContentStreamTokeniser } from './tokeniser'
 
 export abstract class ContentNode {
@@ -488,6 +453,30 @@ export class TextBlock extends ContentNode {
     constructor(page?: PdfPage, ops?: ContentOp[]) {
         super(ops)
         this.page = page
+        this.parseSegments()
+    }
+
+    private parseSegments(): void {
+        const segments: Text[] = []
+        let currentOps: ContentOp[] = []
+        let lastSegment: Text | undefined = undefined
+
+        for (const op of this.ops) {
+            if (op instanceof BeginTextOp || op instanceof EndTextOp) {
+                continue
+            }
+
+            currentOps.push(op)
+            if (op instanceof ShowTextOp || op instanceof ShowTextArrayOp) {
+                const segment = new Text(currentOps, this.page)
+                segment.prev = lastSegment ?? undefined
+                segments.push(segment)
+                currentOps = []
+                lastSegment = segment
+            }
+        }
+
+        this.segments = segments
     }
 
     getSegments() {

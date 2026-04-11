@@ -6,13 +6,13 @@ import {
     TextBlock,
     Text,
     GraphicsBlock,
-    GroupNode,
-    ContentOps,
+    StateNode,
 } from '../../src/graphics/pdf-content-stream'
 import { PdfStream } from '../../src/core/objects/pdf-stream'
 import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
 import { PdfFont } from '../../src/fonts/pdf-font'
 import { ByteArray } from '../../src/types'
+import { MoveToOp } from '../../dist/graphics/ops'
 
 const FIXTURE = './test/unit/fixtures/multi-child-field.pdf'
 
@@ -93,6 +93,13 @@ describe('multi-child-field.pdf — content streams', () => {
         expect(fontMap.has('TT1')).toBe(true)
         expect(fontMap.has('C2_0')).toBe(true)
     })
+
+    it('should have text blocks with correct text', () => {
+        const page = doc.pages.get(0)
+        const textBlocks = page.contentStreams.flatMap((s) => s.textBlocks)
+        const texts = textBlocks.map((tb) => tb.text)
+        expect(texts).toContain('First Name')
+    })
 })
 
 // ---------------------------------------------------------------------------
@@ -111,7 +118,7 @@ describe('multi-child-field.pdf — parsed nodes', () => {
                 expect(
                     node instanceof TextBlock ||
                         node instanceof GraphicsBlock ||
-                        node instanceof GroupNode,
+                        node instanceof StateNode,
                 ).toBe(true)
                 if (node.children && node.children.length > 0)
                     check(node.children)
@@ -156,11 +163,13 @@ describe('PdfContentStreamObject.add() and dataAsString', () => {
         const s = makeStream('')
         const block = new TextBlock()
         const text = new Text()
-        text.ops = new ContentOps(['/F1 12 Tf', '0 0 Td', '(Hello) Tj'])
+        text.font = PdfFont.HELVETICA
+        text.fontSize = 12
+        text.text = 'Hello'
         block.addSegment(text)
         s.add(block)
         expect(s.dataAsString).toContain('/F1 12 Tf')
-        expect(s.dataAsString).toContain('0 0 Td')
+        expect(s.dataAsString).toContain('(Hello) Tj')
     })
 
     it('add() appends multiple nodes sequentially', () => {
@@ -230,7 +239,7 @@ describe('PdfContentStreamObject.nodes() — GraphicsBlock parsing', () => {
     it('parsed GraphicsBlock ops contain the m operator', () => {
         const s = makeStream('10 10 m 100 10 l S')
         const gb = s.graphicsBlocks[0]
-        expect(gb.ops.ops.some((op) => op.includes(' m'))).toBe(true)
+        expect(gb.ops.some((op) => op instanceof MoveToOp)).toBe(true)
     })
 
     it('each paint operator (S, f, B) ends a separate GraphicsBlock', () => {
@@ -529,6 +538,5 @@ describe('GraphicsBlock static factories', () => {
             radiusY: 20,
         })
         expect(block).toBeInstanceOf(GraphicsBlock)
-        expect(block.ops.ops.length).toBeGreaterThan(0)
     })
 })

@@ -1229,8 +1229,6 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
     }
 
     get nodes(): ContentNode[] {
-        console.log('nodes', this.content.nodes, this.content)
-
         return this.content.nodes
     }
 

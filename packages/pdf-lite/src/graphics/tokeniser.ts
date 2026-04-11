@@ -246,8 +246,31 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
             const byte = this.next()
 
             if (byte === BACKSLASH) {
-                // escaped char — consume next byte too
-                this.next()
+                // Handle escape sequences according to PDF spec
+                // If backslash is followed by newline (LF, CR, or CR+LF),
+                // it's a line continuation - consume the newline
+                const nextByte = this.peek()
+                if (nextByte === null) {
+                    // EOF while parsing escape sequence - break
+                    break
+                }
+                if (nextByte === LF) {
+                    // \LF - consume the LF
+                    this.next()
+                } else if (nextByte === CR) {
+                    // \CR or \CR+LF - consume the CR
+                    this.next()
+                    // Check if followed by LF (common Windows line ending)
+                    const afterCR = this.peek()
+                    if (afterCR === LF) {
+                        this.next()
+                    }
+                } else {
+                    // Other escape sequences (\n, \r, \t, \(, \), \\, or octal)
+                    // For octal sequences (\ddd), we consume 1-3 octal digits
+                    // For now, just consume one byte to handle \(, \), \\, etc.
+                    this.next()
+                }
             } else if (byte === LEFT_PAREN) {
                 nesting++
             } else if (byte === RIGHT_PAREN) {
@@ -270,6 +293,10 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
 
         while (depth > 0) {
             const byte = this.peek()
+            if (byte === null) {
+                // EOF while array unclosed - break
+                break
+            }
 
             if (byte === LEFT_BRACKET) {
                 depth++
@@ -289,7 +316,16 @@ export class PdfContentStreamTokeniser extends IncrementalParser<
     private readDictionary(): void {
         this.next() // consume first '<'
         this.next() // consume second '<'
-        while (!(this.peek() === RIGHT_ANGLE && this.peek(1) === RIGHT_ANGLE)) {
+        while (true) {
+            const byte1 = this.peek()
+            const byte2 = this.peek(1)
+            if (byte1 === null || byte2 === null) {
+                // EOF - break
+                break
+            }
+            if (byte1 === RIGHT_ANGLE && byte2 === RIGHT_ANGLE) {
+                break
+            }
             this.next()
         }
         this.next() // consume first '>'

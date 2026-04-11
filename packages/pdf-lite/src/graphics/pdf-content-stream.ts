@@ -862,7 +862,8 @@ export class TextBlock extends ContentNode {
 
         // Sub-split each band by font resource name so segments with
         // different fonts (e.g. regular vs bold) become separate TextBlocks.
-        const splitBands: Band[] = []
+        type FontBand = Band & { parentDescriptors: Descriptor[] }
+        const splitBands: FontBand[] = []
         for (const band of bands) {
             const byFont = new Map<string, Descriptor[]>()
             for (const d of band.descriptors) {
@@ -876,18 +877,28 @@ export class TextBlock extends ContentNode {
                     bandCoord: band.bandCoord,
                     bandSize: band.bandSize,
                     firstOrder: Math.min(...descs.map((d) => d.order)),
+                    parentDescriptors: band.descriptors,
                 })
             }
         }
 
         // Sub-split each font band by horizontal gap so segments that
         // are far apart along the text direction become separate TextBlocks.
+        // Also split when a segment from a different font sits between two
+        // consecutive same-font segments (e.g. bold "and" between regular text).
         // Threshold: a gap larger than 3× the effective font size.
         const gapBands: Band[] = []
         for (const band of splitBands) {
             const sorted = [...band.descriptors].sort(
                 (a, b) => a.alongCoord - b.alongCoord,
             )
+            // Collect descriptors from other fonts on the same baseline
+            // band, sorted by alongCoord, for interleaving detection.
+            const fontName = sorted[0].fontResourceName
+            const otherFontDescs = band.parentDescriptors
+                .filter((d) => d.fontResourceName !== fontName)
+                .sort((a, b) => a.alongCoord - b.alongCoord)
+
             let current: Descriptor[] = [sorted[0]]
             for (let i = 1; i < sorted.length; i++) {
                 const prev = current[current.length - 1]
@@ -899,7 +910,16 @@ export class TextBlock extends ContentNode {
                         prev.effectiveFontSize,
                         sorted[i].effectiveFontSize,
                     )
-                if (gap > threshold) {
+
+                // Check if a different-font segment sits between prev and sorted[i]
+                const hasInterleaved = otherFontDescs.some(
+                    (d) =>
+                        d.alongCoord >= prevEnd - 1 &&
+                        d.alongCoord + d.textAdvance <=
+                            sorted[i].alongCoord + 1,
+                )
+
+                if (gap > threshold || hasInterleaved) {
                     gapBands.push({
                         descriptors: current,
                         bandCoord: band.bandCoord,
@@ -1145,6 +1165,81 @@ export class GraphicsBlock extends ContentNode {
     }
 }
 
+export class StateNode extends ContentNode {
+    protected children: ContentNode[] = []
+
+    constructor(page?: PdfPage) {
+        super()
+        this.page = page
+    }
+
+    getLocalTransform(): Matrix {
+        const lastCm = this.ops.findLast((x) => x instanceof SetMatrixOp)
+        if (lastCm) {
+            return lastCm.matrix
+        }
+
+        return Matrix.identity()
+    }
+
+    addChild(node: ContentNode): void {
+        if (node.parent) {
+            throw new Error('Node already has a parent')
+        }
+        node.parent = this
+        this.children.push(node)
+    }
+
+    getChildren(): ContentNode[] {
+        return this.children
+    }
+
+    getLocalBoundingBox(): BoundingBox {
+        if (this.children.length === 0) {
+            return { x: 0, y: 0, width: 0, height: 0 }
+        }
+
+        let minX = Infinity
+        let minY = Infinity
+        let maxX = -Infinity
+        let maxY = -Infinity
+
+        for (const child of this.children) {
+            const bbox = child.getLocalBoundingBox()
+            minX = Math.min(minX, bbox.x)
+            minY = Math.min(minY, bbox.y)
+            maxX = Math.max(maxX, bbox.x + bbox.width)
+            maxY = Math.max(maxY, bbox.y + bbox.height)
+        }
+
+        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+    }
+
+    toString(): string {
+        const parts: string[] = ['q']
+        const lt = this.getLocalTransform()
+        const isIdentity = lt.isIdentity()
+
+        if (!isIdentity) {
+            parts.push(`${lt.a} ${lt.b} ${lt.c} ${lt.d} ${lt.e} ${lt.f} cm`)
+        }
+
+        for (const child of this.children) {
+            parts.push(child.toString())
+        }
+
+        parts.push('Q')
+        return parts.join('\n')
+    }
+}
+
+export type BoundingBox = {
+    x: number
+    y: number
+    width: number
+    height: number
+}
+
 export class PdfContentStream extends PdfStream {
     _nodes: ContentNode[] | undefined
     page?: PdfPage
@@ -1265,81 +1360,6 @@ export class PdfContentStream extends PdfStream {
 
         return root
     }
-}
-
-export class StateNode extends ContentNode {
-    protected children: ContentNode[] = []
-
-    constructor(page?: PdfPage) {
-        super()
-        this.page = page
-    }
-
-    getLocalTransform(): Matrix {
-        const lastCm = this.ops.findLast((x) => x instanceof SetMatrixOp)
-        if (lastCm) {
-            return lastCm.matrix
-        }
-
-        return Matrix.identity()
-    }
-
-    addChild(node: ContentNode): void {
-        if (node.parent) {
-            throw new Error('Node already has a parent')
-        }
-        node.parent = this
-        this.children.push(node)
-    }
-
-    getChildren(): ContentNode[] {
-        return this.children
-    }
-
-    getLocalBoundingBox(): BoundingBox {
-        if (this.children.length === 0) {
-            return { x: 0, y: 0, width: 0, height: 0 }
-        }
-
-        let minX = Infinity
-        let minY = Infinity
-        let maxX = -Infinity
-        let maxY = -Infinity
-
-        for (const child of this.children) {
-            const bbox = child.getLocalBoundingBox()
-            minX = Math.min(minX, bbox.x)
-            minY = Math.min(minY, bbox.y)
-            maxX = Math.max(maxX, bbox.x + bbox.width)
-            maxY = Math.max(maxY, bbox.y + bbox.height)
-        }
-
-        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
-    }
-
-    toString(): string {
-        const parts: string[] = ['q']
-        const lt = this.getLocalTransform()
-        const isIdentity = lt.isIdentity()
-
-        if (!isIdentity) {
-            parts.push(`${lt.a} ${lt.b} ${lt.c} ${lt.d} ${lt.e} ${lt.f} cm`)
-        }
-
-        for (const child of this.children) {
-            parts.push(child.toString())
-        }
-
-        parts.push('Q')
-        return parts.join('\n')
-    }
-}
-
-export type BoundingBox = {
-    x: number
-    y: number
-    width: number
-    height: number
 }
 
 export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> {

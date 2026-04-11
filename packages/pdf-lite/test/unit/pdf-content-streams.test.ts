@@ -607,3 +607,49 @@ describe('GraphicsBlock static factories', () => {
         expect(block).toBeInstanceOf(GraphicsBlock)
     })
 })
+
+// ---------------------------------------------------------------------------
+// AT_Verf19E_EU.pdf — regrouping correctness
+// ---------------------------------------------------------------------------
+describe('AT_Verf19E_EU.pdf — regrouped text blocks', () => {
+    let doc: PdfDocument
+
+    beforeAll(async () => {
+        doc = await loadFixture('./test/unit/fixtures/AT_Verf19E_EU.pdf')
+    })
+
+    it('splits "State the reasons" / "and" / "detailed summary" into separate blocks', () => {
+        const page = doc.pages.get(1)
+        const textBlocks = page.extractTextBlocks()
+        const regrouped = TextBlock.regroupTextBlocks(textBlocks)
+        const texts = regrouped.map((x) => x.text)
+
+        // "and " (bold font 152/0) should NOT be merged with the
+        // italic 154/0 text before and after it
+        expect(texts).toContain('State the reasons ')
+        expect(texts).toContain('and ')
+        expect(texts).toContain(
+            'detailed summary of the business activity in Austria, name clients, ',
+        )
+        // The old bug merged all three into one block
+        expect(
+            texts.some(
+                (t) =>
+                    t.includes('State the reasons') && t.includes('detailed'),
+            ),
+        ).toBe(false)
+    })
+
+    it('splits "Yes" and "No" when they are separate text segments', () => {
+        const page = doc.pages.get(1)
+        const textBlocks = page.extractTextBlocks()
+        const regrouped = TextBlock.regroupTextBlocks(textBlocks)
+        const texts = regrouped.map((x) => x.text)
+
+        // Lines where Yes and No are separate Tj ops should be split
+        const yesCount = texts.filter((t) => t === 'Yes').length
+        const noCount = texts.filter((t) => t === 'No').length
+        expect(yesCount).toBeGreaterThanOrEqual(2)
+        expect(noCount).toBeGreaterThanOrEqual(2)
+    })
+})

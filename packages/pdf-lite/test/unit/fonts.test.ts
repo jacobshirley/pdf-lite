@@ -1591,3 +1591,120 @@ describe('PdfFont.decode()', () => {
         })
     })
 })
+
+describe('PdfFont.fontMatrixScale and getCharacterWidth', () => {
+    function makeType3FontWithMatrix(
+        fmValues: number[],
+        widths: number[],
+        firstChar: number,
+    ): PdfFont {
+        const font = new PdfFont('Type3Test')
+        font.fontType = 'Type3'
+        font.firstChar = firstChar
+        font.lastChar = firstChar + widths.length - 1
+        font.widths = widths
+        font.content.set(
+            'FontMatrix' as never,
+            new PdfArray(fmValues.map((v) => new PdfNumber(v))) as never,
+        )
+        return font
+    }
+
+    describe('fontMatrixScale', () => {
+        it('returns 0.001 for Type1 fonts (standard scaling)', () => {
+            const font = new PdfFont('Helvetica')
+            font.fontType = 'Type1'
+            expect(font.fontMatrixScale).toBe(0.001)
+        })
+
+        it('returns 0.001 for TrueType fonts', () => {
+            const font = new PdfFont('Arial')
+            font.fontType = 'TrueType'
+            expect(font.fontMatrixScale).toBe(0.001)
+        })
+
+        it('returns 0.001 for Type0 fonts', () => {
+            const font = new PdfFont('CIDFont')
+            font.fontType = 'Type0'
+            expect(font.fontMatrixScale).toBe(0.001)
+        })
+
+        it('reads FontMatrix[0] for Type3 fonts', () => {
+            // Typical Type3 FontMatrix: [0.00048828125 0 0 -0.00048828125 0 0]
+            const font = makeType3FontWithMatrix(
+                [0.00048828125, 0, 0, -0.00048828125, 0, 0],
+                [1420],
+                65,
+            )
+            expect(font.fontMatrixScale).toBeCloseTo(0.00048828125, 12)
+        })
+
+        it('uses absolute value for negative FontMatrix[0]', () => {
+            const font = makeType3FontWithMatrix(
+                [-0.001, 0, 0, 0.001, 0, 0],
+                [500],
+                65,
+            )
+            expect(font.fontMatrixScale).toBe(0.001)
+        })
+
+        it('falls back to 0.001 when Type3 has no FontMatrix', () => {
+            const font = new PdfFont('Type3NoMatrix')
+            font.fontType = 'Type3'
+            expect(font.fontMatrixScale).toBe(0.001)
+        })
+    })
+
+    describe('getCharacterWidth', () => {
+        it('uses standard 1/1000 scaling for Type1 fonts', () => {
+            const font = new PdfFont('Helvetica')
+            font.fontType = 'Type1'
+            font.firstChar = 65
+            font.lastChar = 65
+            font.widths = [600]
+            // width = 600 * 0.001 * 12 = 7.2
+            expect(font.getCharacterWidth(65, 12)).toBeCloseTo(7.2)
+        })
+
+        it('uses FontMatrix scaling for Type3 fonts', () => {
+            // FontMatrix = [1/2048, 0, 0, -1/2048, 0, 0]
+            // rawWidth = 1420, fontSize = 14.4
+            // width = 1420 * (1/2048) * 14.4 = 9.984375
+            const font = makeType3FontWithMatrix(
+                [0.00048828125, 0, 0, -0.00048828125, 0, 0],
+                [1420],
+                65,
+            )
+            expect(font.getCharacterWidth(65, 14.4)).toBeCloseTo(9.984375, 4)
+        })
+
+        it('differs from standard scaling for Type3 with non-standard FontMatrix', () => {
+            const rawWidth = 1420
+            const fontSize = 14.4
+            const fm0 = 0.00048828125
+
+            const type3Font = makeType3FontWithMatrix(
+                [fm0, 0, 0, -fm0, 0, 0],
+                [rawWidth],
+                65,
+            )
+            const type3Width = type3Font.getCharacterWidth(65, fontSize)!
+
+            // Compare with standard 1/1000 scaling
+            const standardWidth = (rawWidth * fontSize) / 1000
+
+            // Type3 with 1/2048 FontMatrix should give ~half the width of 1/1000
+            expect(type3Width).toBeCloseTo(standardWidth * (fm0 / 0.001), 4)
+            expect(type3Width).toBeLessThan(standardWidth)
+        })
+
+        it('returns null for missing character codes', () => {
+            const font = makeType3FontWithMatrix(
+                [0.00048828125, 0, 0, -0.00048828125, 0, 0],
+                [1420],
+                65,
+            )
+            expect(font.getCharacterWidth(99, 14.4)).toBeNull()
+        })
+    })
+})

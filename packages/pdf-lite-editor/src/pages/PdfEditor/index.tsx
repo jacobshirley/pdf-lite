@@ -33,6 +33,8 @@ import {
     PdfTextFormField,
     PdfButtonFormField,
     PdfPage,
+    PdfFont,
+    Text,
     TextBlock,
     GraphicsBlock,
 } from 'pdf-lite'
@@ -901,6 +903,8 @@ export function PdfEditor() {
         null,
     )
     const [originalBytes, setOriginalBytes] = useState<Uint8Array | null>(null)
+    const [embeddedFonts, setEmbeddedFonts] = useState<{ name: string; font: PdfFont }[]>([])
+    const fontInputRef = useRef<HTMLInputElement>(null)
 
     // Use original bytes until the doc is edited, then re-serialize
     const pdfBytes = React.useMemo(() => {
@@ -911,6 +915,16 @@ export function PdfEditor() {
 
     const selectedField =
         extractedFields.find((f) => f.id === selectedFieldId) || null
+
+    const selectedTextBlock =
+        extractedTextBlocks.find((tb) => tb.id === selectedTextBlockId) || null
+
+    const selectedTextSegments = React.useMemo(() => {
+        if (!selectedTextBlock) return []
+        return selectedTextBlock.block.getSegments()
+    }, [selectedTextBlock, pdfVersion])
+
+    const showRightPane = !!(selectedFieldId && selectedField) || !!selectedTextBlock
 
     const handleFieldSelect = (fieldId: string) => {
         setSelectedFieldId(fieldId)
@@ -1101,6 +1115,51 @@ export function PdfEditor() {
 
     const handleTextEditCancel = () => {
         setEditingTextBlockId(null)
+    }
+
+    const handleTextBlockPropertyEdit = (newText: string) => {
+        if (!selectedTextBlock || !pdfDoc) return
+        const originalText = selectedTextBlock.block.text
+        if (newText === originalText) return
+        try {
+            selectedTextBlock.block.editText(newText)
+            reExtractTextBlocks()
+        } catch (error) {
+            console.error('Error editing text block:', error)
+            alert(`Error editing text: ${error instanceof Error ? error.message : String(error)}`)
+        }
+    }
+
+    const handleTextBlockMove = (property: 'x' | 'y', value: string) => {
+        if (!selectedTextBlock || !pdfDoc) return
+        const numValue = parseFloat(value)
+        if (isNaN(numValue)) return
+        const bbox = selectedTextBlock.block.getWorldBoundingBox()
+        const dx = property === 'x' ? numValue - bbox.x : 0
+        const dy = property === 'y' ? numValue - bbox.y : 0
+        if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return
+        try {
+            selectedTextBlock.block.moveBy(dx, dy)
+            reExtractTextBlocks()
+        } catch (error) {
+            console.error('Error moving text block:', error)
+        }
+    }
+
+    const handleFontUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        try {
+            const arrayBuffer = await file.arrayBuffer()
+            const fontData = new Uint8Array(arrayBuffer)
+            const font = PdfFont.fromBytes(fontData)
+            const fontName = font.fontName || file.name.replace(/\.[^.]+$/, '')
+            setEmbeddedFonts(prev => [...prev, { name: fontName, font }])
+        } catch (error) {
+            console.error('Error loading font:', error)
+            alert(`Error loading font: ${error instanceof Error ? error.message : String(error)}`)
+        }
+        e.target.value = ''
     }
 
     const handleTextBlockPositionChange = (
@@ -1681,7 +1740,7 @@ export function PdfEditor() {
                 }
             `}</style>
             <div
-                className={`mx-auto grid ${selectedFieldId ? 'max-w-[2000px] grid-cols-[240px_minmax(0,1fr)_320px]' : 'max-w-[1600px] grid-cols-[240px_minmax(0,1fr)]'} gap-4 items-start`}
+                className={`mx-auto grid ${showRightPane ? 'max-w-[2000px] grid-cols-[240px_minmax(0,1fr)_320px]' : 'max-w-[1600px] grid-cols-[240px_minmax(0,1fr)]'} gap-4 items-start`}
             >
                 <Card className="sticky top-6 flex h-[calc(100vh-48px)] flex-col rounded-[24px] border-slate-200 shadow-sm">
                     <CardContent className="flex h-full flex-col gap-4 p-4">
@@ -2468,6 +2527,282 @@ export function PdfEditor() {
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Delete Field
                                     </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Text Block Properties Sidebar */}
+                {selectedTextBlock && !selectedFieldId && (
+                    <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 shadow-sm overflow-hidden">
+                        <CardContent className="flex h-full flex-col p-0">
+                            <div className="flex items-center justify-between p-4 border-b">
+                                <div className="flex items-center gap-2">
+                                    <Type className="h-4 w-4 text-slate-600" />
+                                    <h2 className="font-semibold text-sm">
+                                        Text Properties
+                                    </h2>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedTextBlockId(null)}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                <div className="space-y-2">
+                                    <Label
+                                        htmlFor="tb-text"
+                                        className="text-xs font-semibold text-slate-700"
+                                    >
+                                        Text Content
+                                    </Label>
+                                    <textarea
+                                        id="tb-text"
+                                        value={selectedTextBlock.block.text}
+                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                                            handleTextBlockPropertyEdit(e.target.value)
+                                        }
+                                        className="w-full min-h-[60px] text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-y"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <Separator />
+
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-slate-700">
+                                        Font Info
+                                    </Label>
+                                    {selectedTextSegments.length > 0 && (() => {
+                                        const seg = selectedTextSegments[0]
+                                        const font = seg.font
+                                        return (
+                                            <div className="space-y-2">
+                                                <div className="space-y-1">
+                                                    <Label
+                                                        htmlFor="tb-font-name"
+                                                        className="text-xs text-slate-600"
+                                                    >
+                                                        Font Name
+                                                    </Label>
+                                                    <Input
+                                                        id="tb-font-name"
+                                                        value={font?.fontName || 'Unknown'}
+                                                        disabled
+                                                        className="h-8 text-sm bg-slate-50"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label
+                                                        htmlFor="tb-font-type"
+                                                        className="text-xs text-slate-600"
+                                                    >
+                                                        Font Type
+                                                    </Label>
+                                                    <Input
+                                                        id="tb-font-type"
+                                                        value={font?.fontType || 'Unknown'}
+                                                        disabled
+                                                        className="h-8 text-sm bg-slate-50"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label
+                                                        htmlFor="tb-font-size"
+                                                        className="text-xs text-slate-600"
+                                                    >
+                                                        Font Size
+                                                    </Label>
+                                                    <Input
+                                                        id="tb-font-size"
+                                                        type="number"
+                                                        value={seg.fontSize}
+                                                        disabled
+                                                        className="h-8 text-sm bg-slate-50"
+                                                    />
+                                                </div>
+                                                {font?.encoding && (
+                                                    <div className="space-y-1">
+                                                        <Label
+                                                            htmlFor="tb-font-encoding"
+                                                            className="text-xs text-slate-600"
+                                                        >
+                                                            Encoding
+                                                        </Label>
+                                                        <Input
+                                                            id="tb-font-encoding"
+                                                            value={font.encoding}
+                                                            disabled
+                                                            className="h-8 text-sm bg-slate-50"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })()}
+                                    {selectedTextSegments.length > 1 && (
+                                        <div className="mt-2">
+                                            <Label className="text-xs text-slate-500">
+                                                {selectedTextSegments.length} segments in this block
+                                            </Label>
+                                            <div className="mt-1 max-h-[120px] overflow-y-auto space-y-1">
+                                                {selectedTextSegments.map((seg, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="text-xs px-2 py-1 bg-slate-50 rounded border border-slate-100"
+                                                    >
+                                                        <span className="text-slate-500">#{i + 1}</span>{' '}
+                                                        <span className="font-medium">{seg.font?.fontName || '?'}</span>{' '}
+                                                        <span className="text-slate-400">@{seg.fontSize}pt</span>{' '}
+                                                        <span className="text-slate-600 truncate">
+                                                            &ldquo;{seg.text.slice(0, 30)}{seg.text.length > 30 ? '...' : ''}&rdquo;
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Separator />
+
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-slate-700">
+                                        Position
+                                    </Label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <Label
+                                                htmlFor="tb-pos-x"
+                                                className="text-xs text-slate-600"
+                                            >
+                                                X
+                                            </Label>
+                                            <Input
+                                                id="tb-pos-x"
+                                                type="number"
+                                                value={selectedTextBlock.block.getWorldBoundingBox().x.toFixed(2)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                    handleTextBlockMove('x', e.target.value)
+                                                }
+                                                className="h-8 text-sm"
+                                                step="1"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label
+                                                htmlFor="tb-pos-y"
+                                                className="text-xs text-slate-600"
+                                            >
+                                                Y
+                                            </Label>
+                                            <Input
+                                                id="tb-pos-y"
+                                                type="number"
+                                                value={selectedTextBlock.block.getWorldBoundingBox().y.toFixed(2)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                    handleTextBlockMove('y', e.target.value)
+                                                }
+                                                className="h-8 text-sm"
+                                                step="1"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-slate-700">
+                                        Size (read-only)
+                                    </Label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-slate-600">
+                                                Width
+                                            </Label>
+                                            <Input
+                                                value={selectedTextBlock.block.getWorldBoundingBox().width.toFixed(2)}
+                                                disabled
+                                                className="h-8 text-sm bg-slate-50"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-slate-600">
+                                                Height
+                                            </Label>
+                                            <Input
+                                                value={selectedTextBlock.block.getWorldBoundingBox().height.toFixed(2)}
+                                                disabled
+                                                className="h-8 text-sm bg-slate-50"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label
+                                        htmlFor="tb-page"
+                                        className="text-xs font-semibold text-slate-700"
+                                    >
+                                        Page Number
+                                    </Label>
+                                    <Input
+                                        id="tb-page"
+                                        value={selectedTextBlock.page}
+                                        disabled
+                                        className="h-8 text-sm bg-slate-50"
+                                    />
+                                </div>
+
+                                <Separator />
+
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-slate-700">
+                                        Embed Font
+                                    </Label>
+                                    <p className="text-xs text-slate-500">
+                                        Upload a .ttf, .otf, or .woff font file to embed in the PDF.
+                                    </p>
+                                    <input
+                                        ref={fontInputRef}
+                                        type="file"
+                                        accept=".ttf,.otf,.woff"
+                                        onChange={handleFontUpload}
+                                        className="hidden"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => fontInputRef.current?.click()}
+                                        className="w-full h-10 hover:bg-slate-50"
+                                    >
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Upload Font
+                                    </Button>
+                                    {embeddedFonts.length > 0 && (
+                                        <div className="space-y-1 mt-2">
+                                            <Label className="text-xs text-slate-500">
+                                                Uploaded Fonts
+                                            </Label>
+                                            {embeddedFonts.map((ef, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex items-center justify-between text-xs px-2 py-1.5 bg-slate-50 rounded border border-slate-100"
+                                                >
+                                                    <span className="font-medium truncate">{ef.name}</span>
+                                                    <Badge variant="secondary" className="text-[10px] ml-2">
+                                                        {ef.font.fontType || 'Font'}
+                                                    </Badge>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>

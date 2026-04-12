@@ -655,7 +655,8 @@ export class TextBlock extends ContentNode {
         this.parseSegments()
     }
 
-    private parseSegments(): void {
+    /** @internal */
+    parseSegments(): void {
         const segments: Text[] = []
         let currentOps: ContentOp[] = []
         // Link the first segment's prev to the last segment of the previous
@@ -812,8 +813,27 @@ export class TextBlock extends ContentNode {
      */
     editText(newText: string): void {
         const segments = this.getSegments()
+        if (segments.length === 0) {
+            this.text = newText
+            return
+        }
+
         const first = segments[0]
 
+        // Detect multi-font blocks (e.g. Type3 glyph subsets where each
+        // character may use a different font resource).
+        const withSource = segments.filter((s) => s._sourceSegment)
+        if (withSource.length > 1) {
+            const srcFonts = new Set(
+                withSource.map((s) => s._sourceSegment!.font),
+            )
+            if (srcFonts.size > 1) {
+                this._editTextMultiFont(newText, withSource, srcFonts)
+                return
+            }
+        }
+
+        // Single-font path
         const font = first?.font
         if (font) {
             const bad = font.unsupportedChars(newText)
@@ -835,6 +855,135 @@ export class TextBlock extends ContentNode {
             }
         } else {
             this.text = newText
+        }
+    }
+
+    /**
+     * Edit text for blocks spanning multiple font subsets (e.g. Type3).
+     * Rebuilds the source TextBlock with proper absolute positioning for
+     * each character, using the correct font subset for each glyph.
+     */
+    private _editTextMultiFont(
+        newText: string,
+        withSource: Text[],
+        fonts: Set<PdfFont>,
+    ): void {
+        const fontList = [...fonts]
+        const findFont = (ch: string): PdfFont | undefined =>
+            fontList.find((f) => f.reverseToUnicodeMap?.has(ch))
+
+        // Validate all characters can be encoded by some font
+        const chars = [...newText]
+        const bad = [...new Set(chars.filter((ch) => !findFont(ch)))]
+        if (bad.length > 0) {
+            const allChars = [
+                ...new Set(
+                    fontList.flatMap((f) => [
+                        ...(f.reverseToUnicodeMap?.keys() ?? []),
+                    ]),
+                ),
+            ]
+                .sort()
+                .join('')
+            throw new Error(
+                `Cannot encode: ${bad.map((c) => `'${c}'`).join(', ')}. Available characters: ${allChars}`,
+            )
+        }
+
+        // Build font → resource name map from source segments' Tf ops
+        const fontResName = new Map<PdfFont, string>()
+        for (const seg of withSource) {
+            const src = seg._sourceSegment!
+            const f = src.font
+            if (!fontResName.has(f)) {
+                const tf = src.ops.find((o) => o instanceof SetFontOp) as
+                    | SetFontOp
+                    | undefined
+                fontResName.set(f, tf?.fontName ?? f.resourceName)
+            }
+        }
+
+        // Get the first SOURCE segment's local Tm as the anchor.
+        // This is in the content stream's coordinate space (before CTM),
+        // which is where the rebuilt ops need to live.
+        const firstSrc = withSource[0]._sourceSegment!
+        const firstSrcTm = firstSrc.getLocalTransform()
+        const fontSize = firstSrc.fontSize
+
+        // Compute the scale factor from the source Tm
+        const scale = Math.hypot(firstSrcTm.a, firstSrcTm.b)
+
+        // Compute the text direction unit vector from the source Tm
+        const ux = scale !== 0 ? firstSrcTm.a / scale : 1
+        const uy = scale !== 0 ? firstSrcTm.b / scale : 0
+
+        // Collect all unique source parent TextBlocks
+        const parentBlocks = new Set<TextBlock>()
+        for (const seg of withSource) {
+            const parent = seg._sourceSegment?.parent
+            if (parent instanceof TextBlock) parentBlocks.add(parent)
+        }
+
+        // Build new ops for the first parent TextBlock, positioning each
+        // character at the correct absolute position using Tm.
+        const newBlockOps: ContentOp[] = [new BeginTextOp()]
+        let cursorX = firstSrcTm.e
+        let cursorY = firstSrcTm.f
+        let prevFont: PdfFont | undefined
+
+        for (const ch of chars) {
+            const font = findFont(ch)!
+            const rn = fontResName.get(font) ?? font.resourceName
+            const encoded = font.encode(ch)
+
+            // Emit Tf if font changed
+            if (font !== prevFont) {
+                newBlockOps.push(SetFontOp.create(rn, fontSize))
+                prevFont = font
+            }
+
+            // Emit absolute Tm for this character
+            newBlockOps.push(
+                SetTextMatrixOp.create(
+                    firstSrcTm.a,
+                    firstSrcTm.b,
+                    firstSrcTm.c,
+                    firstSrcTm.d,
+                    cursorX,
+                    cursorY,
+                ),
+            )
+
+            // Emit the show op
+            newBlockOps.push(ShowTextOp.create(encoded))
+
+            // Advance cursor by this character's width in source space
+            const rev = font.reverseToUnicodeMap
+            const glyphCode = rev?.get(ch)
+            if (glyphCode !== undefined) {
+                const charWidth =
+                    font.getCharacterWidth(glyphCode, fontSize) ?? 0
+                cursorX += charWidth * ux * scale
+                cursorY += charWidth * uy * scale
+            }
+        }
+
+        newBlockOps.push(new EndTextOp())
+
+        // Apply: replace the first parent block's ops with the rebuilt ones,
+        // and clear all other parent blocks' source segments.
+        const firstParent = withSource[0]._sourceSegment?.parent
+        if (firstParent instanceof TextBlock) {
+            firstParent.ops = newBlockOps
+            firstParent.parseSegments()
+        }
+
+        // Clear source segments from other parent blocks
+        for (const seg of withSource) {
+            const parent = seg._sourceSegment?.parent
+            if (parent && parent !== firstParent) {
+                seg.clearSourceOps()
+            }
         }
     }
 
@@ -1008,6 +1157,7 @@ export class TextBlock extends ContentNode {
             text: string
             showOp: ContentOp | null
             sourceSegment: Text
+            fontType: string | undefined
             orientationKey: string
             lineCoord: number
             alongCoord: number
@@ -1087,6 +1237,7 @@ export class TextBlock extends ContentNode {
                     text,
                     showOp,
                     sourceSegment: seg,
+                    fontType: seg.font.fontType,
                     orientationKey,
                     lineCoord,
                     alongCoord,
@@ -1147,15 +1298,21 @@ export class TextBlock extends ContentNode {
 
         // Sub-split each band by font resource name and font size so
         // segments with different fonts or sizes become separate TextBlocks.
+        // Exception: Type3 fonts are glyph subsets — each character may use
+        // a different resource name even though they belong to the same
+        // visual typeface.  Group all Type3 segments at the same size together.
         type FontBand = Band & { parentDescriptors: Descriptor[] }
         const splitBands: FontBand[] = []
         for (const band of bands) {
             const byFont = new Map<string, Descriptor[]>()
             for (const d of band.descriptors) {
-                const key = d.fontResourceName + '\0' + d.fontSize
-                const arr = byFont.get(key) ?? []
+                const fontKey =
+                    d.fontType === 'Type3'
+                        ? 'Type3' + '\0' + d.fontSize
+                        : d.fontResourceName + '\0' + d.fontSize
+                const arr = byFont.get(fontKey) ?? []
                 arr.push(d)
-                byFont.set(key, arr)
+                byFont.set(fontKey, arr)
             }
             for (const descs of byFont.values()) {
                 splitBands.push({
@@ -1180,9 +1337,16 @@ export class TextBlock extends ContentNode {
             )
             // Collect descriptors from other fonts on the same baseline
             // band, sorted by alongCoord, for interleaving detection.
-            const fontName = sorted[0].fontResourceName
+            // For Type3 fonts, all Type3 segments share one group, so only
+            // non-Type3 segments on the same band are "other".
+            const firstDesc = sorted[0]
             const otherFontDescs = band.parentDescriptors
-                .filter((d) => d.fontResourceName !== fontName)
+                .filter((d) => {
+                    if (firstDesc.fontType === 'Type3') {
+                        return d.fontType !== 'Type3'
+                    }
+                    return d.fontResourceName !== firstDesc.fontResourceName
+                })
                 .sort((a, b) => a.alongCoord - b.alongCoord)
 
             let current: Descriptor[] = [sorted[0]]

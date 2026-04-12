@@ -43,6 +43,7 @@ type PdfFontDictionary = PdfDictionary<{
         | PdfObjectReference<PdfIndirectObject<PdfArray<PdfNumber>>>
     DescendantFonts?: PdfArray<PdfObjectReference>
     ToUnicode?: PdfObjectReference
+    FontMatrix?: PdfArray<PdfNumber>
 }>
 
 type PdfStandardFontName =
@@ -226,6 +227,15 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     }
 
     /**
+     * Whether this font requires glyph-code encoding via its ToUnicode map
+     * (as opposed to standard WinAnsi / MacRoman encoding).
+     * True for Type0 (CID) and Type3 fonts.
+     */
+    get requiresToUnicodeEncoding(): boolean {
+        return this.fontType === 'Type0' || this.fontType === 'Type3'
+    }
+
+    /**
      * Gets the original font file bytes.
      * Available for embedded fonts, undefined for standard fonts or loaded fonts.
      */
@@ -393,7 +403,24 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     }
 
     /**
+     * Gets the scaling factor from the font matrix's horizontal component.
+     * For Type3 fonts this reads the FontMatrix entry; for other fonts
+     * the standard 0.001 (1/1000) is used.
+     */
+    get fontMatrixScale(): number {
+        if (this.fontType === 'Type3') {
+            const fm = this.content.get('FontMatrix')
+            if (fm instanceof PdfArray && fm.items.length >= 1) {
+                const val = fm.items[0]
+                if (val instanceof PdfNumber) return Math.abs(val.value)
+            }
+        }
+        return 0.001
+    }
+
+    /**
      * Gets the character width scaled to the specified font size.
+     * For Type3 fonts this accounts for the FontMatrix scaling factor.
      * Returns null if the character is not in the font's width table.
      *
      * @param charCode - The character code to get the width for
@@ -402,7 +429,8 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      */
     getCharacterWidth(charCode: number, fontSize: number): number | null {
         const rawWidth = this.getRawCharacterWidth(charCode)
-        return rawWidth !== null ? (rawWidth * fontSize) / 1000 : null
+        if (rawWidth === null) return null
+        return rawWidth * this.fontMatrixScale * fontSize
     }
 
     /**
@@ -478,7 +506,10 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * An empty array means all characters are supported.
      */
     unsupportedChars(text: string): string[] {
-        if (!this.isUnicode) return []
+        // Only Type0 (CID) and Type3 fonts require ToUnicode-based encoding.
+        // TrueType/Type1 fonts use standard encoding (WinAnsi etc.) and
+        // can render characters even if they're not in the ToUnicode subset.
+        if (!this.requiresToUnicodeEncoding) return []
         const rev = this.reverseToUnicodeMap
         if (!rev) return []
         const missing: string[] = []
@@ -520,6 +551,25 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             return new PdfHexadecimal(hex, 'hex')
         }
 
+        // Non-CID fonts that require glyph-code encoding (Type3) with a
+        // ToUnicode map: encode via the reverse map using 1-byte hex codes.
+        // TrueType/Type1 fonts fall through to PdfString (standard encoding).
+        if (this.requiresToUnicodeEncoding) {
+            const rev = this.reverseToUnicodeMap
+            if (rev) {
+                let hex = ''
+                for (const char of text) {
+                    const cid = rev.get(char)
+                    if (cid !== undefined) {
+                        hex += cid.toString(16).padStart(2, '0')
+                    } else {
+                        hex += char.charCodeAt(0).toString(16).padStart(2, '0')
+                    }
+                }
+                return new PdfHexadecimal(hex, 'hex')
+            }
+        }
+
         return new PdfString(text)
     }
 
@@ -539,8 +589,8 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                 for (let i = 0; i < hex.length; i += 4) {
                     codes.push(parseInt(hex.substring(i, i + 4), 16))
                 }
-            } else if (this.encodingMap) {
-                // 1-byte codes
+            } else if (this.encodingMap || this.toUnicodeMap) {
+                // 1-byte codes (simple font with Differences or ToUnicode)
                 for (let i = 0; i < hex.length; i += 2) {
                     codes.push(parseInt(hex.substring(i, i + 2), 16))
                 }
@@ -602,6 +652,18 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                 for (let i = 0; i < cleaned.length; i += 2) {
                     const code = parseInt(cleaned.substring(i, i + 2), 16)
                     result += encodingMap.get(code) ?? String.fromCharCode(code)
+                }
+                return result
+            }
+
+            // Non-CID fonts (e.g. Type3) with a ToUnicode map:
+            // use 1-byte codes mapped through the CMap.
+            const umap = this.toUnicodeMap
+            if (umap) {
+                let result = ''
+                for (let i = 0; i < cleaned.length; i += 2) {
+                    const code = parseInt(cleaned.substring(i, i + 2), 16)
+                    result += umap.get(code) ?? String.fromCharCode(code)
                 }
                 return result
             }

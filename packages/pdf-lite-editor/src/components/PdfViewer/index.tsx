@@ -57,7 +57,10 @@ export interface PdfViewerProps extends TestProps {
     file: string | File | Uint8Array | Blob
     className?: string
     scrollTop?: number
-    pageWrapper?: (page: React.ReactNode, context: { pageNumber: number }) => React.ReactNode
+    pageWrapper?: (
+        page: React.ReactNode,
+        context: { pageNumber: number },
+    ) => React.ReactNode
 }
 
 const MAX_RESIZE_TRIGGER_DIFFERENCE_PX = 20
@@ -69,11 +72,18 @@ export function PdfViewer(props: PdfViewerProps) {
     const containerRef = useRef<HTMLDivElement | null>(null)
     const [containerWidth, setContainerWidth] = useState<number>()
     const [blobUrl, setBlobUrl] = useState<string | undefined>()
-    
+
     // Scroll position preservation
     const savedScrollPosition = useRef<number>(0)
     const previousFile = useRef<typeof props.file | null>(null)
-    
+
+    const options = useMemo(
+        () => ({
+            enableXfa: true,
+        }),
+        [],
+    )
+
     // Save scroll position when file is about to change
     useEffect(() => {
         if (previousFile.current && previousFile.current !== props.file) {
@@ -98,7 +108,9 @@ export function PdfViewer(props: PdfViewerProps) {
                 setBlobUrl(undefined)
             }
         } else if (props.file instanceof Uint8Array) {
-            const blob = new Blob([new Uint8Array(props.file)], { type: 'application/pdf' })
+            const blob = new Blob([new Uint8Array(props.file)], {
+                type: 'application/pdf',
+            })
             const url = URL.createObjectURL(blob)
             setBlobUrl(url)
 
@@ -147,9 +159,10 @@ export function PdfViewer(props: PdfViewerProps) {
                     setIsDocumentReady(true)
                 }}
                 data-testid={props.dataTestId}
+                options={options}
             >
                 {isDocumentReady &&
-                    Array.from(new Array(numberOfPages), (_el, index) => (
+                    Array.from(new Array(numberOfPages), (_el, index) =>
                         pageWrapper(
                             <PdfPage
                                 key={`page_${index + 1}`}
@@ -159,9 +172,9 @@ export function PdfViewer(props: PdfViewerProps) {
                             />,
                             {
                                 pageNumber: index + 1,
-                            }
-                        )
-                    ))}
+                            },
+                        ),
+                    )}
             </Document>
         )
     }, [
@@ -173,7 +186,7 @@ export function PdfViewer(props: PdfViewerProps) {
         containerWidth,
         pageWrapper,
     ])
-    
+
     // Restore scroll position after document renders
     useEffect(() => {
         if (isDocumentReady && savedScrollPosition.current > 0) {
@@ -183,7 +196,7 @@ export function PdfViewer(props: PdfViewerProps) {
                 const restore = () => {
                     scrollContainer.scrollTop = savedScrollPosition.current
                 }
-                
+
                 restore()
                 setTimeout(restore, 50)
                 setTimeout(restore, 150)

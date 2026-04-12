@@ -1033,6 +1033,37 @@ export function PdfEditor() {
         setSelectedTextBlockId(blockId)
     }
 
+    const reExtractTextBlocks = () => {
+        if (!pdfDoc) return
+        const pages = pdfDoc.pages.toArray()
+        const newTextBlocks: ExtractedTextBlock[] = []
+        let textBlockIndex = 0
+        for (let i = 0; i < pages.length; i++) {
+            const p = pages[i]
+            const pageNumber = i + 1
+            try {
+                const blocks = p.getTextBlocks()
+                for (const block of blocks) {
+                    if (block.text.trim().length === 0) continue
+                    newTextBlocks.push({
+                        block,
+                        id: `text_block_${textBlockIndex++}`,
+                        page: pageNumber,
+                        pageHeight: p.height,
+                        pageWidth: p.width,
+                    })
+                }
+            } catch (error) {
+                console.warn(
+                    `Failed to extract text blocks from page ${pageNumber}:`,
+                    error,
+                )
+            }
+        }
+        setExtractedTextBlocks(newTextBlocks)
+        setPdfVersion((v) => v + 1)
+    }
+
     const handleTextEditCommit = () => {
         if (!editingTextBlockId || !pdfDoc) {
             setEditingTextBlockId(null)
@@ -1054,64 +1085,8 @@ export function PdfEditor() {
         }
 
         try {
-            // Get the page for this text block
-            const pages = pdfDoc.pages.toArray()
-            const page = pages[textBlock.page - 1]
-            if (!page) {
-                setEditingTextBlockId(null)
-                return
-            }
-
-            const sourceIndex = (textBlock.block as any).sourceIndex as
-                | number
-                | undefined
-            if (sourceIndex === undefined) {
-                setEditingTextBlockId(null)
-                return
-            }
-
-            // Find all text blocks that share the same sourceIndex on this page
-            const siblings = extractedTextBlocks.filter(
-                (tb) =>
-                    tb.page === textBlock.page
-            )
-
-            // Apply the text change to this block
-            textBlock.block.text = editText
-
-            // Write all sibling blocks back as the replacement for this BT/ET
-            const replacementBlocks = siblings.map((tb) => tb.block)
-            page.replaceTextInStream(sourceIndex, replacementBlocks)
-
-            // Re-extract text blocks for this page
-            const newTextBlocks: ExtractedTextBlock[] = []
-            let textBlockIndex = 0
-            for (let i = 0; i < pages.length; i++) {
-                const p = pages[i]
-                const pageNumber = i + 1
-                try {
-                    const rawBlocks = p.extractTextBlocks()
-                    const blocks = TextBlock.regroupTextBlocks(rawBlocks)
-                    for (const block of blocks) {
-                        if (block.text.trim().length === 0) continue
-                        newTextBlocks.push({
-                            block,
-                            id: `text_block_${textBlockIndex++}`,
-                            page: pageNumber,
-                            pageHeight: p.height,
-                            pageWidth: p.width,
-                        })
-                    }
-                } catch (error) {
-                    console.warn(
-                        `Failed to extract text blocks from page ${pageNumber}:`,
-                        error,
-                    )
-                }
-            }
-
-            setExtractedTextBlocks(newTextBlocks)
-            setPdfVersion((v) => v + 1)
+            textBlock.block.editText(editText)
+            reExtractTextBlocks()
         } catch (error) {
             console.error('Error editing text block:', error)
             alert(
@@ -1138,58 +1113,8 @@ export function PdfEditor() {
         if (!textBlock) return
 
         try {
-            const pages = pdfDoc.pages.toArray()
-            const page = pages[textBlock.page - 1]
-            if (!page) return
-
-            const sourceIndex = (textBlock.block as any).sourceIndex as
-                | number
-                | undefined
-            if (sourceIndex === undefined) return
-
-            // Move the block in-memory
             textBlock.block.moveBy(dx, dy)
-
-            // Find all sibling blocks sharing the same sourceIndex
-            const siblings = extractedTextBlocks.filter(
-                (tb) =>
-                    tb.page === textBlock.page &&
-                    (tb.block as any).sourceIndex === sourceIndex,
-            )
-
-            // Write all sibling blocks back to the content stream
-            const replacementBlocks = siblings.map((tb) => tb.block)
-            page.replaceTextInStream(sourceIndex, replacementBlocks)
-
-            // Re-extract text blocks
-            const newTextBlocks: ExtractedTextBlock[] = []
-            let textBlockIndex = 0
-            for (let i = 0; i < pages.length; i++) {
-                const p = pages[i]
-                const pageNumber = i + 1
-                try {
-                    const rawBlocks = p.extractTextBlocks()
-                    const blocks = TextBlock.regroupTextBlocks(rawBlocks)
-                    for (const block of blocks) {
-                        if (block.text.trim().length === 0) continue
-                        newTextBlocks.push({
-                            block,
-                            id: `text_block_${textBlockIndex++}`,
-                            page: pageNumber,
-                            pageHeight: p.height,
-                            pageWidth: p.width,
-                        })
-                    }
-                } catch (error) {
-                    console.warn(
-                        `Failed to extract text blocks from page ${pageNumber}:`,
-                        error,
-                    )
-                }
-            }
-
-            setExtractedTextBlocks(newTextBlocks)
-            setPdfVersion((v) => v + 1)
+            reExtractTextBlocks()
         } catch (error) {
             console.error('Error moving text block:', error)
         }
@@ -1588,8 +1513,7 @@ export function PdfEditor() {
                     const pageNumber = i + 1
 
                     try {
-                        const rawBlocks = page.extractTextBlocks()
-                        const blocks = TextBlock.regroupTextBlocks(rawBlocks)
+                        const blocks = page.getTextBlocks()
                         for (const block of blocks) {
                             if (block.text.trim().length === 0) continue
                             textBlocks.push({

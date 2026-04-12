@@ -13,6 +13,11 @@ import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
 import { PdfFont } from '../../src/fonts/pdf-font'
 import { ByteArray } from '../../src/types'
 import { MoveToOp } from '../../src/graphics/ops/path'
+import { SetFontOp, SetTextMatrixOp } from '../../src/graphics/ops/text'
+import {
+    SetFillColorRGBOp,
+    SetFillColorGrayOp,
+} from '../../src/graphics/ops/color'
 
 const FIXTURE = './test/unit/fixtures/multi-child-field.pdf'
 
@@ -1342,5 +1347,262 @@ describe('real PDF text editing round-trip', () => {
             }
         }
         expect(overlaps).toEqual([])
+    })
+})
+
+// ---------------------------------------------------------------------------
+// TextBlock.changeFont
+// ---------------------------------------------------------------------------
+describe('TextBlock.changeFont', () => {
+    it('changes font name in single-segment block', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.changeFont(PdfFont.COURIER, 'F2')
+        const str = tb.toString()
+        expect(str).toContain('/F2 12 Tf')
+        expect(str).not.toContain('/F1')
+    })
+
+    it('re-encodes text preserving content', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.changeFont(PdfFont.COURIER, 'F2')
+        expect(tb.text).toBe('Hello')
+    })
+
+    it('captures text BEFORE changing font (no decode corruption)', () => {
+        // Two segments to exercise the pre-capture path
+        const s = makeStream(
+            'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Abc) Tj 1 0 0 1 130 700 Tm (Def) Tj ET',
+        )
+        const tb = s.textBlocks[0]
+        tb.changeFont(PdfFont.TIMES_ROMAN, 'F3')
+        expect(tb.text).toBe('AbcDef')
+    })
+
+    it('recalculates Tm positions for multi-segment blocks', () => {
+        // Two segments at known positions
+        const s = makeStream(
+            'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Hello) Tj 1 0 0 1 160 700 Tm (World) Tj ET',
+        )
+        const tb = s.textBlocks[0]
+        const seg0Before = tb.getSegments()[0].getLocalTransform()
+
+        tb.changeFont(PdfFont.COURIER, 'F2')
+
+        const segs = tb.getSegments()
+        const seg0After = segs[0].getLocalTransform()
+        const seg1After = segs[1].getLocalTransform()
+
+        // First segment keeps original position
+        expect(seg0After.e).toBeCloseTo(seg0Before.e, 1)
+        expect(seg0After.f).toBeCloseTo(seg0Before.f, 1)
+
+        // Second segment should be repositioned based on first segment's advance
+        const advance0 = segs[0].getTextAdvance()
+        expect(seg1After.e).toBeCloseTo(100 + advance0, 1)
+        expect(seg1After.f).toBeCloseTo(700, 1)
+    })
+
+    it('uses resourceName parameter for Tf ops', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Test) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.changeFont(PdfFont.HELVETICA_BOLD, 'MyFont')
+        expect(tb.toString()).toContain('/MyFont 12 Tf')
+    })
+
+    it('falls back to font.resourceName when no resourceName given', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Test) Tj ET')
+        const tb = s.textBlocks[0]
+        const font = PdfFont.HELVETICA_BOLD
+        tb.changeFont(font)
+        expect(tb.toString()).toContain(`/${font.resourceName}`)
+    })
+
+    it('throws when font cannot encode the text', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        expect(() => tb.changeFont(PdfFont.ZAPF_DINGBATS, 'FZ')).toThrow(
+            /cannot render/,
+        )
+    })
+
+    it('updates source segments when regrouped', () => {
+        const s = makeStream(
+            'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Part1) Tj 1 0 0 1 160 700 Tm (Part2) Tj ET',
+        )
+        const regrouped = s.regroupTextBlocksByLine()
+        const block = regrouped[0]
+        block.changeFont(PdfFont.COURIER, 'FC')
+
+        // The source content stream should now contain the new font
+        const streamStr = s.dataAsString
+        expect(streamStr).toContain('/FC')
+    })
+
+    it('preserves font size after change', () => {
+        const s = makeStream('BT /F1 24 Tf 100 700 Td (Big) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.changeFont(PdfFont.TIMES_BOLD, 'FT')
+        const seg = tb.getSegments()[0]
+        expect(seg.fontSize).toBe(24)
+    })
+
+    it('skips segments with no text', () => {
+        // Second "segment" has Tf but no show op
+        const s = makeStream(
+            'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Hello) Tj /F2 10 Tf ET',
+        )
+        const tb = s.textBlocks[0]
+        // Should not throw
+        tb.changeFont(PdfFont.COURIER, 'FC')
+        expect(tb.text).toBe('Hello')
+    })
+})
+
+// ---------------------------------------------------------------------------
+// TextBlock.changeColor
+// ---------------------------------------------------------------------------
+describe('TextBlock.changeColor', () => {
+    it('inserts RGB fill color op before show op', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.changeColor({ r: 1, g: 0, b: 0 })
+        const str = tb.toString()
+        expect(str).toContain('1 0 0 rg')
+    })
+
+    it('preserves text content after color change', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.changeColor({ r: 0, g: 0.5, b: 1 })
+        expect(tb.text).toBe('Hello')
+    })
+
+    it('replaces existing RGB fill color', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td 1 0 0 rg (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.changeColor({ r: 0, g: 1, b: 0 })
+        const str = tb.toString()
+        // Old red should be gone, new green present
+        expect(str).not.toContain('1 0 0 rg')
+        expect(str).toContain('0 1 0 rg')
+    })
+
+    it('replaces existing gray fill color', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td 0.5 g (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.changeColor({ r: 0, g: 0, b: 1 })
+        const str = tb.toString()
+        expect(str).not.toContain('0.5 g')
+        expect(str).toContain('0 0 1 rg')
+    })
+
+    it('updates source segments when regrouped', () => {
+        const s = makeStream('BT /F1 12 Tf 1 0 0 1 100 700 Tm (Hello) Tj ET')
+        const regrouped = s.regroupTextBlocksByLine()
+        regrouped[0].changeColor({ r: 1, g: 0, b: 0 })
+        const streamStr = s.dataAsString
+        expect(streamStr).toContain('1 0 0 rg')
+    })
+
+    it('does not bleed color to subsequent text blocks', () => {
+        const s = makeStream(
+            'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Line1) Tj 1 0 0 1 100 680 Tm (Line2) Tj ET',
+        )
+        const regrouped = s.regroupTextBlocksByLine()
+        expect(regrouped).toHaveLength(2)
+
+        // Change only the first block's color to red
+        regrouped[0].changeColor({ r: 1, g: 0, b: 0 })
+
+        // The source content stream should restore the previous color
+        // after the first show op so "Line2" isn't affected.
+        const streamStr = s.dataAsString
+
+        // Find all "rg" operations in order
+        const rgOps = [...streamStr.matchAll(/[\d.]+ [\d.]+ [\d.]+ rg/g)].map(
+            (m) => m[0],
+        )
+        // Should have the red color and then a restore (default black = 0 g)
+        expect(rgOps.length).toBeGreaterThanOrEqual(1)
+        expect(rgOps[0]).toBe('1 0 0 rg')
+
+        // After the first segment's show op, there should be a color restore
+        // (either gray 0 g or rgb 0 0 0 rg) before the second show op
+        const grayOps = [...streamStr.matchAll(/\b0 g\b/g)]
+        const restoreRgOps = rgOps.filter((op) => op !== '1 0 0 rg')
+        expect(grayOps.length + restoreRgOps.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('handles multiple segments in one block', () => {
+        const s = makeStream(
+            'BT /F1 12 Tf 1 0 0 1 100 700 Tm (A) Tj 1 0 0 1 110 700 Tm (B) Tj ET',
+        )
+        const tb = s.textBlocks[0]
+        tb.changeColor({ r: 0.5, g: 0.5, b: 0.5 })
+        const str = tb.toString()
+        // Both segments should have the color op
+        const colorMatches = str.match(/0\.5 0\.5 0\.5 rg/g)
+        expect(colorMatches?.length).toBeGreaterThanOrEqual(2)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// changeFont + changeColor round-trip with real PDF
+// ---------------------------------------------------------------------------
+describe('changeFont and changeColor round-trip', () => {
+    it('changeFont survives toBytes round-trip', async () => {
+        const doc = await loadFixture('./test/unit/fixtures/template.pdf')
+        const page = doc.pages.get(0)
+        const blocks = page.getTextBlocks()
+        // Find a block with standard ASCII text
+        const target = blocks.find(
+            (b) => b.text.length > 0 && /^[\x20-\x7E]+$/.test(b.text),
+        )
+        expect(target).toBeDefined()
+        const origText = target!.text
+
+        const resName = page.addFont(PdfFont.COURIER)
+        target!.changeFont(PdfFont.COURIER, resName)
+
+        // Verify text is preserved before round-trip
+        expect(target!.text).toBe(origText)
+
+        // Round-trip
+        const bytes = doc.toBytes()
+        const reloaded = await PdfDocument.fromBytes([bytes])
+        const rBlocks = reloaded.pages.get(0).getTextBlocks()
+
+        // The text should still be present somewhere
+        const found = rBlocks.find((b) => b.text === origText)
+        expect(found).toBeDefined()
+    })
+
+    it('changeColor survives toBytes round-trip', async () => {
+        const doc = await loadFixture('./test/unit/fixtures/template.pdf')
+        const page = doc.pages.get(0)
+        const blocks = page.getTextBlocks()
+        const target = blocks.find((b) => b.text.length > 0)
+        expect(target).toBeDefined()
+        const origText = target!.text
+
+        target!.changeColor({ r: 1, g: 0, b: 0 })
+
+        // Round-trip
+        const bytes = doc.toBytes()
+        const reloaded = await PdfDocument.fromBytes([bytes])
+        const rPage = reloaded.pages.get(0)
+        const rBlocks = rPage.getTextBlocks()
+
+        // Text should survive
+        const found = rBlocks.find((b) => b.text === origText)
+        expect(found).toBeDefined()
+
+        // The content stream should contain the red fill color
+        const streamStr = rPage.contentStreams
+            .map((s) => s.dataAsString)
+            .join('')
+        expect(streamStr).toContain('1 0 0 rg')
     })
 })

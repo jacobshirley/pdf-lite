@@ -695,6 +695,89 @@ describe('AT_Verf19E_EU.pdf — regrouped text blocks', () => {
     })
 })
 
+describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
+    let doc: PdfDocument
+
+    beforeAll(async () => {
+        doc = await loadFixture('./test/unit/fixtures/AT_Verf19E_EU.pdf')
+    })
+
+    it('moving "Identification" block keeps segments together', () => {
+        // Find the page with "Identification"
+        let page, blocks, idBlock
+        for (let p = 0; p < doc.pages.count; p++) {
+            page = doc.pages.get(p)
+            blocks = page.getTextBlocks()
+            idBlock = blocks.find((b) => b.text.includes('Identification'))
+            if (idBlock) break
+        }
+        expect(idBlock).toBeDefined()
+
+        const segs = idBlock!.getSegments()
+        // Record world positions of all segments before move
+        const before = segs.map((s) => {
+            const wt = s.getWorldTransform()
+            return { e: wt.e, f: wt.f, text: s.text }
+        })
+
+        // Move by (50, -30)
+        idBlock!.moveBy(50, -30)
+
+        // Check that every segment shifted by the same (50, -30)
+        for (let i = 0; i < segs.length; i++) {
+            const wt = segs[i].getWorldTransform()
+            expect(wt.e).toBeCloseTo(before[i].e + 50, 0)
+            expect(wt.f).toBeCloseTo(before[i].f - 30, 0)
+        }
+    })
+
+    it('moving "Identification" round-trips correctly', async () => {
+        const doc2 = await loadFixture('./test/unit/fixtures/AT_Verf19E_EU.pdf')
+        let page: any, blocks: any, idBlock: any
+        for (let p = 0; p < doc2.pages.count; p++) {
+            page = doc2.pages.get(p)
+            blocks = page.getTextBlocks()
+            idBlock = blocks.find((b: any) => b.text.includes('Identification'))
+            if (idBlock) break
+        }
+        expect(idBlock).toBeDefined()
+
+        const segsBefore = idBlock!.getSegments()
+        const beforePositions = segsBefore.map((s: any) => {
+            const wt = s.getWorldTransform()
+            return { e: wt.e, f: wt.f, text: s.text }
+        })
+
+        idBlock!.moveBy(50, -30)
+
+        // Round-trip
+        const bytes = doc2.toBytes()
+        const reloaded = await PdfDocument.fromBytes([bytes])
+        let found: any
+        for (let p = 0; p < reloaded.pages.count; p++) {
+            const rp = reloaded.pages.get(p)
+            const reloadedBlocks = rp.getTextBlocks()
+            found = reloadedBlocks.find((b: any) =>
+                b.text.includes('Identification'),
+            )
+            if (found) break
+        }
+        expect(found).toBeDefined()
+
+        const segsAfter = found!.getSegments()
+        // Each segment should have moved by exactly (50, -30)
+        for (
+            let i = 0;
+            i < Math.min(beforePositions.length, segsAfter.length);
+            i++
+        ) {
+            const wt = segsAfter[i].getWorldTransform()
+            expect(wt.e).toBeCloseTo(beforePositions[i].e + 50, 0)
+            expect(wt.f).toBeCloseTo(beforePositions[i].f - 30, 0)
+        }
+    })
+})
+
 describe('CA_GST_RC1 — Page 13 of 13 debug', () => {
     let doc: PdfDocument
 

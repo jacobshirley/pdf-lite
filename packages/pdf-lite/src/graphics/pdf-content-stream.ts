@@ -204,49 +204,48 @@ export class Text extends ContentNode {
     moveSourceBy(dx: number, dy: number): void {
         const src = this._sourceSegment
         if (!src) return
+        const newLocal = Text._computeSourceShift(src, dx, dy)
+        if (newLocal) Text._applySourceShift(src, newLocal)
+    }
 
+    /**
+     * Compute the new local Tm that a source segment should have after
+     * a world-space shift of (dx, dy).  Pure — no side effects.
+     */
+    /** @internal */
+    static _computeSourceShift(
+        src: Text,
+        dx: number,
+        dy: number,
+    ): Matrix | null {
+        const oldWorld = src.getWorldTransform()
+        const localTm = src.getLocalTransform()
+        const localInv = localTm.inverse()
+        if (!localInv) return null
+        const parentGlobal = oldWorld.multiply(localInv)
+        const parentInv = parentGlobal.inverse()
+        if (!parentInv) return null
+        return parentInv.multiply(
+            new Matrix({
+                a: oldWorld.a,
+                b: oldWorld.b,
+                c: oldWorld.c,
+                d: oldWorld.d,
+                e: oldWorld.e + dx,
+                f: oldWorld.f + dy,
+            }),
+        )
+    }
+
+    /**
+     * Apply a pre-computed local Tm to a source segment, replacing its
+     * positioning ops and rebuilding the parent TextBlock.
+     */
+    /** @internal */
+    static _applySourceShift(src: Text, newLocal: Matrix): void {
         const parentBlock = src.parent
         if (!parentBlock) return
 
-        // Compute the source segment's current world position and the
-        // desired new world position (world-space shift: just adjust e,f).
-        const oldWorld = src.getWorldTransform()
-        const newWorld = new Matrix({
-            a: oldWorld.a,
-            b: oldWorld.b,
-            c: oldWorld.c,
-            d: oldWorld.d,
-            e: oldWorld.e + dx,
-            f: oldWorld.f + dy,
-        })
-
-        // If the source already has a Tm op, compute the correct local Tm
-        // that produces newWorld under the parent's cm.  For a segment
-        // directly under a TextBlock whose parent is a StateNode with cm:
-        //   world = cm × localTm   →   localTm = cm⁻¹ × newWorld
-        //
-        // But Text.getWorldTransform() already composes all parent
-        // transforms, and getLocalTransform() returns the segment's own Tm.
-        // We can recover cm from: cm = world × localTm⁻¹
-        // Then newLocal = cm⁻¹ × newWorld.
-        //
-        // Simpler: replace all positioning ops with a single Tm that
-        // produces the desired world position.  We compute:
-        //   parentGlobal = world × localTm⁻¹
-        //   newLocal = parentGlobal⁻¹ × newWorld
-        const localTm = src.getLocalTransform()
-        const localInv = localTm.inverse()
-        if (!localInv) {
-            // Degenerate matrix — fall back to direct Tm replacement
-            return
-        }
-        const parentGlobal = oldWorld.multiply(localInv)
-        const parentInv = parentGlobal.inverse()
-        if (!parentInv) return
-
-        const newLocal = parentInv.multiply(newWorld)
-
-        // Replace the positioning op (Tm, Td, TD, T*) with a new Tm
         const newTmOp = SetTextMatrixOp.create(
             newLocal.a,
             newLocal.b,
@@ -260,7 +259,6 @@ export class Text extends ContentNode {
         const tmIdx = src.ops.findIndex((o) => o instanceof SetTextMatrixOp)
         if (tmIdx !== -1) {
             src.ops[tmIdx] = newTmOp
-            // Rebuild parent ops from segments to propagate the change
             if (parentBlock instanceof TextBlock) {
                 parentBlock.rebuildOpsFromSegments()
             }
@@ -825,17 +823,33 @@ export class TextBlock extends ContentNode {
             const { hasTm, tm } = resolved[i]
 
             if (hasTm) {
-                // Shift every existing Tm in-place
+                // Shift every existing Tm in-place (world-space: adjust e,f directly)
                 const tmOps = seg.ops.filter(
                     (o) => o instanceof SetTextMatrixOp,
                 )
                 for (const op of tmOps) {
-                    op.matrix = op.matrix.translate(dx, dy)
+                    const m = op.matrix
+                    op.matrix = new Matrix({
+                        a: m.a,
+                        b: m.b,
+                        c: m.c,
+                        d: m.d,
+                        e: m.e + dx,
+                        f: m.f + dy,
+                    })
                 }
             } else {
                 // Replace relative positioning ops (Td/TD/T*) with an
                 // absolute Tm derived from the pre-resolved position.
-                const shifted = tm!.translate(dx, dy)
+                const m = tm!
+                const shifted = new Matrix({
+                    a: m.a,
+                    b: m.b,
+                    c: m.c,
+                    d: m.d,
+                    e: m.e + dx,
+                    f: m.f + dy,
+                })
                 seg.ops = seg.ops.filter(
                     (o) =>
                         !(o instanceof MoveTextOp) &&
@@ -868,12 +882,19 @@ export class TextBlock extends ContentNode {
 
         this.rebuildOpsFromSegments()
 
-        // Also shift the original content-stream segments when source
-        // references are available.
+        // Batch source shifts: compute all new positions BEFORE writing
+        // any.  Source segments in the same parent TextBlock share a prev
+        // chain; writing one shifts the chain so later reads return stale
+        // values.
+        const sourceMoves: { src: Text; newLocal: Matrix }[] = []
         for (const seg of this.segments) {
-            if (seg._sourceSegment) {
-                seg.moveSourceBy(dx, dy)
-            }
+            const src = seg._sourceSegment
+            if (!src) continue
+            const newLocal = Text._computeSourceShift(src, dx, dy)
+            if (newLocal) sourceMoves.push({ src, newLocal })
+        }
+        for (const { src, newLocal } of sourceMoves) {
+            Text._applySourceShift(src, newLocal)
         }
     }
 

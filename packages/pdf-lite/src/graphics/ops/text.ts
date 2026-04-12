@@ -115,7 +115,7 @@ export class SetTextMatrixOp extends TextOp {
     }
 
     set matrix(m: Matrix) {
-        this.raw = `${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f} cm`
+        this.raw = `${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f} Tm`
     }
 }
 

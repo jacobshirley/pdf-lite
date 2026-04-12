@@ -273,6 +273,17 @@ export class Text extends ContentNode {
             newLocal.f,
         )
 
+        // Collect TL side-effects from any MoveTextLeadingOp (TD) that
+        // will be stripped.  TD sets TL = -ty; this must be preserved
+        // because TL persists in the graphics state and later T* ops
+        // in other BT blocks depend on it.
+        const tlOps: SetTextLeadingOp[] = []
+        for (const o of src.ops) {
+            if (o instanceof MoveTextLeadingOp) {
+                tlOps.push(SetTextLeadingOp.create(-o.y))
+            }
+        }
+
         // Find and replace the existing positioning op
         const tmIdx = src.ops.findIndex((o) => o instanceof SetTextMatrixOp)
         if (tmIdx !== -1) {
@@ -285,6 +296,11 @@ export class Text extends ContentNode {
                     !(o instanceof MoveTextLeadingOp) &&
                     !(o instanceof NextLineOp),
             )
+            // Re-inject TL ops to preserve the text leading side-effect
+            if (tlOps.length > 0) {
+                const insertIdx = src.ops.indexOf(newTmOp)
+                src.ops.splice(insertIdx, 0, ...tlOps)
+            }
             if (parentBlock instanceof TextBlock) {
                 parentBlock.rebuildOpsFromSegments()
             }
@@ -306,9 +322,9 @@ export class Text extends ContentNode {
                 o instanceof ShowTextNextLineSpacingOp,
         )
         if (showIdx !== -1) {
-            src.ops.splice(showIdx, 0, newTmOp)
+            src.ops.splice(showIdx, 0, ...tlOps, newTmOp)
         } else {
-            src.ops.push(newTmOp)
+            src.ops.push(...tlOps, newTmOp)
         }
         if (parentBlock instanceof TextBlock) {
             parentBlock.rebuildOpsFromSegments()
@@ -1042,6 +1058,13 @@ export class TextBlock extends ContentNode {
             } else {
                 // Replace relative positioning ops (Td/TD/T*) with an
                 // absolute Tm derived from the pre-resolved position.
+                // Preserve TL side-effects from any TD ops being stripped.
+                const tlOps: SetTextLeadingOp[] = []
+                for (const o of seg.ops) {
+                    if (o instanceof MoveTextLeadingOp) {
+                        tlOps.push(SetTextLeadingOp.create(-o.y))
+                    }
+                }
                 const m = tm!
                 const shifted = new Matrix({
                     a: m.a,
@@ -1074,9 +1097,9 @@ export class TextBlock extends ContentNode {
                     shifted.f,
                 )
                 if (showIdx !== -1) {
-                    seg.ops.splice(showIdx, 0, tmOp)
+                    seg.ops.splice(showIdx, 0, ...tlOps, tmOp)
                 } else {
-                    seg.ops.push(tmOp)
+                    seg.ops.push(...tlOps, tmOp)
                 }
             }
         }
@@ -1861,6 +1884,13 @@ export class PdfContentStream extends PdfStream {
                 graphicsOps.push(op)
             } else if (op instanceof EndPathOp) {
                 graphicsOps = []
+            } else {
+                // Preserve all other ops (e.g. marked-content BDC/EMC,
+                // XObject invocations, inline images, etc.) so they
+                // round-trip faithfully through serialization.
+                for (const g of graphicsOps) currentState.ops.push(g)
+                graphicsOps = []
+                currentState.ops.push(op)
             }
         }
 

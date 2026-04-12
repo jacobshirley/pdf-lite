@@ -1274,4 +1274,73 @@ describe('real PDF text editing round-trip', () => {
             expect(found).toBeDefined()
         })
     })
+
+    it('moveBy preserves TL side-effect when stripping TD ops', async () => {
+        // CA_BC_PST_Registration.pdf uses TD (MoveTextLeadingOp) which sets TL.
+        // When moveBy converts TD to absolute Tm, the TL side-effect must be
+        // preserved as an explicit TL op, otherwise later T* ops in sibling
+        // segments produce overlapping text.
+        const doc = await loadFixture(
+            './test/unit/fixtures/CA_BC_PST_Registration.pdf',
+        )
+        const page = doc.pages.get(0)
+        const blocks = page.getTextBlocks()
+
+        // Find "Provincial Sales Tax Act" in the paragraph (block 7)
+        const pstBlock = blocks.find(
+            (b) =>
+                b.text.includes('Provincial Sales Tax Act') &&
+                b.getWorldBoundingBox().y > 700,
+        )
+        expect(pstBlock).toBeDefined()
+
+        // Snapshot all block positions before the move
+        const before = blocks.map((b) => {
+            const wb = b.getWorldBoundingBox()
+            return { text: b.text.substring(0, 40), x: wb.x, y: wb.y }
+        })
+
+        pstBlock!.moveBy(10, 10)
+
+        // Round-trip: serialize and reload
+        const bytes = doc.toBytes()
+        const reloaded = await PdfDocument.fromBytes([bytes])
+        const rPage = reloaded.pages.get(0)
+        const rBlocks = rPage.getTextBlocks()
+
+        // All blocks should survive the round-trip (no block loss)
+        expect(rBlocks.length).toBe(blocks.length)
+
+        // Check for position overlaps that indicate TL corruption:
+        // no two non-empty blocks should share the same position
+        // unless they did so in the original.
+        const overlaps: string[] = []
+        for (let i = 0; i < rBlocks.length; i++) {
+            const wb1 = rBlocks[i].getWorldBoundingBox()
+            if (!rBlocks[i].text.trim()) continue
+            for (let j = i + 1; j < rBlocks.length; j++) {
+                if (!rBlocks[j].text.trim()) continue
+                const wb2 = rBlocks[j].getWorldBoundingBox()
+                if (
+                    Math.abs(wb1.x - wb2.x) < 1 &&
+                    Math.abs(wb1.y - wb2.y) < 1
+                ) {
+                    // Check if this overlap existed before the move
+                    const origI = before[i]
+                    const origJ = before[j]
+                    const wasAlreadyOverlapping =
+                        origI &&
+                        origJ &&
+                        Math.abs(origI.x - origJ.x) < 1 &&
+                        Math.abs(origI.y - origJ.y) < 1
+                    if (!wasAlreadyOverlapping) {
+                        overlaps.push(
+                            `[${i}] "${rBlocks[i].text.substring(0, 30)}" & [${j}] "${rBlocks[j].text.substring(0, 30)}" at (${wb1.x.toFixed(1)},${wb1.y.toFixed(1)})`,
+                        )
+                    }
+                }
+            }
+        }
+        expect(overlaps).toEqual([])
+    })
 })

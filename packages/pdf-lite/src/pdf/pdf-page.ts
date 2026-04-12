@@ -258,6 +258,10 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
     consolidateContentStreams(): void {
         const streams = this.contentStreams
         if (streams.length <= 1) return
+        // Already consolidated — streams[1+] are empty, skip to avoid
+        // a destructive serialization→clear→re-parse round-trip on
+        // the live node tree in streams[0].
+        if (streams.slice(1).every((s) => s.dataAsString === '')) return
         const combinedData = streams.map((s) => s.dataAsString).join('\n')
         streams[0].dataAsString = combinedData
         for (let i = 1; i < streams.length; i++) {

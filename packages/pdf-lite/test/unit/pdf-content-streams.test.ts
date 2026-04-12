@@ -731,6 +731,230 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
     })
 
+    it('moving one block does not displace other blocks on the page', async () => {
+        const doc2 = await loadFixture('./test/unit/fixtures/AT_Verf19E_EU.pdf')
+        let page: any, blocks: any, idBlock: any
+        let idIdx = -1
+        for (let p = 0; p < doc2.pages.count; p++) {
+            page = doc2.pages.get(p)
+            blocks = page.getTextBlocks()
+            idIdx = blocks.findIndex((b: any) =>
+                b.text.includes('Identification'),
+            )
+            if (idIdx !== -1) {
+                idBlock = blocks[idIdx]
+                break
+            }
+        }
+        expect(idBlock).toBeDefined()
+
+        // Snapshot EVERY block's segment positions before the move
+        type Snap = {
+            blockIdx: number
+            segIdx: number
+            e: number
+            f: number
+            text: string
+        }
+        const before: Snap[] = []
+        for (let bi = 0; bi < blocks.length; bi++) {
+            const segs = blocks[bi].getSegments()
+            for (let si = 0; si < segs.length; si++) {
+                const wt = segs[si].getWorldTransform()
+                before.push({
+                    blockIdx: bi,
+                    segIdx: si,
+                    e: wt.e,
+                    f: wt.f,
+                    text: segs[si].text,
+                })
+            }
+        }
+
+        idBlock!.moveBy(50, -30)
+
+        // Check all blocks after move
+        const displaced: string[] = []
+        let snapIdx = 0
+        for (let bi = 0; bi < blocks.length; bi++) {
+            const segs = blocks[bi].getSegments()
+            for (let si = 0; si < segs.length; si++) {
+                const snap = before[snapIdx++]
+                const wt = segs[si].getWorldTransform()
+                if (bi === idIdx) {
+                    // Moved block: should shift by (50, -30)
+                    if (
+                        Math.abs(wt.e - (snap.e + 50)) > 1 ||
+                        Math.abs(wt.f - (snap.f + -30)) > 1
+                    ) {
+                        displaced.push(
+                            `MOVED block[${bi}].seg[${si}] "${snap.text}": expected (${snap.e + 50},${snap.f - 30}) got (${wt.e.toFixed(1)},${wt.f.toFixed(1)})`,
+                        )
+                    }
+                } else {
+                    // Non-moved block: should NOT move
+                    if (
+                        Math.abs(wt.e - snap.e) > 0.5 ||
+                        Math.abs(wt.f - snap.f) > 0.5
+                    ) {
+                        displaced.push(
+                            `block[${bi}].seg[${si}] "${snap.text}": expected (${snap.e.toFixed(1)},${snap.f.toFixed(1)}) got (${wt.e.toFixed(1)},${wt.f.toFixed(1)})`,
+                        )
+                    }
+                }
+            }
+        }
+
+        expect(displaced).toEqual([])
+    })
+
+    it('moving one block does not displace others after round-trip', async () => {
+        // Load two copies: one pristine for "before" snapshot, one to mutate
+        const pristine = await loadFixture(
+            './test/unit/fixtures/AT_Verf19E_EU.pdf',
+        )
+        const mutated = await loadFixture(
+            './test/unit/fixtures/AT_Verf19E_EU.pdf',
+        )
+
+        // Find the target page in both copies
+        let pPage: any, pBlocks: any
+        for (let p = 0; p < pristine.pages.count; p++) {
+            pPage = pristine.pages.get(p)
+            pBlocks = pPage.getTextBlocks()
+            if (pBlocks.some((b: any) => b.text.includes('Identification')))
+                break
+        }
+        let mPage: any,
+            mBlocks: any,
+            mIdBlock: any,
+            mPageIdx = 0
+        for (let p = 0; p < mutated.pages.count; p++) {
+            mPage = mutated.pages.get(p)
+            mBlocks = mPage.getTextBlocks()
+            mIdBlock = mBlocks.find((b: any) =>
+                b.text.includes('Identification'),
+            )
+            if (mIdBlock) {
+                mPageIdx = p
+                break
+            }
+        }
+        expect(mIdBlock).toBeDefined()
+
+        // Snapshot pristine positions keyed by text+position (handles duplicates)
+        type PristineSnap = {
+            e: number
+            f: number
+            text: string
+            used: boolean
+        }
+        const pristineSnaps: PristineSnap[] = []
+        for (const b of pBlocks) {
+            for (const s of b.getSegments()) {
+                const wt = s.getWorldTransform()
+                pristineSnaps.push({
+                    e: wt.e,
+                    f: wt.f,
+                    text: s.text,
+                    used: false,
+                })
+            }
+        }
+
+        // Collect moved segment texts WITH their pristine positions
+        const movedSegs = mIdBlock!.getSegments()
+        const movedPristinePositions = movedSegs.map((s: any) => {
+            const src = s._sourceSegment
+            if (!src) return null
+            const wt = src.getWorldTransform()
+            return { text: s.text, origE: wt.e, origF: wt.f }
+        })
+
+        const dx = 50,
+            dy = -30
+        mIdBlock!.moveBy(dx, dy)
+
+        // Round-trip
+        const bytes = mutated.toBytes()
+        const reloaded = await PdfDocument.fromBytes([bytes])
+        const rPage = reloaded.pages.get(mPageIdx)
+        const rBlocks = rPage.getTextBlocks()
+
+        // Find closest pristine match for a reloaded segment
+        const findClosestPristine = (
+            text: string,
+            targetE: number,
+            targetF: number,
+        ): PristineSnap | null => {
+            let best: PristineSnap | null = null
+            let bestDist = Infinity
+            for (const snap of pristineSnaps) {
+                if (snap.used || snap.text !== text) continue
+                const dist = Math.hypot(snap.e - targetE, snap.f - targetF)
+                if (dist < bestDist) {
+                    bestDist = dist
+                    best = snap
+                }
+            }
+            return best
+        }
+
+        const displaced: string[] = []
+        // Build a set of moved texts with their expected post-move positions
+        const movedExpected = new Map<string, { e: number; f: number }[]>()
+        for (const mp of movedPristinePositions) {
+            if (!mp) continue
+            const arr = movedExpected.get(mp.text) ?? []
+            arr.push({ e: mp.origE + dx, f: mp.origF + dy })
+            movedExpected.set(mp.text, arr)
+        }
+
+        for (const b of rBlocks) {
+            for (const s of b.getSegments()) {
+                const wt = s.getWorldTransform()
+                const movedArr = movedExpected.get(s.text)
+
+                if (movedArr && movedArr.length > 0) {
+                    // This might be a moved segment — find closest expected position
+                    let closestIdx = 0
+                    let closestDist = Infinity
+                    for (let i = 0; i < movedArr.length; i++) {
+                        const dist = Math.hypot(
+                            wt.e - movedArr[i].e,
+                            wt.f - movedArr[i].f,
+                        )
+                        if (dist < closestDist) {
+                            closestDist = dist
+                            closestIdx = i
+                        }
+                    }
+                    if (closestDist < 5) {
+                        // Matches a moved segment — consume it
+                        movedArr.splice(closestIdx, 1)
+                        continue
+                    }
+                }
+
+                // Non-moved segment: match to closest pristine snap at same position
+                const match = findClosestPristine(s.text, wt.e, wt.f)
+                if (match) {
+                    match.used = true
+                    if (
+                        Math.abs(wt.e - match.e) > 1 ||
+                        Math.abs(wt.f - match.f) > 1
+                    ) {
+                        displaced.push(
+                            `"${s.text}": expected (${match.e.toFixed(1)},${match.f.toFixed(1)}) got (${wt.e.toFixed(1)},${wt.f.toFixed(1)})`,
+                        )
+                    }
+                }
+            }
+        }
+
+        expect(displaced).toEqual([])
+    })
+
     it('moving "Identification" round-trips correctly', async () => {
         const doc2 = await loadFixture('./test/unit/fixtures/AT_Verf19E_EU.pdf')
         let page: any, blocks: any, idBlock: any
@@ -775,6 +999,43 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
             expect(wt.e).toBeCloseTo(beforePositions[i].e + 50, 0)
             expect(wt.f).toBeCloseTo(beforePositions[i].f - 30, 0)
         }
+    })
+
+    it('moving "Company/Business name" block keeps all 7 segments together', async () => {
+        const doc2 = await loadFixture('./test/unit/fixtures/AT_Verf19E_EU.pdf')
+        const page = doc2.pages.get(0)
+        const blocks = page.getTextBlocks()
+        const target = blocks.find((b: any) =>
+            b.text.includes('Company/Business name'),
+        )
+        expect(target).toBeDefined()
+
+        const segs = target!.getSegments()
+        expect(segs.length).toBe(7)
+
+        const before = segs.map((s: any) => {
+            const wt = s.getWorldTransform()
+            return { e: wt.e, f: wt.f }
+        })
+
+        target!.moveBy(50, -30)
+
+        // All 7 segments must shift by exactly (50, -30)
+        for (let i = 0; i < segs.length; i++) {
+            const wt = segs[i].getWorldTransform()
+            expect(wt.e).toBeCloseTo(before[i].e + 50, 0)
+            expect(wt.f).toBeCloseTo(before[i].f - 30, 0)
+        }
+
+        // Re-extract: the block must still be a single block
+        const blocks2 = page.getTextBlocks()
+        const target2 = blocks2.find((b: any) =>
+            b.text.includes('Company/Business name'),
+        )
+        expect(target2).toBeDefined()
+        expect(target2!.text).toContain('registration certificate')
+        expect(target2!.text).toContain('Federal State')
+        expect(target2!.getSegments().length).toBe(7)
     })
 })
 

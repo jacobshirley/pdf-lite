@@ -238,6 +238,25 @@ export class Text extends ContentNode {
     }
 
     /**
+     * Compute the local Tm that would produce the given world transform for
+     * `seg`, accounting for its parent's composed transform.  Pure.
+     */
+    /** @internal */
+    static _computeLocalFromWorld(
+        seg: Text,
+        targetWorld: Matrix,
+    ): Matrix | null {
+        const currentWorld = seg.getWorldTransform()
+        const currentLocal = seg.getLocalTransform()
+        const localInv = currentLocal.inverse()
+        if (!localInv) return null
+        const parentGlobal = currentWorld.multiply(localInv)
+        const parentInv = parentGlobal.inverse()
+        if (!parentInv) return null
+        return parentInv.multiply(targetWorld)
+    }
+
+    /**
      * Apply a pre-computed local Tm to a source segment, replacing its
      * positioning ops and rebuilding the parent TextBlock.
      */
@@ -259,6 +278,14 @@ export class Text extends ContentNode {
         const tmIdx = src.ops.findIndex((o) => o instanceof SetTextMatrixOp)
         if (tmIdx !== -1) {
             src.ops[tmIdx] = newTmOp
+            // The new Tm is absolute — strip any relative positioning ops
+            // (Td/TD/T*) that would shift on top of it.
+            src.ops = src.ops.filter(
+                (o) =>
+                    !(o instanceof MoveTextOp) &&
+                    !(o instanceof MoveTextLeadingOp) &&
+                    !(o instanceof NextLineOp),
+            )
             if (parentBlock instanceof TextBlock) {
                 parentBlock.rebuildOpsFromSegments()
             }
@@ -887,14 +914,46 @@ export class TextBlock extends ContentNode {
         // chain; writing one shifts the chain so later reads return stale
         // values.
         const sourceMoves: { src: Text; newLocal: Matrix }[] = []
+        const movedSrcs = new Set<Text>()
         for (const seg of this.segments) {
             const src = seg._sourceSegment
             if (!src) continue
             const newLocal = Text._computeSourceShift(src, dx, dy)
-            if (newLocal) sourceMoves.push({ src, newLocal })
+            if (newLocal) {
+                sourceMoves.push({ src, newLocal })
+                movedSrcs.add(src)
+            }
         }
+
+        // Identify all parent TextBlocks that contain a moved source.
+        // For each, snapshot EVERY sibling segment's world transform so
+        // we can pin their positions after the moved segments change.
+        const affectedParents = new Set<TextBlock>()
+        for (const { src } of sourceMoves) {
+            if (src.parent instanceof TextBlock) {
+                affectedParents.add(src.parent)
+            }
+        }
+        const siblingSnaps = new Map<Text, Matrix>()
+        for (const parent of affectedParents) {
+            for (const sib of parent.getSegments()) {
+                if (!movedSrcs.has(sib)) {
+                    siblingSnaps.set(sib, sib.getWorldTransform())
+                }
+            }
+        }
+
+        // Apply the source shifts.
         for (const { src, newLocal } of sourceMoves) {
             Text._applySourceShift(src, newLocal)
+        }
+
+        // Pin non-moved siblings to their original positions by converting
+        // them to absolute Tm.  This prevents Td-based siblings from
+        // drifting when a prior segment in the prev chain was shifted.
+        for (const [sib, oldWorld] of siblingSnaps) {
+            const newLocal = Text._computeLocalFromWorld(sib, oldWorld)
+            if (newLocal) Text._applySourceShift(sib, newLocal)
         }
     }
 

@@ -455,6 +455,39 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * - Fonts with a custom Differences encoding: returns `<XX...>` using the reverse map
      * - Standard/simple fonts: returns `(text)` with PDF literal string escaping
      */
+    private _reverseToUnicodeMap?: Map<string, number> | null
+
+    get reverseToUnicodeMap(): Map<string, number> | null {
+        if (this._reverseToUnicodeMap !== undefined)
+            return this._reverseToUnicodeMap
+        const fwd = this.toUnicodeMap
+        if (!fwd) {
+            this._reverseToUnicodeMap = null
+            return null
+        }
+        const rev = new Map<string, number>()
+        for (const [cid, unicode] of fwd) {
+            rev.set(unicode, cid)
+        }
+        this._reverseToUnicodeMap = rev
+        return rev
+    }
+
+    /**
+     * Returns characters in the given text that this font cannot encode.
+     * An empty array means all characters are supported.
+     */
+    unsupportedChars(text: string): string[] {
+        if (!this.isUnicode) return []
+        const rev = this.reverseToUnicodeMap
+        if (!rev) return []
+        const missing: string[] = []
+        for (const char of text) {
+            if (!rev.has(char)) missing.push(char)
+        }
+        return [...new Set(missing)]
+    }
+
     encode(
         text: string | PdfString | PdfHexadecimal,
     ): PdfString | PdfHexadecimal {
@@ -463,10 +496,16 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                 ? this.decode(text)
                 : text
         if (this.isUnicode) {
+            const rev = this.reverseToUnicodeMap
             let hex = ''
             for (const char of text) {
-                const cp = char.codePointAt(0) ?? 0
-                hex += cp.toString(16).padStart(4, '0')
+                const cid = rev?.get(char)
+                if (cid !== undefined) {
+                    hex += cid.toString(16).padStart(4, '0')
+                } else {
+                    const cp = char.codePointAt(0) ?? 0
+                    hex += cp.toString(16).padStart(4, '0')
+                }
             }
             return new PdfHexadecimal(hex, 'hex')
         }

@@ -134,6 +134,8 @@ export class Text extends ContentNode {
      * regrouped segment was derived from.  Set by `regroupTextBlocks`.
      */
     _sourceSegment?: Text
+    /** @internal Cached result of resolveTextState() for O(n) perf. */
+    _cachedTextState?: { tm: Matrix; tlm: Matrix }
 
     /**
      * Replace the text in the original content-stream segment that this
@@ -170,29 +172,23 @@ export class Text extends ContentNode {
     }
 
     /**
-     * Remove the show op from this segment's original source in the
-     * content-stream tree.  Used when collapsing multi-segment edits.
+     * Remove all ops from this segment's original source in the
+     * content-stream tree.  Used when collapsing multi-segment edits
+     * into the first segment.  Removes positioning ops too so orphaned
+     * Td/Tm ops don't shift the cursor after the consolidated Tj.
      */
-    clearSourceShowOp(): void {
+    clearSourceOps(): void {
         const src = this._sourceSegment
         if (!src) return
 
-        const isShowOp = (o: ContentOp) =>
-            o instanceof ShowTextOp ||
-            o instanceof ShowTextArrayOp ||
-            o instanceof ShowTextNextLineOp ||
-            o instanceof ShowTextNextLineSpacingOp
-
-        const oldShowOp = src.ops.find(isShowOp)
-        if (!oldShowOp) return
-
         const parentBlock = src.parent
         if (parentBlock) {
-            const idx = parentBlock.ops.indexOf(oldShowOp)
-            if (idx !== -1) parentBlock.ops.splice(idx, 1)
+            for (const op of src.ops) {
+                const idx = parentBlock.ops.indexOf(op)
+                if (idx !== -1) parentBlock.ops.splice(idx, 1)
+            }
         }
-        const segIdx = src.ops.indexOf(oldShowOp)
-        if (segIdx !== -1) src.ops.splice(segIdx, 1)
+        src.ops.length = 0
     }
 
     /**
@@ -264,6 +260,9 @@ export class Text extends ContentNode {
     static _applySourceShift(src: Text, newLocal: Matrix): void {
         const parentBlock = src.parent
         if (!parentBlock) return
+
+        // Invalidate cached text state since ops are being modified
+        src._cachedTextState = undefined
 
         const newTmOp = SetTextMatrixOp.create(
             newLocal.a,
@@ -563,10 +562,17 @@ export class Text extends ContentNode {
      * - Tlm: the base for Td/TD/T* calculations (not advanced by text rendering)
      */
     private resolveTextState(): { tm: Matrix; tlm: Matrix } {
+        if (this._cachedTextState) return this._cachedTextState
+
         let tm: Matrix
         let tlm: Matrix
 
-        if (this.prev) {
+        // Short-circuit: if this segment has an absolute Tm operator,
+        // the prev chain's text matrix is irrelevant — Tm overrides both
+        // tm and tlm completely.  Skip the expensive recursion.
+        const hasTmOp = this.ops.some((o) => o instanceof SetTextMatrixOp)
+
+        if (this.prev && !hasTmOp) {
             // After prev rendered text, Tm advanced by text width.
             // Tlm stays wherever prev's positioning ops left it.
             const prevState = this.prev.resolveTextState()
@@ -611,7 +617,9 @@ export class Text extends ContentNode {
             }
         }
 
-        return { tm, tlm }
+        const result = { tm, tlm }
+        this._cachedTextState = result
+        return result
     }
 
     getLocalTransform(): Matrix {
@@ -805,14 +813,27 @@ export class TextBlock extends ContentNode {
     editText(newText: string): void {
         const segments = this.getSegments()
         const first = segments[0]
+
+        const font = first?.font
+        if (font) {
+            const bad = font.unsupportedChars(newText)
+            if (bad.length > 0) {
+                const available = font.reverseToUnicodeMap
+                const chars = available
+                    ? [...available.keys()].sort().join('')
+                    : '(unknown)'
+                throw new Error(
+                    `Font "${font.fontName ?? 'subset'}" cannot render: ${bad.map((c) => `'${c}'`).join(', ')}. Available: ${chars}`,
+                )
+            }
+        }
+
         if (first?._sourceSegment) {
-            // In-place: replace the first source, clear the rest
             first.replaceTextInSource(newText)
             for (let i = 1; i < segments.length; i++) {
-                segments[i].clearSourceShowOp()
+                segments[i].clearSourceOps()
             }
         } else {
-            // Direct fallback
             this.text = newText
         }
     }
@@ -822,6 +843,10 @@ export class TextBlock extends ContentNode {
      * Used after programmatic modifications to keep ops in sync.
      */
     rebuildOpsFromSegments(): void {
+        // Clear cached text state since ops may have changed
+        for (const seg of this.segments) {
+            seg._cachedTextState = undefined
+        }
         const newOps: ContentOp[] = [new BeginTextOp()]
         for (const seg of this.segments) {
             newOps.push(...seg.ops)
@@ -1120,16 +1145,17 @@ export class TextBlock extends ContentNode {
             bands.push(...bucketBands)
         }
 
-        // Sub-split each band by font resource name so segments with
-        // different fonts (e.g. regular vs bold) become separate TextBlocks.
+        // Sub-split each band by font resource name and font size so
+        // segments with different fonts or sizes become separate TextBlocks.
         type FontBand = Band & { parentDescriptors: Descriptor[] }
         const splitBands: FontBand[] = []
         for (const band of bands) {
             const byFont = new Map<string, Descriptor[]>()
             for (const d of band.descriptors) {
-                const arr = byFont.get(d.fontResourceName) ?? []
+                const key = d.fontResourceName + '\0' + d.fontSize
+                const arr = byFont.get(key) ?? []
                 arr.push(d)
-                byFont.set(d.fontResourceName, arr)
+                byFont.set(key, arr)
             }
             for (const descs of byFont.values()) {
                 splitBands.push({
@@ -1501,6 +1527,8 @@ export type BoundingBox = {
 
 export class PdfContentStream extends PdfStream {
     _nodes: ContentNode[] | undefined
+    /** @internal Root StateNode; preserves top-level ops (e.g. cm before q). */
+    _rootNode: StateNode | undefined
     page?: PdfPage
 
     constructor(
@@ -1523,21 +1551,41 @@ export class PdfContentStream extends PdfStream {
         return this._nodes
     }
 
+    /** Serialize the node tree back to a content-stream string. */
+    private serializeNodes(): string {
+        const parts: string[] = []
+        // Emit root-level ops (e.g. cm transforms that appear before the
+        // first q/BT).  These belong to the implicit root StateNode and
+        // must NOT be wrapped in q/Q.
+        if (this._rootNode) {
+            for (const op of this._rootNode.ops) {
+                parts.push(op.toString())
+            }
+        }
+        if (this._nodes) {
+            for (const n of this._nodes) {
+                parts.push(n.toString())
+            }
+        }
+        return parts.join('\n')
+    }
+
     get dataAsString(): string {
         if (this._nodes) {
-            return this._nodes.map((n) => n.toString()).join('\n')
+            return this.serializeNodes()
         }
         return super.dataAsString
     }
 
     set dataAsString(value: string) {
         this._nodes = undefined
+        this._rootNode = undefined
         super.dataAsString = value
     }
 
     protected getRawData(): ByteArray | undefined {
         if (this._nodes === undefined) return undefined
-        const contentString = this._nodes.map((n) => n.toString()).join('\n')
+        const contentString = this.serializeNodes()
         return stringToBytes(contentString)
     }
 
@@ -1556,7 +1604,9 @@ export class PdfContentStream extends PdfStream {
         if (!contentString) return []
 
         const ops = PdfContentStreamTokeniser.tokenise(contentString)
-        return PdfContentStream.buildNodeTree(ops, this.page).getChildren()
+        const root = PdfContentStream.buildNodeTree(ops, this.page)
+        this._rootNode = root
+        return root.getChildren()
     }
 
     static buildNodeTree(ops: ContentOp[], page?: PdfPage): StateNode {
@@ -1576,6 +1626,9 @@ export class PdfContentStream extends PdfStream {
 
         for (const op of ops) {
             if (op instanceof BeginTextOp) {
+                // Flush any stray graphics ops (e.g. color state) before BT
+                for (const g of graphicsOps) currentState.ops.push(g)
+                graphicsOps = []
                 textOps.push(op)
                 inTextBlock = true
                 continue
@@ -1602,6 +1655,9 @@ export class PdfContentStream extends PdfStream {
             }
 
             if (op instanceof SaveStateOp) {
+                // Flush any stray graphics ops before entering a new state
+                for (const g of graphicsOps) currentState.ops.push(g)
+                graphicsOps = []
                 const group = new StateNode(page)
                 currentState.addChild(group)
                 stateStack.push(currentState)
@@ -1611,6 +1667,9 @@ export class PdfContentStream extends PdfStream {
             }
 
             if (op instanceof RestoreStateOp) {
+                // Flush any stray graphics ops before restoring state
+                for (const g of graphicsOps) currentState.ops.push(g)
+                graphicsOps = []
                 if (stateStack.length > 0) {
                     currentState = stateStack.pop()!
                     lastTextBlock = textBlockStack.pop()
@@ -1638,6 +1697,14 @@ export class PdfContentStream extends PdfStream {
                 graphicsOps.push(op)
             } else if (op instanceof EndPathOp) {
                 graphicsOps = []
+            }
+        }
+
+        // Preserve any stray graphics ops (e.g. color state ops that appear
+        // before any paint op) as root-level ops so they round-trip correctly.
+        if (graphicsOps.length > 0) {
+            for (const op of graphicsOps) {
+                currentState.ops.push(op)
             }
         }
 

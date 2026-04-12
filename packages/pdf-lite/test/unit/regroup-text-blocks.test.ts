@@ -319,7 +319,7 @@ describe('TextBlock.regroupTextBlocks', () => {
             expect(block.toString()).not.toContain('Original')
         })
 
-        it('clearSourceShowOp removes show op from original parent', () => {
+        it('clearSourceOps removes all ops from original parent', () => {
             const block = new TextBlock()
             block.addSegment(upright('F1', 12, 100, 700, 'Keep'))
             block.addSegment(upright('F1', 12, 150, 700, 'Remove'))
@@ -327,8 +327,8 @@ describe('TextBlock.regroupTextBlocks', () => {
             const regrouped = TextBlock.regroupTextBlocks([block])
             const segs = regrouped[0].getSegments()
 
-            // Clear the second segment's show op
-            segs[1].clearSourceShowOp()
+            // Clear all ops from the second segment's source
+            segs[1].clearSourceOps()
 
             // Original block should only show "Keep"
             expect(block.toString()).toContain('Keep')

@@ -4,7 +4,9 @@ import { PdfName } from '../../src/core/objects/pdf-name'
 import { PdfNumber } from '../../src/core/objects/pdf-number'
 import { PdfDictionary } from '../../src/core/objects/pdf-dictionary'
 import { PdfString } from '../../src/core/objects/pdf-string'
+import { PdfHexadecimal } from '../../src/core/objects/pdf-hexadecimal'
 import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
+import { PdfStream } from '../../src/core/objects/pdf-stream'
 import { PdfFont } from '../../src/fonts/pdf-font'
 import {
     buildEncodingMap,
@@ -355,6 +357,107 @@ describe('Font Encoding', () => {
             const font = fontFromDict(dict)
             // Unknown encoding with no Differences → null
             expect(font.encodingMap).toBeNull()
+        })
+    })
+
+    describe('CID font encode() with ToUnicode reverse mapping', () => {
+        function makeCIDFont(cmapEntries: [number, string][]): PdfFont {
+            const cmapLines = cmapEntries
+                .map(([cid, uni]) => {
+                    const cidHex = cid.toString(16).padStart(4, '0')
+                    const uniHex = uni
+                        .codePointAt(0)!
+                        .toString(16)
+                        .padStart(4, '0')
+                    return `<${cidHex}> <${uniHex}>`
+                })
+                .join('\n')
+            const cmapContent = [
+                '/CIDInit /ProcSet findresource begin',
+                '12 dict begin',
+                'begincmap',
+                '/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def',
+                '/CMapName /Adobe-Identity-UCS def',
+                '/CMapType 2 def',
+                `${cmapEntries.length} beginbfchar`,
+                cmapLines,
+                'endbfchar',
+                'endcmap',
+            ].join('\n')
+
+            const cmapStream = new PdfStream({
+                header: new PdfDictionary(),
+                original: new TextEncoder().encode(cmapContent),
+            })
+            const cmapObj = new PdfIndirectObject({ content: cmapStream })
+
+            const dict = new PdfDictionary()
+            dict.set('Type', new PdfName('Font'))
+            dict.set('Subtype', new PdfName('Type0'))
+            dict.set('BaseFont', new PdfName('TestFont'))
+            dict.set('Encoding', new PdfName('Identity-H'))
+            dict.set('ToUnicode', cmapObj.reference)
+            dict.set('DescendantFonts', new PdfArray([]))
+
+            return new PdfFont(new PdfIndirectObject({ content: dict }))
+        }
+
+        it('encode() uses CID from ToUnicode reverse map, not Unicode codepoint', () => {
+            const font = makeCIDFont([
+                [0x0039, 'V'],
+                [0x0052, 'o'],
+            ])
+            const encoded = font.encode('V') as PdfHexadecimal
+            expect(encoded.hexString).toBe('0039')
+        })
+
+        it('encode() falls back to Unicode codepoint for unmapped chars', () => {
+            const font = makeCIDFont([[0x0039, 'V']])
+            const encoded = font.encode('Z') as PdfHexadecimal
+            expect(encoded.hexString).toBe('005a')
+        })
+
+        it('encode() handles multi-char string with CID mapping', () => {
+            const font = makeCIDFont([
+                [0x0039, 'V'],
+                [0x0052, 'o'],
+                [0x004f, 'l'],
+            ])
+            const encoded = font.encode('Vol') as PdfHexadecimal
+            expect(encoded.hexString).toBe('00390052004f')
+        })
+
+        it('decode then encode round-trips through CID mapping', () => {
+            const font = makeCIDFont([
+                [0x0039, 'V'],
+                [0x0052, 'o'],
+                [0x004f, 'l'],
+            ])
+            const original = new PdfHexadecimal('00390052004f', 'hex')
+            const decoded = font.decode(original)
+            expect(decoded).toBe('Vol')
+
+            const reEncoded = font.encode(decoded) as PdfHexadecimal
+            expect(reEncoded.hexString).toBe('00390052004f')
+        })
+
+        it('unsupportedChars returns characters not in the font', () => {
+            const font = makeCIDFont([
+                [0x0039, 'V'],
+                [0x0052, 'o'],
+            ])
+            expect(font.unsupportedChars('Vo')).toEqual([])
+            expect(font.unsupportedChars('Vox')).toEqual(['x'])
+            expect(font.unsupportedChars('xyz')).toEqual(['x', 'y', 'z'])
+        })
+
+        it('unsupportedChars returns empty for non-CID fonts', () => {
+            const dict = new PdfDictionary()
+            dict.set('Type', new PdfName('Font'))
+            dict.set('Subtype', new PdfName('Type1'))
+            dict.set('BaseFont', new PdfName('Helvetica'))
+            const font = new PdfFont(new PdfIndirectObject({ content: dict }))
+            expect(font.unsupportedChars('anything')).toEqual([])
         })
     })
 })

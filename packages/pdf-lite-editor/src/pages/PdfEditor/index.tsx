@@ -32,8 +32,6 @@ import {
     PdfFormField,
     PdfTextFormField,
     PdfButtonFormField,
-    PdfIndirectObject,
-    PdfStream,
     PdfPage,
     TextBlock,
     GraphicsBlock,
@@ -902,11 +900,14 @@ export function PdfEditor() {
     const [draggedFieldType, setDraggedFieldType] = useState<FieldType | null>(
         null,
     )
+    const [originalBytes, setOriginalBytes] = useState<Uint8Array | null>(null)
 
-    // Memoize PDF bytes to prevent unnecessary PdfViewer re-renders
+    // Use original bytes until the doc is edited, then re-serialize
     const pdfBytes = React.useMemo(() => {
-        return pdfDoc?.toBytes()
-    }, [pdfDoc, pdfVersion])
+        if (!pdfDoc) return undefined
+        if (pdfVersion === 0 && originalBytes) return originalBytes
+        return pdfDoc.toBytes()
+    }, [pdfDoc, pdfVersion, originalBytes])
 
     const selectedField =
         extractedFields.find((f) => f.id === selectedFieldId) || null
@@ -1416,155 +1417,151 @@ export function PdfEditor() {
         }
     }
 
+    const extractOverlays = (document: PdfDocument) => {
+        const pages = document.pages.toArray()
+
+        // Extract AcroForm fields
+        const acroform = document.acroform
+        const fields: ExtractedField[] = []
+
+        if (acroform) {
+            let fieldIndex = 0
+
+            const extractField = (field: PdfFormField) => {
+                const fieldPage = field.page
+                const rect = field.rect
+
+                let pageNumber = 1
+                let pageHeight = 792
+                let pageWidth = 612
+
+                if (fieldPage) {
+                    const pageIndex = pages.findIndex(
+                        (p: any) => p === fieldPage,
+                    )
+                    if (pageIndex !== -1) {
+                        pageNumber = pageIndex + 1
+                        pageHeight = fieldPage.height
+                        pageWidth = fieldPage.width
+                    }
+                }
+
+                if (rect) {
+                    const isWidgetOnly = !field.name && field.parent
+                    const nameSource = isWidgetOnly
+                        ? field.parent
+                        : field
+                    const valueSource = isWidgetOnly
+                        ? field.parent
+                        : field
+
+                    fields.push({
+                        id: `field_${fieldIndex++}`,
+                        name:
+                            nameSource?.name ||
+                            `Unnamed Field ${fieldIndex}`,
+                        type: field.fieldType,
+                        page: pageNumber,
+                        rect: rect,
+                        value: valueSource?.value || '',
+                        pageHeight: pageHeight,
+                        pageWidth: pageWidth,
+                        fieldRef: field,
+                    })
+                }
+
+                if (field.children && field.children.length > 0) {
+                    field.children.forEach((child: any) =>
+                        extractField(child),
+                    )
+                }
+            }
+
+            acroform.fields.forEach((field: any) => extractField(field))
+        }
+
+        setExtractedFields(fields)
+
+        // Extract text blocks
+        const textBlocks: ExtractedTextBlock[] = []
+        let textBlockIndex = 0
+
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i]
+            const pageNumber = i + 1
+
+            try {
+                const blocks = page.getTextBlocks()
+                for (const block of blocks) {
+                    if (block.text.trim().length === 0) continue
+                    textBlocks.push({
+                        block,
+                        id: `text_block_${textBlockIndex++}`,
+                        page: pageNumber,
+                        pageHeight: page.height,
+                        pageWidth: page.width,
+                    })
+                }
+            } catch (error) {
+                console.warn(
+                    `Failed to extract text blocks from page ${pageNumber}:`,
+                    error,
+                )
+            }
+        }
+
+        setExtractedTextBlocks(textBlocks)
+
+        // Extract graphics blocks
+        const graphicsBlocks: ExtractedGraphicsBlock[] = []
+        let graphicsBlockIndex = 0
+
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i]
+            const pageNumber = i + 1
+
+            try {
+                const blocks = page.extractGraphicLines()
+                for (const block of blocks) {
+                    graphicsBlocks.push({
+                        block,
+                        id: `graphics_block_${graphicsBlockIndex++}`,
+                        page: pageNumber,
+                        pageHeight: page.height,
+                        pageWidth: page.width,
+                    })
+                }
+            } catch (error) {
+                console.warn(
+                    `Failed to extract graphics blocks from page ${pageNumber}:`,
+                    error,
+                )
+            }
+        }
+
+        setExtractedGraphicsBlocks(graphicsBlocks)
+    }
+
     const handleFileUpload = async (
         event: React.ChangeEvent<HTMLInputElement>,
     ) => {
         const file = event.target.files?.[0]
         if (file && file.type === 'application/pdf') {
             try {
-                const document = await PdfDocument.fromBytes([
-                    new Uint8Array(await file.arrayBuffer()),
-                ])
+                const fileBytes = new Uint8Array(await file.arrayBuffer())
+                const document = await PdfDocument.fromBytes([fileBytes])
                 await document.decrypt()
 
-                for (const object of document.objects) {
-                    if (
-                        object instanceof PdfIndirectObject &&
-                        object.content instanceof PdfStream
-                    ) {
-                       // object.content.removeAllFilters()
-                    }
-                }
-
-                // Extract AcroForm fields
-                const acroform = document.acroform
-                const fields: ExtractedField[] = []
-
-                if (acroform) {
-                    const pages = document.pages.toArray()
-                    let fieldIndex = 0
-
-                    const extractField = (field: PdfFormField) => {
-                        const fieldPage = field.page
-                        const rect = field.rect
-
-                        // Find the page number (1-indexed) and get page dimensions
-                        let pageNumber = 1
-                        let pageHeight = 792 // Default Letter size height
-                        let pageWidth = 612 // Default Letter size width
-
-                        if (fieldPage) {
-                            const pageIndex = pages.findIndex(
-                                (p: any) => p === fieldPage,
-                            )
-                            if (pageIndex !== -1) {
-                                pageNumber = pageIndex + 1
-                                pageHeight = fieldPage.height
-                                pageWidth = fieldPage.width
-                            }
-                        }
-
-                        // Add this field if it has a rect (actual widget)
-                        if (rect) {
-                            // For widget-only fields, get the name and value from the parent
-                            const isWidgetOnly = !field.name && field.parent
-                            const nameSource = isWidgetOnly
-                                ? field.parent
-                                : field
-                            const valueSource = isWidgetOnly
-                                ? field.parent
-                                : field
-
-                            fields.push({
-                                id: `field_${fieldIndex++}`,
-                                name:
-                                    nameSource?.name ||
-                                    `Unnamed Field ${fieldIndex}`,
-                                type: field.fieldType,
-                                page: pageNumber,
-                                rect: rect,
-                                value: valueSource?.value || '',
-                                pageHeight: pageHeight,
-                                pageWidth: pageWidth,
-                                fieldRef: field, // Store reference to the actual field (widget or combined)
-                            })
-                        }
-
-                        // Also extract children (for parent fields like "Company Name")
-                        if (field.children && field.children.length > 0) {
-                            field.children.forEach((child: any) =>
-                                extractField(child),
-                            )
-                        }
-                    }
-
-                    acroform.fields.forEach((field: any) => extractField(field))
-                }
-
-                setExtractedFields(fields)
-
-                // Extract text blocks from page content streams
-                const textBlocks: ExtractedTextBlock[] = []
-                const pages = document.pages.toArray()
-                let textBlockIndex = 0
-
-                for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i]
-                    const pageNumber = i + 1
-
-                    try {
-                        const blocks = page.getTextBlocks()
-                        for (const block of blocks) {
-                            if (block.text.trim().length === 0) continue
-                            textBlocks.push({
-                                block,
-                                id: `text_block_${textBlockIndex++}`,
-                                page: pageNumber,
-                                pageHeight: page.height,
-                                pageWidth: page.width,
-                            })
-                        }
-                    } catch (error) {
-                        console.warn(
-                            `Failed to extract text blocks from page ${pageNumber}:`,
-                            error,
-                        )
-                    }
-                }
-
-                setExtractedTextBlocks(textBlocks)
-
-                // Extract graphics blocks from page content streams
-                const graphicsBlocks: ExtractedGraphicsBlock[] = []
-                let graphicsBlockIndex = 0
-
-                for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i]
-                    const pageNumber = i + 1
-
-                    try {
-                        const blocks = page.extractGraphicLines()
-                        for (const block of blocks) {
-                            graphicsBlocks.push({
-                                block,
-                                id: `graphics_block_${graphicsBlockIndex++}`,
-                                page: pageNumber,
-                                pageHeight: page.height,
-                                pageWidth: page.width,
-                            })
-                        }
-                    } catch (error) {
-                        console.warn(
-                            `Failed to extract graphics blocks from page ${pageNumber}:`,
-                            error,
-                        )
-                    }
-                }
-
-                setExtractedGraphicsBlocks(graphicsBlocks)
-
+                // Show the PDF immediately using original bytes
+                setOriginalBytes(fileBytes)
                 setUploadedFile(file)
                 setPdfDoc(document)
+                setPdfVersion(0)
+
+                // Extract overlays after the PDF is rendered
+                requestAnimationFrame(() => {
+                    extractOverlays(document)
+                })
             } catch (error) {
                 console.error('Error loading PDF:', error)
                 alert(
@@ -1583,11 +1580,14 @@ export function PdfEditor() {
     const handleClearFile = () => {
         setUploadedFile(null)
         setPdfDoc(null)
+        setOriginalBytes(null)
         setExtractedFields([])
         setExtractedTextBlocks([])
+        setExtractedGraphicsBlocks([])
         setSelectedFieldId(null)
         setSelectedTextBlockId(null)
         setEditingTextBlockId(null)
+        setPdfVersion(0)
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }

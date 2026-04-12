@@ -134,8 +134,6 @@ export class Text extends ContentNode {
      * regrouped segment was derived from.  Set by `regroupTextBlocks`.
      */
     _sourceSegment?: Text
-    /** @internal Cached result of resolveTextState() for O(n) perf. */
-    _cachedTextState?: { tm: Matrix; tlm: Matrix }
 
     /**
      * Replace the text in the original content-stream segment that this
@@ -260,9 +258,6 @@ export class Text extends ContentNode {
     static _applySourceShift(src: Text, newLocal: Matrix): void {
         const parentBlock = src.parent
         if (!parentBlock) return
-
-        // Invalidate cached text state since ops are being modified
-        src._cachedTextState = undefined
 
         const newTmOp = SetTextMatrixOp.create(
             newLocal.a,
@@ -578,8 +573,6 @@ export class Text extends ContentNode {
      * - Tlm: the base for Td/TD/T* calculations (not advanced by text rendering)
      */
     private resolveTextState(): { tm: Matrix; tlm: Matrix } {
-        if (this._cachedTextState) return this._cachedTextState
-
         let tm: Matrix
         let tlm: Matrix
 
@@ -634,7 +627,6 @@ export class Text extends ContentNode {
         }
 
         const result = { tm, tlm }
-        this._cachedTextState = result
         return result
     }
 
@@ -1008,10 +1000,6 @@ export class TextBlock extends ContentNode {
      * Used after programmatic modifications to keep ops in sync.
      */
     rebuildOpsFromSegments(): void {
-        // Clear cached text state since ops may have changed
-        for (const seg of this.segments) {
-            seg._cachedTextState = undefined
-        }
         const newOps: ContentOp[] = [new BeginTextOp()]
         for (const seg of this.segments) {
             newOps.push(...seg.ops)

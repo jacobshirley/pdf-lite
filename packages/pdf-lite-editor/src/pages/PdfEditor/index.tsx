@@ -1162,6 +1162,34 @@ export function PdfEditor() {
         e.target.value = ''
     }
 
+    const handleFontChange = (font: PdfFont) => {
+        if (!selectedTextBlock || !pdfDoc) return
+        try {
+            // Register the font on the page and get the actual resource name
+            const page = pdfDoc.pages.get(selectedTextBlock.page - 1)
+            const resName = page.addFont(font)
+            selectedTextBlock.block.changeFont(font, resName)
+            reExtractTextBlocks()
+        } catch (error) {
+            console.error('Error changing font:', error)
+            alert(`Error changing font: ${error instanceof Error ? error.message : String(error)}`)
+        }
+    }
+
+    const handleColorChange = (hex: string) => {
+        if (!selectedTextBlock) return
+        // Convert hex (#RRGGBB) to 0-1 RGB
+        const r = parseInt(hex.slice(1, 3), 16) / 255
+        const g = parseInt(hex.slice(3, 5), 16) / 255
+        const b = parseInt(hex.slice(5, 7), 16) / 255
+        try {
+            selectedTextBlock.block.changeColor({ r, g, b })
+            reExtractTextBlocks()
+        } catch (error) {
+            console.error('Error changing color:', error)
+        }
+    }
+
     const handleTextBlockPositionChange = (
         blockId: string,
         dx: number,
@@ -2578,26 +2606,60 @@ export function PdfEditor() {
 
                                 <div className="space-y-2">
                                     <Label className="text-xs font-semibold text-slate-700">
-                                        Font Info
+                                        Font
                                     </Label>
                                     {selectedTextSegments.length > 0 && (() => {
                                         const seg = selectedTextSegments[0]
                                         const font = seg.font
+                                        const currentFontName = font?.fontName || 'Unknown'
                                         return (
                                             <div className="space-y-2">
                                                 <div className="space-y-1">
                                                     <Label
-                                                        htmlFor="tb-font-name"
+                                                        htmlFor="tb-font-select"
                                                         className="text-xs text-slate-600"
                                                     >
-                                                        Font Name
+                                                        Font Family
                                                     </Label>
-                                                    <Input
-                                                        id="tb-font-name"
-                                                        value={font?.fontName || 'Unknown'}
-                                                        disabled
-                                                        className="h-8 text-sm bg-slate-50"
-                                                    />
+                                                    <select
+                                                        id="tb-font-select"
+                                                        value={currentFontName}
+                                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                                            const name = e.target.value
+                                                            // Check standard fonts
+                                                            const stdFont = PdfFont.STANDARD_FONTS.find(f => f.name === name)
+                                                            if (stdFont) {
+                                                                handleFontChange(stdFont.font)
+                                                                return
+                                                            }
+                                                            // Check uploaded fonts
+                                                            const uploaded = embeddedFonts.find(f => f.name === name)
+                                                            if (uploaded) {
+                                                                handleFontChange(uploaded.font)
+                                                            }
+                                                        }}
+                                                        className="w-full h-8 text-sm rounded-md border border-slate-300 px-2 focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+                                                    >
+                                                        <optgroup label="Standard Fonts">
+                                                            {PdfFont.STANDARD_FONTS.map(f => (
+                                                                <option key={f.name} value={f.name}>{f.name}</option>
+                                                            ))}
+                                                        </optgroup>
+                                                        {embeddedFonts.length > 0 && (
+                                                            <optgroup label="Uploaded Fonts">
+                                                                {embeddedFonts.map(f => (
+                                                                    <option key={f.name} value={f.name}>{f.name}</option>
+                                                                ))}
+                                                            </optgroup>
+                                                        )}
+                                                        {/* Show current font if not in the lists */}
+                                                        {!PdfFont.STANDARD_FONTS.some(f => f.name === currentFontName) &&
+                                                         !embeddedFonts.some(f => f.name === currentFontName) && (
+                                                            <option value={currentFontName} disabled>
+                                                                {currentFontName} (current)
+                                                            </option>
+                                                        )}
+                                                    </select>
                                                 </div>
                                                 <div className="space-y-1">
                                                     <Label
@@ -2628,22 +2690,6 @@ export function PdfEditor() {
                                                         className="h-8 text-sm bg-slate-50"
                                                     />
                                                 </div>
-                                                {font?.encoding && (
-                                                    <div className="space-y-1">
-                                                        <Label
-                                                            htmlFor="tb-font-encoding"
-                                                            className="text-xs text-slate-600"
-                                                        >
-                                                            Encoding
-                                                        </Label>
-                                                        <Input
-                                                            id="tb-font-encoding"
-                                                            value={font.encoding}
-                                                            disabled
-                                                            className="h-8 text-sm bg-slate-50"
-                                                        />
-                                                    </div>
-                                                )}
                                             </div>
                                         )
                                     })()}
@@ -2669,6 +2715,41 @@ export function PdfEditor() {
                                             </div>
                                         </div>
                                     )}
+                                </div>
+
+                                <Separator />
+
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-slate-700">
+                                        Text Color
+                                    </Label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={(() => {
+                                                // Read current fill color from first segment
+                                                if (selectedTextSegments.length === 0) return '#000000'
+                                                const seg = selectedTextSegments[0]
+                                                const colorOp = seg.ops?.findLast?.((o: any) =>
+                                                    o?.constructor?.name === 'SetFillColorRGBOp'
+                                                )
+                                                if (colorOp) {
+                                                    const r = Math.round((colorOp as any).r * 255)
+                                                    const g = Math.round((colorOp as any).g * 255)
+                                                    const b = Math.round((colorOp as any).b * 255)
+                                                    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+                                                }
+                                                return '#000000'
+                                            })()}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                handleColorChange(e.target.value)
+                                            }
+                                            className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
+                                        />
+                                        <Label className="text-xs text-slate-500">
+                                            Pick a fill color for the text
+                                        </Label>
+                                    </div>
                                 </div>
 
                                 <Separator />

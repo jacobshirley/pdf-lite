@@ -47,7 +47,13 @@ import {
     ClipEvenOddOp,
     PaintOp,
 } from './ops/paint'
-import { SetFillColorRGBOp, SetStrokeColorRGBOp, ColorOp } from './ops/color'
+import {
+    SetFillColorRGBOp,
+    SetStrokeColorRGBOp,
+    SetFillColorGrayOp,
+    SetFillColorCMYKOp,
+    ColorOp,
+} from './ops/color'
 import { SaveStateOp, RestoreStateOp, SetMatrixOp, StateOp } from './ops/state'
 import { PdfContentStreamTokeniser } from './tokeniser'
 import { PdfToken } from '../core/tokens/token.js'
@@ -867,6 +873,259 @@ export class TextBlock extends ContentNode {
     }
 
     /**
+     * Change the font of every segment in this text block.
+     * Updates both the regrouped segments and the original source segments
+     * in the content-stream tree.  The font must already be registered in
+     * the page's /Resources/Font dictionary (use `PdfPage.addFont()`).
+     *
+     * Only the font resource name is changed; the text content is
+     * re-encoded with the new font.  Throws if the new font cannot
+     * encode the existing text.
+     */
+    changeFont(font: PdfFont, resourceName?: string): void {
+        const resName = resourceName ?? font.resourceName
+
+        // Capture all segment texts BEFORE changing any font names,
+        // because seg.text decodes the show op using the current font.
+        // Changing the Tf first would decode old bytes with the new
+        // font's encoding, producing garbage.
+        const segTexts = this.segments.map((seg) => seg.text)
+
+        const text = segTexts.join('')
+        const bad = font.unsupportedChars(text)
+        if (bad.length > 0) {
+            throw new Error(
+                `Font "${font.fontName}" cannot render: ${bad.map((c) => `'${c}'`).join(', ')}`,
+            )
+        }
+
+        // Snapshot the first segment's Tm as the anchor position.
+        // We'll recompute all subsequent Tm positions based on the
+        // new font's advance widths so segments don't drift apart
+        // (e.g. switching from a proportional to a monospaced font).
+        const firstTm = this.segments[0]?.getLocalTransform()
+
+        for (let i = 0; i < this.segments.length; i++) {
+            const seg = this.segments[i]
+            const segText = segTexts[i]
+
+            // Update the regrouped segment's Tf
+            const tfOp = seg.ops.find((o) => o instanceof SetFontOp)
+            if (tfOp) {
+                tfOp.fontName = resName
+            } else {
+                seg.ops.unshift(SetFontOp.create(resName, seg.fontSize))
+            }
+
+            if (!segText) continue
+
+            // Re-encode the text with the new font via writeContentStreamText
+            // which handles kern pairs and encoding correctly.
+            const showOp = seg.ops.find(
+                (o) => o instanceof ShowTextOp || o instanceof ShowTextArrayOp,
+            )
+            if (showOp) {
+                const newShow = seg.writeContentStreamText(segText)
+                const idx = seg.ops.indexOf(showOp)
+                seg.ops[idx] = newShow
+            }
+
+            // Update source segment if present
+            const src = seg._sourceSegment
+            if (src) {
+                const srcTf = src.ops.find((o) => o instanceof SetFontOp)
+                if (srcTf) {
+                    srcTf.fontName = resName
+                } else {
+                    src.ops.unshift(SetFontOp.create(resName, src.fontSize))
+                }
+                const srcShow = src.ops.find(
+                    (o) =>
+                        o instanceof ShowTextOp || o instanceof ShowTextArrayOp,
+                )
+                if (srcShow) {
+                    const newSrcShow = src.writeContentStreamText(segText)
+                    const srcIdx = src.ops.indexOf(srcShow)
+                    src.ops[srcIdx] = newSrcShow
+                }
+                if (src.parent instanceof TextBlock) {
+                    src.parent.rebuildOpsFromSegments()
+                }
+            }
+        }
+
+        // Recalculate Tm positions for segments 1+ based on the new
+        // font's advance widths.  The first segment keeps its original
+        // position; each subsequent segment is placed right after the
+        // cumulative advance of all prior segments.
+        if (firstTm && this.segments.length > 1) {
+            const scale = Math.hypot(firstTm.a, firstTm.b) || 1
+            const ux = firstTm.a / scale
+            const uy = firstTm.b / scale
+            let cursorX = firstTm.e
+            let cursorY = firstTm.f
+
+            for (let i = 0; i < this.segments.length; i++) {
+                const seg = this.segments[i]
+
+                if (i > 0) {
+                    // Update the regrouped segment's Tm
+                    const tmOp = seg.ops.find(
+                        (o) => o instanceof SetTextMatrixOp,
+                    )
+                    if (tmOp) {
+                        tmOp.matrix = new Matrix({
+                            a: firstTm.a,
+                            b: firstTm.b,
+                            c: firstTm.c,
+                            d: firstTm.d,
+                            e: cursorX,
+                            f: cursorY,
+                        })
+                    }
+
+                    // Update source segment Tm too
+                    const src = seg._sourceSegment
+                    if (src) {
+                        const srcTmOp = src.ops.find(
+                            (o) => o instanceof SetTextMatrixOp,
+                        )
+                        if (srcTmOp) {
+                            srcTmOp.matrix = new Matrix({
+                                a: firstTm.a,
+                                b: firstTm.b,
+                                c: firstTm.c,
+                                d: firstTm.d,
+                                e: cursorX,
+                                f: cursorY,
+                            })
+                            if (src.parent instanceof TextBlock) {
+                                src.parent.rebuildOpsFromSegments()
+                            }
+                        }
+                    }
+                }
+
+                // Advance cursor by this segment's text advance.
+                // Multiply by scale to convert from text-space to user-space.
+                const advance = seg.getTextAdvance()
+                cursorX += advance * ux * scale
+                cursorY += advance * uy * scale
+            }
+        }
+
+        this.rebuildOpsFromSegments()
+    }
+
+    /**
+     * Change the fill color of every segment in this text block.
+     * Accepts an RGB color as `{ r, g, b }` with values in 0–1 range.
+     * Updates both regrouped segments and original source segments.
+     */
+    changeColor(color: { r: number; g: number; b: number }): void {
+        // Snapshot the effective fill color for each source segment
+        // BEFORE any modifications, so we can restore it after the
+        // show op and prevent color bleeding to subsequent text.
+        const prevColors = new Map<Text, ContentOp>()
+        for (const seg of this.segments) {
+            const src = seg._sourceSegment
+            if (!src) continue
+            const prev = TextBlock._findEffectiveFillColor(src)
+            prevColors.set(src, prev)
+        }
+
+        for (const seg of this.segments) {
+            // Remove existing fill color ops and insert new one before show op
+            seg.ops = seg.ops.filter(
+                (o) =>
+                    !(o instanceof SetFillColorRGBOp) &&
+                    !(o instanceof SetFillColorGrayOp) &&
+                    !(o instanceof SetFillColorCMYKOp),
+            )
+            const showIdx = seg.ops.findIndex(
+                (o) =>
+                    o instanceof ShowTextOp ||
+                    o instanceof ShowTextArrayOp ||
+                    o instanceof ShowTextNextLineOp ||
+                    o instanceof ShowTextNextLineSpacingOp,
+            )
+            const newColorOp = SetFillColorRGBOp.create(
+                color.r,
+                color.g,
+                color.b,
+            )
+            if (showIdx !== -1) {
+                seg.ops.splice(showIdx, 0, newColorOp)
+            } else {
+                seg.ops.push(newColorOp)
+            }
+
+            // Update source segment
+            const src = seg._sourceSegment
+            if (src) {
+                // Capture previous color before stripping
+                const restoreOp = prevColors.get(src)
+
+                src.ops = src.ops.filter(
+                    (o) =>
+                        !(o instanceof SetFillColorRGBOp) &&
+                        !(o instanceof SetFillColorGrayOp) &&
+                        !(o instanceof SetFillColorCMYKOp),
+                )
+                const srcShowIdx = src.ops.findIndex(
+                    (o) =>
+                        o instanceof ShowTextOp ||
+                        o instanceof ShowTextArrayOp ||
+                        o instanceof ShowTextNextLineOp ||
+                        o instanceof ShowTextNextLineSpacingOp,
+                )
+                const srcColorOp = SetFillColorRGBOp.create(
+                    color.r,
+                    color.g,
+                    color.b,
+                )
+                if (srcShowIdx !== -1) {
+                    src.ops.splice(srcShowIdx, 0, srcColorOp)
+                    // Restore previous color AFTER the show op to prevent
+                    // the new color from bleeding to subsequent segments.
+                    // +2: skip past the inserted color op and the show op.
+                    if (restoreOp) {
+                        src.ops.splice(srcShowIdx + 2, 0, restoreOp)
+                    }
+                } else {
+                    src.ops.push(srcColorOp)
+                }
+                if (src.parent instanceof TextBlock) {
+                    src.parent.rebuildOpsFromSegments()
+                }
+            }
+        }
+        this.rebuildOpsFromSegments()
+    }
+
+    /** @internal Walk the prev chain to find the effective fill color. */
+    private static _findEffectiveFillColor(seg: Text): ContentOp {
+        let walk: Text | undefined = seg
+        while (walk) {
+            for (let i = walk.ops.length - 1; i >= 0; i--) {
+                const o = walk.ops[i]
+                if (o instanceof SetFillColorRGBOp) {
+                    return SetFillColorRGBOp.create(o.r, o.g, o.b)
+                }
+                if (o instanceof SetFillColorGrayOp) {
+                    return SetFillColorGrayOp.create(o.gray)
+                }
+                if (o instanceof SetFillColorCMYKOp) {
+                    return SetFillColorCMYKOp.create(o.c, o.m, o.y, o.k)
+                }
+            }
+            walk = walk.prev
+        }
+        // Default: black
+        return SetFillColorGrayOp.create(0)
+    }
+
+    /**
      * Edit text for blocks spanning multiple font subsets (e.g. Type3).
      * Rebuilds the source TextBlock with proper absolute positioning for
      * each character, using the correct font subset for each glyph.
@@ -1454,10 +1713,6 @@ export class GraphicsBlock extends ContentNode {
     constructor(page?: PdfPage, ops?: ContentOp[]) {
         super(ops)
         this.page = page
-    }
-
-    toString(): string {
-        return this.ops.map((o) => o.toString()).join('\n')
     }
 
     static line(options: {

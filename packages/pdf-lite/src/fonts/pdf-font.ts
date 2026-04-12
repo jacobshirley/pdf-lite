@@ -874,6 +874,33 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         ])
 
     /**
+     * The 14 standard PDF fonts available in every PDF viewer without embedding.
+     */
+    static readonly STANDARD_FONTS: readonly { name: string; font: PdfFont }[] =
+        [
+            { name: 'Helvetica', font: PdfFont.HELVETICA },
+            { name: 'Helvetica-Bold', font: PdfFont.HELVETICA_BOLD },
+            { name: 'Helvetica-Oblique', font: PdfFont.HELVETICA_OBLIQUE },
+            {
+                name: 'Helvetica-BoldOblique',
+                font: PdfFont.HELVETICA_BOLD_OBLIQUE,
+            },
+            { name: 'Times-Roman', font: PdfFont.TIMES_ROMAN },
+            { name: 'Times-Bold', font: PdfFont.TIMES_BOLD },
+            { name: 'Times-Italic', font: PdfFont.TIMES_ITALIC },
+            { name: 'Times-BoldItalic', font: PdfFont.TIMES_BOLD_ITALIC },
+            { name: 'Courier', font: PdfFont.COURIER },
+            { name: 'Courier-Bold', font: PdfFont.COURIER_BOLD },
+            { name: 'Courier-Oblique', font: PdfFont.COURIER_OBLIQUE },
+            {
+                name: 'Courier-BoldOblique',
+                font: PdfFont.COURIER_BOLD_OBLIQUE,
+            },
+            { name: 'Symbol', font: PdfFont.SYMBOL },
+            { name: 'ZapfDingbats', font: PdfFont.ZAPF_DINGBATS },
+        ]
+
+    /**
      * Returns the static PdfFont instance for a standard font name, or null if not found.
      */
     static getStandardFont(fontName: string): PdfFont | null {

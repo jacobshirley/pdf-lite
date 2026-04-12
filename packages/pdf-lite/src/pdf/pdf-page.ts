@@ -222,6 +222,40 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
     }
 
     /**
+     * Register a font in this page's /Resources/Font dictionary.
+     * Avoids overwriting existing font entries by generating a unique
+     * resource name when a collision is detected.
+     * Returns the resource name used (e.g. "F1").
+     */
+    addFont(font: PdfFont): string {
+        let resources = this.resources
+        if (!resources) {
+            resources = new PdfDictionary()
+            this.resources = resources
+        }
+
+        let fontDict = resources.get('Font')
+        if (!fontDict || !(fontDict instanceof PdfDictionary)) {
+            fontDict = new PdfDictionary()
+            resources.set('Font', fontDict)
+        }
+
+        const fd = fontDict as PdfDictionary
+        const existing = new Set([...fd.entries()].map(([k]) => k))
+
+        // Pick a resource name that doesn't collide with existing entries
+        let resName = font.resourceName
+        if (!resName || existing.has(resName)) {
+            let idx = 1
+            while (existing.has(`F${idx}`)) idx++
+            resName = `F${idx}`
+        }
+
+        fd.set(resName, font.reference)
+        return resName
+    }
+
+    /**
      * Get all content streams for this page as an array.
      * Handles both single stream and array of streams cases.
      * Returns empty array if no content streams exist.

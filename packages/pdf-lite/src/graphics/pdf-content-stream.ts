@@ -965,6 +965,19 @@ export class TextBlock extends ContentNode {
             let cursorX = firstTm.e
             let cursorY = firstTm.f
 
+            // Also compute source-space cursor for source segment updates.
+            // The source may live in a different coordinate space (e.g. the
+            // regrouped Tm has scale=0.75 while source has scale=1).
+            const firstSrc = this.segments[0]?._sourceSegment
+            const firstSrcTm = firstSrc?.getLocalTransform()
+            const srcScale = firstSrcTm
+                ? Math.hypot(firstSrcTm.a, firstSrcTm.b) || 1
+                : 1
+            const srcUx = firstSrcTm ? firstSrcTm.a / srcScale : 1
+            const srcUy = firstSrcTm ? firstSrcTm.b / srcScale : 0
+            let srcCursorX = firstSrcTm?.e ?? cursorX
+            let srcCursorY = firstSrcTm?.f ?? cursorY
+
             for (let i = 0; i < this.segments.length; i++) {
                 const seg = this.segments[i]
 
@@ -984,33 +997,52 @@ export class TextBlock extends ContentNode {
                         })
                     }
 
-                    // Update source segment Tm too
+                    // Update source segment positioning.
+                    // Source segments may use Td (relative) or Tm (absolute).
+                    // Replace with absolute Tm in source coordinate space.
                     const src = seg._sourceSegment
-                    if (src) {
-                        const srcTmOp = src.ops.find(
-                            (o) => o instanceof SetTextMatrixOp,
+                    if (src && firstSrcTm) {
+                        // Strip existing positioning ops
+                        src.ops = src.ops.filter(
+                            (o) =>
+                                !(o instanceof SetTextMatrixOp) &&
+                                !(o instanceof MoveTextOp) &&
+                                !(o instanceof MoveTextLeadingOp) &&
+                                !(o instanceof NextLineOp),
                         )
-                        if (srcTmOp) {
-                            srcTmOp.matrix = new Matrix({
-                                a: firstTm.a,
-                                b: firstTm.b,
-                                c: firstTm.c,
-                                d: firstTm.d,
-                                e: cursorX,
-                                f: cursorY,
-                            })
-                            if (src.parent instanceof TextBlock) {
-                                src.parent.rebuildOpsFromSegments()
-                            }
+                        // Insert new absolute Tm before the show op
+                        const showIdx = src.ops.findIndex(
+                            (o) =>
+                                o instanceof ShowTextOp ||
+                                o instanceof ShowTextArrayOp,
+                        )
+                        const newTm = SetTextMatrixOp.create(
+                            firstSrcTm.a,
+                            firstSrcTm.b,
+                            firstSrcTm.c,
+                            firstSrcTm.d,
+                            srcCursorX,
+                            srcCursorY,
+                        )
+                        if (showIdx !== -1) {
+                            src.ops.splice(showIdx, 0, newTm)
+                        } else {
+                            src.ops.push(newTm)
+                        }
+                        if (src.parent instanceof TextBlock) {
+                            src.parent.rebuildOpsFromSegments()
                         }
                     }
                 }
 
-                // Advance cursor by this segment's text advance.
-                // Multiply by scale to convert from text-space to user-space.
+                // Advance regrouped cursor
                 const advance = seg.getTextAdvance()
                 cursorX += advance * ux * scale
                 cursorY += advance * uy * scale
+
+                // Advance source cursor (source may have different scale)
+                srcCursorX += advance * srcUx * srcScale
+                srcCursorY += advance * srcUy * srcScale
             }
         }
 

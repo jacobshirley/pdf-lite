@@ -36,7 +36,7 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
     /** @internal */
     _form?: PdfAcroForm
     constructor(other?: PdfIndirectObject | { form?: PdfAcroForm }) {
-        super()
+        super(other instanceof PdfIndirectObject ? { other } : undefined)
         if (other && !(other instanceof PdfIndirectObject)) {
             this._form = other.form
         }

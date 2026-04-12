@@ -237,4 +237,36 @@ describe('TextBlock.regroupTextBlocks', () => {
         expect(regrouped[1].text).toBe('B')
         expect(regrouped[2].text).toBe('C')
     })
+
+    it('splits same-font segments when a different-font segment sits between them', () => {
+        const block = new TextBlock()
+        // "State the reasons " (italic F2) → "and " (bold F1) → "detailed summary" (italic F2)
+        // The italic segments are close together but a bold word sits between them
+        block.addSegment(upright('F2', 12, 100, 700, 'State the reasons '))
+        block.addSegment(upright('F1', 12, 210, 700, 'and '))
+        block.addSegment(upright('F2', 12, 240, 700, 'detailed summary'))
+
+        const regrouped = TextBlock.regroupTextBlocks([block])
+
+        // Should produce 3 blocks: "State the reasons ", "and ", "detailed summary"
+        expect(regrouped).toHaveLength(3)
+        const texts = regrouped.map((r) => r.text)
+        expect(texts).toContain('State the reasons ')
+        expect(texts).toContain('and ')
+        expect(texts).toContain('detailed summary')
+    })
+
+    it('does not split same-font segments when no other font sits between them', () => {
+        const block = new TextBlock()
+        // Two F1 segments close together with an F2 segment elsewhere on the line
+        block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
+        block.addSegment(upright('F1', 12, 140, 700, 'World'))
+        block.addSegment(upright('F2', 12, 300, 700, 'Bold'))
+
+        const regrouped = TextBlock.regroupTextBlocks([block])
+
+        expect(regrouped).toHaveLength(2)
+        expect(regrouped[0].text).toBe('Hello World')
+        expect(regrouped[1].text).toBe('Bold')
+    })
 })

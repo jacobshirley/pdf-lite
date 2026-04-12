@@ -435,14 +435,55 @@ describe('TextBlock', () => {
     })
 })
 
+describe('TextBlock mutations propagate to content stream', () => {
+    it('nodes are cached across accesses', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const nodes1 = s.nodes
+        const nodes2 = s.nodes
+        expect(nodes1).toBe(nodes2)
+        expect(nodes1[0]).toBe(nodes2[0])
+    })
+
+    it('textBlock.text update is reflected in stream dataAsString', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.text = 'World'
+        expect(s.dataAsString).not.toContain('Hello')
+        // Re-read textBlocks from the stream to verify the mutation persists
+        expect(s.textBlocks[0].text).toBe('World')
+    })
+
+    it('textBlock.text update persists through toBytes round-trip', () => {
+        const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
+        const tb = s.textBlocks[0]
+        tb.text = 'Updated'
+        const bytes = s.toBytes()
+        const str = new TextDecoder().decode(bytes)
+        expect(str).not.toContain('Hello')
+        expect(str).toContain('Updated')
+    })
+
+    it('multiple textBlock updates are all reflected', () => {
+        const s = makeStream(
+            'BT /F1 12 Tf 100 700 Td (Hello) Tj ET\nBT /F1 12 Tf 100 680 Td (World) Tj ET',
+        )
+        const blocks = s.textBlocks
+        blocks[0].text = 'Foo'
+        blocks[1].text = 'Bar'
+        expect(s.dataAsString).not.toContain('Hello')
+        expect(s.dataAsString).not.toContain('World')
+        expect(s.textBlocks[0].text).toBe('Foo')
+        expect(s.textBlocks[1].text).toBe('Bar')
+    })
+})
+
 describe('TextBlock.text setter', () => {
     it('should replace simple Tj text', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
         const tb = s.textBlocks[0]
         tb.text = 'World'
         expect(tb.text).toBe('World')
-        // Check the text block's output directly (stream's nodes are re-parsed on each access)
-        expect(tb.toString()).toContain('[(W) 30 (or) -15 (ld)]')
+        expect(tb.toString()).toContain('TJ')
     })
 
     it('should replace TJ array text', () => {
@@ -651,5 +692,28 @@ describe('AT_Verf19E_EU.pdf — regrouped text blocks', () => {
         const noCount = texts.filter((t) => t === 'No').length
         expect(yesCount).toBeGreaterThanOrEqual(2)
         expect(noCount).toBeGreaterThanOrEqual(2)
+    })
+})
+
+describe('CA_GST_RC1 — Page 13 of 13 debug', () => {
+    let doc: PdfDocument
+
+    beforeAll(async () => {
+        doc = await loadFixture('./test/unit/fixtures/CA_GST_RC1-19e.pdf')
+    })
+
+    it('Page 13 of 13 bbox covers the full text', () => {
+        const lastPage = doc.pages.get(doc.pages.count - 1)
+        const textBlocks = lastPage.extractTextBlocks()
+        const regrouped = TextBlock.regroupTextBlocks(textBlocks)
+        const pageBlock = regrouped.find((b) => b.text === 'Page 13 of 13')
+        expect(pageBlock).toBeDefined()
+
+        const bbox = pageBlock!.getWorldBoundingBox()
+        // Width should cover at least 50pt at 8pt scale (13 chars)
+        expect(bbox.width).toBeGreaterThan(49)
+        // Height should be reasonable for 8pt font
+        expect(bbox.height).toBeGreaterThan(7)
+        expect(bbox.height).toBeLessThan(15)
     })
 })

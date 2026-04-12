@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { PdfArray } from '../../src/core/objects/pdf-array'
 import { PdfName } from '../../src/core/objects/pdf-name'
 import { PdfNumber } from '../../src/core/objects/pdf-number'
+import { PdfDictionary } from '../../src/core/objects/pdf-dictionary'
+import { PdfString } from '../../src/core/objects/pdf-string'
+import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
+import { PdfFont } from '../../src/fonts/pdf-font'
 import {
     buildEncodingMap,
     decodeWithFontEncoding,
@@ -257,6 +261,100 @@ describe('Font Encoding', () => {
 
             const result = decodeWithFontEncoding(bytes, encodingMap)
             expect(result).toBe('Price: €20 • Beneﬁt')
+        })
+    })
+
+    describe('PdfFont.encodingMap with standard encodings', () => {
+        function fontFromDict(dict: PdfDictionary): PdfFont {
+            return new PdfFont(new PdfIndirectObject({ content: dict }))
+        }
+
+        it('should use WinAnsiEncoding when Encoding is a name', () => {
+            const dict = new PdfDictionary()
+            dict.set('Type', new PdfName('Font'))
+            dict.set('Subtype', new PdfName('Type1'))
+            dict.set('BaseFont', new PdfName('Helvetica'))
+            dict.set('Encoding', new PdfName('WinAnsiEncoding'))
+
+            const font = fontFromDict(dict)
+            const map = font.encodingMap
+
+            expect(map).not.toBeNull()
+            // Byte 0x96 → U+2013 (EN DASH) in WinAnsiEncoding
+            expect(map!.get(0x96)).toBe('\u2013')
+            // Byte 0x80 → U+20AC (EURO SIGN) in WinAnsiEncoding
+            expect(map!.get(0x80)).toBe('\u20AC')
+        })
+
+        it('should decode byte 0x96 as en-dash with WinAnsiEncoding, not OE', () => {
+            const dict = new PdfDictionary()
+            dict.set('Type', new PdfName('Font'))
+            dict.set('Subtype', new PdfName('Type1'))
+            dict.set('BaseFont', new PdfName('Helvetica'))
+            dict.set('Encoding', new PdfName('WinAnsiEncoding'))
+
+            const font = fontFromDict(dict)
+            // Create a PdfString with raw byte 0x96
+            const str = new PdfString(new Uint8Array([0x96]))
+            const decoded = font.decode(str)
+
+            // Should be en-dash (U+2013), NOT Œ (U+0152 = PDFDocEncoding)
+            expect(decoded).toBe('\u2013')
+            expect(decoded).not.toBe('\u0152') // NOT OE ligature
+        })
+
+        it('should merge BaseEncoding with Differences', () => {
+            const encDict = new PdfDictionary()
+            encDict.set('BaseEncoding', new PdfName('WinAnsiEncoding'))
+            encDict.set(
+                'Differences',
+                new PdfArray([
+                    new PdfNumber(0x96),
+                    new PdfName('hyphen'), // Override 0x96 from en-dash to hyphen
+                ]),
+            )
+
+            const dict = new PdfDictionary()
+            dict.set('Type', new PdfName('Font'))
+            dict.set('Subtype', new PdfName('Type1'))
+            dict.set('BaseFont', new PdfName('CustomFont'))
+            dict.set('Encoding', encDict)
+
+            const font = fontFromDict(dict)
+            const map = font.encodingMap
+
+            expect(map).not.toBeNull()
+            // Differences override: 0x96 → hyphen instead of en-dash
+            expect(map!.get(0x96)).toBe('-')
+            // Base encoding still applies for other codes
+            expect(map!.get(0x80)).toBe('\u20AC') // EURO SIGN from WinAnsi
+        })
+
+        it('should use MacRomanEncoding when specified', () => {
+            const dict = new PdfDictionary()
+            dict.set('Type', new PdfName('Font'))
+            dict.set('Subtype', new PdfName('Type1'))
+            dict.set('BaseFont', new PdfName('Times-Roman'))
+            dict.set('Encoding', new PdfName('MacRomanEncoding'))
+
+            const font = fontFromDict(dict)
+            const map = font.encodingMap
+
+            expect(map).not.toBeNull()
+            // Byte 0x96 → ñ (U+00F1) in MacRomanEncoding
+            expect(map!.get(0x96)).toBe('\u00F1')
+        })
+
+        it('should return null for unknown encoding names', () => {
+            const dict = new PdfDictionary()
+            dict.set('Type', new PdfName('Font'))
+            dict.set('Subtype', new PdfName('Type1'))
+            dict.set('BaseFont', new PdfName('Helvetica'))
+            dict.set('Encoding', new PdfName('SomeUnknownEncoding'))
+
+            const font = fontFromDict(dict)
+            // Unknown encoding with no Differences → null
+            expect(font.encodingMap).toBeNull()
         })
     })
 })

@@ -50,6 +50,7 @@ import {
 import { SetFillColorRGBOp, SetStrokeColorRGBOp, ColorOp } from './ops/color'
 import { SaveStateOp, RestoreStateOp, SetMatrixOp, StateOp } from './ops/state'
 import { PdfContentStreamTokeniser } from './tokeniser'
+import { PdfToken } from '../core/tokens/token.js'
 
 export abstract class ContentNode {
     _page?: PdfPage
@@ -290,24 +291,6 @@ export class Text extends ContentNode {
         return ShowTextArrayOp.create(segments)
     }
 
-    /**
-     * Encodes text as a PDF string operand for use in content streams.
-     * Returns `(escaped text)` for literal strings or `<hex>` for hex strings.
-     */
-    private encodeOperand(text: string): string {
-        const encoded = this.font.encode(text)
-        if (encoded instanceof PdfHexadecimal) {
-            return `<${encoded.hexString}>`
-        }
-        // PdfString — escape special chars for PDF literal string
-        const val = encoded.value
-        const escaped = val
-            .replace(/\\/g, '\\\\')
-            .replace(/\(/g, '\\(')
-            .replace(/\)/g, '\\)')
-        return `(${escaped})`
-    }
-
     set text(newText: string) {
         const newTextOp = this.writeContentStreamText(newText)
         const textOpIndex = this.ops.findLastIndex(
@@ -454,11 +437,14 @@ export class Text extends ContentNode {
         const descenderHeight = fontSize * 0.3
         const ascenderHeight = fontSize * 0.95
         const textWidth = this.getTextAdvance()
+        // Add a small right-side padding to account for the last glyph's
+        // visual extent beyond its advance width (glyph overhang).
+        const overhang = fontSize * 0.05
 
         return {
             x: 0,
             y: -descenderHeight,
-            width: textWidth,
+            width: textWidth + overhang,
             height: ascenderHeight + descenderHeight,
         }
     }
@@ -1217,11 +1203,9 @@ export class StateNode extends ContentNode {
 
     toString(): string {
         const parts: string[] = ['q']
-        const lt = this.getLocalTransform()
-        const isIdentity = lt.isIdentity()
 
-        if (!isIdentity) {
-            parts.push(`${lt.a} ${lt.b} ${lt.c} ${lt.d} ${lt.e} ${lt.f} cm`)
+        for (const op of this.ops) {
+            parts.push(op.toString())
         }
 
         for (const child of this.children) {
@@ -1258,14 +1242,36 @@ export class PdfContentStream extends PdfStream {
     }
 
     get nodes(): ContentNode[] {
-        this._nodes = this.parseNodes()
+        if (!this._nodes) {
+            this._nodes = this.parseNodes()
+        }
         return this._nodes
     }
 
+    get dataAsString(): string {
+        if (this._nodes) {
+            return this._nodes.map((n) => n.toString()).join('\n')
+        }
+        return super.dataAsString
+    }
+
+    set dataAsString(value: string) {
+        this._nodes = undefined
+        super.dataAsString = value
+    }
+
     protected getRawData(): ByteArray | undefined {
-        if (this.nodes === undefined) return undefined
-        const contentString = this.nodes.map((n) => n.toString()).join('\n')
+        if (this._nodes === undefined) return undefined
+        const contentString = this._nodes.map((n) => n.toString()).join('\n')
         return stringToBytes(contentString)
+    }
+
+    protected tokenize(): PdfToken[] {
+        const rawData = this.getRawData()
+        if (rawData) {
+            this.raw = rawData
+        }
+        return super.tokenize()
     }
 
     private parseNodes(): ContentNode[] {

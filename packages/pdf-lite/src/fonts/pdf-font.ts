@@ -7,6 +7,7 @@ import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfString } from '../core/objects/pdf-string.js'
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
+import { getStandardEncoding } from '../utils/standardEncodings.js'
 import type { CIDWidth, FontParser, AfmFont } from './types.js'
 import type { ByteArray } from '../types.js'
 import { parseFont } from './parsers/font-parser.js'
@@ -163,17 +164,48 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     }
 
     /**
-     * Gets the encoding map from the font's Encoding dictionary's Differences array.
-     * Maps byte codes to Unicode characters for custom-encoded fonts.
+     * Gets the encoding map from the font's Encoding.
+     * Combines the base encoding (e.g. WinAnsiEncoding) with any
+     * Differences overrides. Returns null only when no encoding info exists.
      */
     get encodingMap(): Map<number, string> | null {
         const enc = this.content.get('Encoding')
+        if (!enc) return null
+
         const encObj =
             enc instanceof PdfObjectReference ? enc.resolve()?.content : enc
-        const encDict = encObj instanceof PdfDictionary ? encObj : undefined
-        const diffs = encDict?.get('Differences')?.as(PdfArray)
-        if (!diffs) return null
-        return buildEncodingMap(diffs)
+
+        // Encoding can be a name (/WinAnsiEncoding) or a dictionary
+        let baseEncodingName: string | undefined
+        let diffs: PdfArray | undefined
+
+        if (encObj instanceof PdfDictionary) {
+            baseEncodingName = encObj.get('BaseEncoding')?.value
+            diffs = encObj.get('Differences')?.as(PdfArray)
+        } else if (encObj instanceof PdfName) {
+            baseEncodingName = encObj.value
+        }
+
+        // Start with the standard encoding table if available
+        const baseMap = baseEncodingName
+            ? getStandardEncoding(baseEncodingName)
+            : null
+
+        // Build Differences overlay
+        const diffsMap = diffs ? buildEncodingMap(diffs) : null
+
+        if (!baseMap && !diffsMap) return null
+
+        if (baseMap && diffsMap) {
+            // Merge: Differences override base encoding
+            const merged = new Map(baseMap)
+            for (const [code, char] of diffsMap) {
+                merged.set(code, char)
+            }
+            return merged
+        }
+
+        return baseMap ?? diffsMap
     }
 
     /**
@@ -565,6 +597,15 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             let result = ''
             for (let i = 0; i < raw.length; i++) {
                 result += umap.get(raw[i]) ?? String.fromCharCode(raw[i])
+            }
+            return result
+        }
+
+        const encodingMap = this.encodingMap
+        if (encodingMap) {
+            let result = ''
+            for (let i = 0; i < raw.length; i++) {
+                result += encodingMap.get(raw[i]) ?? String.fromCharCode(raw[i])
             }
             return result
         }

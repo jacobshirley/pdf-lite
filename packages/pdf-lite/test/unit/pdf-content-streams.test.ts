@@ -215,7 +215,7 @@ describe('PdfContentStreamObject.add() and dataAsString', () => {
         s.add(a)
         s.add(b)
         const lines = s.dataAsString.trim().split('\n')
-        expect(lines).toHaveLength(2)
+        expect(lines).toHaveLength(6)
     })
 })
 

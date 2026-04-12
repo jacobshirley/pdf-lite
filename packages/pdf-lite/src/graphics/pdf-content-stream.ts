@@ -1256,7 +1256,7 @@ export class GraphicsBlock extends ContentNode {
     }
 
     toString(): string {
-        return this.ops.toString()
+        return this.ops.map((o) => o.toString()).join('\n')
     }
 
     static line(options: {

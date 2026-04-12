@@ -249,6 +249,22 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         return streams
     }
 
+    /**
+     * Merge all content streams into the first stream so that the
+     * page's node tree is a single live tree.  This is needed before
+     * in-place editing so that modifications to nodes propagate to
+     * serialization.
+     */
+    consolidateContentStreams(): void {
+        const streams = this.contentStreams
+        if (streams.length <= 1) return
+        const combinedData = streams.map((s) => s.dataAsString).join('\n')
+        streams[0].dataAsString = combinedData
+        for (let i = 1; i < streams.length; i++) {
+            streams[i].dataAsString = ''
+        }
+    }
+
     extractTextBlocks(): TextBlock[] {
         const streams = this.contentStreams
         if (streams.length === 0) return []
@@ -262,6 +278,24 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         const blocks = first.textBlocks
         first.dataAsString = savedData
         return blocks
+    }
+
+    /**
+     * Consolidate content streams, extract text blocks, and regroup them
+     * by visual line.  The returned blocks carry source-segment references
+     * so that `editText()` and `moveBy()` modify the live content-stream
+     * tree in-place.
+     */
+    getTextBlocks(): TextBlock[] {
+        this.consolidateContentStreams()
+        const streams = this.contentStreams
+        if (streams.length === 0) return []
+        // After consolidation all data is in streams[0].  Access
+        // textBlocks directly so the returned TextBlock objects are
+        // live references inside the cached _nodes tree — edits to
+        // their ops propagate to dataAsString / toBytes.
+        const raw = streams[0].textBlocks
+        return TextBlock.regroupTextBlocks(raw)
     }
 
     extractGraphicLines(): GraphicsBlock[] {

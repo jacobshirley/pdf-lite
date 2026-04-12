@@ -717,3 +717,217 @@ describe('CA_GST_RC1 — Page 13 of 13 debug', () => {
         expect(bbox.height).toBeLessThan(15)
     })
 })
+
+// ---------------------------------------------------------------------------
+// Real PDF text editing — full round-trip tests
+// ---------------------------------------------------------------------------
+describe('real PDF text editing round-trip', () => {
+    // multi-child-field.pdf has a single content stream — use it as the
+    // simple case; template.pdf has 8 streams (the multi-stream case).
+    describe('multi-stream page (template.pdf)', () => {
+        let doc: PdfDocument
+
+        beforeAll(async () => {
+            doc = await loadFixture('./test/unit/fixtures/template.pdf')
+        })
+
+        it('page has multiple content streams before consolidation', () => {
+            const page = doc.pages.get(0)
+            expect(page.contentStreams.length).toBeGreaterThan(1)
+        })
+
+        it('getTextBlocks returns blocks with source segment references', () => {
+            const page = doc.pages.get(0)
+            const blocks = page.getTextBlocks()
+            expect(blocks.length).toBeGreaterThan(0)
+
+            // Every segment should have a _sourceSegment reference
+            for (const block of blocks) {
+                for (const seg of block.getSegments()) {
+                    expect(seg._sourceSegment).toBeDefined()
+                }
+            }
+        })
+
+        it('source segments have a valid parent in the content stream tree', () => {
+            const page = doc.pages.get(0)
+            const blocks = page.getTextBlocks()
+            expect(blocks.length).toBeGreaterThan(0)
+
+            for (const block of blocks) {
+                for (const seg of block.getSegments()) {
+                    const src = seg._sourceSegment!
+                    expect(src.parent).toBeDefined()
+                    expect(src.parent).toBeInstanceOf(TextBlock)
+                }
+            }
+        })
+
+        it('editText modifies the content stream dataAsString immediately', async () => {
+            const doc2 = await loadFixture('./test/unit/fixtures/template.pdf')
+            const page = doc2.pages.get(0)
+            const blocks = page.getTextBlocks()
+
+            // Find a text block with identifiable text
+            const target = blocks.find((b) => b.text.trim().length > 3)
+            expect(target).toBeDefined()
+            const originalText = target!.text
+
+            // Edit it
+            target!.editText('CHANGED_TEXT_12345')
+
+            // The content stream should reflect the change immediately
+            const stream = page.contentStreams[0]
+            const after = stream.dataAsString
+            expect(after).not.toContain(originalText)
+        })
+
+        it('editText survives toBytes round-trip', async () => {
+            const doc2 = await loadFixture('./test/unit/fixtures/template.pdf')
+            const page = doc2.pages.get(0)
+            const blocks = page.getTextBlocks()
+
+            const target = blocks.find((b) => b.text.trim().length > 3)
+            expect(target).toBeDefined()
+
+            target!.editText('ROUNDTRIP_TEST')
+
+            // Serialize and reload
+            const bytes = doc2.toBytes()
+            const reloaded = await PdfDocument.fromBytes([bytes])
+            const reloadedPage = reloaded.pages.get(0)
+            const reloadedBlocks = reloadedPage.getTextBlocks()
+            const found = reloadedBlocks.find((b) =>
+                b.text.includes('ROUNDTRIP_TEST'),
+            )
+            expect(found).toBeDefined()
+        })
+
+        it('moveBy survives toBytes round-trip', async () => {
+            const doc2 = await loadFixture('./test/unit/fixtures/template.pdf')
+            const page = doc2.pages.get(0)
+            const blocks = page.getTextBlocks()
+
+            const target = blocks.find((b) => b.text.trim().length > 3)
+            expect(target).toBeDefined()
+
+            const originalText = target!.text
+            const segBefore = target!.getSegments()[0]
+            const tmBefore = segBefore.getWorldTransform()
+
+            target!.moveBy(50, -30)
+
+            // Serialize and reload
+            const bytes = doc2.toBytes()
+            const reloaded = await PdfDocument.fromBytes([bytes])
+            const reloadedPage = reloaded.pages.get(0)
+            const reloadedBlocks = reloadedPage.getTextBlocks()
+
+            // Find the block with matching text content
+            const found = reloadedBlocks.find((b) => b.text === originalText)
+            expect(found).toBeDefined()
+
+            const segAfter = found!.getSegments()[0]
+            const tmAfter = segAfter.getWorldTransform()
+            expect(tmAfter.e).toBeCloseTo(tmBefore.e + 50, 0)
+            expect(tmAfter.f).toBeCloseTo(tmBefore.f - 30, 0)
+        })
+    })
+
+    // template.pdf likely has a single content stream
+    describe('single-stream page (template.pdf)', () => {
+        it('getTextBlocks returns blocks with source references', async () => {
+            const doc = await loadFixture('./test/unit/fixtures/template.pdf')
+            const page = doc.pages.get(0)
+
+            // template.pdf has multiple content streams
+            expect(page.contentStreams.length).toBeGreaterThan(1)
+
+            const blocks = page.getTextBlocks()
+            expect(blocks.length).toBeGreaterThan(0)
+
+            const target = blocks.find((b) => b.text.trim().length > 3)
+            expect(target).toBeDefined()
+
+            // Check source segment chain
+            const segs = target!.getSegments()
+            expect(segs.length).toBeGreaterThan(0)
+
+            const seg = segs[0]
+            expect(seg._sourceSegment).toBeDefined()
+
+            const src = seg._sourceSegment!
+            expect(src.parent).toBeDefined()
+            expect(src.parent).toBeInstanceOf(TextBlock)
+
+            // After getTextBlocks (which consolidates), the first
+            // stream's _nodes should be populated and contain the
+            // source parent.
+            const stream = page.contentStreams[0]
+            const nodesBlocks = stream.textBlocks
+            const found = nodesBlocks.find((b) => b === src.parent)
+            expect(found).toBeDefined()
+        })
+
+        it('replaceTextInSource actually modifies the source parent ops', async () => {
+            const doc = await loadFixture('./test/unit/fixtures/template.pdf')
+            const page = doc.pages.get(0)
+            const blocks = page.getTextBlocks()
+
+            const target = blocks.find((b) => b.text.trim().length > 3)!
+            const seg = target.getSegments()[0]
+            const src = seg._sourceSegment!
+            const parentBlock = src.parent! as TextBlock
+
+            const oldText = parentBlock.text
+            expect(oldText.length).toBeGreaterThan(0)
+
+            const result = seg.replaceTextInSource('EDITED_VALUE')
+            expect(result).toBe(true)
+
+            // The source parent's serialization should change
+            const newStr = parentBlock.toString()
+            expect(newStr).not.toContain(oldText.slice(0, 10))
+        })
+
+        it('editText modifies content stream dataAsString immediately', async () => {
+            const doc = await loadFixture('./test/unit/fixtures/template.pdf')
+            const page = doc.pages.get(0)
+
+            const blocks = page.getTextBlocks()
+            const target = blocks.find((b) => b.text.trim().length > 3)!
+            const originalText = target.text
+
+            target.editText('SINGLE_STREAM_EDIT_TEST')
+
+            // After consolidation, stream[0] has all nodes.
+            // dataAsString should reflect the edit.
+            const stream = page.contentStreams[0]
+            const after = stream.dataAsString
+            expect(after).not.toContain(originalText)
+        })
+
+        it('editText survives toBytes round-trip', async () => {
+            const doc = await loadFixture('./test/unit/fixtures/template.pdf')
+            const page = doc.pages.get(0)
+            const blocks = page.getTextBlocks()
+            expect(blocks.length).toBeGreaterThan(0)
+
+            // Pick the first non-empty block
+            const target = blocks.find((b) => b.text.trim().length > 3)
+            expect(target).toBeDefined()
+
+            target!.editText('SINGLE_STREAM_EDIT')
+
+            // Serialize and reload
+            const bytes = doc.toBytes()
+            const reloaded = await PdfDocument.fromBytes([bytes])
+            const reloadedPage = reloaded.pages.get(0)
+            const reloadedBlocks = reloadedPage.getTextBlocks()
+            const found = reloadedBlocks.find((b) =>
+                b.text.includes('SINGLE_STREAM_EDIT'),
+            )
+            expect(found).toBeDefined()
+        })
+    })
+})

@@ -1,10 +1,27 @@
 import { describe, it, expect } from 'vitest'
-import { TextBlock, Text } from '../../src/graphics/pdf-content-stream'
+import {
+    TextBlock,
+    Text,
+    PdfContentStream,
+    StateNode,
+    ContentNode,
+} from '../../src/graphics/pdf-content-stream'
 import {
     SetFontOp,
     SetTextMatrixOp,
     ShowTextOp,
 } from '../../src/graphics/ops/text'
+
+/** Collect TextBlocks from a content stream's parsed node tree */
+function collectTextBlocks(nodes: ContentNode[]): TextBlock[] {
+    const result: TextBlock[] = []
+    for (const node of nodes) {
+        if (node instanceof TextBlock) result.push(node)
+        else if (node instanceof StateNode)
+            result.push(...collectTextBlocks(node.getChildren()))
+    }
+    return result
+}
 
 const makeSeg = (
     fontName: string,
@@ -268,5 +285,201 @@ describe('TextBlock.regroupTextBlocks', () => {
         expect(regrouped).toHaveLength(2)
         expect(regrouped[0].text).toBe('Hello World')
         expect(regrouped[1].text).toBe('Bold')
+    })
+
+    describe('source segment tracking', () => {
+        it('regrouped segments carry _sourceSegment references', () => {
+            const block = new TextBlock()
+            block.addSegment(upright('F1', 12, 100, 700, 'Hello'))
+            block.addSegment(upright('F1', 12, 150, 700, 'World'))
+
+            const original = block.getSegments()
+            const regrouped = TextBlock.regroupTextBlocks([block])
+
+            expect(regrouped).toHaveLength(1)
+            const segs = regrouped[0].getSegments()
+            expect(segs).toHaveLength(2)
+            expect(segs[0]._sourceSegment).toBe(original[0])
+            expect(segs[1]._sourceSegment).toBe(original[1])
+        })
+
+        it('replaceTextInSource modifies original parent ops', () => {
+            const block = new TextBlock()
+            block.addSegment(upright('F1', 12, 100, 700, 'Original'))
+
+            const regrouped = TextBlock.regroupTextBlocks([block])
+            const seg = regrouped[0].getSegments()[0]
+
+            // Replace text via source reference
+            const ok = seg.replaceTextInSource('Replaced')
+            expect(ok).toBe(true)
+
+            // The original TextBlock's serialization should reflect the change
+            expect(block.toString()).toContain('Replaced')
+            expect(block.toString()).not.toContain('Original')
+        })
+
+        it('clearSourceShowOp removes show op from original parent', () => {
+            const block = new TextBlock()
+            block.addSegment(upright('F1', 12, 100, 700, 'Keep'))
+            block.addSegment(upright('F1', 12, 150, 700, 'Remove'))
+
+            const regrouped = TextBlock.regroupTextBlocks([block])
+            const segs = regrouped[0].getSegments()
+
+            // Clear the second segment's show op
+            segs[1].clearSourceShowOp()
+
+            // Original block should only show "Keep"
+            expect(block.toString()).toContain('Keep')
+            expect(block.toString()).not.toContain('Remove')
+        })
+
+        it('moveSourceBy shifts Tm in original parent ops', () => {
+            const block = new TextBlock()
+            block.addSegment(upright('F1', 12, 100, 700, 'Hello'))
+
+            const regrouped = TextBlock.regroupTextBlocks([block])
+            const seg = regrouped[0].getSegments()[0]
+
+            seg.moveSourceBy(10, -5)
+
+            // The original TextBlock's Tm should be shifted
+            const str = block.toString()
+            // Original Tm was (1 0 0 1 100 700), after shift should be (1 0 0 1 110 695)
+            expect(str).toContain('110')
+            expect(str).toContain('695')
+        })
+    })
+})
+
+describe('end-to-end edit/move via PdfContentStream', () => {
+    const SIMPLE_STREAM = 'BT\n/F1 12 Tf\n1 0 0 1 100 700 Tm\n(Hello) Tj\nET'
+
+    const TWO_BLOCK_STREAM = [
+        'BT',
+        '/F1 12 Tf',
+        '1 0 0 1 100 700 Tm',
+        '(Hello) Tj',
+        'ET',
+        'BT',
+        '/F1 12 Tf',
+        '1 0 0 1 100 680 Tm',
+        '(World) Tj',
+        'ET',
+    ].join('\n')
+
+    const WITH_STATE = [
+        'q',
+        'BT',
+        '/F1 12 Tf',
+        '1 0 0 1 100 700 Tm',
+        '(Inside) Tj',
+        'ET',
+        'Q',
+    ].join('\n')
+
+    it('editText modifies content stream round-trip (simple)', () => {
+        const pcs = new PdfContentStream(SIMPLE_STREAM)
+        // Parse nodes
+        const blocks = collectTextBlocks(pcs.nodes)
+        expect(blocks).toHaveLength(1)
+        const regrouped = TextBlock.regroupTextBlocks(blocks)
+        expect(regrouped[0].text).toBe('Hello')
+
+        // Edit
+        regrouped[0].editText('Changed')
+
+        // Re-extract from the SAME content stream (nodes cached)
+        const blocks2 = collectTextBlocks(pcs.nodes)
+        const regrouped2 = TextBlock.regroupTextBlocks(blocks2)
+        expect(regrouped2[0].text).toBe('Changed')
+    })
+
+    it('editText modifies content stream dataAsString', () => {
+        const pcs = new PdfContentStream(SIMPLE_STREAM)
+        const blocks = collectTextBlocks(pcs.nodes)
+        const regrouped = TextBlock.regroupTextBlocks(blocks)
+
+        regrouped[0].editText('NewText')
+
+        // dataAsString should no longer contain the old text
+        const str = pcs.dataAsString
+        expect(str).not.toContain('Hello')
+        // The new text may be in TJ array form with kerning, e.g. [(Ne) 20 (wT) ...]
+        // Just verify the show operator changed
+        expect(str).toContain('TJ')
+    })
+
+    it('moveBy modifies content stream positions', () => {
+        const pcs = new PdfContentStream(SIMPLE_STREAM)
+        const blocks = collectTextBlocks(pcs.nodes)
+        const regrouped = TextBlock.regroupTextBlocks(blocks)
+
+        regrouped[0].moveBy(10, -5)
+
+        // Re-extract
+        const blocks2 = collectTextBlocks(pcs.nodes)
+        const regrouped2 = TextBlock.regroupTextBlocks(blocks2)
+        const seg = regrouped2[0].getSegments()[0]
+        const tm = seg.getWorldTransform()
+        expect(tm.e).toBeCloseTo(110)
+        expect(tm.f).toBeCloseTo(695)
+    })
+
+    it('editText works with two text blocks', () => {
+        const pcs = new PdfContentStream(TWO_BLOCK_STREAM)
+        const blocks = collectTextBlocks(pcs.nodes)
+        expect(blocks).toHaveLength(2)
+        const regrouped = TextBlock.regroupTextBlocks(blocks)
+        expect(regrouped).toHaveLength(2)
+        expect(regrouped[0].text).toBe('Hello')
+        expect(regrouped[1].text).toBe('World')
+
+        // Edit first block
+        regrouped[0].editText('Bye')
+
+        // Re-extract
+        const blocks2 = collectTextBlocks(pcs.nodes)
+        const regrouped2 = TextBlock.regroupTextBlocks(blocks2)
+        expect(regrouped2[0].text).toBe('Bye')
+        expect(regrouped2[1].text).toBe('World')
+    })
+
+    it('content stream round-trip preserves q/Q blocks', () => {
+        const pcs = new PdfContentStream(WITH_STATE)
+        // Parse nodes to set _nodes
+        const _ = pcs.nodes
+        // Round-trip: dataAsString serializes from _nodes
+        const str = pcs.dataAsString
+        expect(str).toContain('q')
+        expect(str).toContain('Q')
+        expect(str).toContain('Inside')
+    })
+
+    it('moveBy works with Td-based source segments', () => {
+        const TD_STREAM = [
+            'BT',
+            '/F1 12 Tf',
+            '100 700 Td',
+            '(Hello) Tj',
+            'ET',
+        ].join('\n')
+
+        const pcs = new PdfContentStream(TD_STREAM)
+        const blocks = collectTextBlocks(pcs.nodes)
+        const regrouped = TextBlock.regroupTextBlocks(blocks)
+
+        regrouped[0].moveBy(10, -5)
+
+        // Re-extract from the modified content stream
+        // Clear _nodes to force re-parse from serialized data
+        pcs.dataAsString = pcs.dataAsString
+        const blocks2 = collectTextBlocks(pcs.nodes)
+        const regrouped2 = TextBlock.regroupTextBlocks(blocks2)
+        const seg = regrouped2[0].getSegments()[0]
+        const tm = seg.getWorldTransform()
+        expect(tm.e).toBeCloseTo(110)
+        expect(tm.f).toBeCloseTo(695)
     })
 })

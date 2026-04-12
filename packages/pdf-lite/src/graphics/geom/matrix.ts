@@ -78,4 +78,22 @@ export class Matrix {
             f: arr[5],
         })
     }
+
+    /**
+     * Return the inverse of this matrix, or null if the matrix is
+     * singular (determinant is zero).
+     */
+    inverse(): Matrix | null {
+        const det = this.a * this.d - this.b * this.c
+        if (Math.abs(det) < 1e-12) return null
+        const invDet = 1 / det
+        return new Matrix({
+            a: this.d * invDet,
+            b: -this.b * invDet,
+            c: -this.c * invDet,
+            d: this.a * invDet,
+            e: (this.c * this.f - this.d * this.e) * invDet,
+            f: (this.b * this.e - this.a * this.f) * invDet,
+        })
+    }
 }

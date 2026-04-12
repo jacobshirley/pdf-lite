@@ -129,6 +129,167 @@ export abstract class ContentNode {
 
 export class Text extends ContentNode {
     prev?: Text
+    /**
+     * Reference to the original content-stream Text segment that this
+     * regrouped segment was derived from.  Set by `regroupTextBlocks`.
+     */
+    _sourceSegment?: Text
+
+    /**
+     * Replace the text in the original content-stream segment that this
+     * regrouped segment was derived from.  Modifies the live node tree
+     * so that the content stream auto-serializes the change.
+     *
+     * Returns true if the replacement succeeded, false if no source exists.
+     */
+    replaceTextInSource(newText: string): boolean {
+        const src = this._sourceSegment
+        if (!src) return false
+
+        const newShowOp = src.writeContentStreamText(newText)
+        const isShowOp = (o: ContentOp) =>
+            o instanceof ShowTextOp ||
+            o instanceof ShowTextArrayOp ||
+            o instanceof ShowTextNextLineOp ||
+            o instanceof ShowTextNextLineSpacingOp
+
+        const oldShowOp = src.ops.find(isShowOp)
+        if (!oldShowOp) return false
+
+        // Replace in the original TextBlock's ops array (the content-stream tree)
+        const parentBlock = src.parent
+        if (parentBlock) {
+            const idx = parentBlock.ops.indexOf(oldShowOp)
+            if (idx !== -1) parentBlock.ops[idx] = newShowOp
+        }
+        // Also update the segment's own ops for consistency
+        const segIdx = src.ops.indexOf(oldShowOp)
+        if (segIdx !== -1) src.ops[segIdx] = newShowOp
+
+        return true
+    }
+
+    /**
+     * Remove the show op from this segment's original source in the
+     * content-stream tree.  Used when collapsing multi-segment edits.
+     */
+    clearSourceShowOp(): void {
+        const src = this._sourceSegment
+        if (!src) return
+
+        const isShowOp = (o: ContentOp) =>
+            o instanceof ShowTextOp ||
+            o instanceof ShowTextArrayOp ||
+            o instanceof ShowTextNextLineOp ||
+            o instanceof ShowTextNextLineSpacingOp
+
+        const oldShowOp = src.ops.find(isShowOp)
+        if (!oldShowOp) return
+
+        const parentBlock = src.parent
+        if (parentBlock) {
+            const idx = parentBlock.ops.indexOf(oldShowOp)
+            if (idx !== -1) parentBlock.ops.splice(idx, 1)
+        }
+        const segIdx = src.ops.indexOf(oldShowOp)
+        if (segIdx !== -1) src.ops.splice(segIdx, 1)
+    }
+
+    /**
+     * Shift the position in this segment's original source by (dx, dy)
+     * in world-space coordinates.  Correctly accounts for parent graphics
+     * state transforms (cm) so the visible result matches the shift.
+     * Modifies the live content-stream tree in-place.
+     */
+    moveSourceBy(dx: number, dy: number): void {
+        const src = this._sourceSegment
+        if (!src) return
+
+        const parentBlock = src.parent
+        if (!parentBlock) return
+
+        // Compute the source segment's current world position and the
+        // desired new world position (world-space shift: just adjust e,f).
+        const oldWorld = src.getWorldTransform()
+        const newWorld = new Matrix({
+            a: oldWorld.a,
+            b: oldWorld.b,
+            c: oldWorld.c,
+            d: oldWorld.d,
+            e: oldWorld.e + dx,
+            f: oldWorld.f + dy,
+        })
+
+        // If the source already has a Tm op, compute the correct local Tm
+        // that produces newWorld under the parent's cm.  For a segment
+        // directly under a TextBlock whose parent is a StateNode with cm:
+        //   world = cm × localTm   →   localTm = cm⁻¹ × newWorld
+        //
+        // But Text.getWorldTransform() already composes all parent
+        // transforms, and getLocalTransform() returns the segment's own Tm.
+        // We can recover cm from: cm = world × localTm⁻¹
+        // Then newLocal = cm⁻¹ × newWorld.
+        //
+        // Simpler: replace all positioning ops with a single Tm that
+        // produces the desired world position.  We compute:
+        //   parentGlobal = world × localTm⁻¹
+        //   newLocal = parentGlobal⁻¹ × newWorld
+        const localTm = src.getLocalTransform()
+        const localInv = localTm.inverse()
+        if (!localInv) {
+            // Degenerate matrix — fall back to direct Tm replacement
+            return
+        }
+        const parentGlobal = oldWorld.multiply(localInv)
+        const parentInv = parentGlobal.inverse()
+        if (!parentInv) return
+
+        const newLocal = parentInv.multiply(newWorld)
+
+        // Replace the positioning op (Tm, Td, TD, T*) with a new Tm
+        const newTmOp = SetTextMatrixOp.create(
+            newLocal.a,
+            newLocal.b,
+            newLocal.c,
+            newLocal.d,
+            newLocal.e,
+            newLocal.f,
+        )
+
+        // Find and replace the existing positioning op
+        const tmIdx = src.ops.findIndex((o) => o instanceof SetTextMatrixOp)
+        if (tmIdx !== -1) {
+            src.ops[tmIdx] = newTmOp
+            // Rebuild parent ops from segments to propagate the change
+            if (parentBlock instanceof TextBlock) {
+                parentBlock.rebuildOpsFromSegments()
+            }
+            return
+        }
+
+        // No Tm — replace Td/TD/T* with Tm
+        src.ops = src.ops.filter(
+            (o) =>
+                !(o instanceof MoveTextOp) &&
+                !(o instanceof MoveTextLeadingOp) &&
+                !(o instanceof NextLineOp),
+        )
+        const showIdx = src.ops.findIndex(
+            (o) =>
+                o instanceof ShowTextOp ||
+                o instanceof ShowTextArrayOp ||
+                o instanceof ShowTextNextLineOp ||
+                o instanceof ShowTextNextLineSpacingOp,
+        )
+        if (showIdx !== -1) {
+            src.ops.splice(showIdx, 0, newTmOp)
+        } else {
+            src.ops.push(newTmOp)
+        }
+        if (parentBlock instanceof TextBlock) {
+            parentBlock.rebuildOpsFromSegments()
+        }
+    }
 
     override get page(): PdfPage | undefined {
         return super.page ?? this.prev?.page
@@ -477,6 +638,7 @@ export class TextBlock extends ContentNode {
             if (op instanceof ShowTextOp || op instanceof ShowTextArrayOp) {
                 const segment = new Text(currentOps, this.page)
                 segment.prev = lastSegment ?? undefined
+                segment.parent = this
                 segments.push(segment)
                 currentOps = []
                 lastSegment = segment
@@ -488,6 +650,7 @@ export class TextBlock extends ContentNode {
         if (currentOps.length > 0) {
             const segment = new Text(currentOps, this.page)
             segment.prev = lastSegment ?? undefined
+            segment.parent = this
             segments.push(segment)
         }
 
@@ -609,10 +772,31 @@ export class TextBlock extends ContentNode {
     }
 
     /**
+     * Edit this text block's content, modifying the original content-stream
+     * in-place when source segment references are available (i.e. this block
+     * was produced by `regroupTextBlocks`).  Falls back to direct mutation
+     * when no source references exist.
+     */
+    editText(newText: string): void {
+        const segments = this.getSegments()
+        const first = segments[0]
+        if (first?._sourceSegment) {
+            // In-place: replace the first source, clear the rest
+            first.replaceTextInSource(newText)
+            for (let i = 1; i < segments.length; i++) {
+                segments[i].clearSourceShowOp()
+            }
+        } else {
+            // Direct fallback
+            this.text = newText
+        }
+    }
+
+    /**
      * Rebuild the ops array from segments.
      * Used after programmatic modifications to keep ops in sync.
      */
-    private rebuildOpsFromSegments(): void {
+    rebuildOpsFromSegments(): void {
         const newOps: ContentOp[] = [new BeginTextOp()]
         for (const seg of this.segments) {
             newOps.push(...seg.ops)
@@ -683,6 +867,14 @@ export class TextBlock extends ContentNode {
         }
 
         this.rebuildOpsFromSegments()
+
+        // Also shift the original content-stream segments when source
+        // references are available.
+        for (const seg of this.segments) {
+            if (seg._sourceSegment) {
+                seg.moveSourceBy(dx, dy)
+            }
+        }
     }
 
     /**
@@ -710,6 +902,7 @@ export class TextBlock extends ContentNode {
             textLeading: number
             text: string
             showOp: ContentOp | null
+            sourceSegment: Text
             orientationKey: string
             lineCoord: number
             alongCoord: number
@@ -788,6 +981,7 @@ export class TextBlock extends ContentNode {
                     textLeading: seg.textLeading,
                     text,
                     showOp,
+                    sourceSegment: seg,
                     orientationKey,
                     lineCoord,
                     alongCoord,
@@ -964,6 +1158,7 @@ export class TextBlock extends ContentNode {
                 }
 
                 const newSeg = new Text(newOps, firstPage)
+                newSeg._sourceSegment = d.sourceSegment
                 newBlock.addSegment(newSeg)
             }
 
@@ -1269,7 +1464,9 @@ export class PdfContentStream extends PdfStream {
     protected tokenize(): PdfToken[] {
         const rawData = this.getRawData()
         if (rawData) {
-            this.raw = rawData
+            // Use the data setter so the bytes are properly re-encoded
+            // through any existing filters (e.g. FlateDecode).
+            this.data = rawData
         }
         return super.tokenize()
     }

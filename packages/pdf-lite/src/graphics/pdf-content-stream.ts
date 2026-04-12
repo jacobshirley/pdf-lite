@@ -133,13 +133,13 @@ export abstract class ContentNode {
     }
 }
 
-export class Text extends ContentNode {
-    prev?: Text
+export class TextNode extends ContentNode {
+    prev?: TextNode
     /**
      * Reference to the original content-stream Text segment that this
      * regrouped segment was derived from.  Set by `regroupTextBlocks`.
      */
-    _sourceSegment?: Text
+    _sourceSegment?: TextNode
 
     /**
      * Replace the text in the original content-stream segment that this
@@ -204,8 +204,8 @@ export class Text extends ContentNode {
     moveSourceBy(dx: number, dy: number): void {
         const src = this._sourceSegment
         if (!src) return
-        const newLocal = Text._computeSourceShift(src, dx, dy)
-        if (newLocal) Text._applySourceShift(src, newLocal)
+        const newLocal = TextNode._computeSourceShift(src, dx, dy)
+        if (newLocal) TextNode._applySourceShift(src, newLocal)
     }
 
     /**
@@ -214,7 +214,7 @@ export class Text extends ContentNode {
      */
     /** @internal */
     static _computeSourceShift(
-        src: Text,
+        src: TextNode,
         dx: number,
         dy: number,
     ): Matrix | null {
@@ -243,7 +243,7 @@ export class Text extends ContentNode {
      */
     /** @internal */
     static _computeLocalFromWorld(
-        seg: Text,
+        seg: TextNode,
         targetWorld: Matrix,
     ): Matrix | null {
         const currentWorld = seg.getWorldTransform()
@@ -261,7 +261,7 @@ export class Text extends ContentNode {
      * positioning ops and rebuilding the parent TextBlock.
      */
     /** @internal */
-    static _applySourceShift(src: Text, newLocal: Matrix): void {
+    static _applySourceShift(src: TextNode, newLocal: Matrix): void {
         const parentBlock = src.parent
         if (!parentBlock) return
 
@@ -659,7 +659,7 @@ export class Text extends ContentNode {
 }
 
 export class TextBlock extends ContentNode {
-    protected segments: Text[] = []
+    protected segments: TextNode[] = []
     prev?: TextBlock
 
     constructor(page?: PdfPage, ops?: ContentOp[], prev?: TextBlock) {
@@ -671,11 +671,11 @@ export class TextBlock extends ContentNode {
 
     /** @internal */
     parseSegments(): void {
-        const segments: Text[] = []
+        const segments: TextNode[] = []
         let currentOps: ContentOp[] = []
         // Link the first segment's prev to the last segment of the previous
         // TextBlock so that font/size state carries across BT/ET boundaries.
-        let lastSegment: Text | undefined = this.prev?.getSegments().at(-1)
+        let lastSegment: TextNode | undefined = this.prev?.getSegments().at(-1)
 
         for (const op of this.ops) {
             if (op instanceof BeginTextOp || op instanceof EndTextOp) {
@@ -684,7 +684,7 @@ export class TextBlock extends ContentNode {
 
             currentOps.push(op)
             if (op instanceof ShowTextOp || op instanceof ShowTextArrayOp) {
-                const segment = new Text(currentOps, this.page)
+                const segment = new TextNode(currentOps, this.page)
                 segment.prev = lastSegment ?? undefined
                 segment.parent = this
                 segments.push(segment)
@@ -696,7 +696,7 @@ export class TextBlock extends ContentNode {
         // If there are leftover ops without a show operator, create an empty segment
         // This preserves positioning and font ops even without text
         if (currentOps.length > 0) {
-            const segment = new Text(currentOps, this.page)
+            const segment = new TextNode(currentOps, this.page)
             segment.prev = lastSegment ?? undefined
             segment.parent = this
             segments.push(segment)
@@ -709,7 +709,7 @@ export class TextBlock extends ContentNode {
         return this.segments
     }
 
-    addSegment(segment: Text): void {
+    addSegment(segment: TextNode): void {
         segment.parent = this
         segment.prev = this.segments[this.segments.length - 1]
         this.segments.push(segment)
@@ -797,7 +797,7 @@ export class TextBlock extends ContentNode {
 
     set text(newText: string) {
         if (this.segments.length === 0) {
-            const text = new Text([], this.page)
+            const text = new TextNode([], this.page)
             text.font = PdfFont.HELVETICA
             text.fontSize = 12
             text.text = newText
@@ -1058,7 +1058,7 @@ export class TextBlock extends ContentNode {
         // Snapshot the effective fill color for each source segment
         // BEFORE any modifications, so we can restore it after the
         // show op and prevent color bleeding to subsequent text.
-        const prevColors = new Map<Text, ContentOp>()
+        const prevColors = new Map<TextNode, ContentOp>()
         for (const seg of this.segments) {
             const src = seg._sourceSegment
             if (!src) continue
@@ -1136,8 +1136,8 @@ export class TextBlock extends ContentNode {
     }
 
     /** @internal Walk the prev chain to find the effective fill color. */
-    private static _findEffectiveFillColor(seg: Text): ContentOp {
-        let walk: Text | undefined = seg
+    private static _findEffectiveFillColor(seg: TextNode): ContentOp {
+        let walk: TextNode | undefined = seg
         while (walk) {
             for (let i = walk.ops.length - 1; i >= 0; i--) {
                 const o = walk.ops[i]
@@ -1164,7 +1164,7 @@ export class TextBlock extends ContentNode {
      */
     private _editTextMultiFont(
         newText: string,
-        withSource: Text[],
+        withSource: TextNode[],
         fonts: Set<PdfFont>,
     ): void {
         const fontList = [...fonts]
@@ -1389,12 +1389,12 @@ export class TextBlock extends ContentNode {
         // any.  Source segments in the same parent TextBlock share a prev
         // chain; writing one shifts the chain so later reads return stale
         // values.
-        const sourceMoves: { src: Text; newLocal: Matrix }[] = []
-        const movedSrcs = new Set<Text>()
+        const sourceMoves: { src: TextNode; newLocal: Matrix }[] = []
+        const movedSrcs = new Set<TextNode>()
         for (const seg of this.segments) {
             const src = seg._sourceSegment
             if (!src) continue
-            const newLocal = Text._computeSourceShift(src, dx, dy)
+            const newLocal = TextNode._computeSourceShift(src, dx, dy)
             if (newLocal) {
                 sourceMoves.push({ src, newLocal })
                 movedSrcs.add(src)
@@ -1410,7 +1410,7 @@ export class TextBlock extends ContentNode {
                 affectedParents.add(src.parent)
             }
         }
-        const siblingSnaps = new Map<Text, Matrix>()
+        const siblingSnaps = new Map<TextNode, Matrix>()
         for (const parent of affectedParents) {
             for (const sib of parent.getSegments()) {
                 if (!movedSrcs.has(sib)) {
@@ -1421,15 +1421,15 @@ export class TextBlock extends ContentNode {
 
         // Apply the source shifts.
         for (const { src, newLocal } of sourceMoves) {
-            Text._applySourceShift(src, newLocal)
+            TextNode._applySourceShift(src, newLocal)
         }
 
         // Pin non-moved siblings to their original positions by converting
         // them to absolute Tm.  This prevents Td-based siblings from
         // drifting when a prior segment in the prev chain was shifted.
         for (const [sib, oldWorld] of siblingSnaps) {
-            const newLocal = Text._computeLocalFromWorld(sib, oldWorld)
-            if (newLocal) Text._applySourceShift(sib, newLocal)
+            const newLocal = TextNode._computeLocalFromWorld(sib, oldWorld)
+            if (newLocal) TextNode._applySourceShift(sib, newLocal)
         }
     }
 
@@ -1458,7 +1458,7 @@ export class TextBlock extends ContentNode {
             textLeading: number
             text: string
             showOp: ContentOp | null
-            sourceSegment: Text
+            sourceSegment: TextNode
             fontType: string | undefined
             orientationKey: string
             lineCoord: number
@@ -1515,7 +1515,7 @@ export class TextBlock extends ContentNode {
                 // can faithfully recreate it in the baked segment.
                 // Walk the prev chain like the `font` getter does.
                 let fontResourceName: string | undefined
-                let walk: Text | undefined = seg
+                let walk: TextNode | undefined = seg
                 while (walk) {
                     const tf = walk.ops.find((o) => o instanceof SetFontOp) as
                         | SetFontOp
@@ -1729,7 +1729,7 @@ export class TextBlock extends ContentNode {
                     newOps.push(d.showOp)
                 }
 
-                const newSeg = new Text(newOps, firstPage)
+                const newSeg = new TextNode(newOps, firstPage)
                 newSeg._sourceSegment = d.sourceSegment
                 newBlock.addSegment(newSeg)
             }

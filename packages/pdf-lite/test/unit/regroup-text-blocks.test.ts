@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
     TextBlock,
-    Text,
+    TextNode,
     PdfContentStream,
     StateNode,
     ContentNode,
@@ -33,8 +33,8 @@ const makeSeg = (
     x: number,
     y: number,
     text: string,
-): Text =>
-    new Text([
+): TextNode =>
+    new TextNode([
         SetFontOp.create(fontName, size),
         SetTextMatrixOp.create(a, b, c, d, x, y),
         ShowTextOp.create(text),
@@ -46,7 +46,7 @@ const upright = (
     x: number,
     y: number,
     text: string,
-): Text => makeSeg(fontName, size, 1, 0, 0, 1, x, y, text)
+): TextNode => makeSeg(fontName, size, 1, 0, 0, 1, x, y, text)
 
 describe('TextBlock.regroupTextBlocks', () => {
     it('groups segments with matching baselines into one block', () => {
@@ -125,7 +125,9 @@ describe('TextBlock.regroupTextBlocks', () => {
     })
 
     it('skips empty position-only segments', () => {
-        const empty = new Text([SetTextMatrixOp.create(1, 0, 0, 1, 50, 750)])
+        const empty = new TextNode([
+            SetTextMatrixOp.create(1, 0, 0, 1, 50, 750),
+        ])
         const block = new TextBlock()
         block.addSegment(empty)
         block.addSegment(upright('F1', 12, 100, 700, 'A'))

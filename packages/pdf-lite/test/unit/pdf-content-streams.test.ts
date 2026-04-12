@@ -4,7 +4,7 @@ import { PdfDocument } from '../../src/pdf/pdf-document'
 import {
     PdfContentStreamObject,
     TextBlock,
-    Text,
+    TextNode,
     GraphicsBlock,
     StateNode,
 } from '../../src/graphics/pdf-content-stream'
@@ -197,7 +197,7 @@ describe('PdfContentStreamObject.add() and dataAsString', () => {
     it('add() appends a node to the stream', () => {
         const s = makeStream('')
         const block = new TextBlock()
-        const text = new Text()
+        const text = new TextNode()
         text.font = PdfFont.HELVETICA
         text.fontSize = 12
         text.text = 'Hello'
@@ -354,7 +354,7 @@ describe('TextBlock', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
         const tb = s.nodes[0] as TextBlock
         expect(tb.getSegments()).toHaveLength(1)
-        expect(tb.getSegments()[0]).toBeInstanceOf(Text)
+        expect(tb.getSegments()[0]).toBeInstanceOf(TextNode)
         expect(tb.getSegments()[0].text).toBe('Hello')
     })
 

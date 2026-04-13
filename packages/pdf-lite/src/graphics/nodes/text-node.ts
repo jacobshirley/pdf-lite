@@ -26,6 +26,7 @@ import {
 import { Rect } from '../geom/rect'
 import { ContentNode } from './content-node'
 import { ContentOp } from '../ops'
+import { CMYKColor, Color, GrayColor, RGBColor } from '../types'
 
 export class TextNode extends ContentNode {
     prev?: TextNode
@@ -466,13 +467,36 @@ export class TextNode extends ContentNode {
         })
     }
 
-    get fillColor(): ColorOp | undefined {
+    get color(): Color | undefined {
         const o = this.ops.findLast(
             (o) =>
                 o instanceof SetFillColorRGBOp ||
                 o instanceof SetFillColorGrayOp ||
                 o instanceof SetFillColorCMYKOp,
         )
-        return o ?? this.prev?.fillColor
+
+        if (o instanceof SetFillColorRGBOp) {
+            return new RGBColor(o.r, o.g, o.b)
+        } else if (o instanceof SetFillColorGrayOp) {
+            return new GrayColor(o.gray)
+        } else if (o instanceof SetFillColorCMYKOp) {
+            return new CMYKColor(o.c, o.m, o.y, o.k)
+        }
+        return this.prev?.color
+    }
+
+    set color(color: Color) {
+        const idx = this.ops.findLastIndex(
+            (o) =>
+                o instanceof SetFillColorRGBOp ||
+                o instanceof SetFillColorGrayOp ||
+                o instanceof SetFillColorCMYKOp,
+        )
+        if (idx !== -1) {
+            this.ops[idx] = color.toOp()
+            return
+        }
+
+        this.ops.push(color.toOp())
     }
 }

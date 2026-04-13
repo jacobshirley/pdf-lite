@@ -18,6 +18,7 @@ import {
     SetFillColorRGBOp,
     SetFillColorGrayOp,
 } from '../../src/graphics/ops/color'
+import { RGBColor } from '../../src/graphics/types'
 
 const FIXTURE = './test/unit/fixtures/multi-child-field.pdf'
 
@@ -1428,7 +1429,7 @@ describe('TextBlock.color', () => {
     it('inserts RGB fill color op before show op', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
         const tb = s.textBlocks[0]
-        tb.color = { r: 1, g: 0, b: 0 }
+        tb.color = new RGBColor(1, 0, 0) // red
         const str = tb.toString()
         expect(str).toContain('1 0 0 rg')
     })
@@ -1436,14 +1437,14 @@ describe('TextBlock.color', () => {
     it('preserves text content after color change', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
         const tb = s.textBlocks[0]
-        tb.color = { r: 0, g: 0.5, b: 1 }
+        tb.color = new RGBColor(0, 0.5, 1)
         expect(tb.text).toBe('Hello')
     })
 
     it('replaces existing RGB fill color', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td 1 0 0 rg (Hello) Tj ET')
         const tb = s.textBlocks[0]
-        tb.color = { r: 0, g: 1, b: 0 }
+        tb.color = new RGBColor(0, 1, 0)
         const str = tb.toString()
         // Old red should be gone, new green present
         expect(str).not.toContain('1 0 0 rg')
@@ -1453,7 +1454,7 @@ describe('TextBlock.color', () => {
     it('replaces existing gray fill color', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td 0.5 g (Hello) Tj ET')
         const tb = s.textBlocks[0]
-        tb.color = { r: 0, g: 0, b: 1 }
+        tb.color = new RGBColor(0, 0, 1)
         const str = tb.toString()
         expect(str).not.toContain('0.5 g')
         expect(str).toContain('0 0 1 rg')
@@ -1462,7 +1463,7 @@ describe('TextBlock.color', () => {
     it('updates source segments when regrouped', () => {
         const s = makeStream('BT /F1 12 Tf 1 0 0 1 100 700 Tm (Hello) Tj ET')
         const regrouped = s.regroupTextBlocksByLine()
-        regrouped[0].color = { r: 1, g: 0, b: 0 }
+        regrouped[0].color = new RGBColor(1, 0, 0)
         const streamStr = s.dataAsString
         expect(streamStr).toContain('1 0 0 rg')
     })
@@ -1475,7 +1476,7 @@ describe('TextBlock.color', () => {
         expect(regrouped).toHaveLength(2)
 
         // Change only the first block's color to red
-        regrouped[0].color = { r: 1, g: 0, b: 0 }
+        regrouped[0].color = new RGBColor(1, 0, 0)
 
         // The source content stream should restore the previous color
         // after the first show op so "Line2" isn't affected.
@@ -1501,7 +1502,7 @@ describe('TextBlock.color', () => {
             'BT /F1 12 Tf 1 0 0 1 100 700 Tm (A) Tj 1 0 0 1 110 700 Tm (B) Tj ET',
         )
         const tb = s.textBlocks[0]
-        tb.color = { r: 0.5, g: 0.5, b: 0.5 }
+        tb.color = new RGBColor(0.5, 0.5, 0.5)
         const str = tb.toString()
         // Both segments should have the color op
         const colorMatches = str.match(/0\.5 0\.5 0\.5 rg/g)
@@ -1533,7 +1534,7 @@ describe('setFont and color round-trip', () => {
         expect(target).toBeDefined()
         const origText = target!.text
 
-        target!.color = { r: 1, g: 0, b: 0 }
+        target!.color = new RGBColor(1, 0, 0)
 
         // Round-trip
         const bytes = doc.toBytes()

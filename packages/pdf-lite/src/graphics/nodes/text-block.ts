@@ -24,6 +24,7 @@ import {
 import { Rect } from '../geom/rect'
 import { ContentNode } from './content-node'
 import { TextNode } from './text-node'
+import { Color, GrayColor } from '../types'
 
 export class TextBlock extends ContentNode {
     protected segments: TextNode[] = []
@@ -367,19 +368,8 @@ export class TextBlock extends ContentNode {
     /**
      * Get the fill color of the first segment in this text block.
      */
-    get color():
-        | { r: number; g: number; b: number }
-        | { gray: number }
-        | undefined {
-        const colorOp = this.segments[0]?.fillColor
-        if (!colorOp) return undefined
-
-        if (colorOp instanceof SetFillColorRGBOp) {
-            return { r: colorOp.r, g: colorOp.g, b: colorOp.b }
-        } else if (colorOp instanceof SetFillColorGrayOp) {
-            return { gray: colorOp.gray }
-        }
-        return undefined
+    get color(): Color | undefined {
+        return this.segments[0]?.color
     }
 
     /**
@@ -387,19 +377,19 @@ export class TextBlock extends ContentNode {
      * Accepts an RGB color as `{ r, g, b }` with values in 0–1 range.
      * Updates both regrouped segments and original source segments.
      */
-    set color(color: { r: number; g: number; b: number }) {
+    set color(color: Color) {
         // Snapshot the effective fill color for each segment BEFORE any
         // modifications, so we can restore it after the show op and prevent
         // color bleeding to subsequent text in the same real parent block.
-        const prevColors = new Map<TextNode, ContentOp>()
-        const black = SetFillColorGrayOp.create(0)
+        const prevColors = new Map<TextNode, Color>()
+        const black = new GrayColor(0)
 
         for (const seg of this.segments) {
-            prevColors.set(seg, seg.prev?.fillColor ?? black)
+            prevColors.set(seg, seg.prev?.color ?? black)
         }
 
         for (const seg of this.segments) {
-            const restoreOp = prevColors.get(seg)
+            const restoreColor = prevColors.get(seg)
 
             seg.ops = seg.ops.filter(
                 (o) =>
@@ -414,21 +404,17 @@ export class TextBlock extends ContentNode {
                     o instanceof ShowTextNextLineOp ||
                     o instanceof ShowTextNextLineSpacingOp,
             )
-            const newColorOp = SetFillColorRGBOp.create(
-                color.r,
-                color.g,
-                color.b,
-            )
+
             if (showIdx !== -1) {
-                seg.ops.splice(showIdx, 0, newColorOp)
+                seg.ops.splice(showIdx, 0, color.toOp())
                 // Restore previous color AFTER the show op to prevent the
                 // new color from bleeding to subsequent segments.  +2:
                 // skip past the inserted color op and the show op.
-                if (restoreOp) {
-                    seg.ops.splice(showIdx + 2, 0, restoreOp)
+                if (restoreColor) {
+                    seg.ops.splice(showIdx + 2, 0, restoreColor.toOp())
                 }
             } else {
-                seg.ops.push(newColorOp)
+                seg.ops.push(color.toOp())
             }
         }
         // ops getter auto-syncs with segments

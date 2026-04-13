@@ -192,7 +192,7 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
 
         const stream = new PdfStream({
             header,
-            original: concatUint8Arrays(...chunks),
+            original: concatUint8Arrays(chunks),
         })
 
         stream.preStreamDataTokens = preStreamTokens

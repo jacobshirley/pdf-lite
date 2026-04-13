@@ -116,7 +116,7 @@ async function computeEncryptionKeyRc4_128(
     const perms = int32ToLittleEndianBytes(permissions)
 
     let digest = await md5(
-        concatUint8Arrays(
+        concatUint8Arrays([
             userPad,
             oValue,
             perms,
@@ -124,7 +124,7 @@ async function computeEncryptionKeyRc4_128(
             revision >= 4 && !encryptMetadata
                 ? new Uint8Array([0xff, 0xff, 0xff, 0xff])
                 : new Uint8Array(),
-        ),
+        ]),
     )
 
     // 50 iterations
@@ -173,7 +173,7 @@ export async function computeUValueRc4_128(
     )
 
     // Step 2 & 3: MD5 of padding + file ID
-    const hash = await md5(concatUint8Arrays(DEFAULT_PADDING, id)) // 16 bytes
+    const hash = await md5(concatUint8Arrays([DEFAULT_PADDING, id])) // 16 bytes
 
     // Step 4: First RC4 encrypt with base key
     let data = await rc4EncryptWithKey(encryptionKey, hash)

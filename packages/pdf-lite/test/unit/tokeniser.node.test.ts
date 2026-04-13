@@ -29,7 +29,7 @@ describe('PDF tokeniser', () => {
         expect(output).toMatchSnapshot()
 
         const outputBytes = concatUint8Arrays(
-            ...output.map((token) => token.toBytes()),
+            output.map((token) => token.toBytes()),
         )
         const pdfStr = pdfBuffer.toString()
         const outputStr = bytesToString(outputBytes)

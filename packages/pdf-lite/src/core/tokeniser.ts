@@ -369,10 +369,10 @@ export class PdfByteStreamTokeniser extends IncrementalParser<
         this.inStream = true
 
         return new PdfStartStreamToken(
-            concatUint8Arrays(
+            concatUint8Arrays([
                 stringToBytes('stream'),
                 new Uint8Array(whitespaceBytes),
-            ),
+            ]),
         )
     }
 

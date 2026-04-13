@@ -34,7 +34,6 @@ import {
     PdfButtonFormField,
     PdfPage,
     PdfFont,
-    Text,
     TextBlock,
     GraphicsBlock,
 } from 'pdf-lite'

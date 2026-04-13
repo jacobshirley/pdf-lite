@@ -870,9 +870,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         // Collect moved segment texts WITH their pristine positions
         const movedSegs = mIdBlock!.getSegments()
         const movedPristinePositions = movedSegs.map((s: any) => {
-            const src = s._sourceSegment
-            if (!src) return null
-            const wt = src.getWorldTransform()
+            const wt = s.getWorldTransform()
             return { text: s.text, origE: wt.e, origF: wt.f }
         })
 
@@ -1085,29 +1083,15 @@ describe('real PDF text editing round-trip', () => {
             expect(page.contentStreams.length).toBeGreaterThan(1)
         })
 
-        it('getTextBlocks returns blocks with source segment references', () => {
-            const page = doc.pages.get(0)
-            const blocks = page.getTextBlocks()
-            expect(blocks.length).toBeGreaterThan(0)
-
-            // Every segment should have a _sourceSegment reference
-            for (const block of blocks) {
-                for (const seg of block.getSegments()) {
-                    expect(seg._sourceSegment).toBeDefined()
-                }
-            }
-        })
-
-        it('source segments have a valid parent in the content stream tree', () => {
+        it('getTextBlocks segments are live references into the content stream', () => {
             const page = doc.pages.get(0)
             const blocks = page.getTextBlocks()
             expect(blocks.length).toBeGreaterThan(0)
 
             for (const block of blocks) {
                 for (const seg of block.getSegments()) {
-                    const src = seg._sourceSegment!
-                    expect(src.parent).toBeDefined()
-                    expect(src.parent).toBeInstanceOf(TextBlock)
+                    expect(seg.parent).toBeDefined()
+                    expect(seg.parent).toBeInstanceOf(TextBlock)
                 }
             }
         })
@@ -1185,7 +1169,7 @@ describe('real PDF text editing round-trip', () => {
 
     // template.pdf likely has a single content stream
     describe('single-stream page (template.pdf)', () => {
-        it('getTextBlocks returns blocks with source references', async () => {
+        it('getTextBlocks segments are live references to content-stream nodes', async () => {
             const doc = await loadFixture('./test/unit/fixtures/template.pdf')
             const page = doc.pages.get(0)
 
@@ -1198,43 +1182,35 @@ describe('real PDF text editing round-trip', () => {
             const target = blocks.find((b) => b.text.trim().length > 3)
             expect(target).toBeDefined()
 
-            // Check source segment chain
             const segs = target!.getSegments()
             expect(segs.length).toBeGreaterThan(0)
 
             const seg = segs[0]
-            expect(seg._sourceSegment).toBeDefined()
-
-            const src = seg._sourceSegment!
-            expect(src.parent).toBeDefined()
-            expect(src.parent).toBeInstanceOf(TextBlock)
+            expect(seg.parent).toBeInstanceOf(TextBlock)
 
             // After getTextBlocks (which consolidates), the first
-            // stream's _nodes should be populated and contain the
-            // source parent.
+            // stream's nodes should contain the seg's real parent.
             const stream = page.contentStreams[0]
             const nodesBlocks = stream.textBlocks
-            const found = nodesBlocks.find((b) => b === src.parent)
+            const found = nodesBlocks.find((b) => b === seg.parent)
             expect(found).toBeDefined()
         })
 
-        it('replaceTextInSource actually modifies the source parent ops', async () => {
+        it('editText modifies the real parent ops', async () => {
             const doc = await loadFixture('./test/unit/fixtures/template.pdf')
             const page = doc.pages.get(0)
             const blocks = page.getTextBlocks()
 
             const target = blocks.find((b) => b.text.trim().length > 3)!
             const seg = target.getSegments()[0]
-            const src = seg._sourceSegment!
-            const parentBlock = src.parent! as TextBlock
+            const parentBlock = seg.parent! as TextBlock
 
             const oldText = parentBlock.text
             expect(oldText.length).toBeGreaterThan(0)
 
-            const result = seg.replaceTextInSource('EDITED_VALUE')
-            expect(result).toBe(true)
+            target.editText('EDITED_VALUE')
 
-            // The source parent's serialization should change
+            // The real parent's serialization should change
             const newStr = parentBlock.toString()
             expect(newStr).not.toContain(oldText.slice(0, 10))
         })

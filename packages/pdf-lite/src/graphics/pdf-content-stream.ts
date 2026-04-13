@@ -135,91 +135,15 @@ export abstract class ContentNode {
 
 export class TextNode extends ContentNode {
     prev?: TextNode
-    /**
-     * Reference to the original content-stream Text segment that this
-     * regrouped segment was derived from.  Set by `regroupTextBlocks`.
-     */
-    _sourceSegment?: TextNode
 
     /**
-     * Replace the text in the original content-stream segment that this
-     * regrouped segment was derived from.  Modifies the live node tree
-     * so that the content stream auto-serializes the change.
-     *
-     * Returns true if the replacement succeeded, false if no source exists.
-     */
-    replaceTextInSource(newText: string): boolean {
-        const src = this._sourceSegment
-        if (!src) return false
-
-        const newShowOp = src.writeContentStreamText(newText)
-        const isShowOp = (o: ContentOp) =>
-            o instanceof ShowTextOp ||
-            o instanceof ShowTextArrayOp ||
-            o instanceof ShowTextNextLineOp ||
-            o instanceof ShowTextNextLineSpacingOp
-
-        const oldShowOp = src.ops.find(isShowOp)
-        if (!oldShowOp) return false
-
-        // Replace in the original TextBlock's ops array (the content-stream tree)
-        const parentBlock = src.parent
-        if (parentBlock) {
-            const idx = parentBlock.ops.indexOf(oldShowOp)
-            if (idx !== -1) parentBlock.ops[idx] = newShowOp
-        }
-        // Also update the segment's own ops for consistency
-        const segIdx = src.ops.indexOf(oldShowOp)
-        if (segIdx !== -1) src.ops[segIdx] = newShowOp
-
-        return true
-    }
-
-    /**
-     * Remove all ops from this segment's original source in the
-     * content-stream tree.  Used when collapsing multi-segment edits
-     * into the first segment.  Removes positioning ops too so orphaned
-     * Td/Tm ops don't shift the cursor after the consolidated Tj.
-     */
-    clearSourceOps(): void {
-        const src = this._sourceSegment
-        if (!src) return
-
-        const parentBlock = src.parent
-        if (parentBlock) {
-            for (const op of src.ops) {
-                const idx = parentBlock.ops.indexOf(op)
-                if (idx !== -1) parentBlock.ops.splice(idx, 1)
-            }
-        }
-        src.ops.length = 0
-    }
-
-    /**
-     * Shift the position in this segment's original source by (dx, dy)
-     * in world-space coordinates.  Correctly accounts for parent graphics
-     * state transforms (cm) so the visible result matches the shift.
-     * Modifies the live content-stream tree in-place.
-     */
-    moveSourceBy(dx: number, dy: number): void {
-        const src = this._sourceSegment
-        if (!src) return
-        const newLocal = TextNode._computeSourceShift(src, dx, dy)
-        if (newLocal) TextNode._applySourceShift(src, newLocal)
-    }
-
-    /**
-     * Compute the new local Tm that a source segment should have after
-     * a world-space shift of (dx, dy).  Pure — no side effects.
+     * Compute the new local Tm that a segment should have after a
+     * world-space shift of (dx, dy).  Pure — no side effects.
      */
     /** @internal */
-    static _computeSourceShift(
-        src: TextNode,
-        dx: number,
-        dy: number,
-    ): Matrix | null {
-        const oldWorld = src.getWorldTransform()
-        const localTm = src.getLocalTransform()
+    static _computeShift(seg: TextNode, dx: number, dy: number): Matrix | null {
+        const oldWorld = seg.getWorldTransform()
+        const localTm = seg.getLocalTransform()
         const localInv = localTm.inverse()
         if (!localInv) return null
         const parentGlobal = oldWorld.multiply(localInv)
@@ -257,11 +181,11 @@ export class TextNode extends ContentNode {
     }
 
     /**
-     * Apply a pre-computed local Tm to a source segment, replacing its
-     * positioning ops and rebuilding the parent TextBlock.
+     * Apply a pre-computed local Tm to a segment, replacing its
+     * positioning ops and rebuilding its parent TextBlock.
      */
     /** @internal */
-    static _applySourceShift(src: TextNode, newLocal: Matrix): void {
+    static _applyShift(src: TextNode, newLocal: Matrix): void {
         const parentBlock = src.parent
         if (!parentBlock) return
 
@@ -670,7 +594,7 @@ export class TextBlock extends ContentNode {
     }
 
     /** @internal */
-    parseSegments(): void {
+    private parseSegments(): void {
         const segments: TextNode[] = []
         let currentOps: ContentOp[] = []
         // Link the first segment's prev to the last segment of the previous
@@ -723,17 +647,15 @@ export class TextBlock extends ContentNode {
 
     toString(): string {
         if (this.segments.length === 0) {
-            return this.ops.map((o) => o.toString()).join('\n')
+            return super.toString()
         }
-        // Serialize as BT <all ops> ET
-        // We serialize from this.ops to preserve order and include non-segment ops
-        const parts: string[] = []
-        for (const op of this.ops) {
-            if (!(op instanceof BeginTextOp) && !(op instanceof EndTextOp)) {
-                parts.push(op.toString())
-            }
+
+        const ops = [new BeginTextOp()]
+        for (const seg of this.segments) {
+            ops.push(...seg.ops)
         }
-        return `BT\n${parts.join('\n')}\nET`
+        ops.push(new EndTextOp())
+        return ops.map((o) => o.toString()).join('\n')
     }
 
     getLocalTransform(): Matrix {
@@ -836,13 +758,10 @@ export class TextBlock extends ContentNode {
 
         // Detect multi-font blocks (e.g. Type3 glyph subsets where each
         // character may use a different font resource).
-        const withSource = segments.filter((s) => s._sourceSegment)
-        if (withSource.length > 1) {
-            const srcFonts = new Set(
-                withSource.map((s) => s._sourceSegment!.font),
-            )
-            if (srcFonts.size > 1) {
-                this._editTextMultiFont(newText, withSource, srcFonts)
+        if (segments.length > 1) {
+            const fonts = new Set(segments.map((s) => s.font))
+            if (fonts.size > 1) {
+                this._editTextMultiFont(newText, segments, fonts)
                 return
             }
         }
@@ -862,14 +781,29 @@ export class TextBlock extends ContentNode {
             }
         }
 
-        if (first?._sourceSegment) {
-            first.replaceTextInSource(newText)
-            for (let i = 1; i < segments.length; i++) {
-                segments[i].clearSourceOps()
-            }
+        // Replace the show op in the first segment and clear the rest.
+        // Then rebuild each affected real parent block from its segments.
+        const isShowOp = (o: ContentOp) =>
+            o instanceof ShowTextOp ||
+            o instanceof ShowTextArrayOp ||
+            o instanceof ShowTextNextLineOp ||
+            o instanceof ShowTextNextLineSpacingOp
+
+        const newShowOp = first.writeContentStreamText(newText)
+        const oldIdx = first.ops.findIndex(isShowOp)
+        if (oldIdx !== -1) {
+            first.ops[oldIdx] = newShowOp
         } else {
-            this.text = newText
+            first.ops.push(newShowOp)
         }
+
+        // Clear extras — leave them as empty-ops segments in their real
+        // parent's segment list; rebuilding the parent drops their content.
+        for (let i = 1; i < segments.length; i++) {
+            segments[i].ops = []
+        }
+
+        this.rebuildOpsFromSegments()
     }
 
     /**
@@ -899,17 +833,15 @@ export class TextBlock extends ContentNode {
             )
         }
 
-        // Snapshot the first segment's Tm as the anchor position.
-        // We'll recompute all subsequent Tm positions based on the
-        // new font's advance widths so segments don't drift apart
-        // (e.g. switching from a proportional to a monospaced font).
+        // Snapshot the first segment's local Tm as the anchor position.
+        // We'll recompute all subsequent Tm positions based on the new
+        // font's advance widths so segments don't drift apart.
         const firstTm = this.segments[0]?.getLocalTransform()
 
         for (let i = 0; i < this.segments.length; i++) {
             const seg = this.segments[i]
             const segText = segTexts[i]
 
-            // Update the regrouped segment's Tf
             const tfOp = seg.ops.find((o) => o instanceof SetFontOp)
             if (tfOp) {
                 tfOp.fontName = resName
@@ -919,8 +851,6 @@ export class TextBlock extends ContentNode {
 
             if (!segText) continue
 
-            // Re-encode the text with the new font via writeContentStreamText
-            // which handles kern pairs and encoding correctly.
             const showOp = seg.ops.find(
                 (o) => o instanceof ShowTextOp || o instanceof ShowTextArrayOp,
             )
@@ -929,35 +859,14 @@ export class TextBlock extends ContentNode {
                 const idx = seg.ops.indexOf(showOp)
                 seg.ops[idx] = newShow
             }
-
-            // Update source segment if present
-            const src = seg._sourceSegment
-            if (src) {
-                const srcTf = src.ops.find((o) => o instanceof SetFontOp)
-                if (srcTf) {
-                    srcTf.fontName = resName
-                } else {
-                    src.ops.unshift(SetFontOp.create(resName, src.fontSize))
-                }
-                const srcShow = src.ops.find(
-                    (o) =>
-                        o instanceof ShowTextOp || o instanceof ShowTextArrayOp,
-                )
-                if (srcShow) {
-                    const newSrcShow = src.writeContentStreamText(segText)
-                    const srcIdx = src.ops.indexOf(srcShow)
-                    src.ops[srcIdx] = newSrcShow
-                }
-                if (src.parent instanceof TextBlock) {
-                    src.parent.rebuildOpsFromSegments()
-                }
-            }
         }
 
-        // Recalculate Tm positions for segments 1+ based on the new
-        // font's advance widths.  The first segment keeps its original
-        // position; each subsequent segment is placed right after the
-        // cumulative advance of all prior segments.
+        // Recalculate Tm positions for segments 1+ based on the new font's
+        // advance widths.  The first segment keeps its original position;
+        // each subsequent segment is placed right after the cumulative
+        // advance of all prior segments.  Positions are expressed in each
+        // segment's own local space by replacing any existing positioning
+        // ops with an absolute Tm.
         if (firstTm && this.segments.length > 1) {
             const scale = Math.hypot(firstTm.a, firstTm.b) || 1
             const ux = firstTm.a / scale
@@ -965,84 +874,40 @@ export class TextBlock extends ContentNode {
             let cursorX = firstTm.e
             let cursorY = firstTm.f
 
-            // Also compute source-space cursor for source segment updates.
-            // The source may live in a different coordinate space (e.g. the
-            // regrouped Tm has scale=0.75 while source has scale=1).
-            const firstSrc = this.segments[0]?._sourceSegment
-            const firstSrcTm = firstSrc?.getLocalTransform()
-            const srcScale = firstSrcTm
-                ? Math.hypot(firstSrcTm.a, firstSrcTm.b) || 1
-                : 1
-            const srcUx = firstSrcTm ? firstSrcTm.a / srcScale : 1
-            const srcUy = firstSrcTm ? firstSrcTm.b / srcScale : 0
-            let srcCursorX = firstSrcTm?.e ?? cursorX
-            let srcCursorY = firstSrcTm?.f ?? cursorY
-
             for (let i = 0; i < this.segments.length; i++) {
                 const seg = this.segments[i]
 
                 if (i > 0) {
-                    // Update the regrouped segment's Tm
-                    const tmOp = seg.ops.find(
-                        (o) => o instanceof SetTextMatrixOp,
+                    seg.ops = seg.ops.filter(
+                        (o) =>
+                            !(o instanceof SetTextMatrixOp) &&
+                            !(o instanceof MoveTextOp) &&
+                            !(o instanceof MoveTextLeadingOp) &&
+                            !(o instanceof NextLineOp),
                     )
-                    if (tmOp) {
-                        tmOp.matrix = new Matrix({
-                            a: firstTm.a,
-                            b: firstTm.b,
-                            c: firstTm.c,
-                            d: firstTm.d,
-                            e: cursorX,
-                            f: cursorY,
-                        })
-                    }
-
-                    // Update source segment positioning.
-                    // Source segments may use Td (relative) or Tm (absolute).
-                    // Replace with absolute Tm in source coordinate space.
-                    const src = seg._sourceSegment
-                    if (src && firstSrcTm) {
-                        // Strip existing positioning ops
-                        src.ops = src.ops.filter(
-                            (o) =>
-                                !(o instanceof SetTextMatrixOp) &&
-                                !(o instanceof MoveTextOp) &&
-                                !(o instanceof MoveTextLeadingOp) &&
-                                !(o instanceof NextLineOp),
-                        )
-                        // Insert new absolute Tm before the show op
-                        const showIdx = src.ops.findIndex(
-                            (o) =>
-                                o instanceof ShowTextOp ||
-                                o instanceof ShowTextArrayOp,
-                        )
-                        const newTm = SetTextMatrixOp.create(
-                            firstSrcTm.a,
-                            firstSrcTm.b,
-                            firstSrcTm.c,
-                            firstSrcTm.d,
-                            srcCursorX,
-                            srcCursorY,
-                        )
-                        if (showIdx !== -1) {
-                            src.ops.splice(showIdx, 0, newTm)
-                        } else {
-                            src.ops.push(newTm)
-                        }
-                        if (src.parent instanceof TextBlock) {
-                            src.parent.rebuildOpsFromSegments()
-                        }
+                    const showIdx = seg.ops.findIndex(
+                        (o) =>
+                            o instanceof ShowTextOp ||
+                            o instanceof ShowTextArrayOp,
+                    )
+                    const newTm = SetTextMatrixOp.create(
+                        firstTm.a,
+                        firstTm.b,
+                        firstTm.c,
+                        firstTm.d,
+                        cursorX,
+                        cursorY,
+                    )
+                    if (showIdx !== -1) {
+                        seg.ops.splice(showIdx, 0, newTm)
+                    } else {
+                        seg.ops.push(newTm)
                     }
                 }
 
-                // Advance regrouped cursor
                 const advance = seg.getTextAdvance()
                 cursorX += advance * ux * scale
                 cursorY += advance * uy * scale
-
-                // Advance source cursor (source may have different scale)
-                srcCursorX += advance * srcUx * srcScale
-                srcCursorY += advance * srcUy * srcScale
             }
         }
 
@@ -1055,19 +920,17 @@ export class TextBlock extends ContentNode {
      * Updates both regrouped segments and original source segments.
      */
     changeColor(color: { r: number; g: number; b: number }): void {
-        // Snapshot the effective fill color for each source segment
-        // BEFORE any modifications, so we can restore it after the
-        // show op and prevent color bleeding to subsequent text.
+        // Snapshot the effective fill color for each segment BEFORE any
+        // modifications, so we can restore it after the show op and prevent
+        // color bleeding to subsequent text in the same real parent block.
         const prevColors = new Map<TextNode, ContentOp>()
         for (const seg of this.segments) {
-            const src = seg._sourceSegment
-            if (!src) continue
-            const prev = TextBlock._findEffectiveFillColor(src)
-            prevColors.set(src, prev)
+            prevColors.set(seg, TextBlock._findEffectiveFillColor(seg))
         }
 
         for (const seg of this.segments) {
-            // Remove existing fill color ops and insert new one before show op
+            const restoreOp = prevColors.get(seg)
+
             seg.ops = seg.ops.filter(
                 (o) =>
                     !(o instanceof SetFillColorRGBOp) &&
@@ -1088,56 +951,23 @@ export class TextBlock extends ContentNode {
             )
             if (showIdx !== -1) {
                 seg.ops.splice(showIdx, 0, newColorOp)
+                // Restore previous color AFTER the show op to prevent the
+                // new color from bleeding to subsequent segments.  +2:
+                // skip past the inserted color op and the show op.
+                if (restoreOp) {
+                    seg.ops.splice(showIdx + 2, 0, restoreOp)
+                }
             } else {
                 seg.ops.push(newColorOp)
-            }
-
-            // Update source segment
-            const src = seg._sourceSegment
-            if (src) {
-                // Capture previous color before stripping
-                const restoreOp = prevColors.get(src)
-
-                src.ops = src.ops.filter(
-                    (o) =>
-                        !(o instanceof SetFillColorRGBOp) &&
-                        !(o instanceof SetFillColorGrayOp) &&
-                        !(o instanceof SetFillColorCMYKOp),
-                )
-                const srcShowIdx = src.ops.findIndex(
-                    (o) =>
-                        o instanceof ShowTextOp ||
-                        o instanceof ShowTextArrayOp ||
-                        o instanceof ShowTextNextLineOp ||
-                        o instanceof ShowTextNextLineSpacingOp,
-                )
-                const srcColorOp = SetFillColorRGBOp.create(
-                    color.r,
-                    color.g,
-                    color.b,
-                )
-                if (srcShowIdx !== -1) {
-                    src.ops.splice(srcShowIdx, 0, srcColorOp)
-                    // Restore previous color AFTER the show op to prevent
-                    // the new color from bleeding to subsequent segments.
-                    // +2: skip past the inserted color op and the show op.
-                    if (restoreOp) {
-                        src.ops.splice(srcShowIdx + 2, 0, restoreOp)
-                    }
-                } else {
-                    src.ops.push(srcColorOp)
-                }
-                if (src.parent instanceof TextBlock) {
-                    src.parent.rebuildOpsFromSegments()
-                }
             }
         }
         this.rebuildOpsFromSegments()
     }
 
-    /** @internal Walk the prev chain to find the effective fill color. */
+    /** @internal Walk the prev chain to find the effective fill color
+     * inherited from BEFORE this segment (excluding seg's own ops). */
     private static _findEffectiveFillColor(seg: TextNode): ContentOp {
-        let walk: TextNode | undefined = seg
+        let walk: TextNode | undefined = seg.prev
         while (walk) {
             for (let i = walk.ops.length - 1; i >= 0; i--) {
                 const o = walk.ops[i]
@@ -1164,7 +994,7 @@ export class TextBlock extends ContentNode {
      */
     private _editTextMultiFont(
         newText: string,
-        withSource: TextNode[],
+        segs: TextNode[],
         fonts: Set<PdfFont>,
     ): void {
         const fontList = [...fonts]
@@ -1189,45 +1019,33 @@ export class TextBlock extends ContentNode {
             )
         }
 
-        // Build font → resource name map from source segments' Tf ops
+        // Build font → resource name map from segments' Tf ops
         const fontResName = new Map<PdfFont, string>()
-        for (const seg of withSource) {
-            const src = seg._sourceSegment!
-            const f = src.font
+        for (const seg of segs) {
+            const f = seg.font
             if (!fontResName.has(f)) {
-                const tf = src.ops.find((o) => o instanceof SetFontOp) as
+                const tf = seg.ops.find((o) => o instanceof SetFontOp) as
                     | SetFontOp
                     | undefined
                 fontResName.set(f, tf?.fontName ?? f.resourceName)
             }
         }
 
-        // Get the first SOURCE segment's local Tm as the anchor.
-        // This is in the content stream's coordinate space (before CTM),
-        // which is where the rebuilt ops need to live.
-        const firstSrc = withSource[0]._sourceSegment!
-        const firstSrcTm = firstSrc.getLocalTransform()
-        const fontSize = firstSrc.fontSize
+        // First segment's local Tm is the anchor, in its real parent's
+        // coordinate space (pre-CTM) — which is where the rebuilt ops live.
+        const firstSeg = segs[0]
+        const firstTm = firstSeg.getLocalTransform()
+        const fontSize = firstSeg.fontSize
 
-        // Compute the scale factor from the source Tm
-        const scale = Math.hypot(firstSrcTm.a, firstSrcTm.b)
+        const scale = Math.hypot(firstTm.a, firstTm.b)
+        const ux = scale !== 0 ? firstTm.a / scale : 1
+        const uy = scale !== 0 ? firstTm.b / scale : 0
 
-        // Compute the text direction unit vector from the source Tm
-        const ux = scale !== 0 ? firstSrcTm.a / scale : 1
-        const uy = scale !== 0 ? firstSrcTm.b / scale : 0
-
-        // Collect all unique source parent TextBlocks
-        const parentBlocks = new Set<TextBlock>()
-        for (const seg of withSource) {
-            const parent = seg._sourceSegment?.parent
-            if (parent instanceof TextBlock) parentBlocks.add(parent)
-        }
-
-        // Build new ops for the first parent TextBlock, positioning each
-        // character at the correct absolute position using Tm.
+        // Build new ops for the first segment's parent TextBlock, placing
+        // each character at the correct absolute position with its font.
         const newBlockOps: ContentOp[] = [new BeginTextOp()]
-        let cursorX = firstSrcTm.e
-        let cursorY = firstSrcTm.f
+        let cursorX = firstTm.e
+        let cursorY = firstTm.f
         let prevFont: PdfFont | undefined
 
         for (const ch of chars) {
@@ -1235,28 +1053,24 @@ export class TextBlock extends ContentNode {
             const rn = fontResName.get(font) ?? font.resourceName
             const encoded = font.encode(ch)
 
-            // Emit Tf if font changed
             if (font !== prevFont) {
                 newBlockOps.push(SetFontOp.create(rn, fontSize))
                 prevFont = font
             }
 
-            // Emit absolute Tm for this character
             newBlockOps.push(
                 SetTextMatrixOp.create(
-                    firstSrcTm.a,
-                    firstSrcTm.b,
-                    firstSrcTm.c,
-                    firstSrcTm.d,
+                    firstTm.a,
+                    firstTm.b,
+                    firstTm.c,
+                    firstTm.d,
                     cursorX,
                     cursorY,
                 ),
             )
 
-            // Emit the show op
             newBlockOps.push(ShowTextOp.create(encoded))
 
-            // Advance cursor by this character's width in source space
             const rev = font.reverseToUnicodeMap
             const glyphCode = rev?.get(ch)
             if (glyphCode !== undefined) {
@@ -1269,19 +1083,22 @@ export class TextBlock extends ContentNode {
 
         newBlockOps.push(new EndTextOp())
 
-        // Apply: replace the first parent block's ops with the rebuilt ones,
-        // and clear all other parent blocks' source segments.
-        const firstParent = withSource[0]._sourceSegment?.parent
+        // Replace the first segment's real parent block ops with the
+        // rebuilt stream; clear other real parents' segments that belonged
+        // to this multi-font line so their ops don't re-emit.
+        const firstParent = firstSeg.parent
         if (firstParent instanceof TextBlock) {
             firstParent.ops = newBlockOps
             firstParent.parseSegments()
         }
 
-        // Clear source segments from other parent blocks
-        for (const seg of withSource) {
-            const parent = seg._sourceSegment?.parent
+        for (const seg of segs) {
+            const parent = seg.parent
             if (parent && parent !== firstParent) {
-                seg.clearSourceOps()
+                seg.ops = []
+                if (parent instanceof TextBlock) {
+                    parent.rebuildOpsFromSegments()
+                }
             }
         }
     }
@@ -1304,133 +1121,51 @@ export class TextBlock extends ContentNode {
      * in user-space coordinates.
      */
     moveBy(dx: number, dy: number): void {
-        // Pre-resolve all positions BEFORE modifying any segment.
-        // Otherwise, modifying segment N shifts its Tm, and segment N+1's
-        // resolveTextState() follows the prev chain to the already-shifted N,
-        // causing double-shifting and characters spreading apart.
-        const resolved = this.segments.map((seg) => {
-            const hasTm = seg.ops.some((x) => x instanceof SetTextMatrixOp)
-
-            return { hasTm, tm: hasTm ? null : seg.getLocalTransform() }
-        })
-
-        for (let i = 0; i < this.segments.length; i++) {
-            const seg = this.segments[i]
-            const { hasTm, tm } = resolved[i]
-
-            if (hasTm) {
-                // Shift every existing Tm in-place (world-space: adjust e,f directly)
-                const tmOps = seg.ops.filter(
-                    (o) => o instanceof SetTextMatrixOp,
-                )
-                for (const op of tmOps) {
-                    const m = op.matrix
-                    op.matrix = new Matrix({
-                        a: m.a,
-                        b: m.b,
-                        c: m.c,
-                        d: m.d,
-                        e: m.e + dx,
-                        f: m.f + dy,
-                    })
-                }
-            } else {
-                // Replace relative positioning ops (Td/TD/T*) with an
-                // absolute Tm derived from the pre-resolved position.
-                // Preserve TL side-effects from any TD ops being stripped.
-                const tlOps: SetTextLeadingOp[] = []
-                for (const o of seg.ops) {
-                    if (o instanceof MoveTextLeadingOp) {
-                        tlOps.push(SetTextLeadingOp.create(-o.y))
-                    }
-                }
-                const m = tm!
-                const shifted = new Matrix({
-                    a: m.a,
-                    b: m.b,
-                    c: m.c,
-                    d: m.d,
-                    e: m.e + dx,
-                    f: m.f + dy,
-                })
-                seg.ops = seg.ops.filter(
-                    (o) =>
-                        !(o instanceof MoveTextOp) &&
-                        !(o instanceof MoveTextLeadingOp) &&
-                        !(o instanceof NextLineOp),
-                )
-                // Insert the new absolute Tm before the first show op
-                const showIdx = seg.ops.findIndex(
-                    (o) =>
-                        o instanceof ShowTextOp ||
-                        o instanceof ShowTextArrayOp ||
-                        o instanceof ShowTextNextLineOp ||
-                        o instanceof ShowTextNextLineSpacingOp,
-                )
-                const tmOp = SetTextMatrixOp.create(
-                    shifted.a,
-                    shifted.b,
-                    shifted.c,
-                    shifted.d,
-                    shifted.e,
-                    shifted.f,
-                )
-                if (showIdx !== -1) {
-                    seg.ops.splice(showIdx, 0, ...tlOps, tmOp)
-                } else {
-                    seg.ops.push(...tlOps, tmOp)
-                }
-            }
-        }
-
-        this.rebuildOpsFromSegments()
-
-        // Batch source shifts: compute all new positions BEFORE writing
-        // any.  Source segments in the same parent TextBlock share a prev
-        // chain; writing one shifts the chain so later reads return stale
-        // values.
-        const sourceMoves: { src: TextNode; newLocal: Matrix }[] = []
-        const movedSrcs = new Set<TextNode>()
+        // Batch: compute all new local Tms BEFORE writing any.  Segments in
+        // the same parent TextBlock share a prev chain; writing one shifts
+        // the chain so later reads return stale values.
+        const moves: { seg: TextNode; newLocal: Matrix }[] = []
+        const movedSegs = new Set<TextNode>()
         for (const seg of this.segments) {
-            const src = seg._sourceSegment
-            if (!src) continue
-            const newLocal = TextNode._computeSourceShift(src, dx, dy)
+            const newLocal = TextNode._computeShift(seg, dx, dy)
             if (newLocal) {
-                sourceMoves.push({ src, newLocal })
-                movedSrcs.add(src)
+                moves.push({ seg, newLocal })
+                movedSegs.add(seg)
             }
         }
 
-        // Identify all parent TextBlocks that contain a moved source.
-        // For each, snapshot EVERY sibling segment's world transform so
-        // we can pin their positions after the moved segments change.
+        // Snapshot world transforms of non-moved siblings in each affected
+        // real parent TextBlock, so we can pin them after the moved segments
+        // change (Td-based siblings drift when a prior prev-chain member
+        // moves).
         const affectedParents = new Set<TextBlock>()
-        for (const { src } of sourceMoves) {
-            if (src.parent instanceof TextBlock) {
-                affectedParents.add(src.parent)
+        for (const { seg } of moves) {
+            if (seg.parent instanceof TextBlock) {
+                affectedParents.add(seg.parent)
             }
         }
         const siblingSnaps = new Map<TextNode, Matrix>()
         for (const parent of affectedParents) {
             for (const sib of parent.getSegments()) {
-                if (!movedSrcs.has(sib)) {
+                if (!movedSegs.has(sib)) {
                     siblingSnaps.set(sib, sib.getWorldTransform())
                 }
             }
         }
 
-        // Apply the source shifts.
-        for (const { src, newLocal } of sourceMoves) {
-            TextNode._applySourceShift(src, newLocal)
+        // Apply the shifts.
+        for (const { seg, newLocal } of moves) {
+            TextNode._applyShift(seg, newLocal)
         }
 
-        // Pin non-moved siblings to their original positions by converting
-        // them to absolute Tm.  This prevents Td-based siblings from
-        // drifting when a prior segment in the prev chain was shifted.
+        // Pin non-moved siblings to their original world positions by
+        // converting them to absolute Tm.
         for (const [sib, oldWorld] of siblingSnaps) {
             const newLocal = TextNode._computeLocalFromWorld(sib, oldWorld)
-            if (newLocal) TextNode._applySourceShift(sib, newLocal)
+            if (newLocal) TextNode._applyShift(sib, newLocal)
         }
+
+        this.rebuildOpsFromSegments()
     }
 
     /**
@@ -1447,7 +1182,7 @@ export class TextBlock extends ContentNode {
      * (e.g. directly under the content stream root, or an identity
      * `StateNode`). Otherwise glyphs will be double-transformed.
      */
-    static regroupTextBlocks(blocks: TextBlock[]): TextBlock[] {
+    static regroupTextBlocks(blocks: TextBlock[]): VirtualTextBlock[] {
         type Descriptor = {
             wtm: Matrix
             font: PdfFont
@@ -1695,49 +1430,114 @@ export class TextBlock extends ContentNode {
         gapBands.sort((a, b) => a.firstOrder - b.firstOrder)
 
         const firstPage = blocks[0]?.page
-        const result: TextBlock[] = []
+        const result: VirtualTextBlock[] = []
         for (const band of gapBands) {
             const sortedSegs = [...band.descriptors].sort(
                 (a, b) => a.alongCoord - b.alongCoord,
             )
 
-            const newBlock = new TextBlock(firstPage)
-
+            const newBlock = new VirtualTextBlock(firstPage)
             for (const d of sortedSegs) {
-                const newOps: ContentOp[] = []
-                newOps.push(SetFontOp.create(d.fontResourceName, d.fontSize))
-                if (d.textLeading !== 0) {
-                    newOps.push(SetTextLeadingOp.create(d.textLeading))
-                }
-                if (d.charSpace !== 0) {
-                    newOps.push(SetCharSpacingOp.create(d.charSpace))
-                }
-                if (d.wordSpace !== 0) {
-                    newOps.push(SetWordSpacingOp.create(d.wordSpace))
-                }
-                newOps.push(
-                    SetTextMatrixOp.create(
-                        d.wtm.a,
-                        d.wtm.b,
-                        d.wtm.c,
-                        d.wtm.d,
-                        d.wtm.e,
-                        d.wtm.f,
-                    ),
-                )
-                if (d.showOp) {
-                    newOps.push(d.showOp)
-                }
-
-                const newSeg = new TextNode(newOps, firstPage)
-                newSeg._sourceSegment = d.sourceSegment
-                newBlock.addSegment(newSeg)
+                newBlock.addSegment(d.sourceSegment)
             }
-
             result.push(newBlock)
         }
 
         return result
+    }
+}
+
+/**
+ * A regroup-view over a set of original `TextNode`s.  Holds references to
+ * the real content-stream segments (shares `.parent` and `.prev` with the
+ * real tree) rather than baked copies.  Edit methods inherited from
+ * `TextBlock` therefore mutate the real nodes directly; rebuilds cascade
+ * to each distinct real parent block.
+ *
+ * A virtual block owns no BT/ET of its own and must NOT be serialised as
+ * a standalone block — its segments' ops already live in real content
+ * stream blocks.
+ */
+export class VirtualTextBlock extends TextBlock {
+    constructor(page?: PdfPage) {
+        super(page)
+    }
+
+    /**
+     * Add an existing real TextNode to this view without reparenting or
+     * rewriting its prev chain.  Graphics-state resolution and write-back
+     * must continue to flow through the node's real parent.
+     */
+    override addSegment(segment: TextNode): void {
+        this.segments.push(segment)
+    }
+
+    /**
+     * Rebuild every distinct real parent TextBlock that owns any segment
+     * in this view.  The virtual block itself owns no ops.
+     */
+    override rebuildOpsFromSegments(): void {
+        const parents = new Set<TextBlock>()
+        for (const seg of this.segments) {
+            const p = seg.parent
+            if (p instanceof TextBlock && !(p instanceof VirtualTextBlock)) {
+                parents.add(p)
+            }
+        }
+        for (const p of parents) p.rebuildOpsFromSegments()
+    }
+
+    /**
+     * Compute the bbox in world (post-CTM) space.  The virtual block has
+     * no parent chain, so its world coincides with its local — emit the
+     * world-space union of its segments directly.
+     */
+    override getLocalBoundingBox(): BoundingBox {
+        if (this.segments.length === 0) {
+            return { x: 0, y: 0, width: 0, height: 0 }
+        }
+        let minX = Infinity
+        let minY = Infinity
+        let maxX = -Infinity
+        let maxY = -Infinity
+        for (const seg of this.segments) {
+            const segBbox = seg.getLocalBoundingBox()
+            const wtm = seg.getWorldTransform()
+            const corners = [
+                new Point({ x: segBbox.x, y: segBbox.y }),
+                new Point({
+                    x: segBbox.x + segBbox.width,
+                    y: segBbox.y,
+                }),
+                new Point({
+                    x: segBbox.x,
+                    y: segBbox.y + segBbox.height,
+                }),
+                new Point({
+                    x: segBbox.x + segBbox.width,
+                    y: segBbox.y + segBbox.height,
+                }),
+            ]
+            for (const c of corners) {
+                const pt = c.transform(wtm)
+                minX = Math.min(minX, pt.x)
+                minY = Math.min(minY, pt.y)
+                maxX = Math.max(maxX, pt.x)
+                maxY = Math.max(maxY, pt.y)
+            }
+        }
+        return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+        }
+    }
+
+    override toString(): string {
+        throw new Error(
+            'VirtualTextBlock cannot be serialised standalone; its segments already live in real content-stream blocks.',
+        )
     }
 }
 
@@ -2258,7 +2058,7 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
      * Regroup text blocks by visual line position.
      * This converts positioning operators (Td, TD) to absolute matrices (Tm) for each segment.
      */
-    regroupTextBlocksByLine(): TextBlock[] {
+    regroupTextBlocksByLine(): VirtualTextBlock[] {
         return TextBlock.regroupTextBlocks(this.textBlocks)
     }
 

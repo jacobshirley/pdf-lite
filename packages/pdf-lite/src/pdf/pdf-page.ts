@@ -9,6 +9,7 @@ import {
     GraphicsBlock,
     PdfContentStreamObject,
     TextBlock,
+    VirtualTextBlock,
 } from '../graphics/pdf-content-stream.js'
 import { PdfFont } from '../fonts/pdf-font.js'
 
@@ -324,14 +325,10 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
      * so that `editText()` and `moveBy()` modify the live content-stream
      * tree in-place.
      */
-    getTextBlocks(): TextBlock[] {
+    getTextBlocks(): VirtualTextBlock[] {
         this.consolidateContentStreams()
         const streams = this.contentStreams
         if (streams.length === 0) return []
-        // After consolidation all data is in streams[0].  Access
-        // textBlocks directly so the returned TextBlock objects are
-        // live references inside the cached _nodes tree — edits to
-        // their ops propagate to dataAsString / toBytes.
         const raw = streams[0].textBlocks
         return TextBlock.regroupTextBlocks(raw)
     }

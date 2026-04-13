@@ -289,8 +289,8 @@ describe('TextBlock.regroupTextBlocks', () => {
         expect(regrouped[1].text).toBe('Bold')
     })
 
-    describe('source segment tracking', () => {
-        it('regrouped segments carry _sourceSegment references', () => {
+    describe('view semantics', () => {
+        it('regrouped segments are the original TextNode instances', () => {
             const block = new TextBlock()
             block.addSegment(upright('F1', 12, 100, 700, 'Hello'))
             block.addSegment(upright('F1', 12, 150, 700, 'World'))
@@ -301,54 +301,44 @@ describe('TextBlock.regroupTextBlocks', () => {
             expect(regrouped).toHaveLength(1)
             const segs = regrouped[0].getSegments()
             expect(segs).toHaveLength(2)
-            expect(segs[0]._sourceSegment).toBe(original[0])
-            expect(segs[1]._sourceSegment).toBe(original[1])
+            expect(segs[0]).toBe(original[0])
+            expect(segs[1]).toBe(original[1])
+            // Parent links are preserved — still pointing at the real block.
+            expect(segs[0].parent).toBe(block)
+            expect(segs[1].parent).toBe(block)
         })
 
-        it('replaceTextInSource modifies original parent ops', () => {
+        it('editText on the virtual block updates the real parent', () => {
             const block = new TextBlock()
             block.addSegment(upright('F1', 12, 100, 700, 'Original'))
 
             const regrouped = TextBlock.regroupTextBlocks([block])
-            const seg = regrouped[0].getSegments()[0]
+            regrouped[0].editText('Replaced')
 
-            // Replace text via source reference
-            const ok = seg.replaceTextInSource('Replaced')
-            expect(ok).toBe(true)
-
-            // The original TextBlock's serialization should reflect the change
             expect(block.toString()).toContain('Replaced')
             expect(block.toString()).not.toContain('Original')
         })
 
-        it('clearSourceOps removes all ops from original parent', () => {
+        it('editText collapses multiple segments into the first', () => {
             const block = new TextBlock()
             block.addSegment(upright('F1', 12, 100, 700, 'Keep'))
             block.addSegment(upright('F1', 12, 150, 700, 'Remove'))
 
             const regrouped = TextBlock.regroupTextBlocks([block])
-            const segs = regrouped[0].getSegments()
+            regrouped[0].editText('Kept')
 
-            // Clear all ops from the second segment's source
-            segs[1].clearSourceOps()
-
-            // Original block should only show "Keep"
-            expect(block.toString()).toContain('Keep')
+            expect(block.text).toBe('Kept')
             expect(block.toString()).not.toContain('Remove')
         })
 
-        it('moveSourceBy shifts Tm in original parent ops', () => {
+        it('moveBy on the virtual block shifts the real parent Tm', () => {
             const block = new TextBlock()
             block.addSegment(upright('F1', 12, 100, 700, 'Hello'))
 
             const regrouped = TextBlock.regroupTextBlocks([block])
-            const seg = regrouped[0].getSegments()[0]
+            regrouped[0].moveBy(10, -5)
 
-            seg.moveSourceBy(10, -5)
-
-            // The original TextBlock's Tm should be shifted
             const str = block.toString()
-            // Original Tm was (1 0 0 1 100 700), after shift should be (1 0 0 1 110 695)
             expect(str).toContain('110')
             expect(str).toContain('695')
         })

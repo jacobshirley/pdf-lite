@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Button } from '@/components/shadcn/button'
+import { Card, CardContent } from '@/components/shadcn/card'
+import { Badge } from '@/components/shadcn/badge'
+import { Separator } from '@/components/shadcn/separator'
+import { Input } from '@/components/shadcn/input'
+import { Label } from '@/components/shadcn/label'
 import { PdfViewer } from '@/components/PdfViewer'
 import { PdfTextEditor } from '@/components/PdfTextEditor'
 import {
@@ -37,6 +37,7 @@ import {
     TextBlock,
     GraphicsBlock,
 } from 'pdf-lite'
+import { RGBColor } from 'pdf-lite/graphics/color/rgb-color'
 
 type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
 
@@ -213,31 +214,6 @@ function ActionButton({ label, icon: Icon, wide = false }: ActionButtonProps) {
         >
             <Icon className="mr-2 h-4 w-4" />
             {label}
-        </Button>
-    )
-}
-
-function FieldBadge({ children, soft = false }: FieldBadgeProps) {
-    return (
-        <Badge
-            variant={soft ? 'secondary' : 'outline'}
-            className="rounded-full px-3 py-1 font-normal"
-        >
-            {children}
-        </Badge>
-    )
-}
-
-function LayerListButton({ onClick }: LayerListButtonProps) {
-    return (
-        <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onClick}
-            className="rounded-full px-3 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-slate-100 active:scale-95"
-        >
-            All
         </Button>
     )
 }
@@ -1099,7 +1075,7 @@ export function PdfEditor() {
         }
 
         try {
-            textBlock.block.editText(editText)
+            textBlock.block.text = editText
             reExtractTextBlocks()
         } catch (error) {
             console.error('Error editing text block:', error)
@@ -1121,7 +1097,7 @@ export function PdfEditor() {
         const originalText = selectedTextBlock.block.text
         if (newText === originalText) return
         try {
-            selectedTextBlock.block.editText(newText)
+            selectedTextBlock.block.text = newText
             reExtractTextBlocks()
         } catch (error) {
             console.error('Error editing text block:', error)
@@ -1179,7 +1155,7 @@ export function PdfEditor() {
         const g = parseInt(hex.slice(3, 5), 16) / 255
         const b = parseInt(hex.slice(5, 7), 16) / 255
         try {
-            selectedTextBlock.block.changeColor({ r, g, b })
+            selectedTextBlock.block.color = new RGBColor(r, g, b)
             reExtractTextBlocks()
         } catch (error) {
             console.error('Error changing color:', error)
@@ -2725,17 +2701,8 @@ export function PdfEditor() {
                                             value={(() => {
                                                 // Read current fill color from first segment
                                                 if (selectedTextSegments.length === 0) return '#000000'
-                                                const seg = selectedTextSegments[0]
-                                                const colorOp = seg.ops?.findLast?.((o: any) =>
-                                                    o?.constructor?.name === 'SetFillColorRGBOp'
-                                                )
-                                                if (colorOp) {
-                                                    const r = Math.round((colorOp as any).r * 255)
-                                                    const g = Math.round((colorOp as any).g * 255)
-                                                    const b = Math.round((colorOp as any).b * 255)
-                                                    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-                                                }
-                                                return '#000000'
+                                                const color = selectedTextSegments[0].color
+                                                return color?.toHexString() ?? '#000000'
                                             })()}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                                 handleColorChange(e.target.value)

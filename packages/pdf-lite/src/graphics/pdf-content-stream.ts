@@ -61,11 +61,19 @@ import { PdfToken } from '../core/tokens/token.js'
 export abstract class ContentNode {
     _page?: PdfPage
     parent?: ContentNode
-    ops: ContentOp[]
+    private _ops: ContentOp[]
 
     constructor(ops?: ContentOp[], page?: PdfPage) {
-        this.ops = ops ?? []
+        this._ops = ops ?? []
         this._page = page
+    }
+
+    get ops(): ContentOp[] {
+        return this._ops
+    }
+
+    set ops(value: ContentOp[]) {
+        this._ops = value
     }
 
     get page(): PdfPage | undefined {
@@ -221,9 +229,7 @@ export class TextNode extends ContentNode {
                 const insertIdx = this.ops.indexOf(newTmOp)
                 this.ops.splice(insertIdx, 0, ...tlOps)
             }
-            if (parentBlock instanceof TextBlock) {
-                parentBlock.rebuildOpsFromSegments()
-            }
+            // Parent block's ops getter auto-syncs with segments
             return
         }
 
@@ -246,9 +252,7 @@ export class TextNode extends ContentNode {
         } else {
             this.ops.push(...tlOps, newTmOp)
         }
-        if (parentBlock instanceof TextBlock) {
-            parentBlock.rebuildOpsFromSegments()
-        }
+        // Parent block's ops getter auto-syncs with segments
     }
 
     override get page(): PdfPage | undefined {
@@ -589,12 +593,35 @@ export class TextNode extends ContentNode {
 
 export class TextBlock extends ContentNode {
     protected segments: TextNode[] = []
+    private _rawOps?: ContentOp[]
     prev?: TextBlock
 
     constructor(page?: PdfPage, ops?: ContentOp[], prev?: TextBlock) {
-        super(ops)
+        super() // Don't pass ops to parent
         this.page = page
         this.prev = prev
+        if (ops) {
+            this._rawOps = ops
+            this.parseSegments()
+        }
+    }
+
+    /** Auto-rebuild ops from segments when accessed */
+    override get ops(): ContentOp[] {
+        if (this.segments.length > 0) {
+            const newOps: ContentOp[] = [new BeginTextOp()]
+            for (const seg of this.segments) {
+                newOps.push(...seg.ops)
+            }
+            newOps.push(new EndTextOp())
+            return newOps
+        }
+        return this._rawOps ?? []
+    }
+
+    override set ops(value: ContentOp[]) {
+        this._rawOps = value
+        this.segments = []
         this.parseSegments()
     }
 
@@ -606,7 +633,7 @@ export class TextBlock extends ContentNode {
         // TextBlock so that font/size state carries across BT/ET boundaries.
         let lastSegment: TextNode | undefined = this.prev?.getSegments().at(-1)
 
-        for (const op of this.ops) {
+        for (const op of this._rawOps ?? []) {
             if (op instanceof BeginTextOp || op instanceof EndTextOp) {
                 continue
             }
@@ -642,8 +669,7 @@ export class TextBlock extends ContentNode {
         segment.parent = this
         segment.prev = this.segments[this.segments.length - 1]
         this.segments.push(segment)
-        // Rebuild ops to keep it in sync with segments
-        this.rebuildOpsFromSegments()
+        // ops getter auto-syncs with segments
     }
 
     get text(): string {
@@ -741,9 +767,7 @@ export class TextBlock extends ContentNode {
         const newOps = firstSeg.ops.slice(0, textOpIndex).concat([textOp])
         firstSeg.ops = newOps
         this.segments.splice(1)
-
-        // Rebuild ops array from segments to keep it in sync
-        this.rebuildOpsFromSegments()
+        // ops getter auto-syncs with segments
     }
 
     /**
@@ -807,8 +831,7 @@ export class TextBlock extends ContentNode {
         for (let i = 1; i < segments.length; i++) {
             segments[i].ops = []
         }
-
-        this.rebuildOpsFromSegments()
+        // ops getter auto-syncs with segments
     }
 
     /**
@@ -915,8 +938,7 @@ export class TextBlock extends ContentNode {
                 cursorY += advance * uy * scale
             }
         }
-
-        this.rebuildOpsFromSegments()
+        // ops getter auto-syncs with segments
     }
 
     /**
@@ -968,7 +990,7 @@ export class TextBlock extends ContentNode {
                 seg.ops.push(newColorOp)
             }
         }
-        this.rebuildOpsFromSegments()
+        // ops getter auto-syncs with segments
     }
 
     /**
@@ -1080,24 +1102,9 @@ export class TextBlock extends ContentNode {
             const parent = seg.parent
             if (parent && parent !== firstParent) {
                 seg.ops = []
-                if (parent instanceof TextBlock) {
-                    parent.rebuildOpsFromSegments()
-                }
+                // Parent block's ops getter auto-syncs with segments
             }
         }
-    }
-
-    /**
-     * Rebuild the ops array from segments.
-     * Used after programmatic modifications to keep ops in sync.
-     */
-    rebuildOpsFromSegments(): void {
-        const newOps: ContentOp[] = [new BeginTextOp()]
-        for (const seg of this.segments) {
-            newOps.push(...seg.ops)
-        }
-        newOps.push(new EndTextOp())
-        this.ops = newOps
     }
 
     /**
@@ -1148,8 +1155,7 @@ export class TextBlock extends ContentNode {
             const newLocal = sib.computeLocalFromWorld(oldWorld)
             if (newLocal) sib.applyShift(newLocal)
         }
-
-        this.rebuildOpsFromSegments()
+        // ops getter auto-syncs with segments
     }
 
     /**
@@ -1457,18 +1463,18 @@ export class VirtualTextBlock extends TextBlock {
     }
 
     /**
-     * Rebuild every distinct real parent TextBlock that owns any segment
-     * in this view.  The virtual block itself owns no ops.
+     * No-op: VirtualTextBlock doesn't own ops, and parent blocks
+     * auto-sync via their ops getter when accessed.
      */
-    override rebuildOpsFromSegments(): void {
-        const parents = new Set<TextBlock>()
-        for (const seg of this.segments) {
-            const p = seg.parent
-            if (p instanceof TextBlock && !(p instanceof VirtualTextBlock)) {
-                parents.add(p)
-            }
-        }
-        for (const p of parents) p.rebuildOpsFromSegments()
+    override get ops(): ContentOp[] {
+        // Virtual blocks don't own BT/ET — their segments already live
+        // in real parent blocks.  Accessing parent.ops automatically
+        // rebuilds from segments via the getter.
+        return []
+    }
+
+    override set ops(value: ContentOp[]) {
+        // Virtual blocks are read-only views; ignore writes
     }
 
     /**

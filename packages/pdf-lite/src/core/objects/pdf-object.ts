@@ -78,7 +78,7 @@ export abstract class PdfObject {
         const tokens = this.toTokens()
 
         const byteArray = concatUint8Arrays(
-            ...tokens.map((token) => token.toBytes()),
+            tokens.map((token) => token.toBytes()),
         )
         if (padTo) {
             const paddedArray = new Uint8Array(padTo)

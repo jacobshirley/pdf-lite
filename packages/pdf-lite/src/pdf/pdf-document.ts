@@ -1207,7 +1207,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      */
     toBytes(): ByteArray {
         this.update()
-        return concatUint8Arrays(...this.revisions.map((x) => x.toBytes()))
+        return concatUint8Arrays(this.revisions.map((x) => x.toBytes()))
     }
 
     /**

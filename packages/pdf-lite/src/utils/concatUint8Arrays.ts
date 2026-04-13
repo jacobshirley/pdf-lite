@@ -8,19 +8,22 @@ import { ByteArray } from '../types.js'
  *
  * @example
  * ```typescript
- * const result = concatUint8Arrays(
+ * const result = concatUint8Arrays([
  *   new Uint8Array([1, 2]),
  *   new Uint8Array([3, 4])
- * ) // Returns Uint8Array([1, 2, 3, 4])
+ * ]) // Returns Uint8Array([1, 2, 3, 4])
  * ```
  */
-export function concatUint8Arrays(...arrays: Uint8Array[]): ByteArray {
-    const totalLength = arrays.reduce((acc, arr) => acc + arr.length, 0)
+export function concatUint8Arrays(arrays: Uint8Array[]): ByteArray {
+    let totalLength = 0
+    for (let i = 0; i < arrays.length; i++) {
+        totalLength += arrays[i].length
+    }
     const result = new Uint8Array(totalLength)
     let offset = 0
-    for (const arr of arrays) {
-        result.set(arr, offset)
-        offset += arr.length
+    for (let i = 0; i < arrays.length; i++) {
+        result.set(arrays[i], offset)
+        offset += arrays[i].length
     }
     return result
 }

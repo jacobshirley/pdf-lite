@@ -223,10 +223,10 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
     }
 
     /**
-     * Register a font in this page's /Resources/Font dictionary.
-     * Avoids overwriting existing font entries by generating a unique
-     * resource name when a collision is detected.
-     * Returns the resource name used (e.g. "F1").
+     * Register a font in this page's /Resources/Font dictionary and return
+     * the resource name used to reference it.  Idempotent: if the font is
+     * already registered on this page, returns the existing name instead
+     * of adding a duplicate entry.
      */
     addFont(font: PdfFont): string {
         let resources = this.resources
@@ -242,7 +242,18 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         }
 
         const fd = fontDict as PdfDictionary
-        const existing = new Set([...fd.entries()].map(([k]) => k))
+        const target = font.reference
+        const existing = new Map<string, PdfObjectReference | undefined>()
+        for (const [k, v] of fd.entries()) {
+            existing.set(k, v instanceof PdfObjectReference ? v : undefined)
+            if (
+                v instanceof PdfObjectReference &&
+                v.objectNumber === target.objectNumber &&
+                v.generationNumber === target.generationNumber
+            ) {
+                return k
+            }
+        }
 
         // Pick a resource name that doesn't collide with existing entries
         let resName = font.resourceName
@@ -252,7 +263,7 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
             resName = `F${idx}`
         }
 
-        fd.set(resName, font.reference)
+        fd.set(resName, target)
         return resName
     }
 

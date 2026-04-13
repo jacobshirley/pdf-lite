@@ -182,6 +182,11 @@ export class TextBlock extends ContentNode {
         })
     }
 
+    /**
+     * Set this text block's content, modifying the original content-stream
+     * in-place when source segment references are available (i.e. this block
+     * was produced by `regroupTextBlocks`).
+     */
     set text(newText: string) {
         if (this.segments.length === 0) {
             const text = new TextNode([], this.page)
@@ -192,30 +197,7 @@ export class TextBlock extends ContentNode {
             return
         }
 
-        const firstSeg = this.segments[0]
-        const textOp = firstSeg.writeContentStreamText(newText)
-        let textOpIndex = firstSeg.ops.findIndex(
-            (x) => x instanceof ShowTextOp || x instanceof ShowTextArrayOp,
-        )
-
-        const newOps = firstSeg.ops.slice(0, textOpIndex).concat([textOp])
-        firstSeg.ops = newOps
-        this.segments.splice(1)
-        // ops getter auto-syncs with segments
-    }
-
-    /**
-     * Edit this text block's content, modifying the original content-stream
-     * in-place when source segment references are available (i.e. this block
-     * was produced by `regroupTextBlocks`).  Falls back to direct mutation
-     * when no source references exist.
-     */
-    editText(newText: string): void {
         const segments = this.getSegments()
-        if (segments.length === 0) {
-            this.text = newText
-            return
-        }
 
         const first = segments[0]
 
@@ -265,21 +247,28 @@ export class TextBlock extends ContentNode {
         for (let i = 1; i < segments.length; i++) {
             segments[i].ops = []
         }
+        // For non-virtual blocks, actually remove cleared segments
+        this.segments.splice(1)
         // ops getter auto-syncs with segments
     }
 
     /**
-     * Change the font of every segment in this text block.
-     * Updates both the regrouped segments and the original source segments
-     * in the content-stream tree.  The font must already be registered in
-     * the page's /Resources/Font dictionary (use `PdfPage.addFont()`).
-     *
-     * Only the font resource name is changed; the text content is
-     * re-encoded with the new font.  Throws if the new font cannot
-     * encode the existing text.
+     * Get the font of the first segment in this text block.
      */
-    changeFont(font: PdfFont, resourceName?: string): void {
-        const resName = resourceName ?? font.resourceName
+    get font(): PdfFont | undefined {
+        return this.segments[0]?.font
+    }
+
+    /**
+     * Change the font of every segment in this text block.  The font is
+     * automatically registered in the page's /Resources/Font dictionary
+     * and the resolved resource name is used in the emitted Tf op.
+     *
+     * The text content is re-encoded with the new font.  Throws if the new
+     * font cannot encode the existing text.
+     */
+    set font(font: PdfFont) {
+        const resName = this.page?.addFont(font) ?? font.resourceName
 
         // Capture all segment texts BEFORE changing any font names,
         // because seg.text decodes the show op using the current font.
@@ -376,11 +365,29 @@ export class TextBlock extends ContentNode {
     }
 
     /**
+     * Get the fill color of the first segment in this text block.
+     */
+    get color():
+        | { r: number; g: number; b: number }
+        | { gray: number }
+        | undefined {
+        const colorOp = this.segments[0]?.fillColor
+        if (!colorOp) return undefined
+
+        if (colorOp instanceof SetFillColorRGBOp) {
+            return { r: colorOp.r, g: colorOp.g, b: colorOp.b }
+        } else if (colorOp instanceof SetFillColorGrayOp) {
+            return { gray: colorOp.gray }
+        }
+        return undefined
+    }
+
+    /**
      * Change the fill color of every segment in this text block.
      * Accepts an RGB color as `{ r, g, b }` with values in 0–1 range.
      * Updates both regrouped segments and original source segments.
      */
-    changeColor(color: { r: number; g: number; b: number }): void {
+    set color(color: { r: number; g: number; b: number }) {
         // Snapshot the effective fill color for each segment BEFORE any
         // modifications, so we can restore it after the show op and prevent
         // color bleeding to subsequent text in the same real parent block.

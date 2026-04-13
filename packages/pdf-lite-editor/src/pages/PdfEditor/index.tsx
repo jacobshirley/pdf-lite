@@ -1164,10 +1164,7 @@ export function PdfEditor() {
     const handleFontChange = (font: PdfFont) => {
         if (!selectedTextBlock || !pdfDoc) return
         try {
-            // Register the font on the page and get the actual resource name
-            const page = pdfDoc.pages.get(selectedTextBlock.page - 1)
-            const resName = page.addFont(font)
-            selectedTextBlock.block.changeFont(font, resName)
+            selectedTextBlock.block.font = font
             reExtractTextBlocks()
         } catch (error) {
             console.error('Error changing font:', error)

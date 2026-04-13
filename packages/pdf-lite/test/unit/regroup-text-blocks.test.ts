@@ -313,7 +313,7 @@ describe('TextBlock.regroupTextBlocks', () => {
             block.addSegment(upright('F1', 12, 100, 700, 'Original'))
 
             const regrouped = TextBlock.regroupTextBlocks([block])
-            regrouped[0].editText('Replaced')
+            regrouped[0].text = 'Replaced'
 
             expect(block.toString()).toContain('Replaced')
             expect(block.toString()).not.toContain('Original')
@@ -325,7 +325,7 @@ describe('TextBlock.regroupTextBlocks', () => {
             block.addSegment(upright('F1', 12, 150, 700, 'Remove'))
 
             const regrouped = TextBlock.regroupTextBlocks([block])
-            regrouped[0].editText('Kept')
+            regrouped[0].text = 'Kept'
 
             expect(block.text).toBe('Kept')
             expect(block.toString()).not.toContain('Remove')
@@ -380,7 +380,7 @@ describe('end-to-end edit/move via PdfContentStream', () => {
         expect(regrouped[0].text).toBe('Hello')
 
         // Edit
-        regrouped[0].editText('Changed')
+        regrouped[0].text = 'Changed'
 
         // Re-extract from the SAME content stream (nodes cached)
         const blocks2 = collectTextBlocks(pcs.nodes)
@@ -393,7 +393,7 @@ describe('end-to-end edit/move via PdfContentStream', () => {
         const blocks = collectTextBlocks(pcs.nodes)
         const regrouped = TextBlock.regroupTextBlocks(blocks)
 
-        regrouped[0].editText('NewText')
+        regrouped[0].text = 'NewText'
 
         // dataAsString should no longer contain the old text
         const str = pcs.dataAsString
@@ -429,7 +429,7 @@ describe('end-to-end edit/move via PdfContentStream', () => {
         expect(regrouped[1].text).toBe('World')
 
         // Edit first block
-        regrouped[0].editText('Bye')
+        regrouped[0].text = 'Bye'
 
         // Re-extract
         const blocks2 = collectTextBlocks(pcs.nodes)

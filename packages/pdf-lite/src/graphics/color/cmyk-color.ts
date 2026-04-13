@@ -19,4 +19,14 @@ export class CMYKColor extends Color {
     toOp(): ContentOp {
         return SetFillColorCMYKOp.create(this.c, this.m, this.y, this.k)
     }
+
+    toHexString(): string {
+        const r = Math.round(255 * (1 - this.c) * (1 - this.k))
+        const g = Math.round(255 * (1 - this.m) * (1 - this.k))
+        const b = Math.round(255 * (1 - this.y) * (1 - this.k))
+        const rHex = r.toString(16).padStart(2, '0')
+        const gHex = g.toString(16).padStart(2, '0')
+        const bHex = b.toString(16).padStart(2, '0')
+        return `#${rHex}${gHex}${bHex}`
+    }
 }

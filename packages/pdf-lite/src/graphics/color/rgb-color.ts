@@ -17,4 +17,17 @@ export class RGBColor extends Color {
     toOp(): ContentOp {
         return SetFillColorRGBOp.create(this.r, this.g, this.b)
     }
+
+    toHexString(): string {
+        const rHex = Math.round(this.r * 255)
+            .toString(16)
+            .padStart(2, '0')
+        const gHex = Math.round(this.g * 255)
+            .toString(16)
+            .padStart(2, '0')
+        const bHex = Math.round(this.b * 255)
+            .toString(16)
+            .padStart(2, '0')
+        return `#${rHex}${gHex}${bHex}`
+    }
 }

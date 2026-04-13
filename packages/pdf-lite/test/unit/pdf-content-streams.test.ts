@@ -18,7 +18,7 @@ import {
     SetFillColorRGBOp,
     SetFillColorGrayOp,
 } from '../../src/graphics/ops/color'
-import { RGBColor } from '../../src/graphics/types'
+import { RGBColor } from '../../src/graphics/color'
 
 const FIXTURE = './test/unit/fixtures/multi-child-field.pdf'
 

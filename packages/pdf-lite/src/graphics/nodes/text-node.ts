@@ -26,7 +26,7 @@ import {
 import { Rect } from '../geom/rect'
 import { ContentNode } from './content-node'
 import { ContentOp } from '../ops'
-import { CMYKColor, Color, GrayColor, RGBColor } from '../types'
+import { CMYKColor, Color, GrayColor, RGBColor } from '../color'
 
 export class TextNode extends ContentNode {
     prev?: TextNode

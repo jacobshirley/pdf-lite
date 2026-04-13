@@ -24,7 +24,7 @@ import {
 import { Rect } from '../geom/rect'
 import { ContentNode } from './content-node'
 import { TextNode } from './text-node'
-import { Color, GrayColor } from '../types'
+import { Color, GrayColor } from '../color'
 
 export class TextBlock extends ContentNode {
     protected segments: TextNode[] = []

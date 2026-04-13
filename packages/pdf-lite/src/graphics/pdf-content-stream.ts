@@ -932,7 +932,7 @@ export class TextBlock extends ContentNode {
         const black = SetFillColorGrayOp.create(0)
 
         for (const seg of this.segments) {
-            prevColors.set(seg, seg.fillColor ?? black)
+            prevColors.set(seg, seg.prev?.fillColor ?? black)
         }
 
         for (const seg of this.segments) {

@@ -8,57 +8,14 @@ import { Point } from './geom/point'
 import { ByteArray } from '../types'
 import { stringToBytes } from '../utils'
 import { ContentOp } from './ops/base'
-import {
-    BeginTextOp,
-    EndTextOp,
-    SetFontOp,
-    SetTextMatrixOp,
-    MoveTextOp,
-    MoveTextLeadingOp,
-    NextLineOp,
-    ShowTextOp,
-    ShowTextArrayOp,
-    ShowTextSegment,
-    SetCharSpacingOp,
-    SetWordSpacingOp,
-    ShowTextNextLineOp,
-    ShowTextNextLineSpacingOp,
-    SetHorizontalScalingOp,
-    SetTextLeadingOp,
-    SetTextRenderingModeOp,
-    SetTextRiseOp,
-    TextOp,
-} from './ops/text'
-import {
-    MoveToOp,
-    LineToOp,
-    CurveToOp,
-    CurveToV,
-    CurveToY,
-    RectangleOp,
-    ClosePathOp,
-    PathOp,
-} from './ops/path'
-import {
-    StrokeOp,
-    FillOp,
-    EndPathOp,
-    ClipOp,
-    ClipEvenOddOp,
-    PaintOp,
-} from './ops/paint'
-import {
-    SetFillColorRGBOp,
-    SetStrokeColorRGBOp,
-    SetFillColorGrayOp,
-    SetFillColorCMYKOp,
-    ColorOp,
-} from './ops/color'
-import { SaveStateOp, RestoreStateOp, SetMatrixOp, StateOp } from './ops/state'
+import { BeginTextOp, EndTextOp } from './ops/text'
+import { PathOp } from './ops/path'
+import { EndPathOp, ClipOp, ClipEvenOddOp, PaintOp } from './ops/paint'
+import { ColorOp } from './ops/color'
+import { SaveStateOp, RestoreStateOp, StateOp } from './ops/state'
 import { PdfContentStreamTokeniser } from './tokeniser'
 import { PdfToken } from '../core/tokens/token.js'
 import {
-    BoundingBox,
     ContentNode,
     GraphicsBlock,
     StateNode,
@@ -67,7 +24,6 @@ import {
     VirtualTextBlock,
 } from './nodes'
 
-export type { BoundingBox }
 export {
     ContentNode,
     GraphicsBlock,

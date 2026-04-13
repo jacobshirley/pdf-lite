@@ -1,4 +1,3 @@
-export type { BoundingBox } from './bounding-box'
 export { ContentNode } from './content-node'
 export { TextNode } from './text-node'
 export { TextBlock, VirtualTextBlock } from './text-block'

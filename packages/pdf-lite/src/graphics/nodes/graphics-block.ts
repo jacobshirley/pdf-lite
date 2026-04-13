@@ -12,7 +12,7 @@ import {
 } from '../ops/path'
 import { FillOp, StrokeOp } from '../ops/paint'
 import { SetFillColorRGBOp, SetStrokeColorRGBOp } from '../ops/color'
-import { BoundingBox } from './bounding-box'
+import { Rect } from '../geom/rect'
 import { ContentNode } from './content-node'
 
 export class GraphicsBlock extends ContentNode {
@@ -130,7 +130,7 @@ export class GraphicsBlock extends ContentNode {
         return Matrix.identity()
     }
 
-    getLocalBoundingBox(): BoundingBox {
+    getLocalBoundingBox(): Rect {
         let minX = Infinity
         let minY = Infinity
         let maxX = -Infinity
@@ -176,14 +176,14 @@ export class GraphicsBlock extends ContentNode {
         }
 
         if (!isFinite(minX)) {
-            return { x: 0, y: 0, width: 0, height: 0 }
+            return new Rect({ x: 0, y: 0, width: 0, height: 0 })
         }
 
-        return {
+        return new Rect({
             x: minX,
             y: minY,
             width: maxX - minX,
             height: maxY - minY,
-        }
+        })
     }
 }

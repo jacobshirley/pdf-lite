@@ -21,7 +21,7 @@ import {
     SetFillColorGrayOp,
     SetFillColorCMYKOp,
 } from '../ops/color'
-import { BoundingBox } from './bounding-box'
+import { Rect } from '../geom/rect'
 import { ContentNode } from './content-node'
 import { TextNode } from './text-node'
 
@@ -128,9 +128,9 @@ export class TextBlock extends ContentNode {
         return Matrix.identity()
     }
 
-    getLocalBoundingBox(): BoundingBox {
+    getLocalBoundingBox(): Rect {
         if (this.segments.length === 0) {
-            return { x: 0, y: 0, width: 0, height: 0 }
+            return new Rect({ x: 0, y: 0, width: 0, height: 0 })
         }
 
         // Each Text segment has its own transform (Tm/Td).
@@ -174,12 +174,12 @@ export class TextBlock extends ContentNode {
         const xScale = Math.abs(blockTm.a) || 1
         const yScale = Math.abs(blockTm.d) || 1
 
-        return {
+        return new Rect({
             x: (minX - blockTm.e) / xScale,
             y: (minY - blockTm.f) / yScale,
             width: (maxX - minX) / xScale,
             height: (maxY - minY) / yScale,
-        }
+        })
     }
 
     set text(newText: string) {
@@ -916,9 +916,9 @@ export class VirtualTextBlock extends TextBlock {
      * no parent chain, so its world coincides with its local — emit the
      * world-space union of its segments directly.
      */
-    override getLocalBoundingBox(): BoundingBox {
+    override getLocalBoundingBox(): Rect {
         if (this.segments.length === 0) {
-            return { x: 0, y: 0, width: 0, height: 0 }
+            return new Rect({ x: 0, y: 0, width: 0, height: 0 })
         }
         let minX = Infinity
         let minY = Infinity
@@ -950,12 +950,12 @@ export class VirtualTextBlock extends TextBlock {
                 maxY = Math.max(maxY, pt.y)
             }
         }
-        return {
+        return new Rect({
             x: minX,
             y: minY,
             width: maxX - minX,
             height: maxY - minY,
-        }
+        })
     }
 
     override toString(): string {

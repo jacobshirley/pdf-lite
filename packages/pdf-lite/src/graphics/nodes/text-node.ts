@@ -23,8 +23,9 @@ import {
     SetFillColorGrayOp,
     SetFillColorRGBOp,
 } from '../ops/color'
-import { BoundingBox } from './bounding-box'
+import { Rect } from '../geom/rect'
 import { ContentNode } from './content-node'
+import { ContentOp } from '../ops'
 
 export class TextNode extends ContentNode {
     prev?: TextNode
@@ -249,7 +250,7 @@ export class TextNode extends ContentNode {
      * @param text - The text to render
      * @returns A string like `(Hello) Tj` or `[(H) 40 (ello)] TJ`
      */
-    writeContentStreamText(text: string): import('../ops/base').ContentOp {
+    writeContentStreamText(text: string): ContentOp {
         const m = this.font.metrics
         const hasKern = m.kernPairs.length > 0
 
@@ -448,7 +449,7 @@ export class TextNode extends ContentNode {
         return this.resolveTextState().tm
     }
 
-    getLocalBoundingBox(): BoundingBox {
+    getLocalBoundingBox(): Rect {
         const fontSize = this.fontSize
         const descenderHeight = fontSize * 0.3
         const ascenderHeight = fontSize * 0.95
@@ -457,12 +458,12 @@ export class TextNode extends ContentNode {
         // visual extent beyond its advance width (glyph overhang).
         const overhang = fontSize * 0.05
 
-        return {
+        return new Rect({
             x: 0,
             y: -descenderHeight,
             width: textWidth + overhang,
             height: ascenderHeight + descenderHeight,
-        }
+        })
     }
 
     get fillColor(): ColorOp | undefined {

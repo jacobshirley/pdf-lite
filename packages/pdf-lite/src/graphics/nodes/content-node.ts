@@ -1,8 +1,8 @@
 import { PdfPage } from '../../pdf/pdf-page'
 import { Matrix } from '../geom/matrix'
 import { Point } from '../geom/point'
+import { Rect } from '../geom/rect'
 import { ContentOp } from '../ops/base'
-import { BoundingBox } from './bounding-box'
 
 export abstract class ContentNode {
     _page?: PdfPage
@@ -37,7 +37,7 @@ export abstract class ContentNode {
     }
 
     abstract getLocalTransform(): Matrix
-    abstract getLocalBoundingBox(): BoundingBox
+    abstract getLocalBoundingBox(): Rect
 
     getWorldTransform(): Matrix {
         if (!this.parent) return this.getLocalTransform()
@@ -46,7 +46,7 @@ export abstract class ContentNode {
             .multiply(this.getLocalTransform())
     }
 
-    getWorldBoundingBox(): BoundingBox {
+    getWorldBoundingBox(): Rect {
         const localBox = this.getLocalBoundingBox()
         const worldTransform = this.getWorldTransform()
         const topLeft = new Point({ x: localBox.x, y: localBox.y }).transform(
@@ -74,12 +74,12 @@ export abstract class ContentNode {
         const minY = Math.min(...ys)
         const maxY = Math.max(...ys)
 
-        return {
+        return new Rect({
             x: minX,
             y: minY,
             width: maxX - minX,
             height: maxY - minY,
-        }
+        })
     }
 
     toString() {

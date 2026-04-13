@@ -1,8 +1,8 @@
 import { PdfPage } from '../../pdf/pdf-page'
 import { Matrix } from '../geom/matrix'
+import { Rect } from '../geom/rect'
 import { ContentOp } from '../ops/base'
 import { SetMatrixOp } from '../ops/state'
-import { BoundingBox } from './bounding-box'
 import { ContentNode } from './content-node'
 
 export class StateNode extends ContentNode {
@@ -34,9 +34,9 @@ export class StateNode extends ContentNode {
         return this.children
     }
 
-    getLocalBoundingBox(): BoundingBox {
+    getLocalBoundingBox(): Rect {
         if (this.children.length === 0) {
-            return { x: 0, y: 0, width: 0, height: 0 }
+            return new Rect({ x: 0, y: 0, width: 0, height: 0 })
         }
 
         let minX = Infinity
@@ -52,7 +52,12 @@ export class StateNode extends ContentNode {
             maxY = Math.max(maxY, bbox.y + bbox.height)
         }
 
-        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+        return new Rect({
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+        })
     }
 
     toString(): string {

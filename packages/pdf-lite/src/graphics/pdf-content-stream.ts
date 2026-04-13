@@ -140,11 +140,11 @@ export class TextNode extends ContentNode {
      * Compute the new local Tm that a segment should have after a
      * world-space shift of (dx, dy).  Pure — no side effects.
      */
-    /** @internal */
-    static _computeShift(seg: TextNode, dx: number, dy: number): Matrix | null {
-        const oldWorld = seg.getWorldTransform()
-        const localTm = seg.getLocalTransform()
+    computeShift(dx: number, dy: number): Matrix | null {
+        const oldWorld = this.getWorldTransform()
+        const localTm = this.getLocalTransform()
         const localInv = localTm.inverse()
+
         if (!localInv) return null
         const parentGlobal = oldWorld.multiply(localInv)
         const parentInv = parentGlobal.inverse()
@@ -165,13 +165,9 @@ export class TextNode extends ContentNode {
      * Compute the local Tm that would produce the given world transform for
      * `seg`, accounting for its parent's composed transform.  Pure.
      */
-    /** @internal */
-    static _computeLocalFromWorld(
-        seg: TextNode,
-        targetWorld: Matrix,
-    ): Matrix | null {
-        const currentWorld = seg.getWorldTransform()
-        const currentLocal = seg.getLocalTransform()
+    computeLocalFromWorld(targetWorld: Matrix): Matrix | null {
+        const currentWorld = this.getWorldTransform()
+        const currentLocal = this.getLocalTransform()
         const localInv = currentLocal.inverse()
         if (!localInv) return null
         const parentGlobal = currentWorld.multiply(localInv)
@@ -184,9 +180,8 @@ export class TextNode extends ContentNode {
      * Apply a pre-computed local Tm to a segment, replacing its
      * positioning ops and rebuilding its parent TextBlock.
      */
-    /** @internal */
-    static _applyShift(src: TextNode, newLocal: Matrix): void {
-        const parentBlock = src.parent
+    applyShift(newLocal: Matrix): void {
+        const parentBlock = this.parent
         if (!parentBlock) return
 
         const newTmOp = SetTextMatrixOp.create(
@@ -203,19 +198,19 @@ export class TextNode extends ContentNode {
         // because TL persists in the graphics state and later T* ops
         // in other BT blocks depend on it.
         const tlOps: SetTextLeadingOp[] = []
-        for (const o of src.ops) {
+        for (const o of this.ops) {
             if (o instanceof MoveTextLeadingOp) {
                 tlOps.push(SetTextLeadingOp.create(-o.y))
             }
         }
 
         // Find and replace the existing positioning op
-        const tmIdx = src.ops.findIndex((o) => o instanceof SetTextMatrixOp)
+        const tmIdx = this.ops.findIndex((o) => o instanceof SetTextMatrixOp)
         if (tmIdx !== -1) {
-            src.ops[tmIdx] = newTmOp
+            this.ops[tmIdx] = newTmOp
             // The new Tm is absolute — strip any relative positioning ops
             // (Td/TD/T*) that would shift on top of it.
-            src.ops = src.ops.filter(
+            this.ops = this.ops.filter(
                 (o) =>
                     !(o instanceof MoveTextOp) &&
                     !(o instanceof MoveTextLeadingOp) &&
@@ -223,8 +218,8 @@ export class TextNode extends ContentNode {
             )
             // Re-inject TL ops to preserve the text leading side-effect
             if (tlOps.length > 0) {
-                const insertIdx = src.ops.indexOf(newTmOp)
-                src.ops.splice(insertIdx, 0, ...tlOps)
+                const insertIdx = this.ops.indexOf(newTmOp)
+                this.ops.splice(insertIdx, 0, ...tlOps)
             }
             if (parentBlock instanceof TextBlock) {
                 parentBlock.rebuildOpsFromSegments()
@@ -233,13 +228,13 @@ export class TextNode extends ContentNode {
         }
 
         // No Tm — replace Td/TD/T* with Tm
-        src.ops = src.ops.filter(
+        this.ops = this.ops.filter(
             (o) =>
                 !(o instanceof MoveTextOp) &&
                 !(o instanceof MoveTextLeadingOp) &&
                 !(o instanceof NextLineOp),
         )
-        const showIdx = src.ops.findIndex(
+        const showIdx = this.ops.findIndex(
             (o) =>
                 o instanceof ShowTextOp ||
                 o instanceof ShowTextArrayOp ||
@@ -247,9 +242,9 @@ export class TextNode extends ContentNode {
                 o instanceof ShowTextNextLineSpacingOp,
         )
         if (showIdx !== -1) {
-            src.ops.splice(showIdx, 0, ...tlOps, newTmOp)
+            this.ops.splice(showIdx, 0, ...tlOps, newTmOp)
         } else {
-            src.ops.push(...tlOps, newTmOp)
+            this.ops.push(...tlOps, newTmOp)
         }
         if (parentBlock instanceof TextBlock) {
             parentBlock.rebuildOpsFromSegments()
@@ -579,6 +574,16 @@ export class TextNode extends ContentNode {
             width: textWidth + overhang,
             height: ascenderHeight + descenderHeight,
         }
+    }
+
+    get fillColor(): ColorOp | undefined {
+        const o = this.ops.findLast(
+            (o) =>
+                o instanceof SetFillColorRGBOp ||
+                o instanceof SetFillColorGrayOp ||
+                o instanceof SetFillColorCMYKOp,
+        )
+        return o ?? this.prev?.fillColor
     }
 }
 
@@ -924,8 +929,10 @@ export class TextBlock extends ContentNode {
         // modifications, so we can restore it after the show op and prevent
         // color bleeding to subsequent text in the same real parent block.
         const prevColors = new Map<TextNode, ContentOp>()
+        const black = SetFillColorGrayOp.create(0)
+
         for (const seg of this.segments) {
-            prevColors.set(seg, TextBlock._findEffectiveFillColor(seg))
+            prevColors.set(seg, seg.fillColor ?? black)
         }
 
         for (const seg of this.segments) {
@@ -962,29 +969,6 @@ export class TextBlock extends ContentNode {
             }
         }
         this.rebuildOpsFromSegments()
-    }
-
-    /** @internal Walk the prev chain to find the effective fill color
-     * inherited from BEFORE this segment (excluding seg's own ops). */
-    private static _findEffectiveFillColor(seg: TextNode): ContentOp {
-        let walk: TextNode | undefined = seg.prev
-        while (walk) {
-            for (let i = walk.ops.length - 1; i >= 0; i--) {
-                const o = walk.ops[i]
-                if (o instanceof SetFillColorRGBOp) {
-                    return SetFillColorRGBOp.create(o.r, o.g, o.b)
-                }
-                if (o instanceof SetFillColorGrayOp) {
-                    return SetFillColorGrayOp.create(o.gray)
-                }
-                if (o instanceof SetFillColorCMYKOp) {
-                    return SetFillColorCMYKOp.create(o.c, o.m, o.y, o.k)
-                }
-            }
-            walk = walk.prev
-        }
-        // Default: black
-        return SetFillColorGrayOp.create(0)
     }
 
     /**
@@ -1127,7 +1111,7 @@ export class TextBlock extends ContentNode {
         const moves: { seg: TextNode; newLocal: Matrix }[] = []
         const movedSegs = new Set<TextNode>()
         for (const seg of this.segments) {
-            const newLocal = TextNode._computeShift(seg, dx, dy)
+            const newLocal = seg.computeShift(dx, dy)
             if (newLocal) {
                 moves.push({ seg, newLocal })
                 movedSegs.add(seg)
@@ -1155,14 +1139,14 @@ export class TextBlock extends ContentNode {
 
         // Apply the shifts.
         for (const { seg, newLocal } of moves) {
-            TextNode._applyShift(seg, newLocal)
+            seg.applyShift(newLocal)
         }
 
         // Pin non-moved siblings to their original world positions by
         // converting them to absolute Tm.
         for (const [sib, oldWorld] of siblingSnaps) {
-            const newLocal = TextNode._computeLocalFromWorld(sib, oldWorld)
-            if (newLocal) TextNode._applyShift(sib, newLocal)
+            const newLocal = sib.computeLocalFromWorld(oldWorld)
+            if (newLocal) sib.applyShift(newLocal)
         }
 
         this.rebuildOpsFromSegments()

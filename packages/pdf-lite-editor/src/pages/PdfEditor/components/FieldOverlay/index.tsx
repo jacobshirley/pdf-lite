@@ -47,8 +47,7 @@ export function FieldOverlay({
     const displayWidth = tempSize ? `${tempSize.width}%` : `${widthPercent}%`
     const displayHeight = tempSize ? `${tempSize.height}%` : `${heightPercent}%`
 
-    const isWidgetOnly =
-        field.fieldRef?.parent !== undefined && field.fieldRef?.parent !== null
+    const isWidgetOnly = field.hasParent
 
     const colorMap: Record<string, string> = {
         Text: 'rgba(59, 130, 246, 0.3)',

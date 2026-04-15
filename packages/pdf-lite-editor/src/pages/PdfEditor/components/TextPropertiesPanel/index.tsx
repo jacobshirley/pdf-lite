@@ -6,16 +6,20 @@ import { Input } from '@/components/shadcn/input'
 import { Label } from '@/components/shadcn/label'
 import { Separator } from '@/components/shadcn/separator'
 import { Type, Upload, X } from 'lucide-react'
-import { PdfFont } from 'pdf-lite'
-import type { ExtractedTextBlock } from '../../types'
+import type {
+    ExtractedTextBlock,
+    FontRef,
+    TextSegmentDTO,
+} from '../../types'
 
 type Props = {
     textBlock: ExtractedTextBlock
-    segments: any[]
-    embeddedFonts: { name: string; font: PdfFont }[]
+    segments: TextSegmentDTO[]
+    standardFonts: FontRef[]
+    embeddedFonts: FontRef[]
     fontInputRef: React.RefObject<HTMLInputElement | null>
     onTextChange: (value: string) => void
-    onFontChange: (font: PdfFont) => void
+    onFontChange: (fontRef: FontRef) => void
     onColorChange: (hex: string) => void
     onMove: (property: 'x' | 'y', value: string) => void
     onFontUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -25,6 +29,7 @@ type Props = {
 export function TextPropertiesPanel({
     textBlock,
     segments,
+    standardFonts,
     embeddedFonts,
     fontInputRef,
     onTextChange,
@@ -34,7 +39,7 @@ export function TextPropertiesPanel({
     onFontUpload,
     onClose,
 }: Props) {
-    const bbox = textBlock.block.getWorldBoundingBox()
+    const bbox = textBlock.bbox
 
     return (
         <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 shadow-sm overflow-hidden">
@@ -67,7 +72,7 @@ export function TextPropertiesPanel({
                         </Label>
                         <textarea
                             id="tb-text"
-                            value={textBlock.block.text}
+                            value={textBlock.text}
                             onChange={(
                                 e: React.ChangeEvent<HTMLTextAreaElement>,
                             ) => onTextChange(e.target.value)}
@@ -85,9 +90,12 @@ export function TextPropertiesPanel({
                         {segments.length > 0 &&
                             (() => {
                                 const seg = segments[0]
-                                const font = seg.font
                                 const currentFontName =
-                                    font?.fontName || 'Unknown'
+                                    seg.fontName || 'Unknown'
+                                const allFonts = [
+                                    ...standardFonts,
+                                    ...embeddedFonts,
+                                ]
                                 return (
                                     <div className="space-y-2">
                                         <div className="space-y-1">
@@ -104,78 +112,47 @@ export function TextPropertiesPanel({
                                                     e: React.ChangeEvent<HTMLSelectElement>,
                                                 ) => {
                                                     const name = e.target.value
-                                                    const stdFont =
-                                                        PdfFont.STANDARD_FONTS.find(
-                                                            (f) =>
-                                                                f.name === name,
-                                                        )
-                                                    if (stdFont) {
-                                                        onFontChange(
-                                                            stdFont.font,
-                                                        )
-                                                        return
-                                                    }
-                                                    const uploaded =
-                                                        embeddedFonts.find(
-                                                            (f) =>
-                                                                f.name === name,
-                                                        )
-                                                    if (uploaded) {
-                                                        onFontChange(
-                                                            uploaded.font,
-                                                        )
-                                                    }
+                                                    const chosen = allFonts.find(
+                                                        (f) => f.name === name,
+                                                    )
+                                                    if (chosen) onFontChange(chosen)
                                                 }}
                                                 className="w-full h-8 text-sm rounded-md border border-slate-300 px-2 focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
                                             >
                                                 <optgroup label="Standard Fonts">
-                                                    {PdfFont.STANDARD_FONTS.map(
-                                                        (f) => (
+                                                    {standardFonts.map((f) => (
+                                                        <option
+                                                            key={f.id}
+                                                            value={f.name}
+                                                        >
+                                                            {f.name}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                                {embeddedFonts.length > 0 && (
+                                                    <optgroup label="Uploaded Fonts">
+                                                        {embeddedFonts.map((f) => (
                                                             <option
-                                                                key={f.name}
+                                                                key={f.id}
                                                                 value={f.name}
                                                             >
                                                                 {f.name}
                                                             </option>
-                                                        ),
-                                                    )}
-                                                </optgroup>
-                                                {embeddedFonts.length > 0 && (
-                                                    <optgroup label="Uploaded Fonts">
-                                                        {embeddedFonts.map(
-                                                            (f) => (
-                                                                <option
-                                                                    key={f.name}
-                                                                    value={
-                                                                        f.name
-                                                                    }
-                                                                >
-                                                                    {f.name}
-                                                                </option>
-                                                            ),
-                                                        )}
+                                                        ))}
                                                     </optgroup>
                                                 )}
-                                                {!PdfFont.STANDARD_FONTS.some(
+                                                {!allFonts.some(
                                                     (f) =>
                                                         f.name ===
                                                         currentFontName,
-                                                ) &&
-                                                    !embeddedFonts.some(
-                                                        (f) =>
-                                                            f.name ===
-                                                            currentFontName,
-                                                    ) && (
-                                                        <option
-                                                            value={
-                                                                currentFontName
-                                                            }
-                                                            disabled
-                                                        >
-                                                            {currentFontName}{' '}
-                                                            (current)
-                                                        </option>
-                                                    )}
+                                                ) && (
+                                                    <option
+                                                        value={currentFontName}
+                                                        disabled
+                                                    >
+                                                        {currentFontName} (current)
+                                                    </option>
+                                                )}
                                             </select>
                                         </div>
                                         <div className="space-y-1">
@@ -187,7 +164,7 @@ export function TextPropertiesPanel({
                                             </Label>
                                             <Input
                                                 id="tb-font-type"
-                                                value={font?.fontType || 'Unknown'}
+                                                value={seg.fontType || 'Unknown'}
                                                 disabled
                                                 className="h-8 text-sm bg-slate-50"
                                             />
@@ -225,7 +202,7 @@ export function TextPropertiesPanel({
                                                 #{i + 1}
                                             </span>{' '}
                                             <span className="font-medium">
-                                                {seg.font?.fontName || '?'}
+                                                {seg.fontName || '?'}
                                             </span>{' '}
                                             <span className="text-slate-400">
                                                 @{seg.fontSize}pt
@@ -254,31 +231,7 @@ export function TextPropertiesPanel({
                         <div className="flex items-center gap-2">
                             <input
                                 type="color"
-                                value={(() => {
-                                    if (segments.length === 0) return '#000000'
-                                    const seg = segments[0]
-                                    const colorOp = seg.ops
-                                        ?.slice()
-                                        .reverse()
-                                        .find?.(
-                                            (o: any) =>
-                                                o?.constructor?.name ===
-                                                'SetFillColorRGBOp',
-                                        )
-                                    if (colorOp) {
-                                        const r = Math.round(
-                                            (colorOp as any).r * 255,
-                                        )
-                                        const g = Math.round(
-                                            (colorOp as any).g * 255,
-                                        )
-                                        const b = Math.round(
-                                            (colorOp as any).b * 255,
-                                        )
-                                        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-                                    }
-                                    return '#000000'
-                                })()}
+                                value={segments[0]?.colorHex || '#000000'}
                                 onChange={(
                                     e: React.ChangeEvent<HTMLInputElement>,
                                 ) => onColorChange(e.target.value)}
@@ -422,7 +375,7 @@ export function TextPropertiesPanel({
                                             variant="secondary"
                                             className="text-[10px] ml-2"
                                         >
-                                            {ef.font.fontType || 'Font'}
+                                            {ef.fontType || 'Font'}
                                         </Badge>
                                     </div>
                                 ))}

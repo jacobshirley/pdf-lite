@@ -87,7 +87,7 @@ export function FieldPropertiesPanel({
                         />
                     </div>
 
-                    {field.type === 'Checkbox' && field.fieldRef && (
+                    {field.type === 'Checkbox' && field.appearanceStates && (
                         <div className="space-y-2">
                             <Label
                                 htmlFor="default-state"
@@ -97,21 +97,17 @@ export function FieldPropertiesPanel({
                             </Label>
                             <select
                                 id="default-state"
-                                value={
-                                    field.fieldRef.appearanceState || 'Off'
-                                }
+                                value={field.appearanceState || 'Off'}
                                 onChange={(
                                     e: React.ChangeEvent<HTMLSelectElement>,
                                 ) => onAppearanceStateChange(e.target.value)}
                                 className="h-8 w-full text-sm rounded-md border border-slate-300 px-3 py-1 focus:outline-none focus:ring-2 focus:ring-slate-400"
                             >
-                                {field.fieldRef.appearanceStates?.map(
-                                    (state: string) => (
-                                        <option key={state} value={state}>
-                                            {state}
-                                        </option>
-                                    ),
-                                )}
+                                {field.appearanceStates.map((state) => (
+                                    <option key={state} value={state}>
+                                        {state}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     )}
@@ -135,28 +131,27 @@ export function FieldPropertiesPanel({
                         </div>
                     )}
 
-                    {field.fieldRef &&
-                        field.fieldRef.fontSize !== undefined && (
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="font-size"
-                                    className="text-xs font-semibold text-slate-700"
-                                >
-                                    Font Size
-                                </Label>
-                                <Input
-                                    id="font-size"
-                                    type="number"
-                                    value={field.fieldRef.fontSize || 12}
-                                    onChange={(
-                                        e: React.ChangeEvent<HTMLInputElement>,
-                                    ) => onFontSizeChange(e.target.value)}
-                                    className="h-8 text-sm"
-                                    min="6"
-                                    max="72"
-                                />
-                            </div>
-                        )}
+                    {field.fontSize !== undefined && (
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="font-size"
+                                className="text-xs font-semibold text-slate-700"
+                            >
+                                Font Size
+                            </Label>
+                            <Input
+                                id="font-size"
+                                type="number"
+                                value={field.fontSize || 12}
+                                onChange={(
+                                    e: React.ChangeEvent<HTMLInputElement>,
+                                ) => onFontSizeChange(e.target.value)}
+                                className="h-8 text-sm"
+                                min="6"
+                                max="72"
+                            />
+                        </div>
+                    )}
 
                     {field.rect && (
                         <div className="space-y-2">

@@ -26,8 +26,7 @@ export function TextBlockOverlay({
     onEditCancel,
     onPositionChange,
 }: Props) {
-    const { block, pageHeight, pageWidth } = textBlock
-    const bbox = block.getWorldBoundingBox()
+    const { bbox, pageHeight, pageWidth } = textBlock
 
     const [isDragging, setIsDragging] = useState(false)
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
@@ -157,7 +156,7 @@ export function TextBlockOverlay({
                     isEditing || isDragging ? 'none' : 'all 0.15s ease',
                 overflow: 'visible',
             }}
-            title={isEditing ? undefined : `Text: "${block.text}"`}
+            title={isEditing ? undefined : `Text: "${textBlock.text}"`}
         >
             {isEditing && (
                 <input

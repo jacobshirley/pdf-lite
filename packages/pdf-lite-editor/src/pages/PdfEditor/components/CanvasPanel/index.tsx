@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/shadcn/card'
 import { Eye, FileText, FileUp, Layers, Type, Upload } from 'lucide-react'
 import { PdfViewer } from '@/components/PdfViewer'
 import { PdfTextEditor } from '@/components/PdfTextEditor'
-import type { PdfDocument } from 'pdf-lite'
 import type {
     ExtractedField,
     ExtractedGraphicsBlock,
@@ -18,8 +17,9 @@ import { GraphicsBlockOverlay } from '../GraphicsBlockOverlay'
 
 type Props = {
     uploadedFile: File | null
-    pdfDoc: PdfDocument | null
+    pdfLoaded: boolean
     pdfBytes: Uint8Array | undefined
+    pdfDebugText: string
     activeView: 'pdf' | 'text'
     onViewChange: (view: 'pdf' | 'text') => void
     fileInputRef: React.RefObject<HTMLInputElement | null>
@@ -65,8 +65,9 @@ type Props = {
 
 export function CanvasPanel({
     uploadedFile,
-    pdfDoc,
+    pdfLoaded,
     pdfBytes,
+    pdfDebugText,
     activeView,
     onViewChange,
     fileInputRef,
@@ -235,7 +236,7 @@ export function CanvasPanel({
                         </div>
                     </div>
                     <CardContent className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-                        {pdfDoc && activeView === 'pdf' && (
+                        {pdfLoaded && activeView === 'pdf' && pdfBytes && (
                             <PdfViewer
                                 file={pdfBytes}
                                 className="w-full"
@@ -395,9 +396,9 @@ export function CanvasPanel({
                                 }}
                             />
                         )}
-                        {pdfDoc && activeView === 'text' && (
+                        {pdfLoaded && activeView === 'text' && (
                             <PdfTextEditor
-                                content={pdfDoc.toString()}
+                                content={pdfDebugText}
                                 readOnly={true}
                             />
                         )}

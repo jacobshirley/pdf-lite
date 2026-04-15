@@ -28,6 +28,9 @@ const config = defineConfig({
         }),
         viteReact(),
     ],
+    worker: {
+        format: 'es',
+    },
     test: {
         projects: [
             {

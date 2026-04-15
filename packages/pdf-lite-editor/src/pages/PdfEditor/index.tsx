@@ -28,7 +28,7 @@ export function PdfEditor() {
                 className={`mx-auto grid ${editor.showRightPane ? 'max-w-[2000px] grid-cols-[240px_minmax(0,1fr)_320px]' : 'max-w-[1600px] grid-cols-[240px_minmax(0,1fr)]'} gap-4 items-start`}
             >
                 <Toolbar
-                    pdfLoaded={!!editor.pdfDoc}
+                    pdfLoaded={editor.pdfLoaded}
                     onAddField={editor.handleAddField}
                     onFieldDragStart={editor.handleFieldDragStart}
                     onFieldDragEnd={editor.handleFieldDragEnd}
@@ -38,8 +38,9 @@ export function PdfEditor() {
 
                 <CanvasPanel
                     uploadedFile={editor.uploadedFile}
-                    pdfDoc={editor.pdfDoc}
+                    pdfLoaded={editor.pdfLoaded}
                     pdfBytes={editor.pdfBytes}
+                    pdfDebugText={editor.pdfDebugText}
                     activeView={editor.activeView}
                     onViewChange={editor.setActiveView}
                     fileInputRef={editor.fileInputRef}
@@ -110,6 +111,7 @@ export function PdfEditor() {
                     <TextPropertiesPanel
                         textBlock={editor.selectedTextBlock}
                         segments={editor.selectedTextSegments}
+                        standardFonts={editor.standardFonts}
                         embeddedFonts={editor.embeddedFonts}
                         fontInputRef={editor.fontInputRef}
                         onTextChange={editor.handleTextBlockPropertyEdit}

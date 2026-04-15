@@ -5,8 +5,7 @@ type Props = {
 }
 
 export function GraphicsBlockOverlay({ graphicsBlock }: Props) {
-    const { block, pageHeight, pageWidth } = graphicsBlock
-    const bbox = block.getWorldBoundingBox()
+    const { bbox, pageHeight, pageWidth } = graphicsBlock
 
     if (bbox.width === 0 && bbox.height === 0) return null
 

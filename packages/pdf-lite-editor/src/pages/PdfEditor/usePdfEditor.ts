@@ -37,6 +37,7 @@ export function usePdfEditor() {
     const [draggedFieldType, setDraggedFieldType] = useState<FieldType | null>(
         null,
     )
+    const [draggingText, setDraggingText] = useState<boolean>(false)
     const [standardFonts, setStandardFonts] = useState<FontRef[]>([])
     const [embeddedFonts, setEmbeddedFonts] = useState<FontRef[]>([])
     const fontInputRef = useRef<HTMLInputElement>(null)
@@ -315,6 +316,39 @@ export function usePdfEditor() {
         }
     }
 
+    const handleTextBlockFontSizeChange = async (fontSize: number) => {
+        if (!selectedTextBlock) return
+        if (!Number.isFinite(fontSize) || fontSize <= 0) return
+        try {
+            const updated = await client.call('setTextBlockFontSize', {
+                id: selectedTextBlock.id,
+                fontSize,
+            })
+            mergeTextBlockDTO(updated)
+            setPdfVersion((v) => v + 1)
+        } catch (error) {
+            console.error('Error changing font size:', error)
+            alert(
+                `Error changing font size: ${error instanceof Error ? error.message : String(error)}`,
+            )
+        }
+    }
+
+    const handleAddPage = async () => {
+        try {
+            const result = await client.call('addPage', {})
+            setExtractedFields(result.fields)
+            setExtractedTextBlocks(result.textBlocks)
+            setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setPdfVersion((v) => v + 1)
+        } catch (error) {
+            console.error('Error adding page:', error)
+            alert(
+                `Error adding page: ${error instanceof Error ? error.message : String(error)}`,
+            )
+        }
+    }
+
     const handleColorChange = async (hex: string) => {
         if (!selectedTextBlock) return
         const r = parseInt(hex.slice(1, 3), 16) / 255
@@ -498,6 +532,33 @@ export function usePdfEditor() {
         fileInputRef.current?.click()
     }
 
+    const handleNewPdf = async () => {
+        try {
+            const result = await client.call('createBlank', {})
+            const fonts = await client.call('listStandardFonts', undefined)
+            const blank = new File([new Uint8Array()], 'untitled.pdf', {
+                type: 'application/pdf',
+            })
+            setUploadedFile(blank)
+            setPdfLoaded(true)
+            setExtractedFields(result.fields)
+            setExtractedTextBlocks(result.textBlocks)
+            setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setStandardFonts(fonts)
+            setEmbeddedFonts([])
+            setPdfBytes(await client.call('toBytes', undefined))
+            setPdfDebugText(await client.call('toDebugString', undefined))
+            setPdfVersion(0)
+            setSelectedFieldId(null)
+            setSelectedTextBlockId(null)
+        } catch (error) {
+            console.error('Error creating new PDF:', error)
+            alert(
+                `Error creating new PDF: ${error instanceof Error ? error.message : String(error)}`,
+            )
+        }
+    }
+
     const handleClearFile = async () => {
         try {
             await client.call('reset', undefined)
@@ -550,13 +611,21 @@ export function usePdfEditor() {
         setDraggedFieldType(null)
     }
 
+    const handleTextDragStart = () => {
+        setDraggingText(true)
+    }
+
+    const handleTextDragEnd = () => {
+        setDraggingText(false)
+    }
+
     const handlePageDrop = (
         e: React.DragEvent,
         pageNumber: number,
         pageElement: HTMLElement,
     ) => {
         e.preventDefault()
-        if (!draggedFieldType) return
+        if (!draggedFieldType && !draggingText) return
 
         // Use the first page dimensions from extracted data to compute PDF coords
         const anyBlock =
@@ -576,10 +645,20 @@ export function usePdfEditor() {
         const pdfX = dropX * scaleX
         const pdfY = pageHeight - dropY * scaleY
 
+        if (draggingText) {
+            handleAddTextBlock({
+                pageNumber,
+                x: pdfX,
+                y: pdfY,
+            })
+            setDraggingText(false)
+            return
+        }
+
         const fieldWidth = draggedFieldType === 'Checkbox' ? 20 : 200
         const fieldHeight = draggedFieldType === 'Checkbox' ? 20 : 30
 
-        handleAddField(draggedFieldType, {
+        handleAddField(draggedFieldType!, {
             pageNumber,
             x: pdfX - fieldWidth / 2,
             y: pdfY + fieldHeight / 2,
@@ -627,6 +706,9 @@ export function usePdfEditor() {
         editText,
         setEditText,
         draggedFieldType,
+        draggingText,
+        handleTextDragStart,
+        handleTextDragEnd,
         standardFonts,
         embeddedFonts,
         selectedField,
@@ -647,6 +729,8 @@ export function usePdfEditor() {
         handleTextBlockMove,
         handleFontUpload,
         handleFontChange,
+        handleTextBlockFontSizeChange,
+        handleAddPage,
         handleColorChange,
         handleTextBlockPositionChange,
         handleRemoveField,
@@ -656,6 +740,7 @@ export function usePdfEditor() {
         handleCloneField,
         handleFileUpload,
         handleOpenClick,
+        handleNewPdf,
         handleClearFile,
         handleExportPdf,
         handleFieldDragStart,

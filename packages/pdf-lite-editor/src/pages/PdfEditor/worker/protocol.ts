@@ -95,6 +95,10 @@ export type WorkerMethods = {
         args: { bytes: Uint8Array }
         result: ExtractResult
     }
+    createBlank: {
+        args: { width?: number; height?: number }
+        result: ExtractResult
+    }
     toBytes: {
         args: void
         result: Uint8Array
@@ -134,6 +138,14 @@ export type WorkerMethods = {
     setTextBlockColor: {
         args: { id: string; r: number; g: number; b: number }
         result: TextBlockDTO
+    }
+    setTextBlockFontSize: {
+        args: { id: string; fontSize: number }
+        result: TextBlockDTO
+    }
+    addPage: {
+        args: { width?: number; height?: number }
+        result: ExtractResult
     }
     updateFieldProperty: {
         args: {

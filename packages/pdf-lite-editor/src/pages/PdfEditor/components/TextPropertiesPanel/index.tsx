@@ -20,6 +20,7 @@ type Props = {
     fontInputRef: React.RefObject<HTMLInputElement | null>
     onTextChange: (value: string) => void
     onFontChange: (fontRef: FontRef) => void
+    onFontSizeChange: (fontSize: number) => void
     onColorChange: (hex: string) => void
     onMove: (property: 'x' | 'y', value: string) => void
     onFontUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -35,6 +36,7 @@ export function TextPropertiesPanel({
     fontInputRef,
     onTextChange,
     onFontChange,
+    onFontSizeChange,
     onColorChange,
     onMove,
     onFontUpload,
@@ -181,9 +183,23 @@ export function TextPropertiesPanel({
                                             <Input
                                                 id="tb-font-size"
                                                 type="number"
+                                                min={1}
+                                                step={1}
                                                 value={seg.fontSize}
-                                                disabled
-                                                className="h-8 text-sm bg-slate-50"
+                                                onChange={(
+                                                    e: React.ChangeEvent<HTMLInputElement>,
+                                                ) => {
+                                                    const v = parseFloat(
+                                                        e.target.value,
+                                                    )
+                                                    if (
+                                                        Number.isFinite(v) &&
+                                                        v > 0
+                                                    ) {
+                                                        onFontSizeChange(v)
+                                                    }
+                                                }}
+                                                className="h-8 text-sm"
                                             />
                                         </div>
                                     </div>

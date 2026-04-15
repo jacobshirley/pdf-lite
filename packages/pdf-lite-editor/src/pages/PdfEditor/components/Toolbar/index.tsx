@@ -4,6 +4,8 @@ import { Separator } from '@/components/shadcn/separator'
 import {
     CheckSquare,
     Download,
+    FilePlus,
+    FilePlus2,
     FolderOpen,
     Plus,
     Redo2,
@@ -19,8 +21,12 @@ type Props = {
     onFieldDragStart: (type: FieldType) => void
     onFieldDragEnd: () => void
     onAddText: () => void
+    onTextDragStart: () => void
+    onTextDragEnd: () => void
+    onNew: () => void
     onOpen: () => void
     onExport: () => void
+    onAddPage: () => void
 }
 
 export function Toolbar({
@@ -29,8 +35,12 @@ export function Toolbar({
     onFieldDragStart,
     onFieldDragEnd,
     onAddText,
+    onTextDragStart,
+    onTextDragEnd,
+    onNew,
     onOpen,
     onExport,
+    onAddPage,
 }: Props) {
     return (
         <Card className="sticky top-6 flex h-[calc(100vh-48px)] flex-col rounded-[24px] border-slate-200 shadow-sm">
@@ -91,9 +101,12 @@ export function Toolbar({
                     <Button
                         type="button"
                         variant="ghost"
+                        draggable
+                        onDragStart={onTextDragStart}
+                        onDragEnd={onTextDragEnd}
                         onClick={onAddText}
                         disabled={!pdfLoaded}
-                        className="h-10 w-full justify-start rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
+                        className="h-10 w-full justify-start rounded-xl cursor-grab active:cursor-grabbing transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
                     >
                         <Plus className="mr-2 h-4 w-4" />
                         <Type className="mr-2 h-4 w-4" />
@@ -109,11 +122,30 @@ export function Toolbar({
                     <Button
                         type="button"
                         variant="outline"
+                        onClick={onNew}
+                        className="col-span-2 rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]"
+                    >
+                        <FilePlus className="mr-2 h-4 w-4" />
+                        New PDF
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
                         onClick={onOpen}
                         className="col-span-2 rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]"
                     >
                         <FolderOpen className="mr-2 h-4 w-4" />
                         Open PDF
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onAddPage}
+                        disabled={!pdfLoaded}
+                        className="col-span-2 rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    >
+                        <FilePlus2 className="mr-2 h-4 w-4" />
+                        Add Page
                     </Button>
                     <Button
                         type="button"

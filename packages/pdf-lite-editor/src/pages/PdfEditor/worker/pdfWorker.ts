@@ -1,9 +1,16 @@
 /// <reference lib="webworker" />
 import {
+    PdfAcroForm,
+    PdfArray,
     PdfButtonFormField,
+    PdfDictionary,
     PdfDocument,
     PdfFont,
     PdfFormField,
+    PdfIndirectObject,
+    PdfName,
+    PdfNumber,
+    PdfStream,
     PdfTextFormField,
     TextBlock,
     TextNode,
@@ -279,6 +286,34 @@ const handlers: {
         return extractAll()
     },
 
+    async createBlank({ width, height }) {
+        const w = width ?? 612
+        const h = height ?? 792
+        const objs = [
+            `<</Type/Catalog/Pages 2 0 R>>`,
+            `<</Type/Pages/Kids[3 0 R]/Count 1>>`,
+            `<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${w} ${h}]/Contents 4 0 R/Resources<<>>>>`,
+            `<</Length 0>>\nstream\n\nendstream`,
+        ]
+        let body = '%PDF-1.4\n'
+        const offsets: number[] = []
+        for (let i = 0; i < objs.length; i++) {
+            offsets.push(body.length)
+            body += `${i + 1} 0 obj\n${objs[i]}\nendobj\n`
+        }
+        const xrefOffset = body.length
+        body += `xref\n0 ${objs.length + 1}\n`
+        body += `0000000000 65535 f \n`
+        for (const off of offsets) {
+            body += `${off.toString().padStart(10, '0')} 00000 n \n`
+        }
+        body += `trailer\n<</Size ${objs.length + 1}/Root 1 0 R>>\nstartxref\n${xrefOffset}\n%%EOF\n`
+        const bytes = new TextEncoder().encode(body)
+        pdfDoc = await PdfDocument.fromBytes([bytes as Uint8Array<ArrayBuffer>])
+        await pdfDoc.decrypt()
+        return extractAll()
+    },
+
     toBytes() {
         if (!pdfDoc) throw new Error('No PDF loaded')
         return pdfDoc.toBytes()
@@ -348,6 +383,21 @@ const handlers: {
         )
     },
 
+    setTextBlockFontSize({ id, fontSize }) {
+        const entry = findTextBlockEntry(id)
+        if (!entry) throw new Error(`Text block ${id} not found`)
+        for (const seg of entry.block.getSegments()) {
+            seg.fontSize = fontSize
+        }
+        return textBlockToDTO(
+            entry.block,
+            id,
+            entry.pageNumber,
+            entry.pageHeight,
+            entry.pageWidth,
+        )
+    },
+
     setTextBlockColor({ id, r, g, b }) {
         const entry = findTextBlockEntry(id)
         if (!entry) throw new Error(`Text block ${id} not found`)
@@ -359,6 +409,38 @@ const handlers: {
             entry.pageHeight,
             entry.pageWidth,
         )
+    },
+
+    addPage({ width, height }) {
+        if (!pdfDoc) throw new Error('No PDF loaded')
+        const w = width ?? 612
+        const h = height ?? 792
+
+        const contentStreamObj = new PdfIndirectObject({
+            content: new PdfStream({
+                header: new PdfDictionary(),
+                original: '',
+            }),
+        })
+
+        const pageDict = new PdfDictionary({
+            Type: new PdfName('Page'),
+            Parent: pdfDoc.pages.reference,
+            MediaBox: new PdfArray([0, 0, w, h].map((v) => new PdfNumber(v))),
+            Contents: contentStreamObj.reference,
+            Resources: new PdfDictionary(),
+        })
+        const pageObj = new PdfIndirectObject({ content: pageDict })
+
+        pdfDoc.add(contentStreamObj, pageObj)
+
+        const kids = pdfDoc.pages.content.get('Kids')?.as(PdfArray)
+        if (!kids) throw new Error('Pages tree has no Kids array')
+        kids.items.push(pageObj.reference)
+        pdfDoc.pages.count = pdfDoc.pages.count + 1
+        pdfDoc.pages.setModified(true)
+
+        return extractAll()
     },
 
     addTextBlock({ options }) {
@@ -467,7 +549,14 @@ const handlers: {
     },
 
     addField({ type, options }) {
-        if (!pdfDoc?.acroform) throw new Error('No PDF loaded')
+        if (!pdfDoc) throw new Error('No PDF loaded')
+
+        let acroform = pdfDoc.acroform
+        if (!acroform) {
+            acroform = new PdfAcroForm()
+            pdfDoc.add(acroform)
+            pdfDoc.root.content.set('AcroForm', acroform.reference)
+        }
 
         const targetPageNumber = options?.pageNumber || 1
         const pages = pdfDoc.pages.toArray()
@@ -500,7 +589,7 @@ const handlers: {
             field.rect = newRect
             field.parentRef = page.reference
             field.defaultAppearance = '/Helv 12 Tf 0 g'
-            field._form = pdfDoc.acroform
+            field._form = acroform
             field.updateAppearance()
             newField = field
         } else if (type === 'Checkbox') {
@@ -508,7 +597,7 @@ const handlers: {
             field.rect = newRect
             field.name = fieldName
             field.parentRef = page.reference
-            field._form = pdfDoc.acroform
+            field._form = acroform
             field.isWidget = true
             field.appearanceState = 'Off'
             field.print = true
@@ -520,7 +609,7 @@ const handlers: {
             throw new Error(`Creating ${type} fields is not yet supported`)
         }
 
-        pdfDoc.acroform.addField(newField)
+        acroform.addField(newField)
 
         const id = `field_${nextFieldId++}`
         fieldRefs.set(id, newField)

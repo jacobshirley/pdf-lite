@@ -40,6 +40,7 @@ type Props = {
     editingTextBlockId: string | null
     editText: string
     draggedFieldType: FieldType | null
+    draggingText: boolean
     onFieldSelect: (id: string) => void
     onFieldPositionChange: (
         fieldId: string,
@@ -88,6 +89,7 @@ export function CanvasPanel({
     editingTextBlockId,
     editText,
     draggedFieldType,
+    draggingText,
     onFieldSelect,
     onFieldPositionChange,
     onTextBlockSelect,
@@ -284,7 +286,10 @@ export function CanvasPanel({
                                                 className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
                                                 onClick={onBackgroundClick}
                                                 onDragOver={(e) => {
-                                                    if (draggedFieldType) {
+                                                    if (
+                                                        draggedFieldType ||
+                                                        draggingText
+                                                    ) {
                                                         e.preventDefault()
                                                         e.currentTarget.style.backgroundColor =
                                                             'rgba(59, 130, 246, 0.05)'

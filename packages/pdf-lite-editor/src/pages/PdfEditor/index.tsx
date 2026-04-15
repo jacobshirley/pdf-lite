@@ -33,8 +33,12 @@ export function PdfEditor() {
                     onFieldDragStart={editor.handleFieldDragStart}
                     onFieldDragEnd={editor.handleFieldDragEnd}
                     onAddText={() => editor.handleAddTextBlock()}
+                    onTextDragStart={editor.handleTextDragStart}
+                    onTextDragEnd={editor.handleTextDragEnd}
+                    onNew={editor.handleNewPdf}
                     onOpen={editor.handleOpenClick}
                     onExport={editor.handleExportPdf}
+                    onAddPage={editor.handleAddPage}
                 />
 
                 <CanvasPanel
@@ -68,6 +72,7 @@ export function PdfEditor() {
                     editingTextBlockId={editor.editingTextBlockId}
                     editText={editor.editText}
                     draggedFieldType={editor.draggedFieldType}
+                    draggingText={editor.draggingText}
                     onFieldSelect={editor.handleFieldSelect}
                     onFieldPositionChange={editor.handleFieldPositionChange}
                     onTextBlockSelect={editor.handleTextBlockSelect}
@@ -117,6 +122,7 @@ export function PdfEditor() {
                         fontInputRef={editor.fontInputRef}
                         onTextChange={editor.handleTextBlockPropertyEdit}
                         onFontChange={editor.handleFontChange}
+                        onFontSizeChange={editor.handleTextBlockFontSizeChange}
                         onColorChange={editor.handleColorChange}
                         onMove={editor.handleTextBlockMove}
                         onFontUpload={editor.handleFontUpload}

@@ -558,10 +558,17 @@ const handlers: {
             field.name = fieldName
             field.parentRef = page.reference
             field._form = acroform
-            field.isWidget = true
-            field.appearanceState = 'Off'
-            field.print = true
             field.borderWidth = 1
+            field.appearanceState = 'Off'
+            field.isWidget = true
+            field.print = true
+
+            // Add to acroform first so field has a reference
+            acroform.addField(field)
+
+            // Now generate appearance streams
+            field.generateAppearance({ onStateName: 'Yes' })
+
             newField = field
         }
 
@@ -569,7 +576,10 @@ const handlers: {
             throw new Error(`Creating ${type} fields is not yet supported`)
         }
 
-        acroform.addField(newField)
+        // Only add if not already added (checkbox was added above)
+        if (type !== 'Checkbox') {
+            acroform.addField(newField)
+        }
 
         const id = `field_${nextFieldId++}`
         fieldRefs.set(id, newField)

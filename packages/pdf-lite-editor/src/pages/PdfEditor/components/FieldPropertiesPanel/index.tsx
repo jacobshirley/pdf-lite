@@ -89,7 +89,7 @@ export function FieldPropertiesPanel({
                         />
                     </div>
 
-                    {field.type === 'Checkbox' && field.appearanceStates && (
+                    {field.type === 'Button' && field.appearanceStates && field.appearanceStates.length > 0 && (
                         <div className="space-y-2">
                             <Label
                                 htmlFor="default-state"
@@ -114,7 +114,7 @@ export function FieldPropertiesPanel({
                         </div>
                     )}
 
-                    {field.type !== 'Checkbox' && (
+                    {field.type !== 'Checkbox' && field.type !== 'Button' && (
                         <div className="space-y-2">
                             <Label
                                 htmlFor="field-value"

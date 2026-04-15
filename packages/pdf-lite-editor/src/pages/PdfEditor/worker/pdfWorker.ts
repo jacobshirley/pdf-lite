@@ -359,14 +359,14 @@ const handlers: {
     }) {
         if (!pdfDoc) throw new Error('No PDF loaded')
         // Create a copy of the document to avoid modifying the original
-        // Encrypt the document with the password
-        await exportDoc.encrypt()
         const currentBytes = pdfDoc.toBytes()
         const exportDoc = await PdfDocument.fromBytes([currentBytes])
         exportDoc.setPassword(password)
         if (ownerPassword) {
             exportDoc.setOwnerPassword(ownerPassword)
         }
+        // Encrypt the document with the password
+        await exportDoc.encrypt()
         return exportDoc.toBytes()
     },
 

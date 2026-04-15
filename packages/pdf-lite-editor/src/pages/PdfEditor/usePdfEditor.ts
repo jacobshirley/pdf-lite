@@ -25,6 +25,8 @@ export function usePdfEditor() {
     const [showAcroFormLayer, setShowAcroFormLayer] = useState<boolean>(true)
     const [showTextLayer, setShowTextLayer] = useState<boolean>(true)
     const [showGraphicsLayer, setShowGraphicsLayer] = useState<boolean>(false)
+    const [canUndo, setCanUndo] = useState(false)
+    const [canRedo, setCanRedo] = useState(false)
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
     const [selectedTextBlockId, setSelectedTextBlockId] = useState<
         string | null
@@ -100,6 +102,16 @@ export function usePdfEditor() {
         )
     }
 
+    const updateUndoRedoState = async () => {
+        try {
+            const state = await client.call('getUndoRedoState', {})
+            setCanUndo(state.canUndo)
+            setCanRedo(state.canRedo)
+        } catch (error) {
+            console.error('Error getting undo/redo state:', error)
+        }
+    }
+
     const handleFieldSelect = (fieldId: string) => {
         setSelectedFieldId(fieldId)
     }
@@ -124,6 +136,7 @@ export function usePdfEditor() {
             })
             mergeFieldDTOs(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error updating field property:', error)
             alert(
@@ -141,6 +154,7 @@ export function usePdfEditor() {
             })
             mergeFieldDTO(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error updating appearance state:', error)
         }
@@ -157,6 +171,7 @@ export function usePdfEditor() {
             })
             mergeFieldDTO(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error updating field rect:', error)
         }
@@ -225,6 +240,7 @@ export function usePdfEditor() {
             })
             mergeTextBlockDTO(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error editing text block:', error)
             alert(
@@ -249,6 +265,7 @@ export function usePdfEditor() {
             })
             mergeTextBlockDTO(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error editing text block:', error)
             alert(
@@ -273,6 +290,7 @@ export function usePdfEditor() {
             })
             mergeTextBlockDTO(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error moving text block:', error)
         }
@@ -311,6 +329,7 @@ export function usePdfEditor() {
             })
             mergeTextBlockDTO(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error changing font:', error)
             alert(
@@ -329,6 +348,7 @@ export function usePdfEditor() {
             })
             mergeTextBlockDTO(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error changing font size:', error)
             alert(
@@ -344,11 +364,44 @@ export function usePdfEditor() {
             setExtractedTextBlocks(result.textBlocks)
             setExtractedGraphicsBlocks(result.graphicsBlocks)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error adding page:', error)
             alert(
                 `Error adding page: ${error instanceof Error ? error.message : String(error)}`,
             )
+        }
+    }
+
+    const handleUndo = async () => {
+        try {
+            const result = await client.call('undo', {})
+            setExtractedFields(result.fields)
+            setExtractedTextBlocks(result.textBlocks)
+            setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setCanUndo(result.canUndo)
+            setCanRedo(result.canRedo)
+            setPdfVersion((v) => v + 1)
+            setSelectedFieldId(null)
+            setSelectedTextBlockId(null)
+        } catch (error) {
+            console.error('Cannot undo:', error)
+        }
+    }
+
+    const handleRedo = async () => {
+        try {
+            const result = await client.call('redo', {})
+            setExtractedFields(result.fields)
+            setExtractedTextBlocks(result.textBlocks)
+            setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setCanUndo(result.canUndo)
+            setCanRedo(result.canRedo)
+            setPdfVersion((v) => v + 1)
+            setSelectedFieldId(null)
+            setSelectedTextBlockId(null)
+        } catch (error) {
+            console.error('Cannot redo:', error)
         }
     }
 
@@ -366,6 +419,7 @@ export function usePdfEditor() {
             })
             mergeTextBlockDTO(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error changing color:', error)
         }
@@ -384,6 +438,7 @@ export function usePdfEditor() {
             })
             mergeTextBlockDTO(updated)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error moving text block:', error)
         }
@@ -402,6 +457,7 @@ export function usePdfEditor() {
             setSelectedTextBlockId(newBlock.id)
             setSelectedFieldId(null)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error adding text block:', error)
             alert(
@@ -423,6 +479,7 @@ export function usePdfEditor() {
                 setEditingTextBlockId(null)
             }
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error removing text block:', error)
             alert(
@@ -439,6 +496,7 @@ export function usePdfEditor() {
                 setSelectedFieldId(null)
             }
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error removing field:', error)
             alert(
@@ -462,6 +520,7 @@ export function usePdfEditor() {
             setExtractedFields((prev) => [...prev, newField])
             setSelectedFieldId(newField.id)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error adding field:', error)
             alert(
@@ -490,6 +549,7 @@ export function usePdfEditor() {
             })
             setSelectedFieldId(result.newField.id)
             setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error cloning field:', error)
             alert(
@@ -524,6 +584,7 @@ export function usePdfEditor() {
             setPdfBytes(await client.call('toBytes', undefined))
             setPdfDebugText(await client.call('toDebugString', undefined))
             setPdfVersion(0)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error loading PDF:', error)
             alert(
@@ -558,6 +619,7 @@ export function usePdfEditor() {
             setPdfVersion(0)
             setSelectedFieldId(null)
             setSelectedTextBlockId(null)
+            updateUndoRedoState()
         } catch (error) {
             console.error('Error creating new PDF:', error)
             alert(
@@ -743,6 +805,10 @@ export function usePdfEditor() {
         handleFontChange,
         handleTextBlockFontSizeChange,
         handleAddPage,
+        handleUndo,
+        handleRedo,
+        canUndo,
+        canRedo,
         handleColorChange,
         handleTextBlockPositionChange,
         handleRemoveField,

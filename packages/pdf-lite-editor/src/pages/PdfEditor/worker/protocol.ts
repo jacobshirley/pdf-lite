@@ -180,6 +180,18 @@ export type WorkerMethods = {
         args: void
         result: void
     }
+    undo: {
+        args: void
+        result: ExtractResult & { canUndo: boolean; canRedo: boolean }
+    }
+    redo: {
+        args: void
+        result: ExtractResult & { canUndo: boolean; canRedo: boolean }
+    }
+    getUndoRedoState: {
+        args: void
+        result: { canUndo: boolean; canRedo: boolean }
+    }
 }
 
 export type WorkerMethodName = keyof WorkerMethods

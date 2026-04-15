@@ -46,6 +46,37 @@ type EmbeddedFontEntry = { ref: FontRef; font: PdfFont }
 const embeddedFonts = new Map<string, EmbeddedFontEntry>()
 let nextEmbeddedFontId = 0
 
+// Undo/Redo history
+const MAX_HISTORY = 50
+const historyStack: Uint8Array[] = []
+let historyIndex = -1
+
+function saveToHistory() {
+    if (!pdfDoc) return
+
+    // Remove any redo states after current position
+    historyStack.splice(historyIndex + 1)
+
+    // Save current state
+    const snapshot = pdfDoc.toBytes()
+    historyStack.push(snapshot)
+
+    // Limit history size
+    if (historyStack.length > MAX_HISTORY) {
+        historyStack.shift()
+    } else {
+        historyIndex++
+    }
+}
+
+function canUndo(): boolean {
+    return historyIndex > 0
+}
+
+function canRedo(): boolean {
+    return historyIndex < historyStack.length - 1
+}
+
 const standardFontRefs: FontRef[] = PdfFont.STANDARD_FONTS.map((f) => ({
     id: `std:${f.name}`,
     name: f.name,
@@ -278,6 +309,12 @@ const handlers: {
     async load({ bytes }) {
         pdfDoc = await PdfDocument.fromBytes([bytes as Uint8Array<ArrayBuffer>])
         await pdfDoc.decrypt()
+
+        // Initialize history
+        historyStack.length = 0
+        historyStack.push(pdfDoc.toBytes())
+        historyIndex = 0
+
         return extractAll()
     },
 
@@ -288,6 +325,12 @@ const handlers: {
             version: '1.7',
         })
         await pdfDoc.decrypt()
+
+        // Initialize history
+        historyStack.length = 0
+        historyStack.push(pdfDoc.toBytes())
+        historyIndex = 0
+
         return extractAll()
     },
 
@@ -323,26 +366,32 @@ const handlers: {
         const entry = findTextBlockEntry(id)
         if (!entry) throw new Error(`Text block ${id} not found`)
         entry.block.text = text
-        return textBlockToDTO(
+        const result = textBlockToDTO(
             entry.block,
             id,
             entry.pageNumber,
             entry.pageHeight,
             entry.pageWidth,
         )
+
+        saveToHistory()
+        return result
     },
 
     moveTextBlock({ id, dx, dy }) {
         const entry = findTextBlockEntry(id)
         if (!entry) throw new Error(`Text block ${id} not found`)
         entry.block.moveBy(dx, dy)
-        return textBlockToDTO(
+        const result = textBlockToDTO(
             entry.block,
             id,
             entry.pageNumber,
             entry.pageHeight,
             entry.pageWidth,
         )
+
+        saveToHistory()
+        return result
     },
 
     setTextBlockFont({ id, fontRefId }) {
@@ -366,32 +415,41 @@ const handlers: {
         for (const seg of entry.block.getSegments()) {
             seg.fontSize = fontSize
         }
-        return textBlockToDTO(
+        const result = textBlockToDTO(
             entry.block,
             id,
             entry.pageNumber,
             entry.pageHeight,
             entry.pageWidth,
         )
+
+        saveToHistory()
+        return result
     },
 
     setTextBlockColor({ id, r, g, b }) {
         const entry = findTextBlockEntry(id)
         if (!entry) throw new Error(`Text block ${id} not found`)
         entry.block.color = new RGBColor(r, g, b)
-        return textBlockToDTO(
+        const result = textBlockToDTO(
             entry.block,
             id,
             entry.pageNumber,
             entry.pageHeight,
             entry.pageWidth,
         )
+
+        saveToHistory()
+        return result
     },
 
     addPage({ width, height }) {
         if (!pdfDoc) throw new Error('No PDF loaded')
         pdfDoc.pages.newPage({ width, height })
-        return extractAll()
+        const result = extractAll()
+
+        saveToHistory()
+        return result
     },
 
     addTextBlock({ options }) {
@@ -422,13 +480,16 @@ const handlers: {
 
         const id = `text_block_${nextTextBlockId++}`
         textBlockRefs.set(id, block)
-        return textBlockToDTO(
+        const result = textBlockToDTO(
             block,
             id,
             targetPageNumber,
             page.height,
             page.width,
         )
+
+        saveToHistory()
+        return result
     },
 
     removeTextBlock({ id }) {
@@ -455,6 +516,8 @@ const handlers: {
 
         textBlockRefs.delete(id)
         const result: RemoveTextBlockResult = { removedId: id }
+
+        saveToHistory()
         return result
     },
 
@@ -487,6 +550,8 @@ const handlers: {
                 affected.push(fieldToDTO(f, fid))
             }
         }
+
+        saveToHistory()
         return affected
     },
 
@@ -494,6 +559,8 @@ const handlers: {
         const field = fieldRefs.get(id)
         if (!field) throw new Error(`Field ${id} not found`)
         field.rect = rect
+
+        saveToHistory()
         return fieldToDTO(field, id)
     },
 
@@ -501,6 +568,8 @@ const handlers: {
         const field = fieldRefs.get(id)
         if (!field) throw new Error(`Field ${id} not found`)
         field.appearanceState = value
+
+        saveToHistory()
         return fieldToDTO(field, id)
     },
 
@@ -583,6 +652,8 @@ const handlers: {
 
         const id = `field_${nextFieldId++}`
         fieldRefs.set(id, newField)
+
+        saveToHistory()
         return fieldToDTO(newField, id)
     },
 
@@ -608,6 +679,8 @@ const handlers: {
 
         fieldRefs.delete(id)
         const result: RemoveFieldResult = { removedId: id }
+
+        saveToHistory()
         return result
     },
 
@@ -682,6 +755,8 @@ const handlers: {
             updatedOriginalName,
             updatedOriginalValue,
         }
+
+        saveToHistory()
         return result
     },
 
@@ -693,6 +768,55 @@ const handlers: {
         nextFieldId = 0
         nextTextBlockId = 0
         nextGraphicsBlockId = 0
+        historyStack.length = 0
+        historyIndex = -1
+    },
+
+    async undo() {
+        if (!canUndo()) {
+            throw new Error('Cannot undo')
+        }
+
+        historyIndex--
+        const snapshot = historyStack[historyIndex]
+        pdfDoc = await PdfDocument.fromBytes([
+            snapshot as Uint8Array<ArrayBuffer>,
+        ])
+        await pdfDoc.decrypt()
+
+        const result = extractAll()
+        return {
+            ...result,
+            canUndo: canUndo(),
+            canRedo: canRedo(),
+        }
+    },
+
+    async redo() {
+        if (!canRedo()) {
+            throw new Error('Cannot redo')
+        }
+
+        historyIndex++
+        const snapshot = historyStack[historyIndex]
+        pdfDoc = await PdfDocument.fromBytes([
+            snapshot as Uint8Array<ArrayBuffer>,
+        ])
+        await pdfDoc.decrypt()
+
+        const result = extractAll()
+        return {
+            ...result,
+            canUndo: canUndo(),
+            canRedo: canRedo(),
+        }
+    },
+
+    getUndoRedoState() {
+        return {
+            canUndo: canUndo(),
+            canRedo: canRedo(),
+        }
     },
 }
 

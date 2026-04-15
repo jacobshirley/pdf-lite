@@ -37,6 +37,10 @@ export function PdfEditor() {
                     onOpen={editor.handleOpenClick}
                     onExport={editor.handleExportPdf}
                     onAddPage={editor.handleAddPage}
+                    onUndo={editor.handleUndo}
+                    onRedo={editor.handleRedo}
+                    canUndo={editor.canUndo}
+                    canRedo={editor.canRedo}
                 />
 
                 <CanvasPanel

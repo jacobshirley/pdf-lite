@@ -27,6 +27,10 @@ type Props = {
     onOpen: () => void
     onExport: () => void
     onAddPage: () => void
+    onUndo: () => void
+    onRedo: () => void
+    canUndo: boolean
+    canRedo: boolean
 }
 
 export function Toolbar({
@@ -41,6 +45,10 @@ export function Toolbar({
     onOpen,
     onExport,
     onAddPage,
+    onUndo,
+    onRedo,
+    canUndo,
+    canRedo,
 }: Props) {
     return (
         <Card className="sticky top-6 flex h-[calc(100vh-48px)] flex-col rounded-[24px] border-slate-200 shadow-sm">
@@ -117,8 +125,8 @@ export function Toolbar({
 
                 <div className="flex-shrink-0 space-y-1.5">
                     <div className="grid grid-cols-2 gap-1.5">
-                        <ActionButton label="Undo" icon={Undo2} />
-                        <ActionButton label="Redo" icon={Redo2} />
+                        <ActionButton label="Undo" icon={Undo2} onClick={onUndo} disabled={!canUndo} />
+                        <ActionButton label="Redo" icon={Redo2} onClick={onRedo} disabled={!canRedo} />
                     </div>
                     <Button
                         type="button"

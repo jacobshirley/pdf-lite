@@ -241,13 +241,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         // Set catalog as the root in trailer
         doc.trailerDict.set('Root', catalog.reference)
 
-        // Add initial page if dimensions specified
-        if (options?.width !== undefined || options?.height !== undefined) {
-            pagesTree.add({
-                width: options?.width ?? 612,
-                height: options?.height ?? 792,
-            })
-        }
+        // Always add at least one page with the specified (or default) dimensions
+        pagesTree.newPage({
+            width: options?.width ?? 612,
+            height: options?.height ?? 792,
+        })
 
         return doc
     }

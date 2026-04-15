@@ -389,7 +389,7 @@ const handlers: {
 
     addPage({ width, height }) {
         if (!pdfDoc) throw new Error('No PDF loaded')
-        pdfDoc.pages.add({ width, height })
+        pdfDoc.pages.newPage({ width, height })
         return extractAll()
     },
 

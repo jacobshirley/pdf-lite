@@ -118,11 +118,11 @@ export class PdfPages
     }
 
     /**
-     * Add a new page to this pages tree.
+     * Create a new page and add it to this pages tree.
      * @param options Page configuration options
      * @returns The newly created PdfPage
      */
-    add(options?: { width?: number; height?: number }): PdfPage {
+    newPage(options?: { width?: number; height?: number }): PdfPage {
         const width = options?.width ?? 612
         const height = options?.height ?? 792
 

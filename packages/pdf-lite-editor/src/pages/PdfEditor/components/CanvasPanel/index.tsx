@@ -2,7 +2,7 @@ import React from 'react'
 import { Badge } from '@/components/shadcn/badge'
 import { Button } from '@/components/shadcn/button'
 import { Card, CardContent } from '@/components/shadcn/card'
-import { Eye, FileText, FileUp, Layers, Type, Upload } from 'lucide-react'
+import { Eye, FileText, FileUp, Layers, Loader2, Type, Upload } from 'lucide-react'
 import { PdfViewer } from '@/components/PdfViewer'
 import { PdfTextEditor } from '@/components/PdfTextEditor'
 import type {
@@ -18,6 +18,7 @@ import { GraphicsBlockOverlay } from '../GraphicsBlockOverlay'
 type Props = {
     uploadedFile: File | null
     pdfLoaded: boolean
+    pdfLoading: boolean
     pdfBytes: Uint8Array | undefined
     pdfDebugText: string
     activeView: 'pdf' | 'text'
@@ -67,6 +68,7 @@ type Props = {
 export function CanvasPanel({
     uploadedFile,
     pdfLoaded,
+    pdfLoading,
     pdfBytes,
     pdfDebugText,
     activeView,
@@ -114,28 +116,42 @@ export function CanvasPanel({
             {!uploadedFile ? (
                 <Card className="rounded-[24px] border-slate-200 shadow-sm">
                     <CardContent className="flex min-h-[500px] flex-col items-center justify-center p-8">
-                        <div className="flex flex-col items-center gap-4 text-center">
-                            <div className="rounded-2xl bg-slate-100 p-6">
-                                <FileUp className="h-12 w-12 text-slate-400" />
+                        {pdfLoading ? (
+                            <div className="flex flex-col items-center gap-4 text-center">
+                                <Loader2 className="h-12 w-12 animate-spin text-slate-400" />
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900">
+                                        Loading PDF...
+                                    </h3>
+                                    <p className="mt-2 text-sm text-slate-500">
+                                        Please wait while we process your file
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-900">
-                                    No PDF loaded
-                                </h3>
-                                <p className="mt-2 text-sm text-slate-500">
-                                    Upload a PDF file to start editing form
-                                    fields and text
-                                </p>
+                        ) : (
+                            <div className="flex flex-col items-center gap-4 text-center">
+                                <div className="rounded-2xl bg-slate-100 p-6">
+                                    <FileUp className="h-12 w-12 text-slate-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900">
+                                        No PDF loaded
+                                    </h3>
+                                    <p className="mt-2 text-sm text-slate-500">
+                                        Upload a PDF file to start editing form
+                                        fields and text
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    onClick={onOpenClick}
+                                    className="mt-4 rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95"
+                                >
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Upload PDF
+                                </Button>
                             </div>
-                            <Button
-                                type="button"
-                                onClick={onOpenClick}
-                                className="mt-4 rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95"
-                            >
-                                <Upload className="mr-2 h-4 w-4" />
-                                Upload PDF
-                            </Button>
-                        </div>
+                        )}
                     </CardContent>
                 </Card>
             ) : (
@@ -197,11 +213,15 @@ export function CanvasPanel({
                                 <Button
                                     type="button"
                                     variant={
-                                        showAcroFormLayer ? 'default' : 'ghost'
+                                        showAcroFormLayer ? 'default' : 'outline'
                                     }
                                     size="sm"
                                     onClick={onToggleAcroFormLayer}
-                                    className="rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 ml-auto"
+                                    className={`rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 ml-auto ${
+                                        showAcroFormLayer
+                                            ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                            : ''
+                                    }`}
                                 >
                                     <Layers className="mr-2 h-3 w-3" />
                                     Fields ({extractedFields.length})
@@ -211,11 +231,15 @@ export function CanvasPanel({
                                 <Button
                                     type="button"
                                     variant={
-                                        showTextLayer ? 'default' : 'ghost'
+                                        showTextLayer ? 'default' : 'outline'
                                     }
                                     size="sm"
                                     onClick={onToggleTextLayer}
-                                    className="rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+                                    className={`rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 ${
+                                        showTextLayer
+                                            ? 'bg-green-500 text-white hover:bg-green-600'
+                                            : ''
+                                    }`}
                                 >
                                     <Type className="mr-2 h-3 w-3" />
                                     Text ({extractedTextBlocks.length})
@@ -225,11 +249,15 @@ export function CanvasPanel({
                                 <Button
                                     type="button"
                                     variant={
-                                        showGraphicsLayer ? 'default' : 'ghost'
+                                        showGraphicsLayer ? 'default' : 'outline'
                                     }
                                     size="sm"
                                     onClick={onToggleGraphicsLayer}
-                                    className="rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+                                    className={`rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 ${
+                                        showGraphicsLayer
+                                            ? 'bg-purple-500 text-white hover:bg-purple-600'
+                                            : ''
+                                    }`}
                                 >
                                     <Layers className="mr-2 h-3 w-3" />
                                     Graphics ({extractedGraphicsBlocks.length})
@@ -238,7 +266,21 @@ export function CanvasPanel({
                         </div>
                     </div>
                     <CardContent className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-                        {pdfLoaded && activeView === 'pdf' && pdfBytes && (
+                        {pdfLoading ? (
+                            <div className="flex min-h-[500px] flex-col items-center justify-center">
+                                <div className="flex flex-col items-center gap-4 text-center">
+                                    <Loader2 className="h-12 w-12 animate-spin text-slate-400" />
+                                    <div>
+                                        <h3 className="text-xl font-bold text-slate-900">
+                                            Loading PDF...
+                                        </h3>
+                                        <p className="mt-2 text-sm text-slate-500">
+                                            Please wait while we process your file
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : pdfLoaded && activeView === 'pdf' && pdfBytes ? (
                             <PdfViewer
                                 file={pdfBytes}
                                 className="w-full"
@@ -400,13 +442,12 @@ export function CanvasPanel({
                                     )
                                 }}
                             />
-                        )}
-                        {pdfLoaded && activeView === 'text' && (
+                        ) : pdfLoaded && activeView === 'text' ? (
                             <PdfTextEditor
                                 content={pdfDebugText}
                                 readOnly={true}
                             />
-                        )}
+                        ) : null}
                     </CardContent>
                 </Card>
             )}

@@ -12,6 +12,7 @@ export function usePdfEditor() {
     const [uploadedFile, setUploadedFile] = useState<File | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [pdfLoaded, setPdfLoaded] = useState(false)
+    const [pdfLoading, setPdfLoading] = useState(false)
     const [activeView, setActiveView] = useState<'pdf' | 'text'>('pdf')
     const [extractedFields, setExtractedFields] = useState<ExtractedField[]>([])
     const [extractedTextBlocks, setExtractedTextBlocks] = useState<
@@ -22,7 +23,7 @@ export function usePdfEditor() {
     >([])
     const [showAcroFormLayer, setShowAcroFormLayer] = useState<boolean>(true)
     const [showTextLayer, setShowTextLayer] = useState<boolean>(true)
-    const [showGraphicsLayer, setShowGraphicsLayer] = useState<boolean>(true)
+    const [showGraphicsLayer, setShowGraphicsLayer] = useState<boolean>(false)
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
     const [selectedTextBlockId, setSelectedTextBlockId] = useState<
         string | null
@@ -505,6 +506,7 @@ export function usePdfEditor() {
             return
         }
         try {
+            setPdfLoading(true)
             const fileBytes = new Uint8Array(await file.arrayBuffer())
             const result = await client.call('load', { bytes: fileBytes }, [
                 fileBytes.buffer,
@@ -525,6 +527,8 @@ export function usePdfEditor() {
             alert(
                 `Error loading PDF: ${error instanceof Error ? error.message : String(error)}`,
             )
+        } finally {
+            setPdfLoading(false)
         }
     }
 
@@ -534,6 +538,7 @@ export function usePdfEditor() {
 
     const handleNewPdf = async () => {
         try {
+            setPdfLoading(true)
             const result = await client.call('createBlank', {})
             const fonts = await client.call('listStandardFonts', undefined)
             const blank = new File([new Uint8Array()], 'untitled.pdf', {
@@ -556,6 +561,8 @@ export function usePdfEditor() {
             alert(
                 `Error creating new PDF: ${error instanceof Error ? error.message : String(error)}`,
             )
+        } finally {
+            setPdfLoading(false)
         }
     }
 
@@ -685,6 +692,7 @@ export function usePdfEditor() {
     return {
         uploadedFile,
         pdfLoaded,
+        pdfLoading,
         pdfBytes,
         pdfDebugText,
         activeView,

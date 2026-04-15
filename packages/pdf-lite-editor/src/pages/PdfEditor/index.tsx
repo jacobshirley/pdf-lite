@@ -44,6 +44,7 @@ export function PdfEditor() {
                 <CanvasPanel
                     uploadedFile={editor.uploadedFile}
                     pdfLoaded={editor.pdfLoaded}
+                    pdfLoading={editor.pdfLoading}
                     pdfBytes={editor.pdfBytes}
                     pdfDebugText={editor.pdfDebugText}
                     activeView={editor.activeView}

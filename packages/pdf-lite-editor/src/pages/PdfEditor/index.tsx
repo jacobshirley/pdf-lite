@@ -2,6 +2,7 @@ import { CanvasPanel } from './components/CanvasPanel'
 import { FieldPropertiesPanel } from './components/FieldPropertiesPanel'
 import { TextPropertiesPanel } from './components/TextPropertiesPanel'
 import { Toolbar } from './components/Toolbar'
+import { PasswordDialog } from './components/PasswordDialog'
 import { usePdfEditor } from './usePdfEditor'
 
 export function PdfEditor() {
@@ -41,6 +42,12 @@ export function PdfEditor() {
                     onRedo={editor.handleRedo}
                     canUndo={editor.canUndo}
                     canRedo={editor.canRedo}
+                    encryptOnExport={editor.encryptOnExport}
+                    exportPassword={editor.exportPassword}
+                    exportOwnerPassword={editor.exportOwnerPassword}
+                    onEncryptOnExportChange={editor.setEncryptOnExport}
+                    onExportPasswordChange={editor.setExportPassword}
+                    onExportOwnerPasswordChange={editor.setExportOwnerPassword}
                 />
 
                 <CanvasPanel
@@ -153,6 +160,12 @@ export function PdfEditor() {
                     </>
                 )}
             </div>
+            
+            <PasswordDialog
+                open={editor.passwordDialogOpen}
+                onSubmit={editor.handlePasswordSubmit}
+                onCancel={editor.handlePasswordCancel}
+            />
         </div>
     )
 }

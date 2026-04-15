@@ -27,6 +27,14 @@ export function usePdfEditor() {
     const [showGraphicsLayer, setShowGraphicsLayer] = useState<boolean>(false)
     const [canUndo, setCanUndo] = useState(false)
     const [canRedo, setCanRedo] = useState(false)
+    const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+    const [pendingPasswordFile, setPendingPasswordFile] = useState<{
+        file: File
+        bytes: Uint8Array
+    } | null>(null)
+    const [encryptOnExport, setEncryptOnExport] = useState(false)
+    const [exportPassword, setExportPassword] = useState('')
+    const [exportOwnerPassword, setExportOwnerPassword] = useState('')
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
     const [selectedTextBlockId, setSelectedTextBlockId] = useState<
         string | null
@@ -567,12 +575,23 @@ export function usePdfEditor() {
             alert('Please upload a PDF file')
             return
         }
+
+        const fileBytes = new Uint8Array(await file.arrayBuffer())
+        await loadPdfWithOptionalPassword(file, fileBytes)
+    }
+
+    const loadPdfWithOptionalPassword = async (
+        file: File,
+        fileBytes: Uint8Array,
+        password?: string,
+    ) => {
         try {
             setPdfLoading(true)
-            const fileBytes = new Uint8Array(await file.arrayBuffer())
-            const result = await client.call('load', { bytes: fileBytes }, [
-                fileBytes.buffer,
-            ])
+            const result = await client.call(
+                'load',
+                { bytes: fileBytes, password },
+                [fileBytes.buffer],
+            )
             const fonts = await client.call('listStandardFonts', undefined)
             setUploadedFile(file)
             setPdfLoaded(true)
@@ -585,14 +604,48 @@ export function usePdfEditor() {
             setPdfDebugText(await client.call('toDebugString', undefined))
             setPdfVersion(0)
             updateUndoRedoState()
+            // Clear pending password state on success
+            setPendingPasswordFile(null)
+            setPasswordDialogOpen(false)
         } catch (error) {
             console.error('Error loading PDF:', error)
+
+            // Check if password is required
+            if (
+                error instanceof Error &&
+                error.message === 'PASSWORD_REQUIRED'
+            ) {
+                // Store file info and show password dialog
+                setPendingPasswordFile({ file, bytes: fileBytes })
+                setPasswordDialogOpen(true)
+                setPdfLoading(false)
+                return
+            }
+
             alert(
                 `Error loading PDF: ${error instanceof Error ? error.message : String(error)}`,
             )
         } finally {
-            setPdfLoading(false)
+            if (!passwordDialogOpen) {
+                setPdfLoading(false)
+            }
         }
+    }
+
+    const handlePasswordSubmit = (password: string) => {
+        if (pendingPasswordFile) {
+            loadPdfWithOptionalPassword(
+                pendingPasswordFile.file,
+                pendingPasswordFile.bytes,
+                password,
+            )
+        }
+    }
+
+    const handlePasswordCancel = () => {
+        setPasswordDialogOpen(false)
+        setPendingPasswordFile(null)
+        setPdfLoading(false)
     }
 
     const handleOpenClick = () => {
@@ -653,8 +706,27 @@ export function usePdfEditor() {
 
     const handleExportPdf = async () => {
         if (!pdfLoaded || !uploadedFile) return
+
+        // Validate password if encryption is enabled
+        if (encryptOnExport && !exportPassword.trim()) {
+            alert('Please enter a user password to encrypt the PDF')
+            return
+        }
+
         try {
-            const bytes = await client.call('toBytes', undefined)
+            let bytes: Uint8Array
+
+            if (encryptOnExport && exportPassword.trim()) {
+                // Export with password protection
+                bytes = await client.call('toBytesWithPassword', {
+                    password: exportPassword,
+                    ownerPassword: exportOwnerPassword.trim() || undefined,
+                })
+            } else {
+                // Export without password
+                bytes = await client.call('toBytes', undefined)
+            }
+
             const blob = new Blob([bytes as BlobPart], {
                 type: 'application/pdf',
             })
@@ -826,5 +898,14 @@ export function usePdfEditor() {
         handlePageDrop,
         handleBackgroundClick,
         handleTextBlockSelect,
+        passwordDialogOpen,
+        handlePasswordSubmit,
+        handlePasswordCancel,
+        encryptOnExport,
+        setEncryptOnExport,
+        exportPassword,
+        setExportPassword,
+        exportOwnerPassword,
+        setExportOwnerPassword,
     }
 }

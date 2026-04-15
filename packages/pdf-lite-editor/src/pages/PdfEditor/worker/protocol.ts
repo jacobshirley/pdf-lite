@@ -93,7 +93,7 @@ export type CloneFieldResult = {
 
 export type WorkerMethods = {
     load: {
-        args: { bytes: Uint8Array }
+        args: { bytes: Uint8Array; password?: string }
         result: ExtractResult
     }
     createBlank: {
@@ -102,6 +102,10 @@ export type WorkerMethods = {
     }
     toBytes: {
         args: void
+        result: Uint8Array
+    }
+    toBytesWithPassword: {
+        args: { password: string; ownerPassword?: string }
         result: Uint8Array
     }
     toDebugString: {

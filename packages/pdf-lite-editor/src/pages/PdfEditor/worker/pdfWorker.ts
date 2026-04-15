@@ -306,9 +306,20 @@ const handlers: {
         args: WorkerMethods[M]['args'],
     ) => Promise<WorkerMethods[M]['result']> | WorkerMethods[M]['result']
 } = {
-    async load({ bytes }) {
+    async load({ bytes, password }) {
         pdfDoc = await PdfDocument.fromBytes([bytes as Uint8Array<ArrayBuffer>])
-        await pdfDoc.decrypt()
+
+        // Set password if provided
+        if (password) {
+            pdfDoc.setPassword(password)
+        }
+
+        try {
+            await pdfDoc.decrypt()
+        } catch (error) {
+            // If decryption fails, it's likely a password issue
+            throw new Error('PASSWORD_REQUIRED')
+        }
 
         // Initialize history
         historyStack.length = 0
@@ -337,6 +348,24 @@ const handlers: {
     toBytes() {
         if (!pdfDoc) throw new Error('No PDF loaded')
         return pdfDoc.toBytes()
+    },
+
+    async toBytesWithPassword({
+        password,
+        ownerPassword,
+    }: {
+        password: string
+        ownerPassword?: string
+    }) {
+        if (!pdfDoc) throw new Error('No PDF loaded')
+        // Create a copy of the document to avoid modifying the original
+        const currentBytes = pdfDoc.toBytes()
+        const exportDoc = await PdfDocument.fromBytes([currentBytes])
+        exportDoc.setPassword(password)
+        if (ownerPassword) {
+            exportDoc.setOwnerPassword(ownerPassword)
+        }
+        return exportDoc.toBytes()
     },
 
     toDebugString() {

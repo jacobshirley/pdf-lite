@@ -127,6 +127,7 @@ export class PdfChoiceFormField extends PdfFormField {
             reverseEncodingMap,
             displayOptions: this.options.map((opt) => opt.label),
             selectedIndex: this.selectedIndex,
+            quadding: this.quadding,
         })
 
         if (options?.makeReadOnly) {

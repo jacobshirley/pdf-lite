@@ -6,6 +6,25 @@ import { PdfGraphics, type FontVariantNames } from './pdf-graphics.js'
 
 const DEFAULT_FONT_SIZE = 12
 
+/** Compute the X offset for a line of text given the quadding value. */
+function calcTextX(
+    quadding: number,
+    padding: number,
+    availableWidth: number,
+    textWidth: number,
+): number {
+    if (quadding === 2) {
+        // Right-aligned
+        return padding + Math.max(availableWidth - textWidth, 0)
+    }
+    if (quadding === 1) {
+        // Center-aligned
+        return padding + Math.max((availableWidth - textWidth) / 2, 0)
+    }
+    // Left-aligned (default)
+    return padding
+}
+
 /**
  * Appearance stream for text fields (single-line, multiline, comb).
  * Enhanced with word wrapping and automatic font scaling.
@@ -24,6 +43,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         reverseEncodingMap?: Map<string, number>
         markdown?: string
         fontVariantNames?: FontVariantNames
+        quadding?: number
     }) {
         const [x1, y1, x2, y2] = ctx.rect
         const width = x2 - x1
@@ -37,6 +57,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         const availableWidth = width - 2 * padding
         const availableHeight = height - 2 * padding
         const autoSize = ctx.da.fontSize <= 0
+        const quadding = ctx.quadding ?? 0
 
         // Create graphics with font context for text measurement
         const g = new PdfGraphics({
@@ -198,14 +219,22 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
                 )
             } else {
                 g.beginText()
-                g.moveTo(padding, startY)
+                let prevLineX = 0
                 for (let i = 0; i < lines.length; i++) {
-                    if (i > 0) g.moveTo(0, -renderLineHeight)
-                    g.showText(
-                        lines[i].replace(/\r/g, ''),
-                        isUnicode,
-                        reverseEncodingMap,
+                    const lineText = lines[i].replace(/\r/g, '')
+                    const lineX = calcTextX(
+                        quadding,
+                        padding,
+                        availableWidth,
+                        g.measureTextWidth(lineText),
                     )
+                    if (i === 0) {
+                        g.moveTo(lineX, startY)
+                    } else {
+                        g.moveTo(lineX - prevLineX, -renderLineHeight)
+                    }
+                    prevLineX = lineX
+                    g.showText(lineText, isUnicode, reverseEncodingMap)
                 }
                 g.endText()
             }
@@ -228,19 +257,26 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
             }
 
             const textY = (height - finalFontSize) / 2 + finalFontSize * 0.2
+            const textWidth = g.measureTextWidth(value)
+            const textX = calcTextX(
+                quadding,
+                padding,
+                availableWidth,
+                textWidth,
+            )
 
             if (ctx.markdown) {
                 g.showMarkdown(
                     ctx.markdown,
                     isUnicode,
                     reverseEncodingMap,
-                    padding,
+                    textX,
                     textY,
                     finalFontSize,
                 )
             } else {
                 g.beginText()
-                g.moveTo(padding, textY)
+                g.moveTo(textX, textY)
                 g.showText(value, isUnicode, reverseEncodingMap)
                 g.endText()
             }

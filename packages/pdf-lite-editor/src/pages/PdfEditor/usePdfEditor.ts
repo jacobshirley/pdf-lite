@@ -352,6 +352,48 @@ export function usePdfEditor() {
         }
     }
 
+    const handleAddTextBlock = async (options?: {
+        pageNumber?: number
+        x?: number
+        y?: number
+        text?: string
+        fontSize?: number
+    }) => {
+        try {
+            const newBlock = await client.call('addTextBlock', { options })
+            setExtractedTextBlocks((prev) => [...prev, newBlock])
+            setSelectedTextBlockId(newBlock.id)
+            setSelectedFieldId(null)
+            setPdfVersion((v) => v + 1)
+        } catch (error) {
+            console.error('Error adding text block:', error)
+            alert(
+                `Error adding text block: ${error instanceof Error ? error.message : String(error)}`,
+            )
+        }
+    }
+
+    const handleRemoveTextBlock = async (blockId: string) => {
+        try {
+            await client.call('removeTextBlock', { id: blockId })
+            setExtractedTextBlocks((prev) =>
+                prev.filter((tb) => tb.id !== blockId),
+            )
+            if (selectedTextBlockId === blockId) {
+                setSelectedTextBlockId(null)
+            }
+            if (editingTextBlockId === blockId) {
+                setEditingTextBlockId(null)
+            }
+            setPdfVersion((v) => v + 1)
+        } catch (error) {
+            console.error('Error removing text block:', error)
+            alert(
+                `Error removing text block: ${error instanceof Error ? error.message : String(error)}`,
+            )
+        }
+    }
+
     const handleRemoveField = async (fieldId: string) => {
         try {
             await client.call('removeField', { id: fieldId })
@@ -609,6 +651,8 @@ export function usePdfEditor() {
         handleTextBlockPositionChange,
         handleRemoveField,
         handleAddField,
+        handleAddTextBlock,
+        handleRemoveTextBlock,
         handleCloneField,
         handleFileUpload,
         handleOpenClick,

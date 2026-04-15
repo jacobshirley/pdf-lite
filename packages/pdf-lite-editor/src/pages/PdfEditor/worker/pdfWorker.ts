@@ -5,9 +5,13 @@ import {
     PdfFont,
     PdfFormField,
     PdfTextFormField,
+    TextBlock,
+    TextNode,
+    VirtualTextBlock,
 } from 'pdf-lite'
 import { RGBColor } from 'pdf-lite/graphics/color/rgb-color'
-import type { TextBlock, GraphicsBlock } from 'pdf-lite'
+import { SetTextMatrixOp } from 'pdf-lite/graphics/ops/text'
+import type { GraphicsBlock } from 'pdf-lite'
 import type {
     CloneFieldResult,
     ExtractResult,
@@ -16,6 +20,7 @@ import type {
     GraphicsBlockDTO,
     Rect4,
     RemoveFieldResult,
+    RemoveTextBlockResult,
     TextBlockDTO,
     TextSegmentDTO,
     WorkerMethodName,
@@ -354,6 +359,70 @@ const handlers: {
             entry.pageHeight,
             entry.pageWidth,
         )
+    },
+
+    addTextBlock({ options }) {
+        if (!pdfDoc) throw new Error('No PDF loaded')
+        const pages = pdfDoc.pages.toArray()
+        if (pages.length === 0) throw new Error('No pages in PDF')
+
+        const targetPageNumber = options?.pageNumber || 1
+        const page = pages[targetPageNumber - 1] || pages[0]
+        page.consolidateContentStreams()
+        const stream = page.contentStreams[0]
+        if (!stream) throw new Error('Page has no content stream')
+
+        const fontSize = options?.fontSize ?? 12
+        const text = options?.text ?? 'New Text'
+        const x = options?.x ?? 100
+        const y = options?.y ?? page.height - 100
+
+        const block = new TextBlock(page)
+        const seg = new TextNode()
+        seg.fontSize = fontSize
+        seg.ops.unshift(SetTextMatrixOp.create(1, 0, 0, 1, x, y))
+        block.addSegment(seg)
+        block.font = PdfFont.HELVETICA
+        seg.text = text
+
+        stream.nodes.push(block)
+
+        const id = `text_block_${nextTextBlockId++}`
+        textBlockRefs.set(id, block)
+        return textBlockToDTO(
+            block,
+            id,
+            targetPageNumber,
+            page.height,
+            page.width,
+        )
+    },
+
+    removeTextBlock({ id }) {
+        const block = textBlockRefs.get(id)
+        if (!block || !pdfDoc) throw new Error(`Text block ${id} not found`)
+
+        if (block instanceof VirtualTextBlock) {
+            for (const seg of block.getSegments()) {
+                seg.ops = []
+            }
+        } else {
+            const pages = pdfDoc.pages.toArray()
+            for (const page of pages) {
+                for (const stream of page.contentStreams) {
+                    const nodes = stream.nodes
+                    const idx = nodes.indexOf(block)
+                    if (idx !== -1) {
+                        nodes.splice(idx, 1)
+                        break
+                    }
+                }
+            }
+        }
+
+        textBlockRefs.delete(id)
+        const result: RemoveTextBlockResult = { removedId: id }
+        return result
     },
 
     updateFieldProperty({ id, property, value }) {

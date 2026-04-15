@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/shadcn/card'
 import { Input } from '@/components/shadcn/input'
 import { Label } from '@/components/shadcn/label'
 import { Separator } from '@/components/shadcn/separator'
-import { Type, Upload, X } from 'lucide-react'
+import { Trash2, Type, Upload, X } from 'lucide-react'
 import type {
     ExtractedTextBlock,
     FontRef,
@@ -23,6 +23,7 @@ type Props = {
     onColorChange: (hex: string) => void
     onMove: (property: 'x' | 'y', value: string) => void
     onFontUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
+    onRemove: () => void
     onClose: () => void
 }
 
@@ -37,6 +38,7 @@ export function TextPropertiesPanel({
     onColorChange,
     onMove,
     onFontUpload,
+    onRemove,
     onClose,
 }: Props) {
     const bbox = textBlock.bbox
@@ -382,6 +384,18 @@ export function TextPropertiesPanel({
                             </div>
                         )}
                     </div>
+
+                    <Separator />
+
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onRemove}
+                        className="w-full h-10 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Text
+                    </Button>
                 </div>
             </CardContent>
         </Card>

@@ -18,6 +18,7 @@ type Props = {
     onAddField: (type: FieldType) => void
     onFieldDragStart: (type: FieldType) => void
     onFieldDragEnd: () => void
+    onAddText: () => void
     onOpen: () => void
     onExport: () => void
 }
@@ -27,6 +28,7 @@ export function Toolbar({
     onAddField,
     onFieldDragStart,
     onFieldDragEnd,
+    onAddText,
     onOpen,
     onExport,
 }: Props) {
@@ -78,6 +80,25 @@ export function Toolbar({
                             Checkbox
                         </Button>
                     </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                    <div className="mb-2 text-sm font-semibold text-slate-800">
+                        Add Text
+                    </div>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={onAddText}
+                        disabled={!pdfLoaded}
+                        className="h-10 w-full justify-start rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]"
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        <Type className="mr-2 h-4 w-4" />
+                        New Text
+                    </Button>
                 </div>
 
                 <Separator />

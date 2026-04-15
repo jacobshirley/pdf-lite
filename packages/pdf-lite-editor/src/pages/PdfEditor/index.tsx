@@ -32,6 +32,7 @@ export function PdfEditor() {
                     onAddField={editor.handleAddField}
                     onFieldDragStart={editor.handleFieldDragStart}
                     onFieldDragEnd={editor.handleFieldDragEnd}
+                    onAddText={() => editor.handleAddTextBlock()}
                     onOpen={editor.handleOpenClick}
                     onExport={editor.handleExportPdf}
                 />
@@ -119,6 +120,11 @@ export function PdfEditor() {
                         onColorChange={editor.handleColorChange}
                         onMove={editor.handleTextBlockMove}
                         onFontUpload={editor.handleFontUpload}
+                        onRemove={() =>
+                            editor.handleRemoveTextBlock(
+                                editor.selectedTextBlock!.id,
+                            )
+                        }
                         onClose={() => editor.setSelectedTextBlockId(null)}
                     />
                 )}

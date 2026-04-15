@@ -71,6 +71,18 @@ export type RemoveFieldResult = {
     removedId: string
 }
 
+export type AddTextBlockOptions = {
+    pageNumber?: number
+    x?: number
+    y?: number
+    text?: string
+    fontSize?: number
+}
+
+export type RemoveTextBlockResult = {
+    removedId: string
+}
+
 export type CloneFieldResult = {
     newField: FieldDTO
     updatedOriginalId?: string
@@ -98,6 +110,14 @@ export type WorkerMethods = {
     uploadFont: {
         args: { bytes: Uint8Array; fallbackName: string }
         result: FontRef
+    }
+    addTextBlock: {
+        args: { options?: AddTextBlockOptions }
+        result: TextBlockDTO
+    }
+    removeTextBlock: {
+        args: { id: string }
+        result: RemoveTextBlockResult
     }
     editTextBlock: {
         args: { id: string; text: string }

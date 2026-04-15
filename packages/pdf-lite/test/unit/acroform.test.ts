@@ -1550,6 +1550,107 @@ describe('AcroForm Appearance Generation', () => {
             { encoding: 'base64' },
         )
     })
+
+    it('should right-align text when quadding is 2', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = document.acroform!
+
+        const textField = acroform.fields.find((f) => f.name === 'Client Name')!
+        textField.quadding = 2 // right-aligned
+        textField.value = 'Right'
+        textField.generateAppearance()
+
+        const appearance = textField.getAppearanceStream()!
+        const stream = appearance.content.rawAsString
+
+        // Extract the Td x-offset — for right alignment the x should be
+        // greater than the left-aligned padding of 2
+        const tdMatch = stream.match(/([\d.]+)\s+[\d.]+\s+Td/)
+        expect(tdMatch).toBeDefined()
+        const xOffset = parseFloat(tdMatch![1])
+        expect(xOffset).toBeGreaterThan(2) // must be shifted right from padding
+    })
+
+    it('should center text when quadding is 1', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = document.acroform!
+
+        const textField = acroform.fields.find((f) => f.name === 'Client Name')!
+
+        const rect = textField.rect!
+        const width = rect[2] - rect[0]
+        const padding = 2
+        const availableWidth = width - 2 * padding
+
+        // Left-aligned baseline
+        textField.quadding = 0
+        textField.value = 'Center'
+        textField.generateAppearance()
+        const leftStream = textField.getAppearanceStream()!.content.rawAsString
+        const leftTd = leftStream.match(/([\d.]+)\s+[\d.]+\s+Td/)!
+        const leftX = parseFloat(leftTd[1])
+
+        // Center-aligned
+        textField.quadding = 1
+        textField.generateAppearance()
+        const centerStream =
+            textField.getAppearanceStream()!.content.rawAsString
+        const centerTd = centerStream.match(/([\d.]+)\s+[\d.]+\s+Td/)!
+        const centerX = parseFloat(centerTd[1])
+
+        // Right-aligned
+        textField.quadding = 2
+        textField.generateAppearance()
+        const rightStream = textField.getAppearanceStream()!.content.rawAsString
+        const rightTd = rightStream.match(/([\d.]+)\s+[\d.]+\s+Td/)!
+        const rightX = parseFloat(rightTd[1])
+
+        // Center x should be roughly midway between left and right
+        expect(centerX).toBeGreaterThan(leftX)
+        expect(centerX).toBeLessThan(rightX)
+
+        // Center should be approximately (left + right) / 2
+        const midpoint = (leftX + rightX) / 2
+        expect(Math.abs(centerX - midpoint)).toBeLessThan(1)
+    })
+
+    it('should left-align text by default (quadding 0)', async () => {
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        const acroform = document.acroform!
+
+        const textField = acroform.fields.find((f) => f.name === 'Client Name')!
+        textField.quadding = 0
+        textField.value = 'Left'
+        textField.generateAppearance()
+
+        const appearance = textField.getAppearanceStream()!
+        const stream = appearance.content.rawAsString
+        const tdMatch = stream.match(/([\d.]+)\s+[\d.]+\s+Td/)
+        expect(tdMatch).toBeDefined()
+        const xOffset = parseFloat(tdMatch![1])
+        expect(xOffset).toBe(2) // padding only
+    })
 })
 
 describe('AcroForm Field DA Inheritance from Form Level', () => {

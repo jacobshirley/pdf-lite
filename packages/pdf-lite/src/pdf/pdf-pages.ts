@@ -4,7 +4,9 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfName } from '../core/objects/pdf-name.js'
+import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfPage } from './pdf-page.js'
+import type { PdfDocument } from './pdf-document.js'
 
 type PdfPagesDictionary = PdfDictionary<{
     Type: PdfName<'Pages'>
@@ -113,5 +115,67 @@ export class PdfPages
                 yield resolved.becomes(PdfPage)
             }
         }
+    }
+
+    /**
+     * Add a new page to this pages tree.
+     * @param options Page configuration options
+     * @returns The newly created PdfPage
+     */
+    add(options?: { width?: number; height?: number }): PdfPage {
+        const width = options?.width ?? 612
+        const height = options?.height ?? 792
+
+        // Create an empty content stream for the page
+        const contentStreamObj = new PdfIndirectObject({
+            content: new PdfStream({
+                header: new PdfDictionary(),
+                original: '',
+            }),
+        })
+
+        // Create the page dictionary
+        const pageDict = new PdfDictionary({
+            Type: new PdfName('Page'),
+            Parent: this.reference,
+            MediaBox: new PdfArray(
+                [0, 0, width, height].map((v) => new PdfNumber(v)),
+            ),
+            Contents: contentStreamObj.reference,
+            Resources: new PdfDictionary(),
+        })
+        const pageObj = new PdfIndirectObject({ content: pageDict })
+
+        // Add page reference to Kids array
+        const kids = this.content.get('Kids')?.as(PdfArray)
+        if (!kids) throw new Error('Pages tree has no Kids array')
+        kids.items.push(pageObj.reference)
+
+        // Increment page count
+        this.count = this.count + 1
+        this.setModified(true)
+
+        // Return the page as a PdfPage instance
+        return pageObj.becomes(PdfPage)
+    }
+
+    remove(page: PdfPage): void {
+        const kids = this.content.get('Kids')?.as(PdfArray)
+        if (!kids) throw new Error('Pages tree has no Kids array')
+
+        // Find the index of the page to remove
+        const pageIndex = kids.items.findIndex(
+            (ref) => ref.as(PdfObjectReference)?.resolve() === page,
+        )
+        if (pageIndex === -1) {
+            throw new Error('Page not found in this Pages tree')
+        }
+
+        // Remove the page reference from the Kids array
+        kids.items.splice(pageIndex, 1)
+
+        // Decrement page count
+        this.count = this.count - 1
+        this.setModified(true)
     }
 }

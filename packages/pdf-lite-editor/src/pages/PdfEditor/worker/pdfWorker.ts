@@ -1,16 +1,10 @@
 /// <reference lib="webworker" />
 import {
     PdfAcroForm,
-    PdfArray,
     PdfButtonFormField,
-    PdfDictionary,
     PdfDocument,
     PdfFont,
     PdfFormField,
-    PdfIndirectObject,
-    PdfName,
-    PdfNumber,
-    PdfStream,
     PdfTextFormField,
     TextBlock,
     TextNode,
@@ -287,29 +281,11 @@ const handlers: {
     },
 
     async createBlank({ width, height }) {
-        const w = width ?? 612
-        const h = height ?? 792
-        const objs = [
-            `<</Type/Catalog/Pages 2 0 R>>`,
-            `<</Type/Pages/Kids[3 0 R]/Count 1>>`,
-            `<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${w} ${h}]/Contents 4 0 R/Resources<<>>>>`,
-            `<</Length 0>>\nstream\n\nendstream`,
-        ]
-        let body = '%PDF-1.4\n'
-        const offsets: number[] = []
-        for (let i = 0; i < objs.length; i++) {
-            offsets.push(body.length)
-            body += `${i + 1} 0 obj\n${objs[i]}\nendobj\n`
-        }
-        const xrefOffset = body.length
-        body += `xref\n0 ${objs.length + 1}\n`
-        body += `0000000000 65535 f \n`
-        for (const off of offsets) {
-            body += `${off.toString().padStart(10, '0')} 00000 n \n`
-        }
-        body += `trailer\n<</Size ${objs.length + 1}/Root 1 0 R>>\nstartxref\n${xrefOffset}\n%%EOF\n`
-        const bytes = new TextEncoder().encode(body)
-        pdfDoc = await PdfDocument.fromBytes([bytes as Uint8Array<ArrayBuffer>])
+        pdfDoc = PdfDocument.newDocument({
+            width,
+            height,
+            version: '1.7',
+        })
         await pdfDoc.decrypt()
         return extractAll()
     },
@@ -413,33 +389,7 @@ const handlers: {
 
     addPage({ width, height }) {
         if (!pdfDoc) throw new Error('No PDF loaded')
-        const w = width ?? 612
-        const h = height ?? 792
-
-        const contentStreamObj = new PdfIndirectObject({
-            content: new PdfStream({
-                header: new PdfDictionary(),
-                original: '',
-            }),
-        })
-
-        const pageDict = new PdfDictionary({
-            Type: new PdfName('Page'),
-            Parent: pdfDoc.pages.reference,
-            MediaBox: new PdfArray([0, 0, w, h].map((v) => new PdfNumber(v))),
-            Contents: contentStreamObj.reference,
-            Resources: new PdfDictionary(),
-        })
-        const pageObj = new PdfIndirectObject({ content: pageDict })
-
-        pdfDoc.add(contentStreamObj, pageObj)
-
-        const kids = pdfDoc.pages.content.get('Kids')?.as(PdfArray)
-        if (!kids) throw new Error('Pages tree has no Kids array')
-        kids.items.push(pageObj.reference)
-        pdfDoc.pages.count = pdfDoc.pages.count + 1
-        pdfDoc.pages.setModified(true)
-
+        pdfDoc.pages.add({ width, height })
         return extractAll()
     },
 
@@ -584,16 +534,20 @@ const handlers: {
 
         if (type === 'Text') {
             const field = new PdfTextFormField()
+            field.fieldType = 'Text'
             field.name = fieldName
             field.value = ''
             field.rect = newRect
             field.parentRef = page.reference
             field.defaultAppearance = '/Helv 12 Tf 0 g'
             field._form = acroform
+            field.isWidget = true
+            field.print = true
             field.updateAppearance()
             newField = field
         } else if (type === 'Checkbox') {
             const field = new PdfButtonFormField()
+            field.fieldType = 'Button'
             field.rect = newRect
             field.name = fieldName
             field.parentRef = page.reference

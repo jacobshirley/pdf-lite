@@ -15,6 +15,7 @@ import {
 } from '../core/objects/pdf-stream.js'
 import { PdfArray } from '../core/objects/pdf-array.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
+import { PdfName } from '../core/objects/pdf-name.js'
 import {
     IPdfObjectResolver,
     PdfObjectReference,
@@ -202,6 +203,53 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
 
         return new PdfDocument({ revisions, version: header })
+    }
+
+    /**
+     * Creates a new blank PDF document with a proper structure.
+     * Sets up the document catalog, pages tree, and optionally adds an initial page.
+     *
+     * @param options - Configuration options for the new document
+     * @param options.width - Width of the initial page (default: 612)
+     * @param options.height - Height of the initial page (default: 792)
+     * @param options.version - PDF version string (default: '1.7')
+     * @returns A new PdfDocument instance with the basic structure
+     */
+    static newDocument(options?: {
+        width?: number
+        height?: number
+        version?: string
+    }): PdfDocument {
+        const doc = new PdfDocument({ version: options?.version ?? '1.7' })
+
+        // Create root catalog
+        const catalogDict = new PdfDictionary()
+        catalogDict.set('Type', new PdfName('Catalog'))
+        const catalog = new PdfIndirectObject({
+            content: catalogDict,
+        })
+
+        // Create pages tree
+        const pagesTree = new PdfPages()
+
+        // Link catalog to pages tree
+        catalogDict.set('Pages', pagesTree.reference)
+
+        // Add catalog and pages tree to document
+        doc.add(catalog, pagesTree)
+
+        // Set catalog as the root in trailer
+        doc.trailerDict.set('Root', catalog.reference)
+
+        // Add initial page if dimensions specified
+        if (options?.width !== undefined || options?.height !== undefined) {
+            pagesTree.add({
+                width: options?.width ?? 612,
+                height: options?.height ?? 792,
+            })
+        }
+
+        return doc
     }
 
     /**

@@ -425,7 +425,7 @@ export function CanvasPanel({
                                                 ref={(el) => {
                                                     pageContainerElement = el
                                                 }}
-                                                className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                                                className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-visible"
                                                 onClick={onBackgroundClick}
                                                 onDragOver={(e) => {
                                                     if (
@@ -453,11 +453,16 @@ export function CanvasPanel({
                                                     }
                                                 }}
                                             >
-                                                <div className="relative" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left', width: 'fit-content' }}>
+                                                <div className="relative inline-block" style={{ 
+                                                    transform: `scale(${zoomLevel})`, 
+                                                    transformOrigin: 'top left',
+                                                    marginRight: `${(zoomLevel - 1) * 100}%`,
+                                                    marginBottom: `${(zoomLevel - 1) * 100}%`
+                                                }}>
                                                     {page}
                                                     {showAcroFormLayer &&
                                                         pageFields.map(
-                                                            (field) => (
+                                                                (field) => (
                                                                 <FieldOverlay
                                                                     key={
                                                                         field.id

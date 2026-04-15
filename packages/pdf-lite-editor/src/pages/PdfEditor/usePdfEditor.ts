@@ -13,6 +13,7 @@ export function usePdfEditor() {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [pdfLoaded, setPdfLoaded] = useState(false)
     const [pdfLoading, setPdfLoading] = useState(false)
+    const [zoomLevel, setZoomLevel] = useState(1.0)
     const [activeView, setActiveView] = useState<'pdf' | 'text'>('pdf')
     const [extractedFields, setExtractedFields] = useState<ExtractedField[]>([])
     const [extractedTextBlocks, setExtractedTextBlocks] = useState<
@@ -111,7 +112,8 @@ export function usePdfEditor() {
         if (
             property !== 'name' &&
             property !== 'value' &&
-            property !== 'fontSize'
+            property !== 'fontSize' &&
+            property !== 'quadding'
         )
             return
         try {
@@ -693,6 +695,8 @@ export function usePdfEditor() {
         uploadedFile,
         pdfLoaded,
         pdfLoading,
+        zoomLevel,
+        setZoomLevel,
         pdfBytes,
         pdfDebugText,
         activeView,

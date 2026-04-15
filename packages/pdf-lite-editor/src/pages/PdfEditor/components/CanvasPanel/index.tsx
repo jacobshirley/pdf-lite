@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { useRef, useState } from 'react'
 import { Badge } from '@/components/shadcn/badge'
 import { Button } from '@/components/shadcn/button'
 import { Card, CardContent } from '@/components/shadcn/card'
-import { Eye, FileText, FileUp, Layers, Loader2, Type, Upload } from 'lucide-react'
+import { Eye, FileText, FileUp, Layers, Loader2, Type, Upload, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 import { PdfViewer } from '@/components/PdfViewer'
 import { PdfTextEditor } from '@/components/PdfTextEditor'
 import type {
@@ -19,6 +19,8 @@ type Props = {
     uploadedFile: File | null
     pdfLoaded: boolean
     pdfLoading: boolean
+    zoomLevel: number
+    onZoomChange: (zoom: number) => void
     pdfBytes: Uint8Array | undefined
     pdfDebugText: string
     activeView: 'pdf' | 'text'
@@ -69,6 +71,8 @@ export function CanvasPanel({
     uploadedFile,
     pdfLoaded,
     pdfLoading,
+    zoomLevel,
+    onZoomChange,
     pdfBytes,
     pdfDebugText,
     activeView,
@@ -103,6 +107,48 @@ export function CanvasPanel({
     onBackgroundClick,
     onPageDrop,
 }: Props) {
+    const scrollContainerRef = useRef<HTMLDivElement>(null)
+    const [isPanning, setIsPanning] = useState(false)
+    const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+    const [scrollStart, setScrollStart] = useState({ x: 0, y: 0 })
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        // Don't pan if clicking on interactive elements
+        const target = e.target as HTMLElement
+        if (target.closest('.field-overlay-container') || 
+            target.closest('.text-block-overlay') ||
+            target.closest('button') ||
+            target.closest('input')) {
+            return
+        }
+        
+        // Only pan with middle mouse button or shift + left click
+        if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
+            e.preventDefault()
+            setIsPanning(true)
+            setPanStart({ x: e.clientX, y: e.clientY })
+            if (scrollContainerRef.current) {
+                setScrollStart({
+                    x: scrollContainerRef.current.scrollLeft,
+                    y: scrollContainerRef.current.scrollTop,
+                })
+            }
+        }
+    }
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (isPanning && scrollContainerRef.current) {
+            const dx = e.clientX - panStart.x
+            const dy = e.clientY - panStart.y
+            scrollContainerRef.current.scrollLeft = scrollStart.x - dx
+            scrollContainerRef.current.scrollTop = scrollStart.y - dy
+        }
+    }
+
+    const handleMouseUp = () => {
+        setIsPanning(false)
+    }
+
     return (
         <div className="flex min-w-0 flex-col gap-6">
             <input
@@ -209,6 +255,45 @@ export function CanvasPanel({
                                 <FileText className="mr-2 h-3 w-3" />
                                 Text View
                             </Button>
+                            
+                            {pdfLoaded && activeView === 'pdf' && (
+                                <div className="flex items-center gap-1 ml-auto border-l pl-2">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onZoomChange(Math.max(0.25, zoomLevel - 0.25))}
+                                        className="rounded-xl cursor-pointer h-8 w-8 p-0"
+                                        title="Zoom out"
+                                    >
+                                        <ZoomOut className="h-4 w-4" />
+                                    </Button>
+                                    <span className="text-xs font-medium min-w-[3.5rem] text-center">
+                                        {Math.round(zoomLevel * 100)}%
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onZoomChange(Math.min(3, zoomLevel + 0.25))}
+                                        className="rounded-xl cursor-pointer h-8 w-8 p-0"
+                                        title="Zoom in"
+                                    >
+                                        <ZoomIn className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onZoomChange(1)}
+                                        className="rounded-xl cursor-pointer h-8 w-8 p-0"
+                                        title="Reset zoom"
+                                    >
+                                        <RotateCcw className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            )}
+                            
                             {extractedFields.length > 0 && (
                                 <Button
                                     type="button"
@@ -217,7 +302,7 @@ export function CanvasPanel({
                                     }
                                     size="sm"
                                     onClick={onToggleAcroFormLayer}
-                                    className={`rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 ml-auto ${
+                                    className={`rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 ${
                                         showAcroFormLayer
                                             ? 'bg-blue-500 text-white hover:bg-blue-600'
                                             : ''
@@ -264,8 +349,23 @@ export function CanvasPanel({
                                 </Button>
                             )}
                         </div>
+                        {pdfLoaded && (
+                            <div className="px-5 pb-2">
+                                <p className="text-xs text-slate-500">
+                                    💡 Hold <kbd className="px-1 py-0.5 text-xs bg-slate-200 rounded">Shift</kbd> and drag to pan the view
+                                </p>
+                            </div>
+                        )}
                     </div>
-                    <CardContent className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+                    <CardContent 
+                        ref={scrollContainerRef}
+                        className={`p-6 max-h-[calc(100vh-200px)] overflow-auto select-none ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                        style={{ userSelect: isPanning ? 'none' : 'auto' }}
+                    >
                         {pdfLoading ? (
                             <div className="flex min-h-[500px] flex-col items-center justify-center">
                                 <div className="flex flex-col items-center gap-4 text-center">
@@ -283,7 +383,7 @@ export function CanvasPanel({
                         ) : pdfLoaded && activeView === 'pdf' && pdfBytes ? (
                             <PdfViewer
                                 file={pdfBytes}
-                                className="w-full"
+                                className="min-w-[800px] w-full"
                                 pageWrapper={(page, context) => {
                                     const pageFields = extractedFields.filter(
                                         (f) => f.page === context.pageNumber,
@@ -353,7 +453,7 @@ export function CanvasPanel({
                                                     }
                                                 }}
                                             >
-                                                <div className="relative">
+                                                <div className="relative" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left', width: 'fit-content' }}>
                                                     {page}
                                                     {showAcroFormLayer &&
                                                         pageFields.map(

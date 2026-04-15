@@ -12,6 +12,7 @@ type Props = {
     onNameChange: (value: string) => void
     onValueChange: (value: string) => void
     onFontSizeChange: (value: string) => void
+    onQuaddingChange: (value: string) => void
     onAppearanceStateChange: (value: string) => void
     onRectChange: (
         property: 'x' | 'y' | 'width' | 'height',
@@ -27,6 +28,7 @@ export function FieldPropertiesPanel({
     onNameChange,
     onValueChange,
     onFontSizeChange,
+    onQuaddingChange,
     onAppearanceStateChange,
     onRectChange,
     onClone,
@@ -34,8 +36,8 @@ export function FieldPropertiesPanel({
     onClose,
 }: Props) {
     return (
-        <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 shadow-sm overflow-hidden">
-            <CardContent className="flex h-full flex-col p-0">
+        <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
+            <CardContent className="flex h-full flex-col p-0 bg-white">
                 <div className="flex items-center justify-between p-4 border-b">
                     <div className="flex items-center gap-2">
                         <Settings className="h-4 w-4 text-slate-600" />
@@ -150,6 +152,29 @@ export function FieldPropertiesPanel({
                                 min="6"
                                 max="72"
                             />
+                        </div>
+                    )}
+
+                    {field.type === 'Text' && (
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="alignment"
+                                className="text-xs font-semibold text-slate-700"
+                            >
+                                Text Alignment
+                            </Label>
+                            <select
+                                id="alignment"
+                                value={field.quadding ?? 0}
+                                onChange={(
+                                    e: React.ChangeEvent<HTMLSelectElement>,
+                                ) => onQuaddingChange(e.target.value)}
+                                className="h-8 w-full text-sm rounded-md border border-slate-300 px-3 py-1 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                            >
+                                <option value="0">Left</option>
+                                <option value="1">Center</option>
+                                <option value="2">Right</option>
+                            </select>
                         </div>
                     )}
 

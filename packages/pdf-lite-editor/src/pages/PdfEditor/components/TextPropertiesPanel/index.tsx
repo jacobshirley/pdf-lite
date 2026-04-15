@@ -46,8 +46,8 @@ export function TextPropertiesPanel({
     const bbox = textBlock.bbox
 
     return (
-        <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 shadow-sm overflow-hidden">
-            <CardContent className="flex h-full flex-col p-0">
+        <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
+            <CardContent className="flex h-full flex-col p-0 bg-white">
                 <div className="flex items-center justify-between p-4 border-b">
                     <div className="flex items-center gap-2">
                         <Type className="h-4 w-4 text-slate-600" />

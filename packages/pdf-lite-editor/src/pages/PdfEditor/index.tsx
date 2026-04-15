@@ -24,9 +24,7 @@ export function PdfEditor() {
                     pointer-events: none !important;
                 }
             `}</style>
-            <div
-                className={`mx-auto grid ${editor.showRightPane ? 'max-w-[2000px] grid-cols-[240px_minmax(0,1fr)_320px]' : 'max-w-[1600px] grid-cols-[240px_minmax(0,1fr)]'} gap-4 items-start`}
-            >
+            <div className="mx-auto grid max-w-[1600px] grid-cols-[240px_minmax(0,1fr)] gap-4 items-start">
                 <Toolbar
                     pdfLoaded={editor.pdfLoaded}
                     onAddField={editor.handleAddField}
@@ -86,10 +84,15 @@ export function PdfEditor() {
                     }
                     onBackgroundClick={editor.handleBackgroundClick}
                     onPageDrop={editor.handlePageDrop}
+                    zoomLevel={editor.zoomLevel}
+                    onZoomChange={editor.setZoomLevel}
                 />
 
                 {editor.selectedFieldId && editor.selectedField && (
-                    <FieldPropertiesPanel
+                    <>
+                        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => editor.setSelectedFieldId(null)} />
+                        <div className="fixed right-4 top-4 bottom-4 w-80 z-50">
+                            <FieldPropertiesPanel
                         field={editor.selectedField}
                         onNameChange={(v) =>
                             editor.handleFieldPropertyChange('name', v)
@@ -99,6 +102,9 @@ export function PdfEditor() {
                         }
                         onFontSizeChange={(v) =>
                             editor.handleFieldPropertyChange('fontSize', v)
+                        }
+                        onQuaddingChange={(v) =>
+                            editor.handleFieldPropertyChange('quadding', v)
                         }
                         onAppearanceStateChange={
                             editor.handleAppearanceStateChange
@@ -112,28 +118,35 @@ export function PdfEditor() {
                         }
                         onClose={() => editor.setSelectedFieldId(null)}
                     />
+                        </div>
+                    </>
                 )}
 
                 {editor.selectedTextBlock && !editor.selectedFieldId && (
-                    <TextPropertiesPanel
-                        textBlock={editor.selectedTextBlock}
-                        segments={editor.selectedTextSegments}
-                        standardFonts={editor.standardFonts}
-                        embeddedFonts={editor.embeddedFonts}
-                        fontInputRef={editor.fontInputRef}
-                        onTextChange={editor.handleTextBlockPropertyEdit}
-                        onFontChange={editor.handleFontChange}
-                        onFontSizeChange={editor.handleTextBlockFontSizeChange}
-                        onColorChange={editor.handleColorChange}
-                        onMove={editor.handleTextBlockMove}
-                        onFontUpload={editor.handleFontUpload}
-                        onRemove={() =>
-                            editor.handleRemoveTextBlock(
-                                editor.selectedTextBlock!.id,
-                            )
-                        }
-                        onClose={() => editor.setSelectedTextBlockId(null)}
-                    />
+                    <>
+                        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => editor.setSelectedTextBlockId(null)} />
+                        <div className="fixed right-4 top-4 bottom-4 w-80 z-50">
+                            <TextPropertiesPanel
+                            textBlock={editor.selectedTextBlock}
+                            segments={editor.selectedTextSegments}
+                            standardFonts={editor.standardFonts}
+                            embeddedFonts={editor.embeddedFonts}
+                            fontInputRef={editor.fontInputRef}
+                            onTextChange={editor.handleTextBlockPropertyEdit}
+                            onFontChange={editor.handleFontChange}
+                            onFontSizeChange={editor.handleTextBlockFontSizeChange}
+                            onColorChange={editor.handleColorChange}
+                            onMove={editor.handleTextBlockMove}
+                            onFontUpload={editor.handleFontUpload}
+                            onRemove={() =>
+                                editor.handleRemoveTextBlock(
+                                    editor.selectedTextBlock!.id,
+                                )
+                            }
+                            onClose={() => editor.setSelectedTextBlockId(null)}
+                        />
+                        </div>
+                    </>
                 )}
             </div>
         </div>

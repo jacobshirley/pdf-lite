@@ -57,6 +57,7 @@ export interface PdfViewerProps extends TestProps {
     file: string | File | Uint8Array | Blob
     className?: string
     scrollTop?: number
+    scale?: number
     pageWrapper?: (
         page: React.ReactNode,
         context: { pageNumber: number },
@@ -66,7 +67,7 @@ export interface PdfViewerProps extends TestProps {
 const MAX_RESIZE_TRIGGER_DIFFERENCE_PX = 20
 
 export function PdfViewer(props: PdfViewerProps) {
-    const { pageWrapper = (page) => page } = props
+    const { pageWrapper = (page) => page, scale = 1 } = props
     const [numberOfPages, setNumberOfPages] = useState<number>(0)
     const [isDocumentReady, setIsDocumentReady] = useState<boolean>(false)
     const containerRef = useRef<HTMLDivElement | null>(null)
@@ -147,6 +148,9 @@ export function PdfViewer(props: PdfViewerProps) {
 
     const fileKey = typeof props.file === 'string' ? props.file : blobUrl
 
+    // Calculate scaled width for pages
+    const scaledWidth = containerWidth ? containerWidth * scale : undefined
+
     const document = useMemo(() => {
         return (
             <Document
@@ -167,7 +171,7 @@ export function PdfViewer(props: PdfViewerProps) {
                             <PdfPage
                                 key={`page_${index + 1}`}
                                 pageNumber={index + 1}
-                                width={containerWidth}
+                                width={scaledWidth}
                                 fileKey={fileKey}
                             />,
                             {
@@ -183,7 +187,7 @@ export function PdfViewer(props: PdfViewerProps) {
         props.dataTestId,
         isDocumentReady,
         numberOfPages,
-        containerWidth,
+        scaledWidth,
         pageWrapper,
     ])
 

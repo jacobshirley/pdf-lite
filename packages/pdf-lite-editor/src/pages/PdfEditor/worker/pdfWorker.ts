@@ -90,6 +90,7 @@ function fieldToDTO(field: PdfFormField, id: string): FieldDTO {
         pageHeight,
         pageWidth,
         fontSize: field.fontSize ?? undefined,
+        quadding: field.quadding ?? undefined,
         appearanceState: field.appearanceState ?? undefined,
         appearanceStates: field.appearanceStates
             ? [...field.appearanceStates]
@@ -470,6 +471,11 @@ const handlers: {
         } else if (property === 'fontSize') {
             if (field.fontSize !== undefined) {
                 field.fontSize = parseFloat(value) || 12
+            }
+        } else if (property === 'quadding') {
+            const quaddingValue = parseInt(value, 10)
+            if (!isNaN(quaddingValue)) {
+                field.quadding = quaddingValue
             }
         }
 

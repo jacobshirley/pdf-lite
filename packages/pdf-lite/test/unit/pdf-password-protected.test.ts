@@ -9,11 +9,24 @@ async function createEncryptedPdf(password: string): Promise<Uint8Array> {
     return doc.toBytes()
 }
 
+async function readDocument(
+    bytes: Uint8Array,
+    options?: {
+        password?: string
+        ownerPassword?: string
+        incremental?: boolean
+    },
+): Promise<PdfDocument> {
+    // Force TypeScript to treat this as ByteArray
+    const byteArray = new Uint8Array(bytes.buffer) as Uint8Array<ArrayBuffer>
+    return PdfDocument.fromBytes([byteArray], options)
+}
+
 describe('PdfPasswordProtectedError', () => {
     it('should throw PdfPasswordProtectedError when reading an encrypted PDF without a password', async () => {
         const encryptedBytes = await createEncryptedPdf('secret')
 
-        await expect(PdfDocument.fromBytes([encryptedBytes])).rejects.toThrow(
+        await expect(readDocument(encryptedBytes)).rejects.toThrow(
             PdfPasswordProtectedError,
         )
     })
@@ -22,7 +35,7 @@ describe('PdfPasswordProtectedError', () => {
         const encryptedBytes = await createEncryptedPdf('secret')
 
         await expect(
-            PdfDocument.fromBytes([encryptedBytes], { incremental: true }),
+            readDocument(encryptedBytes, { incremental: true }),
         ).rejects.toThrow(PdfPasswordProtectedError)
     })
 
@@ -30,7 +43,7 @@ describe('PdfPasswordProtectedError', () => {
         const password = 'secret'
         const encryptedBytes = await createEncryptedPdf(password)
 
-        const document = await PdfDocument.fromBytes([encryptedBytes], {
+        const document = await readDocument(encryptedBytes, {
             password,
         })
 
@@ -42,7 +55,7 @@ describe('PdfPasswordProtectedError', () => {
         const document = PdfDocument.newDocument()
         const bytes = document.toBytes()
 
-        const loaded = await PdfDocument.fromBytes([bytes])
+        const loaded = await readDocument(bytes)
 
         expect(loaded).toBeDefined()
         expect(loaded.securityHandler).toBeUndefined()

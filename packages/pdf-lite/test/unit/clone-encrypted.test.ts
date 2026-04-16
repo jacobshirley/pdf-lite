@@ -96,6 +96,19 @@ async function createEncryptedPdf(password: string): Promise<Uint8Array> {
     return document.toBytes()
 }
 
+async function newDocument(
+    bytes: Uint8Array,
+    options?: {
+        password?: string
+        ownerPassword?: string
+        incremental?: boolean
+    },
+): Promise<PdfDocument> {
+    // Force TypeScript to treat this as ByteArray
+    const byteArray = new Uint8Array(bytes.buffer) as Uint8Array<ArrayBuffer>
+    return PdfDocument.fromBytes([byteArray], options)
+}
+
 describe('Clone Encrypted PDF', () => {
     it('should read encrypted PDF, clone, finalize, and toBytes', async () => {
         const password = 'testpassword'
@@ -104,7 +117,7 @@ describe('Clone Encrypted PDF', () => {
         const encryptedBytes = await createEncryptedPdf(password)
 
         // Step 2: Read the encrypted PDF
-        const document = await PdfDocument.fromBytes([encryptedBytes], {
+        const document = await newDocument(encryptedBytes, {
             password,
         })
 
@@ -125,7 +138,7 @@ describe('Clone Encrypted PDF', () => {
         expect(clonedBytes.length).toBeGreaterThan(0)
 
         // Step 6: Verify the cloned bytes can be read back with the same password
-        const reloaded = await PdfDocument.fromBytes([clonedBytes], {
+        const reloaded = await newDocument(clonedBytes, {
             password,
         })
         expect(reloaded.securityHandler).toBeDefined()
@@ -138,7 +151,7 @@ describe('Clone Encrypted PDF', () => {
         const encryptedBytes = await createEncryptedPdf(password)
 
         // Read, clone immediately, finalize, toBytes
-        const document = await PdfDocument.fromBytes([encryptedBytes], {
+        const document = await newDocument(encryptedBytes, {
             password,
         })
         const cloned = document.clone()
@@ -146,7 +159,7 @@ describe('Clone Encrypted PDF', () => {
         const clonedBytes = cloned.toBytes()
 
         // Should be re-readable
-        const reloaded = await PdfDocument.fromBytes([clonedBytes], {
+        const reloaded = await newDocument(clonedBytes, {
             password,
         })
         expect(reloaded.securityHandler).toBeDefined()
@@ -158,7 +171,7 @@ describe('Clone Encrypted PDF', () => {
         const encryptedBytes = await createEncryptedPdf(password)
 
         // Read the encrypted PDF
-        const document = await PdfDocument.fromBytes([encryptedBytes], {
+        const document = await newDocument(encryptedBytes, {
             password,
         })
 
@@ -167,7 +180,7 @@ describe('Clone Encrypted PDF', () => {
         expect(kids.length).toBeGreaterThan(0)
 
         const firstPage = kids[0]
-        const contentsRef = firstPage.content.get('Contents')
+        const contentsRef = (firstPage.content as PdfDictionary).get('Contents')
         if (contentsRef instanceof PdfObjectReference) {
             const resolved = contentsRef.resolve()
             if (resolved.content instanceof PdfStream) {
@@ -182,7 +195,7 @@ describe('Clone Encrypted PDF', () => {
         const clonedBytes = cloned.toBytes()
 
         // Should be readable
-        const reloaded = await PdfDocument.fromBytes([clonedBytes], {
+        const reloaded = await newDocument(clonedBytes, {
             password,
         })
         expect(reloaded.securityHandler).toBeDefined()
@@ -194,7 +207,7 @@ describe('Clone Encrypted PDF', () => {
 
         const encryptedBytes = await createEncryptedPdf(password)
 
-        const document = await PdfDocument.fromBytes([encryptedBytes], {
+        const document = await newDocument(encryptedBytes, {
             password,
         })
 
@@ -203,7 +216,7 @@ describe('Clone Encrypted PDF', () => {
         const clonedBytes = cloned.toBytes()
 
         // Read back and verify content streams are properly decrypted
-        const reloaded = await PdfDocument.fromBytes([clonedBytes], {
+        const reloaded = await newDocument(clonedBytes, {
             password,
         })
 
@@ -212,7 +225,7 @@ describe('Clone Encrypted PDF', () => {
         expect(kids.length).toBeGreaterThan(0)
 
         const firstPage = kids[0]
-        const contentsRef = firstPage.content.get('Contents')
+        const contentsRef = (firstPage.content as PdfDictionary).get('Contents')
         if (contentsRef instanceof PdfObjectReference) {
             const resolved = contentsRef.resolve()
             if (resolved.content instanceof PdfStream) {
@@ -228,7 +241,7 @@ describe('Clone Encrypted PDF', () => {
         const password = 'testpassword'
 
         const encryptedBytes = await createEncryptedPdf(password)
-        const document = await PdfDocument.fromBytes([encryptedBytes], {
+        const document = await newDocument(encryptedBytes, {
             password,
         })
 
@@ -251,7 +264,7 @@ describe('Clone Encrypted PDF', () => {
         await cloned2.finalize()
         const bytes2 = cloned2.toBytes()
 
-        const reloaded = await PdfDocument.fromBytes([bytes2], { password })
+        const reloaded = await newDocument(bytes2, { password })
         expect(reloaded.securityHandler).toBeDefined()
     })
 
@@ -261,7 +274,7 @@ describe('Clone Encrypted PDF', () => {
         const encryptedBytes = await createEncryptedPdf(password)
 
         // First cycle: read → clone → finalize → toBytes
-        const doc1 = await PdfDocument.fromBytes([encryptedBytes], {
+        const doc1 = await newDocument(encryptedBytes, {
             password,
         })
         const cloned1 = doc1.clone()
@@ -269,13 +282,13 @@ describe('Clone Encrypted PDF', () => {
         const bytes1 = cloned1.toBytes()
 
         // Second cycle: read the output → clone → finalize → toBytes
-        const doc2 = await PdfDocument.fromBytes([bytes1], { password })
+        const doc2 = await newDocument(bytes1, { password })
         const cloned2 = doc2.clone()
         await cloned2.finalize()
         const bytes2 = cloned2.toBytes()
 
         // Should still be valid
-        const reloaded = await PdfDocument.fromBytes([bytes2], { password })
+        const reloaded = await newDocument(bytes2, { password })
         expect(reloaded.securityHandler).toBeDefined()
         expect(reloaded.pages.kids.length).toBeGreaterThan(0)
     })

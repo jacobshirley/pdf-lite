@@ -39,7 +39,7 @@ export class PdfReader {
             objects.push(obj)
         }
 
-        return PdfDocument.fromObjects(objects)
+        return await PdfDocument.fromObjects(objects)
     }
 
     /**
@@ -57,58 +57,8 @@ export class PdfReader {
             incremental?: boolean
         },
     ): Promise<PdfDocument> {
-        const reader = new PdfReader(new PdfObjectStream(input))
-        const document = await reader.read()
-
-        let shouldDecrypt = Boolean(document.encryptionDictionary)
-        const hasExplicitPassword =
-            typeof options?.password === 'string' ||
-            typeof options?.ownerPassword === 'string'
-
-        // Throw error if document is encrypted but no password provided
-        if (document.encryptionDictionary && !hasExplicitPassword) {
-            throw new PdfPasswordProtectedError()
-        }
-
-        if (typeof options?.password === 'string') {
-            document.setPassword(options.password)
-            shouldDecrypt = true
-        }
-
-        if (typeof options?.ownerPassword === 'string') {
-            document.setOwnerPassword(options.ownerPassword)
-            shouldDecrypt = true
-        }
-
-        if (options?.incremental) {
-            // Lock revisions first to preserve the original bytes
-            // (including encrypted data) via cached tokens.
-            document.setIncremental(true)
-
-            // Then decrypt the live object data so built-in operations
-            // (AcroForm, fonts, etc.) can read it. The cached tokens
-            // still produce the original encrypted bytes on serialization.
-            if (shouldDecrypt) {
-                try {
-                    await document.decryptObjects()
-                } catch (e) {
-                    if (!hasExplicitPassword) {
-                        throw new PdfPasswordProtectedError()
-                    }
-                    document.resetSecurityHandler()
-                }
-            }
-        } else if (shouldDecrypt) {
-            try {
-                await document.decryptObjects()
-            } catch (e) {
-                if (!hasExplicitPassword) {
-                    throw new PdfPasswordProtectedError()
-                }
-                document.resetSecurityHandler()
-            }
-        }
-
+        const document = new PdfDocument()
+        await document.load(input, options)
         return document
     }
 }

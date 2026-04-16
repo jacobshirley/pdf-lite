@@ -610,13 +610,16 @@ export function usePdfEditor() {
         } catch (error) {
             console.error('Error loading PDF:', error)
 
-            // Check if password is required
+            // Check if password is required or invalid
             if (
                 error instanceof Error &&
-                error.message === 'PASSWORD_REQUIRED'
+                (error.message === 'PASSWORD_REQUIRED' ||
+                    error.message === 'INVALID_PASSWORD')
             ) {
                 // Store file info and show password dialog
-                setPendingPasswordFile({ file, bytes: fileBytes })
+                // Create a fresh copy since the original buffer was transferred and detached
+                const freshBytes = new Uint8Array(await file.arrayBuffer())
+                setPendingPasswordFile({ file, bytes: freshBytes })
                 setPasswordDialogOpen(true)
                 setPdfLoading(false)
                 return

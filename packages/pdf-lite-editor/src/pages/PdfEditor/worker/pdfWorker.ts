@@ -10,6 +10,10 @@ import {
     TextNode,
     VirtualTextBlock,
 } from 'pdf-lite'
+import {
+    PdfPasswordProtectedError,
+    PdfInvalidPasswordError,
+} from 'pdf-lite/errors'
 import { RGBColor } from 'pdf-lite/graphics/color/rgb-color'
 import { SetTextMatrixOp } from 'pdf-lite/graphics/ops/text'
 import type { GraphicsBlock } from 'pdf-lite'
@@ -307,19 +311,14 @@ const handlers: {
     ) => Promise<WorkerMethods[M]['result']> | WorkerMethods[M]['result']
 } = {
     async load({ bytes, password }) {
-        pdfDoc = await PdfDocument.fromBytes([bytes as Uint8Array<ArrayBuffer>])
+        pdfDoc = await PdfDocument.fromBytes(
+            [bytes as Uint8Array<ArrayBuffer>],
+            {
+                password,
+            },
+        )
 
-        // Set password if provided
-        if (password) {
-            pdfDoc.setPassword(password)
-        }
-
-        try {
-            await pdfDoc.decrypt()
-        } catch (error) {
-            // If decryption fails, it's likely a password issue
-            throw new Error('PASSWORD_REQUIRED')
-        }
+        await pdfDoc.decrypt()
 
         // Initialize history
         historyStack.length = 0
@@ -871,10 +870,19 @@ ctx.addEventListener(
             }
             ctx.postMessage(response, transfer)
         } catch (error) {
+            let errorMessage: string
+            if (error instanceof PdfPasswordProtectedError) {
+                errorMessage = 'PASSWORD_REQUIRED'
+            } else if (error instanceof PdfInvalidPasswordError) {
+                errorMessage = 'INVALID_PASSWORD'
+            } else {
+                errorMessage =
+                    error instanceof Error ? error.message : String(error)
+            }
             const response: WorkerResponse = {
                 id,
                 ok: false,
-                error: error instanceof Error ? error.message : String(error),
+                error: errorMessage,
             }
             ctx.postMessage(response)
         }

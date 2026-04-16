@@ -180,6 +180,12 @@ export abstract class PdfSecurityHandler {
     abstract write(): Promise<void>
 
     /**
+     * Tests whether the current password can decrypt this document.
+     * Returns true if the password is valid, false otherwise.
+     */
+    abstract testPassword(): Promise<boolean>
+
+    /**
      * Builds the numeric permission flags from a PdfPermissions object.
      *
      * @param perm - The permissions to encode.
@@ -437,6 +443,19 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
     }
 
     /**
+     * Tests whether the current password can decrypt this document.
+     * Attempts to compute the master key and returns true if successful.
+     */
+    async testPassword(): Promise<boolean> {
+        try {
+            await this.computeMasterKey()
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /**
      * Sets the user password.
      *
      * @param password - The user password string or bytes.
@@ -517,6 +536,14 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
      * @returns The computed user key.
      */
     protected abstract computeUserKey(): Promise<ByteArray>
+
+    /**
+     * Computes the master encryption key from the password.
+     *
+     * @returns The computed master key.
+     * @throws Error if the password is incorrect or required parameters are missing.
+     */
+    protected abstract computeMasterKey(): Promise<ByteArray>
 
     /**
      * Computes the owner key (O value) for the encryption dictionary.

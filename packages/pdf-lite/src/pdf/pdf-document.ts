@@ -253,9 +253,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
         if (password) {
             this.setPassword(password)
-        } else if (this.securityHandler) {
-            // If encrypted but no password provided, try empty password
-            this.setPassword('')
         }
 
         if (ownerPassword) {
@@ -273,6 +270,21 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         // Clear preset passwords after determining hasExplicitPassword
         this._presetPassword = undefined
         this._presetOwnerPassword = undefined
+
+        // If encrypted, verify the password is valid before attempting decryption
+        if (
+            shouldDecrypt &&
+            this.securityHandler instanceof PdfStandardSecurityHandler
+        ) {
+            const valid = await this.securityHandler.testPassword()
+            if (!valid) {
+                if (!hasExplicitPassword) {
+                    throw new PdfPasswordProtectedError()
+                }
+                this.resetSecurityHandler()
+                shouldDecrypt = false
+            }
+        }
 
         if (options?.incremental) {
             // Lock revisions first to preserve the original bytes

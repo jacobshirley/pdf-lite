@@ -121,6 +121,10 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
         return this.standardSecurityHandler.isReady()
     }
 
+    async testPassword(): Promise<boolean> {
+        return this.standardSecurityHandler.testPassword()
+    }
+
     /**
      * Gets the encryption version number.
      *

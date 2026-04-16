@@ -71,8 +71,7 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
 
     clone(): this {
         const cloned = super.clone()
-        cloned.standardSecurityHandler =
-            this.standardSecurityHandler.clone() as PdfStandardSecurityHandler
+        cloned.standardSecurityHandler = this.standardSecurityHandler.clone()
         return cloned
     }
 

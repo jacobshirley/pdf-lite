@@ -26,3 +26,23 @@ export class UnexpectedTokenError extends Error {
  * that requires decompression from an object stream.
  */
 export class FoundCompressedObjectError extends Error {}
+
+/**
+ * Error thrown when a PDF is encrypted and the blank password
+ * does not grant access. Callers should catch this and prompt
+ * the user for a password, then retry with the `password` option.
+ */
+export class PdfPasswordProtectedError extends Error {
+    constructor(message?: string) {
+        super(message ?? 'PDF is password protected')
+    }
+}
+
+/**
+ * Error thrown when a provided password is invalid for decrypting a PDF.
+ */
+export class PdfInvalidPasswordError extends Error {
+    constructor(message?: string) {
+        super(message ?? 'Invalid password')
+    }
+}

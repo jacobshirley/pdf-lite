@@ -180,6 +180,12 @@ export abstract class PdfSecurityHandler {
     abstract write(): Promise<void>
 
     /**
+     * Tests whether the current password can decrypt this document.
+     * Returns true if the password is valid, false otherwise.
+     */
+    abstract testPassword(): Promise<boolean>
+
+    /**
      * Builds the numeric permission flags from a PdfPermissions object.
      *
      * @param perm - The permissions to encode.
@@ -197,6 +203,18 @@ export abstract class PdfSecurityHandler {
             }
         }
         return flags | 0xfffff000 // ensure unused high bits are set
+    }
+
+    /**
+     * Creates a shallow clone of this security handler with an independent
+     * encryption dictionary, so that mutating the clone (e.g. during
+     * finalize/encrypt) does not affect the original.
+     */
+    clone(): this {
+        const cloned = Object.create(Object.getPrototypeOf(this)) as this
+        Object.assign(cloned, this)
+        cloned.dict = this.dict.clone()
+        return cloned
     }
 
     /**
@@ -425,6 +443,19 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
     }
 
     /**
+     * Tests whether the current password can decrypt this document.
+     * Attempts to compute the master key and returns true if successful.
+     */
+    async testPassword(): Promise<boolean> {
+        try {
+            await this.computeMasterKey()
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /**
      * Sets the user password.
      *
      * @param password - The user password string or bytes.
@@ -444,6 +475,24 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
             typeof ownerPassword === 'string'
                 ? stringToBytes(ownerPassword)
                 : ownerPassword
+    }
+
+    /**
+     * Gets the user password.
+     *
+     * @returns The user password as bytes.
+     */
+    getPassword(): ByteArray {
+        return this.password
+    }
+
+    /**
+     * Gets the owner password.
+     *
+     * @returns The owner password as bytes, or undefined if not set.
+     */
+    getOwnerPassword(): ByteArray | undefined {
+        return this.ownerPassword
     }
 
     /**
@@ -505,6 +554,14 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
      * @returns The computed user key.
      */
     protected abstract computeUserKey(): Promise<ByteArray>
+
+    /**
+     * Computes the master encryption key from the password.
+     *
+     * @returns The computed master key.
+     * @throws Error if the password is incorrect or required parameters are missing.
+     */
+    protected abstract computeMasterKey(): Promise<ByteArray>
 
     /**
      * Computes the owner key (O value) for the encryption dictionary.

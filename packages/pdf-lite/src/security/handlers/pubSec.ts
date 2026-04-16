@@ -69,6 +69,12 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
         this.recipientsCms = this.getRecipientsPkcs7(pkcs7Input)
     }
 
+    clone(): this {
+        const cloned = super.clone()
+        cloned.standardSecurityHandler = this.standardSecurityHandler.clone()
+        return cloned
+    }
+
     /**
      * Gets the security handler filter name.
      *
@@ -112,6 +118,10 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
      */
     isReady(): boolean {
         return this.standardSecurityHandler.isReady()
+    }
+
+    async testPassword(): Promise<boolean> {
+        return this.standardSecurityHandler.testPassword()
     }
 
     /**

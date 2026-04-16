@@ -64,6 +64,7 @@ export class PdfTextFormField extends PdfFormField {
             reverseEncodingMap,
             markdown: this.markdownValue,
             fontVariantNames: variantNames,
+            quadding: this.quadding,
         })
 
         if (options?.makeReadOnly) {

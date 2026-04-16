@@ -8,6 +8,20 @@ import { PdfFormFieldFlags } from '../fields/pdf-form-field-flags.js'
 /**
  * Appearance stream for choice fields (dropdowns, list boxes).
  */
+
+/** Compute the X offset for a line of text given the quadding value. */
+function calcTextX(
+    quadding: number,
+    padding: number,
+    availableWidth: number,
+    textWidth: number,
+): number {
+    if (quadding === 2) return padding + Math.max(availableWidth - textWidth, 0)
+    if (quadding === 1)
+        return padding + Math.max((availableWidth - textWidth) / 2, 0)
+    return padding
+}
+
 export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
     constructor(ctx: {
         rect: [number, number, number, number]
@@ -20,6 +34,7 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         reverseEncodingMap?: Map<string, number>
         displayOptions?: string[]
         selectedIndex?: number
+        quadding?: number
     }) {
         const [x1, y1, x2, y2] = ctx.rect
         const width = x2 - x1
@@ -35,11 +50,16 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         const reverseEncodingMap = ctx.reverseEncodingMap
 
         const padding = 2
+        const availableWidth = width - 2 * padding
         const isCombo = new PdfFormFieldFlags(ctx.flags).combo
+        const quadding = ctx.quadding ?? 0
 
         const g = new PdfGraphics({ resolvedFonts: ctx.resolvedFonts })
         g.beginMarkedContent()
         g.save()
+
+        // Set DA early so measureTextWidth works for alignment calculations
+        g.setDefaultAppearance(ctx.da)
 
         if (!isCombo && ctx.displayOptions && ctx.displayOptions.length > 0) {
             // Listbox: render all items, highlight the selected one
@@ -62,19 +82,31 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
                 }
 
                 const textY = itemY + lineHeight * 0.25
+                const textX = calcTextX(
+                    quadding,
+                    padding,
+                    availableWidth,
+                    g.measureTextWidth(ctx.displayOptions[i]),
+                )
                 g.beginText()
                 g.setDefaultAppearance(ctx.da)
-                g.moveTo(padding, textY)
+                g.moveTo(textX, textY)
                 g.showText(ctx.displayOptions[i], isUnicode, reverseEncodingMap)
                 g.endText()
             }
         } else {
             // Combo (dropdown) or no options: show selected value only
             const textY = (height - ctx.da.fontSize) / 2 + ctx.da.fontSize * 0.2
+            const textX = calcTextX(
+                quadding,
+                padding,
+                availableWidth,
+                g.measureTextWidth(ctx.value),
+            )
 
             g.beginText()
             g.setDefaultAppearance(ctx.da)
-            g.moveTo(padding, textY)
+            g.moveTo(textX, textY)
             g.showText(ctx.value, isUnicode, reverseEncodingMap)
             g.endText()
 

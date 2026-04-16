@@ -30,13 +30,17 @@ import { PdfXRefTableEntryToken } from '../core/tokens/xref-table-entry-token.js
 import { Ref } from '../core/ref.js'
 import { PdfStartXRef } from '../core/objects/pdf-start-xref.js'
 import { PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
-import { FoundCompressedObjectError } from '../errors.js'
+import {
+    FoundCompressedObjectError,
+    PdfPasswordProtectedError,
+} from '../errors.js'
 import { ByteArray } from '../types.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfAcroForm } from '../acroform/pdf-acro-form.js'
 import { PdfPages } from './pdf-pages.js'
+import { PdfObjectStream } from '../index.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -103,13 +107,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         } else {
             this.setVersion(options?.version ?? '2.0')
         }
-        if (options?.password) {
-            this.setPassword(options.password)
-        }
-
-        if (options?.ownerPassword) {
-            this.setOwnerPassword(options.ownerPassword)
-        }
 
         this.signer = options?.signer ?? new PdfSigner({ document: this })
 
@@ -122,6 +119,13 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
         this.originalSecurityHandler = options?.securityHandler
         this.resetSecurityHandler()
+
+        if (options?.password) {
+            this.setPassword(options.password)
+        }
+        if (options?.ownerPassword) {
+            this.setOwnerPassword(options.ownerPassword)
+        }
     }
 
     resolve(objectNumber: number, generationNumber: number): PdfIndirectObject {
@@ -173,13 +177,23 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     /**
-     * Creates a PdfDocument from an array of PDF objects.
+     * Loads PDF objects into the document, organizing them into revisions.
      * Parses objects into revisions based on EOF comments.
      *
-     * @param objects - Array of PDF objects to construct the document from
-     * @returns A new PdfDocument instance
+     * @param objects - Array of PDF objects to load into the document
+     * @param options - Optional security and mode configuration
+     * @param options.password - User password for encrypted documents
+     * @param options.ownerPassword - Owner password for encrypted documents
+     * @param options.incremental - Whether to use incremental mode
      */
-    static fromObjects(objects: PdfObject[]): PdfDocument {
+    async loadObjects(
+        objects: PdfObject[],
+        options?: {
+            password?: string
+            ownerPassword?: string
+            incremental?: boolean
+        },
+    ): Promise<this> {
         let header: PdfComment | undefined
         const revisions: PdfRevision[] = []
         let currentObjects: PdfObject[] = []
@@ -201,7 +215,136 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             revisions.push(new PdfRevision({ objects: currentObjects }))
         }
 
-        return new PdfDocument({ revisions, version: header })
+        this.revisions = revisions
+        if (header) {
+            this.header = header
+        }
+
+        this.linkRevisions()
+        this.wireResolvers(
+            ...this.objects.filter((x) => x instanceof PdfIndirectObject),
+            ...this.revisions.map((rev) => rev.xref.trailerDict),
+        )
+        this.calculateOffsets()
+
+        // Reset security handler to detect and initialize encryption from the PDF
+        // Preserve any passwords that were set before load() was called
+        let presetPassword: string | undefined = options?.password
+        let presetOwnerPassword: string | undefined = options?.ownerPassword
+        if (this.securityHandler instanceof PdfStandardSecurityHandler) {
+            const pw = this.securityHandler.getPassword()
+            const opw = this.securityHandler.getOwnerPassword()
+            if (!presetPassword && pw.length > 0) {
+                presetPassword = new TextDecoder().decode(pw)
+            }
+            if (!presetOwnerPassword && opw) {
+                presetOwnerPassword = new TextDecoder().decode(opw)
+            }
+        }
+        this.resetSecurityHandler()
+
+        // Apply passwords
+        if (presetPassword) {
+            this.setPassword(presetPassword)
+        }
+        if (presetOwnerPassword) {
+            this.setOwnerPassword(presetOwnerPassword)
+        }
+
+        // Handle encryption/decryption
+        let shouldDecrypt = Boolean(this.encryptionDictionary)
+        const hasExplicitPassword = !!presetPassword || !!presetOwnerPassword
+
+        // If encrypted, verify the password is valid before attempting decryption
+        if (
+            shouldDecrypt &&
+            this.securityHandler instanceof PdfStandardSecurityHandler
+        ) {
+            const valid = await this.securityHandler.testPassword()
+            if (!valid) {
+                if (!hasExplicitPassword) {
+                    throw new PdfPasswordProtectedError()
+                }
+                this.resetSecurityHandler()
+                shouldDecrypt = false
+            }
+        }
+
+        if (options?.incremental) {
+            // Lock revisions first to preserve the original bytes
+            // (including encrypted data) via cached tokens.
+            this.setIncremental(true)
+
+            // Then decrypt the live object data so built-in operations
+            // (AcroForm, fonts, etc.) can read it. The cached tokens
+            // still produce the original encrypted bytes on serialization.
+            if (shouldDecrypt) {
+                try {
+                    await this.decryptObjects()
+                } catch (e) {
+                    if (!hasExplicitPassword) {
+                        throw new PdfPasswordProtectedError()
+                    }
+                    this.resetSecurityHandler()
+                }
+            }
+        } else if (shouldDecrypt) {
+            try {
+                await this.decryptObjects()
+            } catch (e) {
+                if (!hasExplicitPassword) {
+                    throw new PdfPasswordProtectedError()
+                }
+                this.resetSecurityHandler()
+            }
+        }
+        return this
+    }
+
+    /**
+     * Loads a PDF document from a byte stream, parsing it into objects and revisions.
+     * @param input - Async or sync iterable of byte arrays representing the PDF file
+     * @param options - Optional security and mode configuration
+     * @returns A promise that resolves to the loaded PdfDocument instance
+     */
+    async load(
+        input: AsyncIterable<ByteArray> | Iterable<ByteArray>,
+        options?: {
+            password?: string
+            ownerPassword?: string
+            incremental?: boolean
+        },
+    ): Promise<this> {
+        const objectStream = new PdfObjectStream(input)
+        const objects: PdfObject[] = []
+        for await (const obj of objectStream) {
+            objects.push(obj)
+        }
+        return await this.loadObjects(objects, options)
+    }
+
+    /**
+     * Creates a PdfDocument from an array of PDF objects.
+     * Parses objects into revisions based on EOF comments.
+     *
+     * @param objects - Array of PDF objects to construct the document from
+     * @param options - Optional security and mode configuration
+     * @param options.password - User password for encrypted documents
+     * @param options.ownerPassword - Owner password for encrypted documents
+     * @param options.incremental - Whether to use incremental mode
+     * @returns A promise that resolves to the new PdfDocument instance
+     */
+    static async fromObjects(
+        objects: PdfObject[],
+        options?: {
+            password?: string
+            ownerPassword?: string
+            incremental?: boolean
+        },
+    ): Promise<PdfDocument> {
+        const document = new PdfDocument()
+        await document.loadObjects(objects, options)
+        return document
     }
 
     /**
@@ -248,16 +391,34 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             this.latestRevision.addObject(obj)
         }
 
-        // Auto-add any referenced-but-missing objects
-        const missing = this.collectMissingReferences(...objects)
-        if (missing.length > 0) {
-            this.add(...missing)
-        }
+        // Auto-add any referenced-but-missing objects recursively in one pass
+        this.addAllMissingReferences(objects)
 
         this.update()
 
         for (const obj of objects) {
             obj.setModified(false)
+        }
+    }
+
+    /**
+     * Recursively collects and adds all missing referenced objects in batches.
+     * More efficient than recursive add() calls since it collects all missing
+     * objects before processing them.
+     * @private
+     */
+    private addAllMissingReferences(objects: PdfObject[]): void {
+        let batch = this.collectMissingReferences(...objects)
+
+        while (batch.length > 0) {
+            for (const obj of batch) {
+                this.wireResolvers(obj)
+                if (!this.hasObjectInLatestRevision(obj)) {
+                    this.latestRevision.addObject(obj)
+                }
+            }
+            // Check if these newly added objects reference more missing objects
+            batch = this.collectMissingReferences(...batch)
         }
     }
 
@@ -1108,10 +1269,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     private calculateOffsets(): void {
+        this.linkOffsets()
         const serializer = new PdfTokenSerializer()
         serializer.feedMany(this.toTokens())
         serializer.calculateOffsets()
-        this.linkOffsets()
     }
 
     private updateRevisions(): void {
@@ -1139,8 +1300,9 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
     /**
      * Performs a full update cycle to ensure all revisions are consistent and offsets are correct.
+     * @internal
      */
-    private update(): void {
+    update(): void {
         if (this._updating) return
         this._updating = true
         try {
@@ -1217,11 +1379,13 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      */
     cloneImpl(): this {
         const clonedRevisions = this.revisions.map((rev) => rev.clone())
-        return new PdfDocument({
+        const cloned = new PdfDocument({
             revisions: clonedRevisions,
             version: this.header?.clone(),
-            securityHandler: this.securityHandler,
+            securityHandler: this.securityHandler?.clone(),
         }) as this
+        cloned.hasEncryptionDictionary = this.hasEncryptionDictionary
+        return cloned
     }
 
     toJSON() {
@@ -1229,6 +1393,23 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             type: 'document',
             revisions: this.revisions.map((rev) => rev.toJSON()),
         }
+    }
+
+    /**
+     * Creates a new PdfDocument instance.
+     *
+     * @param options - Configuration options for the document
+     * @returns A new PdfDocument instance
+     */
+    static newDocument(options?: {
+        revisions?: PdfRevision[]
+        version?: string | PdfComment
+        password?: string
+        ownerPassword?: string
+        securityHandler?: PdfSecurityHandler
+        signer?: PdfSigner
+    }): PdfDocument {
+        return new PdfDocument(options)
     }
 
     /**

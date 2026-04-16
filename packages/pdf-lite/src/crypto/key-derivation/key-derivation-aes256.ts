@@ -1,3 +1,4 @@
+import { PdfInvalidPasswordError } from '../../errors.js'
 import { ByteArray } from '../../types.js'
 import {
     aes128CbcNoPaddingEncrypt,
@@ -234,7 +235,7 @@ export async function getFileKey(
 
             return key
         } catch (e) {
-            throw new Error('Invalid password')
+            throw new PdfInvalidPasswordError()
         }
     }
 }

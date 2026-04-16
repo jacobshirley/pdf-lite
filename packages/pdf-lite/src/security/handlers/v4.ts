@@ -110,6 +110,17 @@ export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
         this.cryptFilters.set(name, filter)
     }
 
+    clone(): this {
+        const cloned = super.clone()
+        cloned.cryptFilters = new Map()
+        cloned.cryptFiltersByType = { ...this.cryptFiltersByType }
+        for (const [name, filter] of this.cryptFilters) {
+            cloned.cryptFilters.set(name, filter)
+            filter.setSecurityHandler(cloned)
+        }
+        return cloned
+    }
+
     /**
      * Gets the encryption revision number.
      *

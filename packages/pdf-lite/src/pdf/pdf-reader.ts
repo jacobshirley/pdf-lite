@@ -1,5 +1,6 @@
 import { PdfObject } from '../core/objects/pdf-object.js'
 import { PdfObjectStream } from '../core/streams/object-stream.js'
+import { PdfPasswordProtectedError } from '../errors.js'
 import { ByteArray } from '../types.js'
 import { PdfDocument } from './pdf-document.js'
 
@@ -60,6 +61,14 @@ export class PdfReader {
         const document = await reader.read()
 
         let shouldDecrypt = Boolean(document.encryptionDictionary)
+        const hasExplicitPassword =
+            typeof options?.password === 'string' ||
+            typeof options?.ownerPassword === 'string'
+
+        // Throw error if document is encrypted but no password provided
+        if (document.encryptionDictionary && !hasExplicitPassword) {
+            throw new PdfPasswordProtectedError()
+        }
 
         if (typeof options?.password === 'string') {
             document.setPassword(options.password)
@@ -83,6 +92,9 @@ export class PdfReader {
                 try {
                     await document.decryptObjects()
                 } catch (e) {
+                    if (!hasExplicitPassword) {
+                        throw new PdfPasswordProtectedError()
+                    }
                     document.resetSecurityHandler()
                 }
             }
@@ -90,6 +102,9 @@ export class PdfReader {
             try {
                 await document.decryptObjects()
             } catch (e) {
+                if (!hasExplicitPassword) {
+                    throw new PdfPasswordProtectedError()
+                }
                 document.resetSecurityHandler()
             }
         }

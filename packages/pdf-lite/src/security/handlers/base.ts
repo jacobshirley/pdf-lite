@@ -200,6 +200,18 @@ export abstract class PdfSecurityHandler {
     }
 
     /**
+     * Creates a shallow clone of this security handler with an independent
+     * encryption dictionary, so that mutating the clone (e.g. during
+     * finalize/encrypt) does not affect the original.
+     */
+    clone(): this {
+        const cloned = Object.create(Object.getPrototypeOf(this)) as this
+        Object.assign(cloned, this)
+        cloned.dict = this.dict.clone()
+        return cloned
+    }
+
+    /**
      * Recursively decrypts all strings and streams within an indirect object.
      *
      * @param object - The indirect object to decrypt.

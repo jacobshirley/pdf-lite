@@ -69,6 +69,13 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
         this.recipientsCms = this.getRecipientsPkcs7(pkcs7Input)
     }
 
+    clone(): this {
+        const cloned = super.clone()
+        cloned.standardSecurityHandler =
+            this.standardSecurityHandler.clone() as PdfStandardSecurityHandler
+        return cloned
+    }
+
     /**
      * Gets the security handler filter name.
      *

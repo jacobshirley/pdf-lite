@@ -1108,10 +1108,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     private calculateOffsets(): void {
+        this.linkOffsets()
         const serializer = new PdfTokenSerializer()
         serializer.feedMany(this.toTokens())
         serializer.calculateOffsets()
-        this.linkOffsets()
     }
 
     private updateRevisions(): void {
@@ -1217,11 +1217,13 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      */
     cloneImpl(): this {
         const clonedRevisions = this.revisions.map((rev) => rev.clone())
-        return new PdfDocument({
+        const cloned = new PdfDocument({
             revisions: clonedRevisions,
             version: this.header?.clone(),
-            securityHandler: this.securityHandler,
+            securityHandler: this.securityHandler?.clone(),
         }) as this
+        cloned.hasEncryptionDictionary = this.hasEncryptionDictionary
+        return cloned
     }
 
     toJSON() {

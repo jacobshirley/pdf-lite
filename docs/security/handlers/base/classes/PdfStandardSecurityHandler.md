@@ -177,6 +177,42 @@ True if metadata should be encrypted.
 
 ---
 
+### clone()
+
+> **clone**(): `this`
+
+Creates a shallow clone of this security handler with an independent
+encryption dictionary, so that mutating the clone (e.g. during
+finalize/encrypt) does not affect the original.
+
+#### Returns
+
+`this`
+
+#### Inherited from
+
+[`PdfSecurityHandler`](PdfSecurityHandler.md).[`clone`](PdfSecurityHandler.md#clone)
+
+---
+
+### computeMasterKey()
+
+> `abstract` `protected` **computeMasterKey**(): `Promise`\<[`ByteArray`](../../../../types/type-aliases/ByteArray.md)\>
+
+Computes the master encryption key from the password.
+
+#### Returns
+
+`Promise`\<[`ByteArray`](../../../../types/type-aliases/ByteArray.md)\>
+
+The computed master key.
+
+#### Throws
+
+Error if the password is incorrect or required parameters are missing.
+
+---
+
 ### computeObjectKey()
 
 > `abstract` **computeObjectKey**(`objectNumber?`, `generationNumber?`, `algorithm?`): `Promise`\<[`ByteArray`](../../../../types/type-aliases/ByteArray.md)\>
@@ -475,6 +511,34 @@ Gets the security handler filter name.
 
 ---
 
+### getOwnerPassword()
+
+> **getOwnerPassword**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| `undefined`
+
+Gets the owner password.
+
+#### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| `undefined`
+
+The owner password as bytes, or undefined if not set.
+
+---
+
+### getPassword()
+
+> **getPassword**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+Gets the user password.
+
+#### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+The user password as bytes.
+
+---
+
 ### getRevision()
 
 > `abstract` **getRevision**(): `number`
@@ -672,6 +736,23 @@ The user password string or bytes.
 #### Returns
 
 `void`
+
+---
+
+### testPassword()
+
+> **testPassword**(): `Promise`\<`boolean`\>
+
+Tests whether the current password can decrypt this document.
+Attempts to compute the master key and returns true if successful.
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+#### Overrides
+
+[`PdfSecurityHandler`](PdfSecurityHandler.md).[`testPassword`](PdfSecurityHandler.md#testpassword)
 
 ---
 

@@ -204,6 +204,24 @@ True if metadata should be encrypted.
 
 ---
 
+### clone()
+
+> **clone**(): `this`
+
+Creates a shallow clone of this security handler with an independent
+encryption dictionary, so that mutating the clone (e.g. during
+finalize/encrypt) does not affect the original.
+
+#### Returns
+
+`this`
+
+#### Inherited from
+
+[`PdfStandardSecurityHandler`](../../base/classes/PdfStandardSecurityHandler.md).[`clone`](../../base/classes/PdfStandardSecurityHandler.md#clone)
+
+---
+
 ### computeMasterKey()
 
 > `protected` **computeMasterKey**(): `Promise`\<[`ByteArray`](../../../../types/type-aliases/ByteArray.md)\>
@@ -219,6 +237,10 @@ The computed master key.
 #### Throws
 
 Error if required parameters are missing or password is incorrect.
+
+#### Overrides
+
+[`PdfStandardSecurityHandler`](../../base/classes/PdfStandardSecurityHandler.md).[`computeMasterKey`](../../base/classes/PdfStandardSecurityHandler.md#computemasterkey)
 
 ---
 
@@ -544,6 +566,42 @@ Gets the security handler filter name.
 
 ---
 
+### getOwnerPassword()
+
+> **getOwnerPassword**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| `undefined`
+
+Gets the owner password.
+
+#### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| `undefined`
+
+The owner password as bytes, or undefined if not set.
+
+#### Inherited from
+
+[`PdfStandardSecurityHandler`](../../base/classes/PdfStandardSecurityHandler.md).[`getOwnerPassword`](../../base/classes/PdfStandardSecurityHandler.md#getownerpassword)
+
+---
+
+### getPassword()
+
+> **getPassword**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+Gets the user password.
+
+#### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+The user password as bytes.
+
+#### Inherited from
+
+[`PdfStandardSecurityHandler`](../../base/classes/PdfStandardSecurityHandler.md).[`getPassword`](../../base/classes/PdfStandardSecurityHandler.md#getpassword)
+
+---
+
 ### getRevision()
 
 > **getRevision**(): `number`
@@ -757,6 +815,23 @@ The user password string or bytes.
 #### Inherited from
 
 [`PdfStandardSecurityHandler`](../../base/classes/PdfStandardSecurityHandler.md).[`setPassword`](../../base/classes/PdfStandardSecurityHandler.md#setpassword)
+
+---
+
+### testPassword()
+
+> **testPassword**(): `Promise`\<`boolean`\>
+
+Tests whether the current password can decrypt this document.
+Attempts to compute the master key and returns true if successful.
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+#### Inherited from
+
+[`PdfStandardSecurityHandler`](../../base/classes/PdfStandardSecurityHandler.md).[`testPassword`](../../base/classes/PdfStandardSecurityHandler.md#testpassword)
 
 ---
 

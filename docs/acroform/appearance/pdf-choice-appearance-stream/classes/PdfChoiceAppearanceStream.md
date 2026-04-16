@@ -6,7 +6,8 @@
 
 # Class: PdfChoiceAppearanceStream
 
-Appearance stream for choice fields (dropdowns, list boxes).
+Base class for PDF appearance streams (Form XObjects).
+Wraps a PdfStream as a PdfIndirectObject so it can be added directly to a document.
 
 ## Extends
 
@@ -41,6 +42,10 @@ Appearance stream for choice fields (dropdowns, list boxes).
 ###### isUnicode?
 
 `boolean`
+
+###### quadding?
+
+`number`
 
 ###### rect
 

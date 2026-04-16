@@ -74,6 +74,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     private _updating = false
     private _finalized = false
     private _signed = false
+    /** @internal */
+    _batching = false
 
     /**
      * Creates a new PDF document instance.
@@ -248,17 +250,58 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             this.latestRevision.addObject(obj)
         }
 
-        // Auto-add any referenced-but-missing objects
-        const missing = this.collectMissingReferences(...objects)
-        if (missing.length > 0) {
-            this.add(...missing)
-        }
+        // Auto-add any referenced-but-missing objects recursively in one pass
+        this.addAllMissingReferences(objects)
 
-        this.update()
+        if (!this._batching) {
+            this.update()
+        }
 
         for (const obj of objects) {
             obj.setModified(false)
         }
+    }
+
+    /**
+     * Recursively collects and adds all missing referenced objects in batches.
+     * More efficient than recursive add() calls since it collects all missing
+     * objects before processing them.
+     * @private
+     */
+    private addAllMissingReferences(objects: PdfObject[]): void {
+        let batch = this.collectMissingReferences(...objects)
+
+        while (batch.length > 0) {
+            for (const obj of batch) {
+                this.wireResolvers(obj)
+                if (!this.hasObjectInLatestRevision(obj)) {
+                    this.latestRevision.addObject(obj)
+                }
+            }
+            // Check if these newly added objects reference more missing objects
+            batch = this.collectMissingReferences(...batch)
+        }
+    }
+
+    /**
+     * Creates a batch for adding multiple objects with a single update pass.
+     * This is significantly faster than calling `add()` multiple times when
+     * adding objects with many sub-references (e.g. fonts with descriptors,
+     * CIDToGIDMap streams, ToUnicode CMaps).
+     *
+     * @example
+     * ```typescript
+     * const batch = document.batch()
+     * batch.add(font1)
+     * batch.add(font2)
+     * batch.add(imageStream)
+     * batch.commit()
+     * ```
+     *
+     * @returns A PdfDocumentBatch instance
+     */
+    batch(): PdfDocumentBatch {
+        return new PdfDocumentBatch(this)
     }
 
     /**
@@ -1107,11 +1150,13 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
     }
 
-    private calculateOffsets(): void {
+    private calculateOffsets(cachedTokens?: PdfToken[]): PdfToken[] {
         const serializer = new PdfTokenSerializer()
-        serializer.feedMany(this.toTokens())
+        const tokens = cachedTokens ?? this.toTokens()
+        serializer.feedMany(tokens)
         serializer.calculateOffsets()
         this.linkOffsets()
+        return tokens
     }
 
     private updateRevisions(): void {
@@ -1139,25 +1184,28 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
     /**
      * Performs a full update cycle to ensure all revisions are consistent and offsets are correct.
+     * @internal
      */
-    private update(): void {
+    update(): void {
         if (this._updating) return
         this._updating = true
         try {
             this.commitIncrementalUpdates()
             this.flushResolvedCache()
             this.registerNewReferences()
+            // First pass: generate tokens and calculate offsets
             this.calculateOffsets()
             this.updateRevisions()
+
             // Second pass: xref binary may have changed size (e.g. FlateDecode removed
-            // from xref stream), shifting objects that follow it. Recalculate so entry
-            // byteOffset refs hold the new positions, then rebuild the xref binary once
-            // more so the baked bytes match those positions.
-            this.calculateOffsets()
+            // from xref stream), shifting objects that follow it. Regenerate tokens
+            // to capture xref changes, then recalculate offsets.
+            const tokens = this.calculateOffsets()
             this.updateRevisions()
-            // Third pass: confirm positions are stable (xref binary size should not
-            // change again because W widths and entry count are the same).
-            this.calculateOffsets()
+
+            // Third pass: reuse tokens from second pass since xref should now be stable
+            // (xref binary size should not change because W widths and entry count are same).
+            this.calculateOffsets(tokens)
         } finally {
             this._updating = false
         }
@@ -1261,5 +1309,70 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      */
     async verifySignatures(): Promise<PdfDocumentVerificationResult> {
         return await this.signer.verify()
+    }
+}
+
+/**
+ * Batches multiple `add()` calls into a single update pass.
+ * Created via {@link PdfDocument.batch}.
+ */
+export class PdfDocumentBatch {
+    private _document: PdfDocument
+    private _completed = false
+    private _addedObjects: PdfObject[] = []
+
+    /** @internal */
+    constructor(document: PdfDocument) {
+        this._document = document
+        this._document._batching = true
+    }
+
+    /**
+     * Adds one or more objects to the document without triggering an update.
+     *
+     * @param objects - PDF objects to add
+     */
+    add(...objects: PdfObject[]): this {
+        if (this._completed) {
+            throw new Error(
+                'Batch already completed (committed or rolled back)',
+            )
+        }
+        this._addedObjects.push(...objects)
+        this._document.add(...objects)
+        return this
+    }
+
+    /**
+     * Commits the batch, running a single update pass for all added objects.
+     */
+    commit(): void {
+        if (this._completed) {
+            throw new Error(
+                'Batch already completed (committed or rolled back)',
+            )
+        }
+        this._completed = true
+        this._document._batching = false
+        this._document.update()
+    }
+
+    /**
+     * Rolls back the batch, removing all objects that were added and
+     * restoring the document to its state before the batch was created.
+     */
+    rollback(): void {
+        if (this._completed) {
+            throw new Error(
+                'Batch already completed (committed or rolled back)',
+            )
+        }
+        this._completed = true
+        this._document._batching = false
+
+        // Remove all objects that were added during this batch
+        for (const obj of this._addedObjects) {
+            this._document.deleteObject(obj)
+        }
     }
 }

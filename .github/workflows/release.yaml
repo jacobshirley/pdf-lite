@@ -22,7 +22,7 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
             - name: Set up pnpm
-              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
+              uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6
               with:
                   run_install: true
             - name: Set up Node.js
@@ -32,28 +32,41 @@ jobs:
                   cache: 'pnpm'
             - name: Get release version
               id: get_release_version
-              run: echo "version=$(jq -r .version ./package.json)" >> $GITHUB_OUTPUT
+              run: |
+                  VERSION=$(jq -r .version ./package.json)
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
+                  if [[ "$VERSION" == *-* ]]; then
+                    echo "is_prerelease=true" >> $GITHUB_OUTPUT
+                    echo "npm_tag=next" >> $GITHUB_OUTPUT
+                  else
+                    echo "is_prerelease=false" >> $GITHUB_OUTPUT
+                    echo "npm_tag=latest" >> $GITHUB_OUTPUT
+                  fi
             - name: Compile
               run: pnpm compile
             - name: Publish packages
-              run: pnpm -r publish --tag=latest --provenance
+              run: pnpm -r publish --tag=${{ steps.get_release_version.outputs.npm_tag }} --provenance
             - name: Tag version
               run: |
                   git config --global user.name "github-actions[bot]"
                   git config --global user.email "github-actions[bot]@users.noreply.github.com"
                   git tag v${{ steps.get_release_version.outputs.version }} --force
-                  MAJOR_VERSION=$(echo ${{ steps.get_release_version.outputs.version }} | cut -d. -f1)
-                  git tag v${MAJOR_VERSION} --force
-                  git tag latest --force
                   git push origin v${{ steps.get_release_version.outputs.version }} --force
-                  git push origin v${MAJOR_VERSION} --force
-                  git push origin latest --force
+                  
+                  # Only update major version and latest tags for stable releases
+                  if [[ "${{ steps.get_release_version.outputs.is_prerelease }}" == "false" ]]; then
+                    MAJOR_VERSION=$(echo ${{ steps.get_release_version.outputs.version }} | cut -d. -f1)
+                    git tag v${MAJOR_VERSION} --force
+                    git tag latest --force
+                    git push origin v${MAJOR_VERSION} --force
+                    git push origin latest --force
+                  fi
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Pack
               run: pnpm -r pack
             - name: Push artifacts
-              uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
                   name: pdf-lite-${{ steps.get_release_version.outputs.version }}
                   path: ./*.tgz
@@ -71,7 +84,7 @@ jobs:
               run: VERSION_FILE=$(ls *.tgz | head -n 1) && echo "version=$(echo $VERSION_FILE | sed -E 's/^pdf-lite-(.*)\.tgz$/\1/')" >> $GITHUB_OUTPUT
             - name: Create Release
               id: create_release
-              uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2
+              uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
               with:
                   draft: false
                   prerelease: ${{ contains(steps.get_release_version.outputs.version, '-') }}

@@ -153,10 +153,10 @@ export class PdfSigner {
 
             const allBytes = this.document.toBytes()
 
-            const toSign = concatUint8Arrays(
+            const toSign = concatUint8Arrays([
                 allBytes.slice(byteRange[0], byteRange[1]),
                 allBytes.slice(byteRange[2], byteRange[3] + byteRange[2]),
-            )
+            ])
 
             const { signedBytes, revocationInfo } = await signature.sign({
                 bytes: toSign,
@@ -373,10 +373,10 @@ export class PdfSigner {
             }
 
             // Compute the bytes that were signed (excluding the signature contents)
-            const signedBytes = concatUint8Arrays(
+            const signedBytes = concatUint8Arrays([
                 documentBytes.slice(byteRange[0], byteRange[0] + byteRange[1]),
                 documentBytes.slice(byteRange[2], byteRange[2] + byteRange[3]),
-            )
+            ])
 
             // Verify the signature
             const result = await signature.verify({

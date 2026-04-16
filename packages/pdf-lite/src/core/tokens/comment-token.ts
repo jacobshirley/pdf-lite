@@ -21,7 +21,7 @@ export class PdfCommentToken extends PdfToken {
     private static toBytes(comment: ByteArray | string): ByteArray {
         const tokenBytes =
             typeof comment === 'string' ? stringToBytes(comment) : comment
-        return concatUint8Arrays(stringToBytes('%'), tokenBytes)
+        return concatUint8Arrays([stringToBytes('%'), tokenBytes])
     }
 
     static isEofCommentToken(token: PdfToken): boolean {

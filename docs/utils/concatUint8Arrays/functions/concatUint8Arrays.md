@@ -6,7 +6,7 @@
 
 # Function: concatUint8Arrays()
 
-> **concatUint8Arrays**(...`arrays`): [`ByteArray`](../../../types/type-aliases/ByteArray.md)
+> **concatUint8Arrays**(`arrays`): [`ByteArray`](../../../types/type-aliases/ByteArray.md)
 
 Concatenates multiple Uint8Array instances into a single ByteArray.
 
@@ -14,7 +14,7 @@ Concatenates multiple Uint8Array instances into a single ByteArray.
 
 ### arrays
 
-...`Uint8Array`\<`ArrayBufferLike`\>[]
+`Uint8Array`\<`ArrayBufferLike`\>[]
 
 The arrays to concatenate.
 
@@ -27,5 +27,8 @@ A new ByteArray containing all input arrays concatenated in order.
 ## Example
 
 ```typescript
-const result = concatUint8Arrays(new Uint8Array([1, 2]), new Uint8Array([3, 4])) // Returns Uint8Array([1, 2, 3, 4])
+const result = concatUint8Arrays([
+    new Uint8Array([1, 2]),
+    new Uint8Array([3, 4]),
+]) // Returns Uint8Array([1, 2, 3, 4])
 ```

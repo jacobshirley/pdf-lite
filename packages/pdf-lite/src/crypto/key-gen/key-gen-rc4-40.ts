@@ -96,7 +96,7 @@ export async function computeEncryptionKeyRc4_40(
     const userPad = padPassword(userPw)
     const permissionsLE = int32ToLittleEndianBytes(permissions)
     const digest = await md5(
-        concatUint8Arrays(userPad, oValue, permissionsLE, fileId),
+        concatUint8Arrays([userPad, oValue, permissionsLE, fileId]),
     )
     return digest.slice(0, 5) // 40-bit key
 }

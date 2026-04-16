@@ -127,7 +127,7 @@ describe('Utility Functions', () => {
             const arr1 = new Uint8Array([1, 2])
             const arr2 = new Uint8Array([3, 4])
             const arr3 = new Uint8Array([5])
-            const result = concatUint8Arrays(arr1, arr2, arr3)
+            const result = concatUint8Arrays([arr1, arr2, arr3])
             expect(result).toEqual(new Uint8Array([1, 2, 3, 4, 5]))
         })
 
@@ -135,18 +135,18 @@ describe('Utility Functions', () => {
             const arr1 = new Uint8Array([1, 2])
             const arr2 = new Uint8Array([])
             const arr3 = new Uint8Array([3])
-            const result = concatUint8Arrays(arr1, arr2, arr3)
+            const result = concatUint8Arrays([arr1, arr2, arr3])
             expect(result).toEqual(new Uint8Array([1, 2, 3]))
         })
 
         it('should handle single array', () => {
             const arr = new Uint8Array([1, 2, 3])
-            const result = concatUint8Arrays(arr)
+            const result = concatUint8Arrays([arr])
             expect(result).toEqual(new Uint8Array([1, 2, 3]))
         })
 
         it('should handle no arrays', () => {
-            const result = concatUint8Arrays()
+            const result = concatUint8Arrays([])
             expect(result).toEqual(new Uint8Array([]))
         })
     })

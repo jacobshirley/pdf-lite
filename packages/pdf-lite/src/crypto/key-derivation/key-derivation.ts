@@ -41,7 +41,7 @@ export async function computeMasterKey(
     }
 
     // Initial MD5 hash
-    let digest = await md5(concatUint8Arrays(...hashInputParts))
+    let digest = await md5(concatUint8Arrays(hashInputParts))
 
     if (keyLengthBits > 40) {
         // Perform 50 iterations of MD5 rehash

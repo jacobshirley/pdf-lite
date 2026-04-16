@@ -55,6 +55,10 @@ Enhanced with word wrapping and automatic font scaling.
 
 `boolean`
 
+###### quadding?
+
+`number`
+
 ###### rect
 
 \[`number`, `number`, `number`, `number`\]

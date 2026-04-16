@@ -52,7 +52,7 @@ jobs:
                   git config --global user.email "github-actions[bot]@users.noreply.github.com"
                   git tag v${{ steps.get_release_version.outputs.version }} --force
                   git push origin v${{ steps.get_release_version.outputs.version }} --force
-                  
+
                   # Only update major version and latest tags for stable releases
                   if [[ "${{ steps.get_release_version.outputs.is_prerelease }}" == "false" ]]; then
                     MAJOR_VERSION=$(echo ${{ steps.get_release_version.outputs.version }} | cut -d. -f1)

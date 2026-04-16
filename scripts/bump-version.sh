@@ -8,10 +8,10 @@ set -e
 
 if [ -n "$1" ]; then
   # Bump version in root package.json
-  pnpm version --config.git-tag-version=false $@
+  pnpm version --git-tag-version=false $@
 
   # Bump version in all workspaces
-  pnpm -r exec pnpm version --config.git-tag-version=false $@
+  pnpm -r exec pnpm version --git-tag-version=false $@
 
   # Get the new version from root package.json
   NEW_VERSION=$(node -p "require('./package.json').version")

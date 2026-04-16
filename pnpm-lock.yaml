@@ -109,7 +109,7 @@ importers:
   .:
     dependencies:
       pdf-lite:
-        specifier: 1.7.3
+        specifier: 1.7.4-alpha.0
         version: link:packages/pdf-lite
     devDependencies:
       '@commitlint/cli':

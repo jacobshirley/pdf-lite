@@ -692,6 +692,12 @@ Re-exports [PdfDocument](../pdf/pdf-document/classes/PdfDocument.md)
 
 ---
 
+### PdfDocumentBatch
+
+Re-exports [PdfDocumentBatch](../pdf/pdf-document/classes/PdfDocumentBatch.md)
+
+---
+
 ### PdfDocumentSecurityStoreDictionary
 
 Re-exports [PdfDocumentSecurityStoreDictionary](../signing/document-security-store/classes/PdfDocumentSecurityStoreDictionary.md)
@@ -830,6 +836,12 @@ Re-exports [PdfIndirectObjectOptions](../core/objects/pdf-indirect-object/type-a
 
 ---
 
+### PdfInvalidPasswordError
+
+Re-exports [PdfInvalidPasswordError](../errors/classes/PdfInvalidPasswordError.md)
+
+---
+
 ### PdfName
 
 Re-exports [PdfName](../core/objects/pdf-name/classes/PdfName.md)
@@ -923,6 +935,12 @@ Re-exports [PdfPage](../pdf/pdf-page/classes/PdfPage.md)
 ### PdfPages
 
 Re-exports [PdfPages](../pdf/pdf-pages/classes/PdfPages.md)
+
+---
+
+### PdfPasswordProtectedError
+
+Re-exports [PdfPasswordProtectedError](../errors/classes/PdfPasswordProtectedError.md)
 
 ---
 

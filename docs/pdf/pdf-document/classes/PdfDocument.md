@@ -91,6 +91,14 @@ PDF version string (e.g., '1.7', '2.0') or version comment
 
 ## Properties
 
+### \_batching
+
+> **\_batching**: `boolean` = `false`
+
+**`Internal`**
+
+---
+
 ### cachedTokens?
 
 > `protected` `optional` **cachedTokens**: [`PdfToken`](../../../core/tokens/token/classes/PdfToken.md)[]
@@ -477,6 +485,33 @@ Attempts to cast the object to a specific PdfObject subclass
 
 ---
 
+### batch()
+
+> **batch**(): [`PdfDocumentBatch`](PdfDocumentBatch.md)
+
+Creates a batch for adding multiple objects with a single update pass.
+This is significantly faster than calling `add()` multiple times when
+adding objects with many sub-references (e.g. fonts with descriptors,
+CIDToGIDMap streams, ToUnicode CMaps).
+
+#### Returns
+
+[`PdfDocumentBatch`](PdfDocumentBatch.md)
+
+A PdfDocumentBatch instance
+
+#### Example
+
+```typescript
+const batch = document.batch()
+batch.add(font1)
+batch.add(font2)
+batch.add(imageStream)
+batch.commit()
+```
+
+---
+
 ### clone()
 
 > **clone**(): `this`
@@ -774,6 +809,87 @@ Indicates whether the object has been modified. Override this method if the modi
 #### Overrides
 
 [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md).[`isModified`](../../../core/objects/pdf-object/classes/PdfObject.md#ismodified)
+
+---
+
+### load()
+
+> **load**(`input`, `options?`): `Promise`\<`PdfDocument`\>
+
+Loads a PDF document from a byte stream, parsing it into objects and revisions.
+
+#### Parameters
+
+##### input
+
+Async or sync iterable of byte arrays representing the PDF file
+
+`Iterable`\<[`ByteArray`](../../../types/type-aliases/ByteArray.md), `any`, `any`\> | `AsyncIterable`\<[`ByteArray`](../../../types/type-aliases/ByteArray.md), `any`, `any`\>
+
+##### options?
+
+Optional security and mode configuration
+
+###### incremental?
+
+`boolean`
+
+###### ownerPassword?
+
+`string`
+
+###### password?
+
+`string`
+
+#### Returns
+
+`Promise`\<`PdfDocument`\>
+
+A promise that resolves to the loaded PdfDocument instance
+
+---
+
+### loadObjects()
+
+> **loadObjects**(`objects`, `options?`): `Promise`\<`PdfDocument`\>
+
+Loads PDF objects into the document, organizing them into revisions.
+Parses objects into revisions based on EOF comments.
+
+#### Parameters
+
+##### objects
+
+[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)[]
+
+Array of PDF objects to load into the document
+
+##### options?
+
+Optional security and mode configuration
+
+###### incremental?
+
+`boolean`
+
+Whether to use incremental mode
+
+###### ownerPassword?
+
+`string`
+
+Owner password for encrypted documents
+
+###### password?
+
+`string`
+
+User password for encrypted documents
+
+#### Returns
+
+`Promise`\<`PdfDocument`\>
 
 ---
 
@@ -1137,6 +1253,20 @@ Converts the object to an array of PdfTokens, including any pre or post tokens
 
 ---
 
+### update()
+
+> **update**(): `void`
+
+**`Internal`**
+
+Performs a full update cycle to ensure all revisions are consistent and offsets are correct.
+
+#### Returns
+
+`void`
+
+---
+
 ### verifySignatures()
 
 > **verifySignatures**(): `Promise`\<[`PdfDocumentVerificationResult`](../../../signing/signer/type-aliases/PdfDocumentVerificationResult.md)\>
@@ -1189,7 +1319,7 @@ A promise that resolves to the parsed PdfDocument
 
 ### fromObjects()
 
-> `static` **fromObjects**(`objects`): `PdfDocument`
+> `static` **fromObjects**(`objects`, `options?`): `Promise`\<`PdfDocument`\>
 
 Creates a PdfDocument from an array of PDF objects.
 Parses objects into revisions based on EOF comments.
@@ -1201,6 +1331,72 @@ Parses objects into revisions based on EOF comments.
 [`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)[]
 
 Array of PDF objects to construct the document from
+
+##### options?
+
+Optional security and mode configuration
+
+###### incremental?
+
+`boolean`
+
+Whether to use incremental mode
+
+###### ownerPassword?
+
+`string`
+
+Owner password for encrypted documents
+
+###### password?
+
+`string`
+
+User password for encrypted documents
+
+#### Returns
+
+`Promise`\<`PdfDocument`\>
+
+A promise that resolves to the new PdfDocument instance
+
+---
+
+### newDocument()
+
+> `static` **newDocument**(`options?`): `PdfDocument`
+
+Creates a new PdfDocument instance.
+
+#### Parameters
+
+##### options?
+
+Configuration options for the document
+
+###### ownerPassword?
+
+`string`
+
+###### password?
+
+`string`
+
+###### revisions?
+
+[`PdfRevision`](../../pdf-revision/classes/PdfRevision.md)[]
+
+###### securityHandler?
+
+[`PdfSecurityHandler`](../../../security/handlers/base/classes/PdfSecurityHandler.md)
+
+###### signer?
+
+[`PdfSigner`](../../../signing/signer/classes/PdfSigner.md)
+
+###### version?
+
+`string` \| [`PdfComment`](../../../core/objects/pdf-comment/classes/PdfComment.md)
 
 #### Returns
 

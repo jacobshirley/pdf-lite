@@ -1247,7 +1247,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
     }
 
-    private linkOffsets(): void {
+    private linkOffsets(tokens?: PdfToken[]): void {
         const refMap = new Map<
             number,
             {
@@ -1256,7 +1256,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             }
         >()
 
-        const tokens = this.toTokens()
+        tokens = tokens ?? this.toTokens()
 
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i]
@@ -1294,9 +1294,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     private calculateOffsets(cachedTokens?: PdfToken[]): PdfToken[] {
-        this.linkOffsets()
         const serializer = new PdfTokenSerializer()
         const tokens = cachedTokens ?? this.toTokens()
+        this.linkOffsets(tokens)
+
         serializer.feedMany(tokens)
         serializer.calculateOffsets()
 

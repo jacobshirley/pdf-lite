@@ -478,6 +478,24 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
     }
 
     /**
+     * Gets the user password.
+     *
+     * @returns The user password as bytes.
+     */
+    getPassword(): ByteArray {
+        return this.password
+    }
+
+    /**
+     * Gets the owner password.
+     *
+     * @returns The owner password as bytes, or undefined if not set.
+     */
+    getOwnerPassword(): ByteArray | undefined {
+        return this.ownerPassword
+    }
+
+    /**
      * Checks if metadata encryption is enabled.
      *
      * @returns True if metadata should be encrypted.

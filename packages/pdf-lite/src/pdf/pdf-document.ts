@@ -71,10 +71,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
     private originalSecurityHandler?: PdfSecurityHandler
 
-    // Password strings saved before load() is called
-    private _presetPassword?: string
-    private _presetOwnerPassword?: string
-
     private hasEncryptionDictionary?: boolean = false
     private _resolvedCache = new Map<string, PdfIndirectObject>()
     private _objStreamCache = new Map<number, PdfObjStream>()
@@ -112,15 +108,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             this.setVersion(options?.version ?? '2.0')
         }
 
-        // Save passwords to apply after security handler initialization
-        if (options?.password) {
-            this._presetPassword = options.password
-        }
-
-        if (options?.ownerPassword) {
-            this._presetOwnerPassword = options.ownerPassword
-        }
-
         this.signer = options?.signer ?? new PdfSigner({ document: this })
 
         this.linkRevisions()
@@ -133,14 +120,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         this.originalSecurityHandler = options?.securityHandler
         this.resetSecurityHandler()
 
-        // Apply passwords after reset (for new documents, this creates V5 handler)
-        if (this._presetPassword) {
-            this.setPassword(this._presetPassword)
-            this._presetPassword = undefined
+        if (options?.password) {
+            this.setPassword(options.password)
         }
-        if (this._presetOwnerPassword) {
-            this.setOwnerPassword(this._presetOwnerPassword)
-            this._presetOwnerPassword = undefined
+        if (options?.ownerPassword) {
+            this.setOwnerPassword(options.ownerPassword)
         }
     }
 
@@ -244,32 +228,32 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         this.calculateOffsets()
 
         // Reset security handler to detect and initialize encryption from the PDF
+        // Preserve any passwords that were set before load() was called
+        let presetPassword: string | undefined = options?.password
+        let presetOwnerPassword: string | undefined = options?.ownerPassword
+        if (this.securityHandler instanceof PdfStandardSecurityHandler) {
+            const pw = this.securityHandler.getPassword()
+            const opw = this.securityHandler.getOwnerPassword()
+            if (!presetPassword && pw.length > 0) {
+                presetPassword = new TextDecoder().decode(pw)
+            }
+            if (!presetOwnerPassword && opw) {
+                presetOwnerPassword = new TextDecoder().decode(opw)
+            }
+        }
         this.resetSecurityHandler()
 
-        // Apply passwords: options take precedence, then pre-set passwords
-        const password = options?.password ?? this._presetPassword
-        const ownerPassword =
-            options?.ownerPassword ?? this._presetOwnerPassword
-
-        if (password) {
-            this.setPassword(password)
+        // Apply passwords
+        if (presetPassword) {
+            this.setPassword(presetPassword)
         }
-
-        if (ownerPassword) {
-            this.setOwnerPassword(ownerPassword)
+        if (presetOwnerPassword) {
+            this.setOwnerPassword(presetOwnerPassword)
         }
 
         // Handle encryption/decryption
         let shouldDecrypt = Boolean(this.encryptionDictionary)
-        const hasExplicitPassword =
-            typeof options?.password === 'string' ||
-            typeof options?.ownerPassword === 'string' ||
-            !!this._presetPassword ||
-            !!this._presetOwnerPassword
-
-        // Clear preset passwords after determining hasExplicitPassword
-        this._presetPassword = undefined
-        this._presetOwnerPassword = undefined
+        const hasExplicitPassword = !!presetPassword || !!presetOwnerPassword
 
         // If encrypted, verify the password is valid before attempting decryption
         if (
@@ -684,9 +668,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @throws Error if the security handler doesn't support password setting
      */
     setPassword(password: string): void {
-        // Always save password for potential later use (e.g., during load())
-        this._presetPassword = password
-
         if (this.securityHandler instanceof PdfStandardSecurityHandler) {
             this.securityHandler.setPassword(password)
         } else if (!this.securityHandler) {
@@ -705,9 +686,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @throws Error if the security handler doesn't support password setting
      */
     setOwnerPassword(ownerPassword: string): void {
-        // Always save password for potential later use (e.g., during load())
-        this._presetOwnerPassword = ownerPassword
-
         if (this.securityHandler instanceof PdfStandardSecurityHandler) {
             this.securityHandler.setOwnerPassword(ownerPassword)
         } else if (!this.securityHandler) {

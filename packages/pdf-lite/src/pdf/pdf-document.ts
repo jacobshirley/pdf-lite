@@ -1294,11 +1294,12 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     private calculateOffsets(cachedTokens?: PdfToken[]): PdfToken[] {
+        this.linkOffsets()
         const serializer = new PdfTokenSerializer()
         const tokens = cachedTokens ?? this.toTokens()
         serializer.feedMany(tokens)
         serializer.calculateOffsets()
-        this.linkOffsets()
+
         return tokens
     }
 

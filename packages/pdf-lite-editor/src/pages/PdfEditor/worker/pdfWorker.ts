@@ -367,8 +367,7 @@ const handlers: {
     }) {
         if (!pdfDoc) throw new Error('No PDF loaded')
         // Create a copy of the document to avoid modifying the original
-        const currentBytes = pdfDoc.toBytes()
-        const exportDoc = await PdfDocument.fromBytes([currentBytes])
+        const exportDoc = pdfDoc.clone()
 
         const handlerOpts = {
             password,
@@ -737,8 +736,7 @@ const handlers: {
                 { label: 'Option 2', value: 'Option 2' },
                 { label: 'Option 3', value: 'Option 3' },
             ]
-            // Set combo box flag (bit 18)
-            field.flags = (field.flags ?? 0) | (1 << 17)
+            field.combo = true
 
             // Add to acroform first so field has a reference for appearance generation
             acroform.addField(field)

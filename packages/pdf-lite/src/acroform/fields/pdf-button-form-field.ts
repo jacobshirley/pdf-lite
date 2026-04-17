@@ -91,6 +91,11 @@ export class PdfButtonFormField extends PdfFormField {
     }
 
     get checked(): boolean {
+        // For widgets with a parent, check the inherited value
+        // For standalone widgets, check both appearance state and value
+        if (this.parent) {
+            return this.value !== 'Off'
+        }
         return !(this.appearanceState === 'Off' || this.value === 'Off')
     }
 

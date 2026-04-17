@@ -3,6 +3,7 @@ import { PdfAppearanceStream } from './pdf-appearance-stream.js'
 import { PdfGraphics } from './pdf-graphics.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
 import { PdfFormFieldFlags } from '../fields/pdf-form-field-flags.js'
+import { GraphicsBlock } from '../../graphics/pdf-content-stream.js'
 
 /**
  * Appearance stream for button fields (checkboxes, radio buttons).
@@ -11,7 +12,7 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
     constructor(ctx: { width: number; height: number; contentStream: string }) {
         const resources = new PdfDictionary()
         const fonts = new PdfDictionary()
-        fonts.set('ZaDb', PdfFont.ZAPF_DINGBATS.dict.clone())
+        fonts.set('ZaDb', PdfFont.ZAPF_DINGBATS.reference)
         resources.set('Font', fonts)
 
         super({
@@ -31,8 +32,15 @@ export class PdfButtonAppearanceStream extends PdfAppearanceStream {
         const isRadio = new PdfFormFieldFlags(flags).radio
 
         const g = new PdfGraphics()
+        let graphicsBlock: GraphicsBlock
 
         if (isRadio) {
+            graphicsBlock = GraphicsBlock.ellipse({
+                x: 0,
+                y: 0,
+                radiusX: size / 2,
+                radiusY: size / 2,
+            })
             const center = size / 2
             const radius = size * 0.35
             const k = 0.5522847498

@@ -1,11 +1,10 @@
 import React from 'react'
-import { Badge } from '@/components/shadcn/badge'
 import { Button } from '@/components/shadcn/button'
 import { Card, CardContent } from '@/components/shadcn/card'
 import { Input } from '@/components/shadcn/input'
 import { Label } from '@/components/shadcn/label'
 import { Separator } from '@/components/shadcn/separator'
-import { Trash2, Type, Upload, X } from 'lucide-react'
+import { Trash2, Type, X } from 'lucide-react'
 import type {
     ExtractedTextBlock,
     FontRef,
@@ -28,6 +27,8 @@ type Props = {
     onClose: () => void
 }
 
+const UPLOAD_SENTINEL = '__upload_font__'
+
 export function TextPropertiesPanel({
     textBlock,
     segments,
@@ -44,6 +45,21 @@ export function TextPropertiesPanel({
     onClose,
 }: Props) {
     const bbox = textBlock.bbox
+    const allFonts = [...standardFonts, ...embeddedFonts]
+    const seg = segments[0]
+    const currentFontName = seg?.fontName || 'Unknown'
+
+    const handleFontSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value
+        if (value === UPLOAD_SENTINEL) {
+            fontInputRef.current?.click()
+            // Reset select back to current font so it doesn't stay on "Upload..."
+            e.target.value = currentFontName
+            return
+        }
+        const chosen = allFonts.find((f) => f.name === value)
+        if (chosen) onFontChange(chosen)
+    }
 
     return (
         <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
@@ -87,179 +103,157 @@ export function TextPropertiesPanel({
 
                     <Separator />
 
-                    <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-slate-700">
-                            Font
-                        </Label>
-                        {segments.length > 0 &&
-                            (() => {
-                                const seg = segments[0]
-                                const currentFontName =
-                                    seg.fontName || 'Unknown'
-                                const allFonts = [
-                                    ...standardFonts,
-                                    ...embeddedFonts,
-                                ]
-                                return (
-                                    <div className="space-y-2">
-                                        <div className="space-y-1">
-                                            <Label
-                                                htmlFor="tb-font-select"
-                                                className="text-xs text-slate-600"
-                                            >
-                                                Font Family
-                                            </Label>
-                                            <select
-                                                id="tb-font-select"
-                                                value={currentFontName}
-                                                onChange={(
-                                                    e: React.ChangeEvent<HTMLSelectElement>,
-                                                ) => {
-                                                    const name = e.target.value
-                                                    const chosen = allFonts.find(
-                                                        (f) => f.name === name,
-                                                    )
-                                                    if (chosen) onFontChange(chosen)
-                                                }}
-                                                className="w-full h-8 text-sm rounded-md border border-slate-300 px-2 focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
-                                            >
-                                                <optgroup label="Standard Fonts">
-                                                    {standardFonts.map((f) => (
-                                                        <option
-                                                            key={f.id}
-                                                            value={f.name}
-                                                        >
-                                                            {f.name}
-                                                        </option>
-                                                    ))}
-                                                </optgroup>
-                                                {embeddedFonts.length > 0 && (
-                                                    <optgroup label="Uploaded Fonts">
-                                                        {embeddedFonts.map((f) => (
-                                                            <option
-                                                                key={f.id}
-                                                                value={f.name}
-                                                            >
-                                                                {f.name}
-                                                            </option>
-                                                        ))}
-                                                    </optgroup>
-                                                )}
-                                                {!allFonts.some(
-                                                    (f) =>
-                                                        f.name ===
-                                                        currentFontName,
-                                                ) && (
+                    {seg && (
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-slate-700">
+                                Font
+                            </Label>
+                            <div className="space-y-2">
+                                <div className="space-y-1">
+                                    <Label
+                                        htmlFor="tb-font-select"
+                                        className="text-xs text-slate-600"
+                                    >
+                                        Font Family
+                                    </Label>
+                                    <select
+                                        id="tb-font-select"
+                                        value={currentFontName}
+                                        onChange={handleFontSelect}
+                                        className="w-full h-8 text-sm rounded-md border border-slate-300 px-2 focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+                                    >
+                                        <optgroup label="Standard Fonts">
+                                            {standardFonts.map((f) => (
+                                                <option
+                                                    key={f.id}
+                                                    value={f.name}
+                                                >
+                                                    {f.name}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                        {embeddedFonts.length > 0 && (
+                                            <optgroup label="Uploaded Fonts">
+                                                {embeddedFonts.map((f) => (
                                                     <option
-                                                        value={currentFontName}
-                                                        disabled
+                                                        key={f.id}
+                                                        value={f.name}
                                                     >
-                                                        {currentFontName} (current)
+                                                        {f.name}
                                                     </option>
-                                                )}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Label
-                                                htmlFor="tb-font-type"
-                                                className="text-xs text-slate-600"
-                                            >
-                                                Font Type
-                                            </Label>
-                                            <Input
-                                                id="tb-font-type"
-                                                value={seg.fontType || 'Unknown'}
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                        {!allFonts.some(
+                                            (f) =>
+                                                f.name === currentFontName,
+                                        ) && (
+                                            <option
+                                                value={currentFontName}
                                                 disabled
-                                                className="h-8 text-sm bg-slate-50"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Label
-                                                htmlFor="tb-font-size"
-                                                className="text-xs text-slate-600"
                                             >
-                                                Font Size
-                                            </Label>
-                                            <Input
-                                                id="tb-font-size"
-                                                type="number"
-                                                min={1}
-                                                step={1}
-                                                value={seg.fontSize}
+                                                {currentFontName} (current)
+                                            </option>
+                                        )}
+                                        <option disabled>
+                                            ────────────
+                                        </option>
+                                        <option value={UPLOAD_SENTINEL}>
+                                            Upload font (.ttf, .otf, .woff)...
+                                        </option>
+                                    </select>
+                                    <input
+                                        ref={fontInputRef}
+                                        type="file"
+                                        accept=".ttf,.otf,.woff"
+                                        onChange={onFontUpload}
+                                        className="hidden"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <Label
+                                            htmlFor="tb-font-size"
+                                            className="text-xs text-slate-600"
+                                        >
+                                            Size
+                                        </Label>
+                                        <Input
+                                            id="tb-font-size"
+                                            type="number"
+                                            min={1}
+                                            step={1}
+                                            value={seg.fontSize}
+                                            onChange={(
+                                                e: React.ChangeEvent<HTMLInputElement>,
+                                            ) => {
+                                                const v = parseFloat(
+                                                    e.target.value,
+                                                )
+                                                if (
+                                                    Number.isFinite(v) &&
+                                                    v > 0
+                                                ) {
+                                                    onFontSizeChange(v)
+                                                }
+                                            }}
+                                            className="h-8 text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs text-slate-600">
+                                            Color
+                                        </Label>
+                                        <div className="flex items-center gap-1.5 h-8">
+                                            <input
+                                                type="color"
+                                                value={seg.colorHex || '#000000'}
                                                 onChange={(
                                                     e: React.ChangeEvent<HTMLInputElement>,
-                                                ) => {
-                                                    const v = parseFloat(
-                                                        e.target.value,
-                                                    )
-                                                    if (
-                                                        Number.isFinite(v) &&
-                                                        v > 0
-                                                    ) {
-                                                        onFontSizeChange(v)
-                                                    }
-                                                }}
-                                                className="h-8 text-sm"
+                                                ) => onColorChange(e.target.value)}
+                                                className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
                                             />
+                                            <span className="text-xs text-slate-500">{seg.colorHex || '#000000'}</span>
                                         </div>
                                     </div>
-                                )
-                            })()}
-                        {segments.length > 1 && (
-                            <div className="mt-2">
-                                <Label className="text-xs text-slate-500">
-                                    {segments.length} segments in this block
-                                </Label>
-                                <div className="mt-1 max-h-[120px] overflow-y-auto space-y-1">
-                                    {segments.map((seg, i) => (
-                                        <div
-                                            key={i}
-                                            className="text-xs px-2 py-1 bg-slate-50 rounded border border-slate-100"
-                                        >
-                                            <span className="text-slate-500">
-                                                #{i + 1}
-                                            </span>{' '}
-                                            <span className="font-medium">
-                                                {seg.fontName || '?'}
-                                            </span>{' '}
-                                            <span className="text-slate-400">
-                                                @{seg.fontSize}pt
-                                            </span>{' '}
-                                            <span className="text-slate-600 truncate">
-                                                &ldquo;
-                                                {seg.text.slice(0, 30)}
-                                                {seg.text.length > 30
-                                                    ? '...'
-                                                    : ''}
-                                                &rdquo;
-                                            </span>
-                                        </div>
-                                    ))}
                                 </div>
                             </div>
-                        )}
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-slate-700">
-                            Text Color
-                        </Label>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="color"
-                                value={segments[0]?.colorHex || '#000000'}
-                                onChange={(
-                                    e: React.ChangeEvent<HTMLInputElement>,
-                                ) => onColorChange(e.target.value)}
-                                className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
-                            />
-                            <Label className="text-xs text-slate-500">
-                                Pick a fill color for the text
-                            </Label>
                         </div>
-                    </div>
+                    )}
+
+                    {segments.length > 1 && (
+                        <div>
+                            <Label className="text-xs text-slate-500">
+                                {segments.length} segments in this block
+                            </Label>
+                            <div className="mt-1 max-h-[120px] overflow-y-auto space-y-1">
+                                {segments.map((s, i) => (
+                                    <div
+                                        key={i}
+                                        className="text-xs px-2 py-1 bg-slate-50 rounded border border-slate-100"
+                                    >
+                                        <span className="text-slate-500">
+                                            #{i + 1}
+                                        </span>{' '}
+                                        <span className="font-medium">
+                                            {s.fontName || '?'}
+                                        </span>{' '}
+                                        <span className="text-slate-400">
+                                            @{s.fontSize}pt
+                                        </span>{' '}
+                                        <span className="text-slate-600 truncate">
+                                            &ldquo;
+                                            {s.text.slice(0, 30)}
+                                            {s.text.length > 30
+                                                ? '...'
+                                                : ''}
+                                            &rdquo;
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <Separator />
 
@@ -348,57 +342,6 @@ export function TextPropertiesPanel({
                             disabled
                             className="h-8 text-sm bg-slate-50"
                         />
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-slate-700">
-                            Embed Font
-                        </Label>
-                        <p className="text-xs text-slate-500">
-                            Upload a .ttf, .otf, or .woff font file to embed in
-                            the PDF.
-                        </p>
-                        <input
-                            ref={fontInputRef}
-                            type="file"
-                            accept=".ttf,.otf,.woff"
-                            onChange={onFontUpload}
-                            className="hidden"
-                        />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => fontInputRef.current?.click()}
-                            className="w-full h-10 hover:bg-slate-50"
-                        >
-                            <Upload className="mr-2 h-4 w-4" />
-                            Upload Font
-                        </Button>
-                        {embeddedFonts.length > 0 && (
-                            <div className="space-y-1 mt-2">
-                                <Label className="text-xs text-slate-500">
-                                    Uploaded Fonts
-                                </Label>
-                                {embeddedFonts.map((ef, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex items-center justify-between text-xs px-2 py-1.5 bg-slate-50 rounded border border-slate-100"
-                                    >
-                                        <span className="font-medium truncate">
-                                            {ef.name}
-                                        </span>
-                                        <Badge
-                                            variant="secondary"
-                                            className="text-[10px] ml-2"
-                                        >
-                                            {ef.fontType || 'Font'}
-                                        </Badge>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </div>
 
                     <Separator />

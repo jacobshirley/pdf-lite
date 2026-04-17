@@ -1483,23 +1483,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     /**
-     * Creates a new PdfDocument instance.
-     *
-     * @param options - Configuration options for the document
-     * @returns A new PdfDocument instance
-     */
-    static newDocument(options?: {
-        revisions?: PdfRevision[]
-        version?: string | PdfComment
-        password?: string
-        ownerPassword?: string
-        securityHandler?: PdfSecurityHandler
-        signer?: PdfSigner
-    }): PdfDocument {
-        return new PdfDocument(options)
-    }
-
-    /**
      * Creates a PdfDocument from a byte stream.
      *
      * @param input - Async or sync iterable of byte arrays

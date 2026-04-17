@@ -1,4 +1,5 @@
 export type {
+    EncryptionAlgorithm,
     FieldType,
     FieldDTO as ExtractedField,
     TextBlockDTO as ExtractedTextBlock,

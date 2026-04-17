@@ -48,6 +48,8 @@ export function PdfEditor() {
                     onEncryptOnExportChange={editor.setEncryptOnExport}
                     onExportPasswordChange={editor.setExportPassword}
                     onExportOwnerPasswordChange={editor.setExportOwnerPassword}
+                    exportAlgorithm={editor.exportAlgorithm}
+                    onExportAlgorithmChange={editor.setExportAlgorithm}
                 />
 
                 <CanvasPanel

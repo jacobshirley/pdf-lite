@@ -1,5 +1,7 @@
 export type FieldType = 'Text' | 'Checkbox' | 'Button' | 'Choice' | 'Signature'
 
+export type EncryptionAlgorithm = 'AES-256' | 'AES-128' | 'RC4-128' | 'RC4-40'
+
 export type Rect4 = [number, number, number, number]
 
 export type BBox = { x: number; y: number; width: number; height: number }
@@ -106,7 +108,11 @@ export type WorkerMethods = {
         result: Uint8Array
     }
     toBytesWithPassword: {
-        args: { password: string; ownerPassword?: string }
+        args: {
+            password: string
+            ownerPassword?: string
+            algorithm?: EncryptionAlgorithm
+        }
         result: Uint8Array
     }
     toDebugString: {

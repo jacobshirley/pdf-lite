@@ -7,6 +7,10 @@ import {
     PdfFont,
     PdfFormField,
     PdfTextFormField,
+    PdfV1SecurityHandler,
+    PdfV2SecurityHandler,
+    PdfV4SecurityHandler,
+    PdfV5SecurityHandler,
     TextBlock,
     TextNode,
     VirtualTextBlock,
@@ -355,18 +359,41 @@ const handlers: {
     async toBytesWithPassword({
         password,
         ownerPassword,
+        algorithm,
     }: {
         password: string
         ownerPassword?: string
+        algorithm?: string
     }) {
         if (!pdfDoc) throw new Error('No PDF loaded')
         // Create a copy of the document to avoid modifying the original
         const currentBytes = pdfDoc.toBytes()
         const exportDoc = await PdfDocument.fromBytes([currentBytes])
-        exportDoc.setPassword(password)
-        if (ownerPassword) {
-            exportDoc.setOwnerPassword(ownerPassword)
+
+        const handlerOpts = {
+            password,
+            ownerPassword,
         }
+
+        let handler
+        switch (algorithm) {
+            case 'RC4-40':
+                handler = new PdfV1SecurityHandler(handlerOpts)
+                break
+            case 'RC4-128':
+                handler = new PdfV2SecurityHandler(handlerOpts)
+                break
+            case 'AES-128':
+                handler = new PdfV4SecurityHandler(handlerOpts)
+                break
+            case 'AES-256':
+            default:
+                handler = new PdfV5SecurityHandler(handlerOpts)
+                break
+        }
+
+        exportDoc.securityHandler = handler
+
         // Encrypt the document with the password
         await exportDoc.encrypt()
         return exportDoc.toBytes()

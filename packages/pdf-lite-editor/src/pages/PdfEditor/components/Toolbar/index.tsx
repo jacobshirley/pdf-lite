@@ -20,7 +20,7 @@ import {
     Type,
     Undo2,
 } from 'lucide-react'
-import type { FieldType } from '../../types'
+import type { EncryptionAlgorithm, FieldType } from '../../types'
 
 type Props = {
     pdfLoaded: boolean
@@ -44,6 +44,8 @@ type Props = {
     onEncryptOnExportChange: (value: boolean) => void
     onExportPasswordChange: (value: string) => void
     onExportOwnerPasswordChange: (value: string) => void
+    exportAlgorithm: EncryptionAlgorithm
+    onExportAlgorithmChange: (value: EncryptionAlgorithm) => void
 }
 
 export function Toolbar({
@@ -68,6 +70,8 @@ export function Toolbar({
     onEncryptOnExportChange,
     onExportPasswordChange,
     onExportOwnerPasswordChange,
+    exportAlgorithm,
+    onExportAlgorithmChange,
 }: Props) {
     const [showPassword, setShowPassword] = React.useState(false)
     const [showOwnerPassword, setShowOwnerPassword] = React.useState(false)
@@ -184,12 +188,15 @@ export function Toolbar({
                                     <Label htmlFor="export-password" className="text-[11px] text-slate-500">User Password</Label>
                                     <div className="relative">
                                         <Input
-                                            id="export-password"
-                                            type={showPassword ? 'text' : 'password'}
+                                            id="export-user-pw"
+                                            type="text"
+                                            autoComplete="off"
+                                            data-1p-ignore
+                                            data-lpignore="true"
                                             value={exportPassword}
                                             onChange={(e) => onExportPasswordChange(e.target.value)}
                                             placeholder="Required"
-                                            className="h-7 pr-7 text-xs"
+                                            className={`h-7 pr-7 text-xs ${!showPassword ? '[&]:[-webkit-text-security:disc] [&]:[text-security:disc]' : ''}`}
                                         />
                                         <button
                                             type="button"
@@ -205,12 +212,15 @@ export function Toolbar({
                                     <Label htmlFor="export-owner-password" className="text-[11px] text-slate-500">Owner Password</Label>
                                     <div className="relative">
                                         <Input
-                                            id="export-owner-password"
-                                            type={showOwnerPassword ? 'text' : 'password'}
+                                            id="export-owner-pw"
+                                            type="text"
+                                            autoComplete="off"
+                                            data-1p-ignore
+                                            data-lpignore="true"
                                             value={exportOwnerPassword}
                                             onChange={(e) => onExportOwnerPasswordChange(e.target.value)}
                                             placeholder="Optional"
-                                            className="h-7 pr-7 text-xs"
+                                            className={`h-7 pr-7 text-xs ${!showOwnerPassword ? '[&]:[-webkit-text-security:disc] [&]:[text-security:disc]' : ''}`}
                                         />
                                         <button
                                             type="button"
@@ -221,6 +231,20 @@ export function Toolbar({
                                             {showOwnerPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                                         </button>
                                     </div>
+                                </div>
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="export-algorithm" className="text-[11px] text-slate-500">Algorithm</Label>
+                                    <select
+                                        id="export-algorithm"
+                                        value={exportAlgorithm}
+                                        onChange={(e) => onExportAlgorithmChange(e.target.value as EncryptionAlgorithm)}
+                                        className="h-7 w-full text-xs rounded-md border border-slate-300 px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                    >
+                                        <option value="AES-256">AES-256 (recommended)</option>
+                                        <option value="AES-128">AES-128</option>
+                                        <option value="RC4-128">RC4-128 (legacy)</option>
+                                        <option value="RC4-40">RC4-40 (legacy)</option>
+                                    </select>
                                 </div>
                             </div>
                         )}

@@ -35,7 +35,9 @@ import {
     FoundCompressedObjectError,
     PdfPasswordProtectedError,
 } from '../errors.js'
+import { PdfHexadecimal } from '../core/objects/pdf-hexadecimal.js'
 import { ByteArray } from '../types.js'
+import { getRandomBytes } from '../utils/algos.js'
 import { PdfReader } from './pdf-reader.js'
 import { PdfDocumentVerificationResult, PdfSigner } from '../signing/signer.js'
 import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
@@ -385,6 +387,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
         // Set catalog as the root in trailer
         doc.trailerDict.set('Root', catalog.reference)
+
+        // Generate a document ID (required for encryption with V1-V4 handlers)
+        const idBytes = getRandomBytes(16)
+        const docId = new PdfHexadecimal(idBytes, 'bytes')
+        doc.trailerDict.set('ID', new PdfArray([docId, docId]))
 
         // Always add at least one page with the specified (or default) dimensions
         pagesTree.newPage({

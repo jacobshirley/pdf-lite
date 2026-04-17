@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type {
+    EncryptionAlgorithm,
     ExtractedField,
     ExtractedGraphicsBlock,
     ExtractedTextBlock,
@@ -36,6 +37,8 @@ export function usePdfEditor() {
     const [encryptOnExport, setEncryptOnExport] = useState(false)
     const [exportPassword, setExportPassword] = useState('')
     const [exportOwnerPassword, setExportOwnerPassword] = useState('')
+    const [exportAlgorithm, setExportAlgorithm] =
+        useState<EncryptionAlgorithm>('AES-256')
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
     const [selectedTextBlockId, setSelectedTextBlockId] = useState<
         string | null
@@ -752,6 +755,7 @@ export function usePdfEditor() {
                 bytes = await client.call('toBytesWithPassword', {
                     password: exportPassword,
                     ownerPassword: exportOwnerPassword.trim() || undefined,
+                    algorithm: exportAlgorithm,
                 })
             } else {
                 // Export without password
@@ -945,5 +949,7 @@ export function usePdfEditor() {
         setExportPassword,
         exportOwnerPassword,
         setExportOwnerPassword,
+        exportAlgorithm,
+        setExportAlgorithm,
     }
 }

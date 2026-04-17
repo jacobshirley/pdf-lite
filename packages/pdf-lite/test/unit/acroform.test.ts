@@ -2731,7 +2731,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
 })
 
 describe('AcroForm Field Deletion', () => {
-    it.only('should be able to delete various fields from multi-child-field.pdf', async () => {
+    it('should be able to delete various fields from multi-child-field.pdf', async () => {
         // Load the PDF with multi-child fields
         const pdfBuffer = base64ToBytes(
             await server.commands.readFile(

@@ -19,6 +19,7 @@ export type FieldDTO = {
     appearanceStates?: string[]
     defaultAppearance?: string
     hasParent: boolean
+    options?: { label: string; value: string }[]
 }
 
 export type TextSegmentDTO = {
@@ -170,6 +171,10 @@ export type WorkerMethods = {
     }
     addField: {
         args: { type: FieldType; options?: AddFieldOptions }
+        result: FieldDTO
+    }
+    updateFieldOptions: {
+        args: { id: string; options: { label: string; value: string }[] }
         result: FieldDTO
     }
     removeField: {

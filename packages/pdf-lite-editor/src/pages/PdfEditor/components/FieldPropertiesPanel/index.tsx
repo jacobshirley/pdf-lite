@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/shadcn/card'
 import { Input } from '@/components/shadcn/input'
 import { Label } from '@/components/shadcn/label'
 import { Separator } from '@/components/shadcn/separator'
-import { Copy, Settings, Trash2, X } from 'lucide-react'
+import { Copy, Plus, Settings, Trash2, X } from 'lucide-react'
 import type { ExtractedField } from '../../types'
 
 type Props = {
@@ -18,6 +18,7 @@ type Props = {
         property: 'x' | 'y' | 'width' | 'height',
         value: string,
     ) => void
+    onOptionsChange: (options: { label: string; value: string }[]) => void
     onClone: () => void
     onRemove: () => void
     onClose: () => void
@@ -31,6 +32,7 @@ export function FieldPropertiesPanel({
     onQuaddingChange,
     onAppearanceStateChange,
     onRectChange,
+    onOptionsChange,
     onClone,
     onRemove,
     onClose,
@@ -114,7 +116,81 @@ export function FieldPropertiesPanel({
                         </div>
                     )}
 
-                    {field.type !== 'Checkbox' && field.type !== 'Button' && (
+                    {field.type === 'Choice' && field.options && (
+                        <>
+                            <div className="space-y-2">
+                                <Label
+                                    htmlFor="field-value"
+                                    className="text-xs font-semibold text-slate-700"
+                                >
+                                    Selected Value
+                                </Label>
+                                <select
+                                    id="field-value"
+                                    value={field.value}
+                                    onChange={(
+                                        e: React.ChangeEvent<HTMLSelectElement>,
+                                    ) => onValueChange(e.target.value)}
+                                    className="h-8 w-full text-sm rounded-md border border-slate-300 px-3 py-1 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                >
+                                    {field.options.map((opt, i) => (
+                                        <option key={i} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-slate-700">
+                                    Options
+                                </Label>
+                                <div className="space-y-1">
+                                    {field.options.map((opt, i) => (
+                                        <div key={i} className="flex gap-1 items-center">
+                                            <Input
+                                                value={opt.label}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                    const newOptions = [...field.options!]
+                                                    newOptions[i] = { label: e.target.value, value: e.target.value }
+                                                    onOptionsChange(newOptions)
+                                                }}
+                                                className="h-7 text-xs flex-1"
+                                                placeholder="Option label"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={() => {
+                                                    const newOptions = field.options!.filter((_, j) => j !== i)
+                                                    onOptionsChange(newOptions)
+                                                }}
+                                                disabled={field.options!.length <= 1}
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full h-7 text-xs"
+                                    onClick={() => {
+                                        const newOptions = [...field.options!, { label: `Option ${field.options!.length + 1}`, value: `Option ${field.options!.length + 1}` }]
+                                        onOptionsChange(newOptions)
+                                    }}
+                                >
+                                    <Plus className="mr-1 h-3 w-3" />
+                                    Add Option
+                                </Button>
+                            </div>
+                        </>
+                    )}
+
+                    {field.type !== 'Checkbox' && field.type !== 'Button' && field.type !== 'Choice' && (
                         <div className="space-y-2">
                             <Label
                                 htmlFor="field-value"

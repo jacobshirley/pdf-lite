@@ -2,6 +2,7 @@
 import {
     PdfAcroForm,
     PdfButtonFormField,
+    PdfChoiceFormField,
     PdfDocument,
     PdfFont,
     PdfFormField,
@@ -132,6 +133,8 @@ function fieldToDTO(field: PdfFormField, id: string): FieldDTO {
             : undefined,
         defaultAppearance: field.defaultAppearance ?? undefined,
         hasParent: !!field.parent,
+        options:
+            field instanceof PdfChoiceFormField ? field.options : undefined,
     }
 }
 
@@ -603,6 +606,28 @@ const handlers: {
         return fieldToDTO(field, id)
     },
 
+    updateFieldOptions({ id, options }) {
+        const field = fieldRefs.get(id)
+        if (!field) throw new Error(`Field ${id} not found`)
+        if (!(field instanceof PdfChoiceFormField)) {
+            throw new Error('Field is not a choice field')
+        }
+        field.options = options
+        if (options.length > 0) {
+            const currentValue = field.value
+            const hasCurrentValue = options.some(
+                (opt) => opt.value === currentValue,
+            )
+            if (!hasCurrentValue) {
+                field.value = options[0].value
+            }
+        }
+        field.generateAppearance()
+
+        saveToHistory()
+        return fieldToDTO(field, id)
+    },
+
     addField({ type, options }) {
         if (!pdfDoc) throw new Error('No PDF loaded')
 
@@ -669,14 +694,37 @@ const handlers: {
             field.generateAppearance({ onStateName: 'Yes' })
 
             newField = field
+        } else if (type === 'Choice') {
+            const field = new PdfChoiceFormField()
+            field.fieldType = 'Choice'
+            field.name = fieldName
+            field.value = 'Option 1'
+            field.rect = newRect
+            field.parentRef = page.reference
+            field.defaultAppearance = '/Helv 12 Tf 0 g'
+            field._form = acroform
+            field.isWidget = true
+            field.print = true
+            field.options = [
+                { label: 'Option 1', value: 'Option 1' },
+                { label: 'Option 2', value: 'Option 2' },
+                { label: 'Option 3', value: 'Option 3' },
+            ]
+            // Set combo box flag (bit 18)
+            field.flags = (field.flags ?? 0) | (1 << 17)
+
+            // Add to acroform first so field has a reference for appearance generation
+            acroform.addField(field)
+            field.generateAppearance()
+            newField = field
         }
 
         if (!newField) {
             throw new Error(`Creating ${type} fields is not yet supported`)
         }
 
-        // Only add if not already added (checkbox was added above)
-        if (type !== 'Checkbox') {
+        // Only add if not already added (checkbox and choice were added above)
+        if (type !== 'Checkbox' && type !== 'Choice') {
             acroform.addField(newField)
         }
 

@@ -14,11 +14,12 @@ import { Label } from '@/components/shadcn/label'
 
 interface PasswordDialogProps {
     open: boolean
+    error?: string | null
     onSubmit: (password: string) => void
     onCancel: () => void
 }
 
-export function PasswordDialog({ open, onSubmit, onCancel }: PasswordDialogProps) {
+export function PasswordDialog({ open, error, onSubmit, onCancel }: PasswordDialogProps) {
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
 
@@ -48,6 +49,9 @@ export function PasswordDialog({ open, onSubmit, onCancel }: PasswordDialogProps
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
+                        {error && (
+                            <p className="text-sm text-red-500">{error}</p>
+                        )}
                         <div className="grid gap-2">
                             <Label htmlFor="password">Password</Label>
                             <div className="relative">

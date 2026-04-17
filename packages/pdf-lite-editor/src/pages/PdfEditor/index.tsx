@@ -121,6 +121,9 @@ export function PdfEditor() {
                             editor.handleAppearanceStateChange
                         }
                         onRectChange={editor.handleRectChange}
+                        onOptionsChange={(options) =>
+                            editor.handleFieldOptionsChange(editor.selectedField!.id, options)
+                        }
                         onClone={() =>
                             editor.handleCloneField(editor.selectedField!.id)
                         }
@@ -163,6 +166,7 @@ export function PdfEditor() {
             
             <PasswordDialog
                 open={editor.passwordDialogOpen}
+                error={editor.passwordError}
                 onSubmit={editor.handlePasswordSubmit}
                 onCancel={editor.handlePasswordCancel}
             />

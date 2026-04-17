@@ -28,6 +28,7 @@ export function usePdfEditor() {
     const [canUndo, setCanUndo] = useState(false)
     const [canRedo, setCanRedo] = useState(false)
     const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+    const [passwordError, setPasswordError] = useState<string | null>(null)
     const [pendingPasswordFile, setPendingPasswordFile] = useState<{
         file: File
         bytes: Uint8Array
@@ -513,6 +514,26 @@ export function usePdfEditor() {
         }
     }
 
+    const handleFieldOptionsChange = async (
+        fieldId: string,
+        options: { label: string; value: string }[],
+    ) => {
+        try {
+            const updated = await client.call('updateFieldOptions', {
+                id: fieldId,
+                options,
+            })
+            mergeFieldDTO(updated)
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error updating field options:', error)
+            alert(
+                `Error updating options: ${error instanceof Error ? error.message : String(error)}`,
+            )
+        }
+    }
+
     const handleAddField = async (
         type: FieldType,
         options?: {
@@ -587,6 +608,7 @@ export function usePdfEditor() {
     ) => {
         try {
             setPdfLoading(true)
+            setPasswordError(null)
             const result = await client.call(
                 'load',
                 { bytes: fileBytes, password },
@@ -604,6 +626,11 @@ export function usePdfEditor() {
             setPdfDebugText(await client.call('toDebugString', undefined))
             setPdfVersion(0)
             updateUndoRedoState()
+            // If the PDF was unlocked with a password, pre-fill encryption settings
+            if (password) {
+                setEncryptOnExport(true)
+                setExportPassword(password)
+            }
             // Clear pending password state on success
             setPendingPasswordFile(null)
             setPasswordDialogOpen(false)
@@ -620,8 +647,10 @@ export function usePdfEditor() {
                 // Create a fresh copy since the original buffer was transferred and detached
                 const freshBytes = new Uint8Array(await file.arrayBuffer())
                 setPendingPasswordFile({ file, bytes: freshBytes })
+                if (error.message === 'INVALID_PASSWORD') {
+                    setPasswordError('Incorrect password. Please try again.')
+                }
                 setPasswordDialogOpen(true)
-                setPdfLoading(false)
                 return
             }
 
@@ -629,9 +658,7 @@ export function usePdfEditor() {
                 `Error loading PDF: ${error instanceof Error ? error.message : String(error)}`,
             )
         } finally {
-            if (!passwordDialogOpen) {
-                setPdfLoading(false)
-            }
+            setPdfLoading(false)
         }
     }
 
@@ -648,6 +675,7 @@ export function usePdfEditor() {
     const handlePasswordCancel = () => {
         setPasswordDialogOpen(false)
         setPendingPasswordFile(null)
+        setPasswordError(null)
         setPdfLoading(false)
     }
 
@@ -802,7 +830,12 @@ export function usePdfEditor() {
         }
 
         const fieldWidth = draggedFieldType === 'Checkbox' ? 20 : 200
-        const fieldHeight = draggedFieldType === 'Checkbox' ? 20 : 30
+        const fieldHeight =
+            draggedFieldType === 'Checkbox'
+                ? 20
+                : draggedFieldType === 'Choice'
+                  ? 24
+                  : 30
 
         handleAddField(draggedFieldType!, {
             pageNumber,
@@ -891,6 +924,7 @@ export function usePdfEditor() {
         handleAddTextBlock,
         handleRemoveTextBlock,
         handleCloneField,
+        handleFieldOptionsChange,
         handleFileUpload,
         handleOpenClick,
         handleNewPdf,
@@ -902,6 +936,7 @@ export function usePdfEditor() {
         handleBackgroundClick,
         handleTextBlockSelect,
         passwordDialogOpen,
+        passwordError,
         handlePasswordSubmit,
         handlePasswordCancel,
         encryptOnExport,

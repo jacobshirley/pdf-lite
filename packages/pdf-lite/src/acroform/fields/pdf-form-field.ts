@@ -581,8 +581,11 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
         return flags
     }
 
-    set flags(v: PdfFormFieldFlags) {
-        this.content.set('Ff', v)
+    set flags(v: PdfFormFieldFlags | number) {
+        this.content.set(
+            'Ff',
+            v instanceof PdfFormFieldFlags ? v : new PdfNumber(v),
+        )
     }
 
     get readOnly(): boolean {

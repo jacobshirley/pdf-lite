@@ -56,13 +56,15 @@ export function PasswordDialog({ open, error, onSubmit, onCancel }: PasswordDial
                             <Label htmlFor="password">Password</Label>
                             <div className="relative">
                                 <Input
-                                    id="password"
-                                    type={showPassword ? 'text' : 'password'}
+                                    id="pdf-unlock"
+                                    type="text"
                                     autoComplete="off"
+                                    data-1p-ignore
+                                    data-lpignore="true"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Enter password"
-                                    className="pr-10"
+                                    className={`pr-10 ${!showPassword ? '[&]:[-webkit-text-security:disc] [&]:[text-security:disc]' : ''}`}
                                     autoFocus
                                 />
                                 <button

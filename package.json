@@ -73,7 +73,7 @@
         "tsx": "^4.20.6",
         "typedoc": "^0.28.14",
         "typedoc-plugin-markdown": "^4.9.0",
-        "typescript": "6.0.2"
+        "typescript": "6.0.3"
     },
     "dependencies": {
         "pdf-lite": "1.7.4-alpha.0"

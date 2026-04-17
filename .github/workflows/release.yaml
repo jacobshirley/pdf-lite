@@ -32,22 +32,35 @@ jobs:
                   cache: 'pnpm'
             - name: Get release version
               id: get_release_version
-              run: echo "version=$(jq -r .version ./package.json)" >> $GITHUB_OUTPUT
+              run: |
+                  VERSION=$(jq -r .version ./package.json)
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
+                  if [[ "$VERSION" == *-* ]]; then
+                    echo "is_prerelease=true" >> $GITHUB_OUTPUT
+                    echo "npm_tag=next" >> $GITHUB_OUTPUT
+                  else
+                    echo "is_prerelease=false" >> $GITHUB_OUTPUT
+                    echo "npm_tag=latest" >> $GITHUB_OUTPUT
+                  fi
             - name: Compile
               run: pnpm compile
             - name: Publish packages
-              run: pnpm -r publish --tag=latest --provenance
+              run: pnpm -r publish --tag=${{ steps.get_release_version.outputs.npm_tag }} --provenance
             - name: Tag version
               run: |
                   git config --global user.name "github-actions[bot]"
                   git config --global user.email "github-actions[bot]@users.noreply.github.com"
                   git tag v${{ steps.get_release_version.outputs.version }} --force
-                  MAJOR_VERSION=$(echo ${{ steps.get_release_version.outputs.version }} | cut -d. -f1)
-                  git tag v${MAJOR_VERSION} --force
-                  git tag latest --force
                   git push origin v${{ steps.get_release_version.outputs.version }} --force
-                  git push origin v${MAJOR_VERSION} --force
-                  git push origin latest --force
+
+                  # Only update major version and latest tags for stable releases
+                  if [[ "${{ steps.get_release_version.outputs.is_prerelease }}" == "false" ]]; then
+                    MAJOR_VERSION=$(echo ${{ steps.get_release_version.outputs.version }} | cut -d. -f1)
+                    git tag v${MAJOR_VERSION} --force
+                    git tag latest --force
+                    git push origin v${MAJOR_VERSION} --force
+                    git push origin latest --force
+                  fi
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Pack

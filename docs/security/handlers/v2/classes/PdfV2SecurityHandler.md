@@ -204,6 +204,24 @@ True if metadata should be encrypted.
 
 ---
 
+### clone()
+
+> **clone**(): `this`
+
+Creates a shallow clone of this security handler with an independent
+encryption dictionary, so that mutating the clone (e.g. during
+finalize/encrypt) does not affect the original.
+
+#### Returns
+
+`this`
+
+#### Inherited from
+
+[`PdfV1SecurityHandler`](../../v1/classes/PdfV1SecurityHandler.md).[`clone`](../../v1/classes/PdfV1SecurityHandler.md#clone)
+
+---
+
 ### computeMasterKey()
 
 > `protected` **computeMasterKey**(): `Promise`\<[`ByteArray`](../../../../types/type-aliases/ByteArray.md)\>
@@ -548,6 +566,42 @@ Gets the security handler filter name.
 
 ---
 
+### getOwnerPassword()
+
+> **getOwnerPassword**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| `undefined`
+
+Gets the owner password.
+
+#### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md) \| `undefined`
+
+The owner password as bytes, or undefined if not set.
+
+#### Inherited from
+
+[`PdfV1SecurityHandler`](../../v1/classes/PdfV1SecurityHandler.md).[`getOwnerPassword`](../../v1/classes/PdfV1SecurityHandler.md#getownerpassword)
+
+---
+
+### getPassword()
+
+> **getPassword**(): [`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+Gets the user password.
+
+#### Returns
+
+[`ByteArray`](../../../../types/type-aliases/ByteArray.md)
+
+The user password as bytes.
+
+#### Inherited from
+
+[`PdfV1SecurityHandler`](../../v1/classes/PdfV1SecurityHandler.md).[`getPassword`](../../v1/classes/PdfV1SecurityHandler.md#getpassword)
+
+---
+
 ### getRevision()
 
 > **getRevision**(): `number`
@@ -761,6 +815,23 @@ The user password string or bytes.
 #### Inherited from
 
 [`PdfV1SecurityHandler`](../../v1/classes/PdfV1SecurityHandler.md).[`setPassword`](../../v1/classes/PdfV1SecurityHandler.md#setpassword)
+
+---
+
+### testPassword()
+
+> **testPassword**(): `Promise`\<`boolean`\>
+
+Tests whether the current password can decrypt this document.
+Attempts to compute the master key and returns true if successful.
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+#### Inherited from
+
+[`PdfV1SecurityHandler`](../../v1/classes/PdfV1SecurityHandler.md).[`testPassword`](../../v1/classes/PdfV1SecurityHandler.md#testpassword)
 
 ---
 

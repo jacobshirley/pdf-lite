@@ -713,7 +713,6 @@ export abstract class PdfFormField extends PdfWidgetAnnotation {
 
     set quadding(q: number) {
         this.content.set('Q', new PdfNumber(q))
-
         this.updateAppearance()
     }
 

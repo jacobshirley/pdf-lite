@@ -9,3 +9,4 @@
 ## Classes
 
 - [PdfDocument](classes/PdfDocument.md)
+- [PdfDocumentBatch](classes/PdfDocumentBatch.md)

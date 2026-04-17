@@ -41,7 +41,7 @@ export function PasswordDialog({ open, error, onSubmit, onCancel }: PasswordDial
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleCancel()}>
             <DialogContent>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} autoComplete="off">
                     <DialogHeader>
                         <DialogTitle>Password Required</DialogTitle>
                         <DialogDescription>
@@ -58,6 +58,7 @@ export function PasswordDialog({ open, error, onSubmit, onCancel }: PasswordDial
                                 <Input
                                     id="password"
                                     type={showPassword ? 'text' : 'password'}
+                                    autoComplete="off"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Enter password"

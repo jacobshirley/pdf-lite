@@ -7,6 +7,7 @@ import {
     TextNode,
     GraphicsBlock,
     StateNode,
+    VirtualTextBlock,
 } from '../../src/graphics/pdf-content-stream'
 import { PdfStream } from '../../src/core/objects/pdf-stream'
 import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
@@ -118,7 +119,7 @@ describe('template.pdf — content streams', () => {
         const textBlocks = page.rawTextBlocks
         const graphicsBlocks = page.rawGraphicsBlocks
 
-        const regroupedBlocks = TextBlock.regroupTextBlocks(textBlocks)
+        const regroupedBlocks = VirtualTextBlock.regroupTextBlocks(textBlocks)
         const textInfo = regroupedBlocks.map((x) => ({
             text: x.text,
             bbox: x.getWorldBoundingBox(),
@@ -359,7 +360,7 @@ describe('TextBlock', () => {
             'BT /F1 12 Tf 100 700 Td (Line1) Tj 0 -14 Td (Line2) Tj ET',
         )
         // Per-line splitting: use regroupTextBlocksByLine() to split by visual lines
-        const regrouped = s.regroupTextBlocksByLine()
+        const regrouped = VirtualTextBlock.regroupTextBlocks(s.textBlocks)
         expect(regrouped).toHaveLength(2)
         const tb1 = regrouped[0] as TextBlock
         const tb2 = regrouped[1] as TextBlock
@@ -388,7 +389,7 @@ describe('TextBlock', () => {
             'BT /F1 12 Tf 100 700 Td (Hello) Tj 0 -14 Td ( World) Tj ET',
         )
         // Per-line splitting: use regroupTextBlocksByLine() to split by visual lines
-        const regrouped = s.regroupTextBlocksByLine()
+        const regrouped = VirtualTextBlock.regroupTextBlocks(s.textBlocks)
         expect(regrouped).toHaveLength(2)
         const tb1 = regrouped[0] as TextBlock
         const tb2 = regrouped[1] as TextBlock
@@ -584,7 +585,7 @@ describe('Text.font and Text.fontSize setters', () => {
         const s = makeStream(
             'BT /F1 12 Tf 100 700 Td (Hello) Tj 0 -14 Td (Line2) Tj ET',
         )
-        const regrouped = s.regroupTextBlocksByLine()
+        const regrouped = VirtualTextBlock.regroupTextBlocks(s.textBlocks)
         const segs = regrouped[1].getSegments()
         const seg = segs[0]
         // This segment inherits font from prev, has no own Tf
@@ -663,7 +664,7 @@ describe('AT_Verf19E_EU.pdf — regrouped text blocks', () => {
     it('splits "State the reasons" / "and" / "detailed summary" into separate blocks', () => {
         const page = doc.pages.get(1)
         const textBlocks = page.rawTextBlocks
-        const regrouped = TextBlock.regroupTextBlocks(textBlocks)
+        const regrouped = VirtualTextBlock.regroupTextBlocks(textBlocks)
         const texts = regrouped.map((x) => x.text)
 
         // "and " (bold font 152/0) should NOT be merged with the
@@ -685,7 +686,7 @@ describe('AT_Verf19E_EU.pdf — regrouped text blocks', () => {
     it('splits "Yes" and "No" when they are separate text segments', () => {
         const page = doc.pages.get(1)
         const textBlocks = page.rawTextBlocks
-        const regrouped = TextBlock.regroupTextBlocks(textBlocks)
+        const regrouped = VirtualTextBlock.regroupTextBlocks(textBlocks)
         const texts = regrouped.map((x) => x.text)
 
         // Lines where Yes and No are separate Tj ops should be split
@@ -1048,7 +1049,7 @@ describe('CA_GST_RC1 — Page 13 of 13 debug', () => {
     it('Page 13 of 13 bbox covers the full text', () => {
         const lastPage = doc.pages.get(doc.pages.count - 1)
         const textBlocks = lastPage.rawTextBlocks
-        const regrouped = TextBlock.regroupTextBlocks(textBlocks)
+        const regrouped = VirtualTextBlock.regroupTextBlocks(textBlocks)
         const pageBlock = regrouped.find((b) => b.text === 'Page 13 of 13')
         expect(pageBlock).toBeDefined()
 
@@ -1388,7 +1389,7 @@ describe('TextBlock.setFont', () => {
         const s = makeStream(
             'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Part1) Tj 1 0 0 1 160 700 Tm (Part2) Tj ET',
         )
-        const regrouped = s.regroupTextBlocksByLine()
+        const regrouped = VirtualTextBlock.regroupTextBlocks(s.textBlocks)
         const block = regrouped[0]
         block.font = PdfFont.COURIER
 
@@ -1457,7 +1458,7 @@ describe('TextBlock.color', () => {
 
     it('updates source segments when regrouped', () => {
         const s = makeStream('BT /F1 12 Tf 1 0 0 1 100 700 Tm (Hello) Tj ET')
-        const regrouped = s.regroupTextBlocksByLine()
+        const regrouped = VirtualTextBlock.regroupTextBlocks(s.textBlocks)
         regrouped[0].color = new RGBColor(1, 0, 0)
         const streamStr = s.dataAsString
         expect(streamStr).toContain('1 0 0 rg')
@@ -1467,7 +1468,7 @@ describe('TextBlock.color', () => {
         const s = makeStream(
             'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Line1) Tj 1 0 0 1 100 680 Tm (Line2) Tj ET',
         )
-        const regrouped = s.regroupTextBlocksByLine()
+        const regrouped = VirtualTextBlock.regroupTextBlocks(s.textBlocks)
         expect(regrouped).toHaveLength(2)
 
         // Change only the first block's color to red

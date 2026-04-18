@@ -18,7 +18,6 @@ import {
     ShowTextSegment,
 } from '../ops/text'
 import {
-    ColorOp,
     SetFillColorCMYKOp,
     SetFillColorGrayOp,
     SetFillColorRGBOp,
@@ -152,6 +151,19 @@ export class TextNode extends ContentNode {
         )
         if (!textOp) {
             return ''
+        }
+
+        // Handle split ShowTextArrayOp case: if TJ has no operands but there's a ContentOp with array
+        if (textOp instanceof ShowTextArrayOp && textOp.operands.length === 0) {
+            const arrayOp = this.ops.find(
+                (op) => op.operands.length > 0 && Array.isArray(op.operands[0]),
+            )
+            if (arrayOp) {
+                // Create a temporary ShowTextArrayOp with the found operands
+                const tempOp = new ShowTextArrayOp('')
+                tempOp.operands = arrayOp.operands
+                return tempOp.decodeWithFont(this.font)
+            }
         }
 
         // All text ops now have decodeWithFont method
@@ -384,19 +396,29 @@ export class TextNode extends ContentNode {
         let tm: Matrix
         let tlm: Matrix
 
-        // Short-circuit: if this segment has an absolute Tm operator,
-        // the prev chain's text matrix is irrelevant — Tm overrides both
-        // tm and tlm completely.  Skip the expensive recursion.
-        const hasTmOp = this.ops.some((o) => o instanceof SetTextMatrixOp)
+        // Check if this segment has positioning that should reset inheritance
+        // Td with Y=0 means "stay on same line" and should inherit base position
+        const moveOps = this.ops.filter(
+            (o) => o instanceof MoveTextOp,
+        ) as MoveTextOp[]
+        const hasLineChangingMove = moveOps.some((op) => op.y !== 0)
 
-        if (this.prev && !hasTmOp) {
-            // After prev rendered text, Tm advanced by text width.
-            // Tlm stays wherever prev's positioning ops left it.
+        const hasAbsolutePositioning = this.ops.some(
+            (o) =>
+                o instanceof SetTextMatrixOp ||
+                o instanceof MoveTextLeadingOp ||
+                o instanceof NextLineOp ||
+                hasLineChangingMove,
+        )
+
+        if (!hasAbsolutePositioning && this.prev) {
+            // Inherit from previous segment
             const prevState = this.prev.resolveTextState()
             const prevAdvance = this.prev.getTextAdvance()
             tm = prevState.tm.translate(prevAdvance, 0)
             tlm = prevState.tlm
         } else {
+            // Start fresh for segments with absolute positioning
             tm = Matrix.identity()
             tlm = Matrix.identity()
         }
@@ -404,7 +426,7 @@ export class TextNode extends ContentNode {
         // Process positioning operators in this segment
         for (const op of this.ops) {
             if (op instanceof SetTextMatrixOp) {
-                // Tm is absolute — sets both Tm and Tlm
+                // Tm is absolute — sets both Tm and Tlm, ignoring inheritance
                 const m = op.matrix
                 tm = m
                 tlm = m

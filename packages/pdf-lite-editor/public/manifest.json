@@ -1,6 +1,7 @@
 {
-    "short_name": "TanStack App",
-    "name": "Create TanStack App Sample",
+    "short_name": "FOSS PDF",
+    "name": "FOSS PDF Editor — Free, Private, Client-Side PDF Editing",
+    "description": "Edit PDFs entirely in your browser with zero server uploads. Add form fields, edit text, and export securely.",
     "icons": [
         {
             "src": "favicon.ico",
@@ -20,6 +21,7 @@
     ],
     "start_url": ".",
     "display": "standalone",
-    "theme_color": "#000000",
-    "background_color": "#ffffff"
+    "theme_color": "#0f172a",
+    "background_color": "#f1f5f9",
+    "categories": ["productivity", "utilities"]
 }

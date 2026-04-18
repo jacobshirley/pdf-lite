@@ -13,11 +13,6 @@ import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
 import { PdfFont } from '../../src/fonts/pdf-font'
 import { ByteArray } from '../../src/types'
 import { MoveToOp } from '../../src/graphics/ops/path'
-import { SetFontOp, SetTextMatrixOp } from '../../src/graphics/ops/text'
-import {
-    SetFillColorRGBOp,
-    SetFillColorGrayOp,
-} from '../../src/graphics/ops/color'
 import { RGBColor } from '../../src/graphics/color'
 
 const FIXTURE = './test/unit/fixtures/multi-child-field.pdf'
@@ -120,8 +115,8 @@ describe('template.pdf — content streams', () => {
 
     it('should keep a snapshot of content nodes and their bounding boxes', async () => {
         const page = doc.pages.get(0)
-        const textBlocks = page.extractTextBlocks()
-        const graphicsBlocks = page.extractGraphicLines()
+        const textBlocks = page.rawTextBlocks
+        const graphicsBlocks = page.rawGraphicsBlocks
 
         const regroupedBlocks = TextBlock.regroupTextBlocks(textBlocks)
         const textInfo = regroupedBlocks.map((x) => ({
@@ -667,7 +662,7 @@ describe('AT_Verf19E_EU.pdf — regrouped text blocks', () => {
 
     it('splits "State the reasons" / "and" / "detailed summary" into separate blocks', () => {
         const page = doc.pages.get(1)
-        const textBlocks = page.extractTextBlocks()
+        const textBlocks = page.rawTextBlocks
         const regrouped = TextBlock.regroupTextBlocks(textBlocks)
         const texts = regrouped.map((x) => x.text)
 
@@ -689,7 +684,7 @@ describe('AT_Verf19E_EU.pdf — regrouped text blocks', () => {
 
     it('splits "Yes" and "No" when they are separate text segments', () => {
         const page = doc.pages.get(1)
-        const textBlocks = page.extractTextBlocks()
+        const textBlocks = page.rawTextBlocks
         const regrouped = TextBlock.regroupTextBlocks(textBlocks)
         const texts = regrouped.map((x) => x.text)
 
@@ -713,7 +708,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         let page, blocks, idBlock
         for (let p = 0; p < doc.pages.count; p++) {
             page = doc.pages.get(p)
-            blocks = page.getTextBlocks()
+            blocks = page.textBlocks
             idBlock = blocks.find((b) => b.text.includes('Identification'))
             if (idBlock) break
         }
@@ -743,7 +738,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         let idIdx = -1
         for (let p = 0; p < doc2.pages.count; p++) {
             page = doc2.pages.get(p)
-            blocks = page.getTextBlocks()
+            blocks = page.textBlocks
             idIdx = blocks.findIndex((b: any) =>
                 b.text.includes('Identification'),
             )
@@ -827,7 +822,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         let pPage: any, pBlocks: any
         for (let p = 0; p < pristine.pages.count; p++) {
             pPage = pristine.pages.get(p)
-            pBlocks = pPage.getTextBlocks()
+            pBlocks = pPage.textBlocks
             if (pBlocks.some((b: any) => b.text.includes('Identification')))
                 break
         }
@@ -837,7 +832,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
             mPageIdx = 0
         for (let p = 0; p < mutated.pages.count; p++) {
             mPage = mutated.pages.get(p)
-            mBlocks = mPage.getTextBlocks()
+            mBlocks = mPage.textBlocks
             mIdBlock = mBlocks.find((b: any) =>
                 b.text.includes('Identification'),
             )
@@ -883,7 +878,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         const bytes = mutated.toBytes()
         const reloaded = await PdfDocument.fromBytes([bytes])
         const rPage = reloaded.pages.get(mPageIdx)
-        const rBlocks = rPage.getTextBlocks()
+        const rBlocks = rPage.textBlocks
 
         // Find closest pristine match for a reloaded segment
         const findClosestPristine = (
@@ -964,7 +959,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         let page: any, blocks: any, idBlock: any
         for (let p = 0; p < doc2.pages.count; p++) {
             page = doc2.pages.get(p)
-            blocks = page.getTextBlocks()
+            blocks = page.textBlocks
             idBlock = blocks.find((b: any) => b.text.includes('Identification'))
             if (idBlock) break
         }
@@ -984,7 +979,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         let found: any
         for (let p = 0; p < reloaded.pages.count; p++) {
             const rp = reloaded.pages.get(p)
-            const reloadedBlocks = rp.getTextBlocks()
+            const reloadedBlocks = rp.textBlocks
             found = reloadedBlocks.find((b: any) =>
                 b.text.includes('Identification'),
             )
@@ -1008,7 +1003,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
     it('moving "Company/Business name" block keeps all 7 segments together', async () => {
         const doc2 = await loadFixture('./test/unit/fixtures/AT_Verf19E_EU.pdf')
         const page = doc2.pages.get(0)
-        const blocks = page.getTextBlocks()
+        const blocks = page.textBlocks
         const target = blocks.find((b: any) =>
             b.text.includes('Company/Business name'),
         )
@@ -1032,7 +1027,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
 
         // Re-extract: the block must still be a single block
-        const blocks2 = page.getTextBlocks()
+        const blocks2 = page.textBlocks
         const target2 = blocks2.find((b: any) =>
             b.text.includes('Company/Business name'),
         )
@@ -1052,7 +1047,7 @@ describe('CA_GST_RC1 — Page 13 of 13 debug', () => {
 
     it('Page 13 of 13 bbox covers the full text', () => {
         const lastPage = doc.pages.get(doc.pages.count - 1)
-        const textBlocks = lastPage.extractTextBlocks()
+        const textBlocks = lastPage.rawTextBlocks
         const regrouped = TextBlock.regroupTextBlocks(textBlocks)
         const pageBlock = regrouped.find((b) => b.text === 'Page 13 of 13')
         expect(pageBlock).toBeDefined()
@@ -1086,7 +1081,7 @@ describe('real PDF text editing round-trip', () => {
 
         it('getTextBlocks segments are live references into the content stream', () => {
             const page = doc.pages.get(0)
-            const blocks = page.getTextBlocks()
+            const blocks = page.textBlocks
             expect(blocks.length).toBeGreaterThan(0)
 
             for (const block of blocks) {
@@ -1100,7 +1095,7 @@ describe('real PDF text editing round-trip', () => {
         it('editText modifies the content stream dataAsString immediately', async () => {
             const doc2 = await loadFixture('./test/unit/fixtures/template.pdf')
             const page = doc2.pages.get(0)
-            const blocks = page.getTextBlocks()
+            const blocks = page.textBlocks
 
             // Find a text block with identifiable text
             const target = blocks.find((b) => b.text.trim().length > 3)
@@ -1119,7 +1114,7 @@ describe('real PDF text editing round-trip', () => {
         it('editText survives toBytes round-trip', async () => {
             const doc2 = await loadFixture('./test/unit/fixtures/template.pdf')
             const page = doc2.pages.get(0)
-            const blocks = page.getTextBlocks()
+            const blocks = page.textBlocks
 
             const target = blocks.find((b) => b.text.trim().length > 3)
             expect(target).toBeDefined()
@@ -1130,7 +1125,7 @@ describe('real PDF text editing round-trip', () => {
             const bytes = doc2.toBytes()
             const reloaded = await PdfDocument.fromBytes([bytes])
             const reloadedPage = reloaded.pages.get(0)
-            const reloadedBlocks = reloadedPage.getTextBlocks()
+            const reloadedBlocks = reloadedPage.textBlocks
             const found = reloadedBlocks.find((b) =>
                 b.text.includes('ROUNDTRIP_TEST'),
             )
@@ -1140,7 +1135,7 @@ describe('real PDF text editing round-trip', () => {
         it('moveBy survives toBytes round-trip', async () => {
             const doc2 = await loadFixture('./test/unit/fixtures/template.pdf')
             const page = doc2.pages.get(0)
-            const blocks = page.getTextBlocks()
+            const blocks = page.textBlocks
 
             const target = blocks.find((b) => b.text.trim().length > 3)
             expect(target).toBeDefined()
@@ -1155,7 +1150,7 @@ describe('real PDF text editing round-trip', () => {
             const bytes = doc2.toBytes()
             const reloaded = await PdfDocument.fromBytes([bytes])
             const reloadedPage = reloaded.pages.get(0)
-            const reloadedBlocks = reloadedPage.getTextBlocks()
+            const reloadedBlocks = reloadedPage.textBlocks
 
             // Find the block with matching text content
             const found = reloadedBlocks.find((b) => b.text === originalText)
@@ -1177,7 +1172,7 @@ describe('real PDF text editing round-trip', () => {
             // template.pdf has multiple content streams
             expect(page.contentStreams.length).toBeGreaterThan(1)
 
-            const blocks = page.getTextBlocks()
+            const blocks = page.textBlocks
             expect(blocks.length).toBeGreaterThan(0)
 
             const target = blocks.find((b) => b.text.trim().length > 3)
@@ -1200,7 +1195,7 @@ describe('real PDF text editing round-trip', () => {
         it('editText modifies the real parent ops', async () => {
             const doc = await loadFixture('./test/unit/fixtures/template.pdf')
             const page = doc.pages.get(0)
-            const blocks = page.getTextBlocks()
+            const blocks = page.textBlocks
 
             const target = blocks.find((b) => b.text.trim().length > 3)!
             const seg = target.getSegments()[0]
@@ -1220,7 +1215,7 @@ describe('real PDF text editing round-trip', () => {
             const doc = await loadFixture('./test/unit/fixtures/template.pdf')
             const page = doc.pages.get(0)
 
-            const blocks = page.getTextBlocks()
+            const blocks = page.textBlocks
             const target = blocks.find((b) => b.text.trim().length > 3)!
             const originalText = target.text
 
@@ -1236,7 +1231,7 @@ describe('real PDF text editing round-trip', () => {
         it('editText survives toBytes round-trip', async () => {
             const doc = await loadFixture('./test/unit/fixtures/template.pdf')
             const page = doc.pages.get(0)
-            const blocks = page.getTextBlocks()
+            const blocks = page.textBlocks
             expect(blocks.length).toBeGreaterThan(0)
 
             // Pick the first non-empty block
@@ -1249,7 +1244,7 @@ describe('real PDF text editing round-trip', () => {
             const bytes = doc.toBytes()
             const reloaded = await PdfDocument.fromBytes([bytes])
             const reloadedPage = reloaded.pages.get(0)
-            const reloadedBlocks = reloadedPage.getTextBlocks()
+            const reloadedBlocks = reloadedPage.textBlocks
             const found = reloadedBlocks.find((b) =>
                 b.text.includes('SINGLE_STREAM_EDIT'),
             )
@@ -1266,7 +1261,7 @@ describe('real PDF text editing round-trip', () => {
             './test/unit/fixtures/CA_BC_PST_Registration.pdf',
         )
         const page = doc.pages.get(0)
-        const blocks = page.getTextBlocks()
+        const blocks = page.textBlocks
 
         // Find "Provincial Sales Tax Act" in the paragraph (block 7)
         const pstBlock = blocks.find(
@@ -1288,7 +1283,7 @@ describe('real PDF text editing round-trip', () => {
         const bytes = doc.toBytes()
         const reloaded = await PdfDocument.fromBytes([bytes])
         const rPage = reloaded.pages.get(0)
-        const rBlocks = rPage.getTextBlocks()
+        const rBlocks = rPage.textBlocks
 
         // All blocks should survive the round-trip (no block loss)
         expect(rBlocks.length).toBe(blocks.length)
@@ -1529,7 +1524,7 @@ describe('setFont and color round-trip', () => {
     it('color survives toBytes round-trip', async () => {
         const doc = await loadFixture('./test/unit/fixtures/template.pdf')
         const page = doc.pages.get(0)
-        const blocks = page.getTextBlocks()
+        const blocks = page.textBlocks
         const target = blocks.find((b) => b.text.length > 0)
         expect(target).toBeDefined()
         const origText = target!.text
@@ -1540,7 +1535,7 @@ describe('setFont and color round-trip', () => {
         const bytes = doc.toBytes()
         const reloaded = await PdfDocument.fromBytes([bytes])
         const rPage = reloaded.pages.get(0)
-        const rBlocks = rPage.getTextBlocks()
+        const rBlocks = rPage.textBlocks
 
         // Text should survive
         const found = rBlocks.find((b) => b.text === origText)

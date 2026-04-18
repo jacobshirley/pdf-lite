@@ -258,26 +258,13 @@ function extractAll(): ExtractResult {
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i]
         const pageNumber = i + 1
-        try {
-            const blocks = page.getTextBlocks()
-            for (const block of blocks) {
-                if (block.text.trim().length === 0) continue
-                const id = `text_block_${nextTextBlockId++}`
-                textBlockRefs.set(id, block)
-                textBlocks.push(
-                    textBlockToDTO(
-                        block,
-                        id,
-                        pageNumber,
-                        page.height,
-                        page.width,
-                    ),
-                )
-            }
-        } catch (error) {
-            console.warn(
-                `Failed to extract text blocks from page ${pageNumber}:`,
-                error,
+        const blocks = page.textBlocks
+        for (const block of blocks) {
+            if (block.text.trim().length === 0) continue
+            const id = `text_block_${nextTextBlockId++}`
+            textBlockRefs.set(id, block)
+            textBlocks.push(
+                textBlockToDTO(block, id, pageNumber, page.height, page.width),
             )
         }
     }
@@ -286,25 +273,18 @@ function extractAll(): ExtractResult {
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i]
         const pageNumber = i + 1
-        try {
-            const blocks = page.extractGraphicLines()
-            for (const block of blocks) {
-                const id = `graphics_block_${nextGraphicsBlockId++}`
-                graphicsBlockRefs.set(id, block)
-                graphicsBlocks.push(
-                    graphicsBlockToDTO(
-                        block,
-                        id,
-                        pageNumber,
-                        page.height,
-                        page.width,
-                    ),
-                )
-            }
-        } catch (error) {
-            console.warn(
-                `Failed to extract graphics blocks from page ${pageNumber}:`,
-                error,
+        const blocks = page.rawGraphicsBlocks
+        for (const block of blocks) {
+            const id = `graphics_block_${nextGraphicsBlockId++}`
+            graphicsBlockRefs.set(id, block)
+            graphicsBlocks.push(
+                graphicsBlockToDTO(
+                    block,
+                    id,
+                    pageNumber,
+                    page.height,
+                    page.width,
+                ),
             )
         }
     }
@@ -533,7 +513,6 @@ const handlers: {
 
         const targetPageNumber = options?.pageNumber || 1
         const page = pages[targetPageNumber - 1] || pages[0]
-        page.consolidateContentStreams()
         const stream = page.contentStreams[0]
         if (!stream) throw new Error('Page has no content stream')
 

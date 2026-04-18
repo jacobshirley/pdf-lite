@@ -3,6 +3,7 @@ import { FieldPropertiesPanel } from './components/FieldPropertiesPanel'
 import { TextPropertiesPanel } from './components/TextPropertiesPanel'
 import { Toolbar } from './components/Toolbar'
 import { PasswordDialog } from './components/PasswordDialog'
+import { TopBar } from '@/components/TopBar'
 import { usePdfEditor } from './usePdfEditor'
 
 export function PdfEditor() {
@@ -10,6 +11,9 @@ export function PdfEditor() {
 
     return (
         <div className="min-h-screen bg-slate-100 p-4 text-slate-900">
+            <div className="mx-auto max-w-[1600px]">
+                <TopBar />
+            </div>
             <style>{`
                 .field-overlay-label {
                     opacity: 0;

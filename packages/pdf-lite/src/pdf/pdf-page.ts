@@ -247,9 +247,10 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         for (const [k, v] of fd.entries()) {
             existing.set(k, v instanceof PdfObjectReference ? v : undefined)
             if (
-                v instanceof PdfObjectReference &&
-                v.objectNumber === target.objectNumber &&
-                v.generationNumber === target.generationNumber
+                v === target ||
+                (v instanceof PdfObjectReference &&
+                    v.objectNumber === target.objectNumber &&
+                    v.generationNumber === target.generationNumber)
             ) {
                 return k
             }
@@ -295,27 +296,7 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         return streams
     }
 
-    /**
-     * Merge all content streams into the first stream so that the
-     * page's node tree is a single live tree.  This is needed before
-     * in-place editing so that modifications to nodes propagate to
-     * serialization.
-     */
-    consolidateContentStreams(): void {
-        const streams = this.contentStreams
-        if (streams.length <= 1) return
-        // Already consolidated — streams[1+] are empty, skip to avoid
-        // a destructive serialization→clear→re-parse round-trip on
-        // the live node tree in streams[0].
-        if (streams.slice(1).every((s) => s.dataAsString === '')) return
-        const combinedData = streams.map((s) => s.dataAsString).join('\n')
-        streams[0].dataAsString = combinedData
-        for (let i = 1; i < streams.length; i++) {
-            streams[i].dataAsString = ''
-        }
-    }
-
-    extractTextBlocks(): TextBlock[] {
+    get rawTextBlocks(): TextBlock[] {
         const streams = this.contentStreams
         if (streams.length === 0) return []
         if (streams.length === 1) return streams[0].textBlocks
@@ -330,21 +311,7 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         return blocks
     }
 
-    /**
-     * Consolidate content streams, extract text blocks, and regroup them
-     * by visual line.  The returned blocks carry source-segment references
-     * so that `editText()` and `moveBy()` modify the live content-stream
-     * tree in-place.
-     */
-    getTextBlocks(): VirtualTextBlock[] {
-        this.consolidateContentStreams()
-        const streams = this.contentStreams
-        if (streams.length === 0) return []
-        const raw = streams[0].textBlocks
-        return TextBlock.regroupTextBlocks(raw)
-    }
-
-    extractGraphicLines(): GraphicsBlock[] {
+    get rawGraphicsBlocks(): GraphicsBlock[] {
         const streams = this.contentStreams
         if (streams.length === 0) return []
         if (streams.length === 1) return streams[0].graphicsBlocks
@@ -356,5 +323,17 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         const blocks = first.graphicsBlocks
         first.dataAsString = savedData
         return blocks
+    }
+
+    /**
+     * Extract text blocks and regroup them by visual line. The returned blocks carry source-segment references
+     * so that `editText()` and `moveBy()` modify the live content-stream
+     * tree in-place.
+     */
+    get textBlocks(): VirtualTextBlock[] {
+        const streams = this.contentStreams
+        if (streams.length === 0) return []
+        const raw = streams.flatMap((s) => s.textBlocks)
+        return TextBlock.regroupTextBlocks(raw)
     }
 }

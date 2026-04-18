@@ -2,11 +2,67 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link href="/src/styles.css" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pdf Editor</title>
+
+    <!-- Primary Meta Tags -->
+    <title>FOSS PDF Editor — Free, Private, Client-Side PDF Editing</title>
+    <meta name="description" content="Edit PDFs entirely in your browser with zero server uploads. Add, edit, and remove AcroForm fields and embedded text. Free, open-source, and private by design." />
+    <meta name="keywords" content="PDF editor, free PDF editor, online PDF editor, client-side PDF, private PDF editing, AcroForm editor, PDF form fields, open source PDF, browser PDF editor, no upload PDF editor, secure PDF editor" />
+    <meta name="author" content="FOSS PDF" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://fosspdf.com/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://fosspdf.com/" />
+    <meta property="og:title" content="FOSS PDF Editor — Free, Private, Client-Side PDF Editing" />
+    <meta property="og:description" content="Edit PDFs entirely in your browser. No uploads, no servers, no tracking. Add form fields, edit text, and export — all 100% client-side." />
+    <meta property="og:site_name" content="FOSS PDF" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://fosspdf.com/" />
+    <meta name="twitter:title" content="FOSS PDF Editor — Free, Private, Client-Side PDF Editing" />
+    <meta name="twitter:description" content="Edit PDFs entirely in your browser. No uploads, no servers, no tracking. Add form fields, edit text, and export — all 100% client-side." />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "FOSS PDF Editor",
+      "url": "https://fosspdf.com/",
+      "description": "A free, open-source, client-side PDF editor. Edit AcroForm fields and embedded text entirely in your browser with zero server interaction.",
+      "applicationCategory": "Productivity",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires a modern web browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "license": "https://opensource.org/licenses/MIT",
+      "isAccessibleForFree": true,
+      "featureList": [
+        "Add, edit, and remove AcroForm fields",
+        "Add, edit, and remove embedded text",
+        "100% client-side — no server uploads",
+        "PDF encryption on export",
+        "Undo/redo support"
+      ]
+    }
+    </script>
+
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
+    <link href="/src/styles.css" rel="stylesheet">
   </head>
   <body>
+    <noscript>
+      <h1>FOSS PDF Editor</h1>
+      <p>A free, open-source, client-side PDF editor. Please enable JavaScript to use this application.</p>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -14,6 +14,7 @@ import {
     TextBlock,
     TextNode,
     VirtualTextBlock,
+    GraphicsBlock,
 } from 'pdf-lite'
 import {
     PdfPasswordProtectedError,
@@ -21,7 +22,7 @@ import {
 } from 'pdf-lite/errors'
 import { RGBColor } from 'pdf-lite/graphics/color/rgb-color'
 import { SetTextMatrixOp } from 'pdf-lite/graphics/ops/text'
-import type { GraphicsBlock } from 'pdf-lite'
+import type { GraphicsBlock as GraphicsBlockType } from 'pdf-lite'
 import type {
     CloneFieldResult,
     ExtractResult,
@@ -30,6 +31,7 @@ import type {
     GraphicsBlockDTO,
     Rect4,
     RemoveFieldResult,
+    RemoveGraphicsBlockResult,
     RemoveTextBlockResult,
     TextBlockDTO,
     TextSegmentDTO,
@@ -45,7 +47,7 @@ let pdfDoc: PdfDocument | null = null
 
 const fieldRefs = new Map<string, PdfFormField>()
 const textBlockRefs = new Map<string, TextBlock>()
-const graphicsBlockRefs = new Map<string, GraphicsBlock>()
+const graphicsBlockRefs = new Map<string, GraphicsBlockType>()
 
 let nextFieldId = 0
 let nextTextBlockId = 0
@@ -179,7 +181,7 @@ function textBlockToDTO(
 }
 
 function graphicsBlockToDTO(
-    block: GraphicsBlock,
+    block: GraphicsBlockType,
     id: string,
     pageNumber: number,
     pageHeight: number,

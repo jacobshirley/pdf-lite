@@ -9,23 +9,23 @@ export interface PdfTextEditorProps {
 }
 
 export function PdfTextEditor({ content, className = '', readOnly = true, onChange }: PdfTextEditorProps) {
-    const [editorTheme, setEditorTheme] = useState<'vs-dark' | 'light'>('light')
+    const [editorTheme, setEditorTheme] = useState<'vs-dark' | 'light'>(() =>
+        document.documentElement.classList.contains('dark') ? 'vs-dark' : 'light'
+    )
 
-    // Detect system theme preference
+    // Sync with .dark class on <html> (set by ThemeToggle)
     useEffect(() => {
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-        setEditorTheme(mediaQuery.matches ? 'vs-dark' : 'light')
-
-        const handler = (e: MediaQueryListEvent) => {
-            setEditorTheme(e.matches ? 'vs-dark' : 'light')
-        }
-
-        mediaQuery.addEventListener('change', handler)
-        return () => mediaQuery.removeEventListener('change', handler)
+        const observer = new MutationObserver(() => {
+            setEditorTheme(
+                document.documentElement.classList.contains('dark') ? 'vs-dark' : 'light'
+            )
+        })
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+        return () => observer.disconnect()
     }, [])
 
     return (
-        <div className={`rounded-2xl border border-slate-200 overflow-hidden ${className}`}>
+        <div className={`rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden ${className}`}>
             <Editor
                 height="70vh"
                 defaultLanguage="plaintext"

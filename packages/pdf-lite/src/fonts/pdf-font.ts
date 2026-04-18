@@ -8,6 +8,7 @@ import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
 import { PdfString } from '../core/objects/pdf-string.js'
 import { buildEncodingMap } from '../utils/decodeWithFontEncoding.js'
 import { getStandardEncoding } from '../utils/standardEncodings.js'
+import { getGlyphNameFromUnicode } from '../utils/glyphNameToUnicode.js'
 import type { CIDWidth, FontParser, AfmFont } from './types.js'
 import type { ByteArray } from '../types.js'
 import { parseFont } from './parsers/font-parser.js'
@@ -397,6 +398,32 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         // For Type0 fonts, fall back to default width
         if (this.isUnicode) {
             return this.metrics.defaultWidth ?? 1000
+        }
+
+        // For standard base-14 fonts the PDF spec allows omitting /Widths.
+        // Fall back to the built-in AFM metrics when available.
+        const stdFont = this.fontName
+            ? PdfFont.getStandardFont(this.fontName)
+            : null
+        if (stdFont && stdFont !== this) {
+            // Direct code lookup (works when PDF encoding matches AFM encoding)
+            const directWidth = stdFont.getRawCharacterWidth(charCode)
+            if (directWidth !== null) return directWidth
+
+            // Code mismatch (e.g. WinAnsiEncoding code 150 = endash, but AFM
+            // uses StandardEncoding code 177).  Resolve through encoding →
+            // Unicode → glyph name → width.
+            const encMap = this.encodingMap
+            const unicode =
+                encMap?.get(charCode) ??
+                (charCode < 128 ? String.fromCharCode(charCode) : null)
+            if (unicode) {
+                const glyphName = getGlyphNameFromUnicode(unicode)
+                if (glyphName) {
+                    const w = stdFont.metrics.getCharWidthByName(glyphName)
+                    if (w !== undefined) return w
+                }
+            }
         }
 
         return null

@@ -1,636 +1,328 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`multi-child-field.pdf — parsed nodes > should keep a snapshot of content nodes and their bounding boxes 1`] = `
-[
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 150.47640000000007,
-      "x": 339.6,
-      "y": 733.0799999999999,
-    },
-    "text": "CENTRO OPERATIVO DI PESCARA",
-  },
-  {
-    "bbox": Rect {
-      "height": 1.25,
-      "width": 0.3279999999999994,
-      "x": 16.673,
-      "y": -0.3,
-    },
-    "text": " ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 130.64911714000004,
-      "x": 339.6,
-      "y": 721.3199999999999,
-    },
-    "text": "Ufficio Gestione e ControlIi dei ",
-  },
-  {
-    "bbox": Rect {
-      "height": 1.256,
-      "width": 23.027400000000004,
-      "x": -11.747,
-      "y": -1.693,
-    },
-    "text": "Via Rio Spart65129 PESCARAcontribuenti non residenti",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 2.951999999999998,
-      "x": 445.32,
-      "y": 708.78,
-    },
-    "text": " ",
-  },
-  {
-    "bbox": Rect {
-      "height": 1.25,
-      "width": 31.440900000000003,
-      "x": 0.086,
-      "y": -0.3,
-    },
-    "text": "qualitàinsocietàdiingm@398.it21  , ______________________residentesottoscritto/a  legale rappresentante     /a  aa   O o    IImail) del certificato di attribuzione della partita IVA.della ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 78.79199999999999,
-      "x": 79.86,
-      "y": 629.64,
-    },
-    "text": "OGGETT: Societ ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 113.41200000000003,
-      "x": 380.46,
-      "y": 629.64,
-    },
-    "text": "Deleg al consulente fiscale ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 9.1227516,
-      "x": 79.62,
-      "y": 577.38,
-    },
-    "text": "II ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 20.60494131,
-      "x": 79.56,
-      "y": 554.0999999999999,
-    },
-    "text": "nato",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 19.50308480000001,
-      "x": 206.2251,
-      "y": 554.0999999999999,
-    },
-    "text": "___ ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 9.051160500000009,
-      "x": 79.56,
-      "y": 530.8199999999999,
-    },
-    "text": "e ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 95.36548158000002,
-      "x": 140.6886,
-      "y": 530.8199999999999,
-    },
-    "text": "________________ ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.249999999999943,
-      "width": 8.738197999999997,
-      "x": 79.62,
-      "y": 506.58,
-    },
-    "text": "In",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.249999999999943,
-      "width": 5.427000000000021,
-      "x": 278.64,
-      "y": 506.58,
-    },
-    "text": "_",
-  },
-  {
-    "bbox": Rect {
-      "height": 20.024999999999977,
-      "width": 68.61456000000001,
-      "x": 240.48,
-      "y": 449.034,
-    },
-    "text": "DELEGA ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 155.772,
-      "x": 79.74,
-      "y": 402.6,
-    },
-    "text": "IlSig./ Dott. MOREALE rag. Galliano ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 25.881299999999996,
-      "x": 79.56,
-      "y": 380.16,
-    },
-    "text": "Studio",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 26.37899999999999,
-      "x": 126.594,
-      "y": 380.16,
-    },
-    "text": "EL.DA",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.249999999999998,
-      "width": 45.498,
-      "x": 1.999,
-      "y": -2.6999999999999997,
-    },
-    "text": " .CO. ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.249999999999998,
-      "width": 9.414000000000001,
-      "x": 47.047000000000004,
-      "y": -2.6999999999999997,
-    },
-    "text": "Sr",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 2.430000000000007,
-      "x": 182.601,
-      "y": 380.16,
-    },
-    "text": "l",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 70.38359999999999,
-      "x": 79.92,
-      "y": 356.58,
-    },
-    "text": "e-mail  (NO PEC)",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 419.69949187000003,
-      "x": 73.98,
-      "y": 331.68,
-    },
-    "text": "a rappresentarci nei rapporti con il Centro Operativo di Pescara in tutte le formalità necessarie per la",
-  },
-  {
-    "bbox": Rect {
-      "height": 1.25,
-      "width": 0.5830000000000055,
-      "x": 44.293,
-      "y": -0.3,
-    },
-    "text": "  ",
-  },
-  {
-    "bbox": Rect {
-      "height": 1.256,
-      "width": 44.34960000000001,
-      "x": -44.548,
-      "y": -1.453,
-    },
-    "text": "richiesta del numero di Partita IVA ai sensi dell'art. 35/ter DPR 633/72, compresa la ricezione (copiascannerizzata via e-",
-  },
-  {
-    "bbox": Rect {
-      "height": 12.524999999999977,
-      "width": 3.2865600000000086,
-      "x": 370.14,
-      "y": 310.67400000000004,
-    },
-    "text": " ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 21.90599999999999,
-      "x": 73.98,
-      "y": 279.72,
-    },
-    "text": "Data ",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 23.447699999999998,
-      "x": 373.26,
-      "y": 242.58,
-    },
-    "text": "Firma",
-  },
-  {
-    "bbox": Rect {
-      "height": 11.25,
-      "width": 183.67739999999998,
-      "x": 79.56,
-      "y": 150.36,
-    },
-    "text": "Si allega documento d'identità del dichiarante ",
-  },
-]
-`;
-
-exports[`multi-child-field.pdf — parsed nodes > should keep a snapshot of content nodes and their bounding boxes 2`] = `
-[
-  {
-    "bbox": Rect {
-      "height": 0,
-      "width": 176.9,
-      "x": 0,
-      "y": 0,
-    },
-  },
-  {
-    "bbox": Rect {
-      "height": 0.6599999999999682,
-      "width": 221.94000000000003,
-      "x": 158.52,
-      "y": 630.72,
-    },
-  },
-  {
-    "bbox": Rect {
-      "height": 0.6609999999999445,
-      "width": 237.54,
-      "x": 147.96,
-      "y": 578.46,
-    },
-  },
-  {
-    "bbox": Rect {
-      "height": 0.6599999999999682,
-      "width": 82.5,
-      "x": 117.9,
-      "y": 555.18,
-    },
-  },
-  {
-    "bbox": Rect {
-      "height": 0.6599999999999682,
-      "width": 17.159999999999997,
-      "x": 206.22,
-      "y": 555.18,
-    },
-  },
-  {
-    "bbox": Rect {
-      "height": 0.6599999999999682,
-      "width": 162.12,
-      "x": 223.38,
-      "y": 555.18,
-    },
-  },
-  {
-    "bbox": Rect {
-      "height": 0.6599999999999682,
-      "width": 275.58,
-      "x": 137.76,
-      "y": 531.9,
-    },
-  },
-  {
-    "bbox": Rect {
-      "height": 0.660000000000025,
-      "width": 117.89999999999998,
-      "x": 275.88,
-      "y": 507.66,
-    },
-  },
-]
-`;
-
 exports[`template.pdf — content streams > should keep a snapshot of content nodes and their bounding boxes 1`] = `
 [
   {
     "bbox": Rect {
-      "height": 70.99800000000002,
-      "width": 7.5,
-      "x": 569.1406,
+      "height": 70.69800000000001,
+      "width": 7.98599999999999,
+      "x": 568.8046,
       "y": 18.2316,
     },
     "text": "RPC014854_EN_WB_L_1",
   },
   {
     "bbox": Rect {
-      "height": 20,
-      "width": 454.20800000000014,
+      "height": 16,
+      "width": 453.4080000000001,
       "x": 70.9581,
-      "y": 770.2413,
+      "y": 771.8412999999999,
     },
     "text": "Import One Stop Shop (IOSS) Intermediary Link Notification",
   },
   {
     "bbox": Rect {
-      "height": 15,
-      "width": 74.628,
+      "height": 15.97199999999998,
+      "width": 74.028,
       "x": 36,
-      "y": 716.8412999999999,
+      "y": 716.5413,
     },
     "text": "Client name   ",
   },
   {
     "bbox": Rect {
-      "height": 15,
-      "width": 85.3935,
+      "height": 15.97199999999998,
+      "width": 84.7935,
       "x": 36,
-      "y": 699.0067,
+      "y": 698.7067000000001,
     },
     "text": "(Block capitals)",
   },
   {
     "bbox": Rect {
-      "height": 15,
-      "width": 96.84720000000004,
+      "height": 15.97199999999998,
+      "width": 96.24720000000002,
       "x": 36,
-      "y": 669.5028,
+      "y": 669.2028,
     },
     "text": "Intermediary TAIN",
   },
   {
     "bbox": Rect {
-      "height": 1.2499999999999998,
-      "width": 9.441,
-      "x": 0,
-      "y": -3.231,
+      "height": 15.97199999999998,
+      "width": 112.69200000000001,
+      "x": 36,
+      "y": 634.0308,
     },
     "text": "Intermediary Number",
   },
   {
     "bbox": Rect {
-      "height": 1.2499999999999998,
-      "width": 13.147700000000004,
-      "x": 0,
-      "y": -3.231,
+      "height": 14.33030000000008,
+      "width": 320.3623,
+      "x": 36,
+      "y": 600.3588,
     },
-    "text": "I confirm that with effect from ",
+    "text": "I confirm that with effect from D    D      M    M       Y     Y    Y     Y",
   },
   {
     "bbox": Rect {
-      "height": 15,
-      "width": 87.95159999999998,
+      "height": 15.97199999999998,
+      "width": 87.35159999999996,
       "x": 504,
-      "y": 561.1483999999999,
+      "y": 560.8484,
     },
     "text": "   is to act ",
   },
   {
     "bbox": Rect {
-      "height": 15,
-      "width": 360.756,
+      "height": 12,
+      "width": 360.15599999999995,
       "x": 36,
-      "y": 540.1483999999999,
+      "y": 541.3484,
     },
     "text": "as my Intermediary in respect of the Import One Stop Shop (IOSS). ",
   },
   {
     "bbox": Rect {
-      "height": 1.25,
-      "width": 43.34299999999996,
-      "x": 0,
-      "y": -4.112,
+      "height": 12,
+      "width": 519.5159999999996,
+      "x": 36,
+      "y": 495.60439999999994,
     },
     "text": "This arrangement will remain in place unless the supplier or intermediary is excluded from ",
   },
   {
     "bbox": Rect {
-      "height": 1.25,
-      "width": 42.67299999999996,
-      "x": 0,
-      "y": -1.5,
+      "height": 12,
+      "width": 511.47599999999954,
+      "x": 36,
+      "y": 481.20439999999996,
     },
-    "text": "use of the scheme or until the Revenue Commissioners are notified of a change by either the Intermediary or Client.",
+    "text": "use of the scheme or until the Revenue Commissioners are notified of a change by either ",
   },
   {
     "bbox": Rect {
-      "height": 15,
-      "width": 37.956,
+      "height": 12,
+      "width": 148.70400000000004,
       "x": 36,
-      "y": 428.0259,
+      "y": 466.8044,
+    },
+    "text": "the Intermediary or Client.",
+  },
+  {
+    "bbox": Rect {
+      "height": 12,
+      "width": 37.35600000000001,
+      "x": 36,
+      "y": 429.2259,
     },
     "text": "Signed",
   },
   {
     "bbox": Rect {
-      "height": 15,
-      "width": 201.45240000000007,
+      "height": 12,
+      "width": 200.95240000000007,
       "x": 293.532,
-      "y": 428.0259,
+      "y": 429.2259,
     },
     "text": "Date        D    D      M    M       Y     Y    Y     Y",
   },
   {
     "bbox": Rect {
-      "height": 1.25,
-      "width": 6.163000000000001,
-      "x": -13.121,
-      "y": -1.5,
+      "height": 15.97199999999998,
+      "width": 73.35600000000002,
+      "x": 136.07999999999998,
+      "y": 413.32590000000005,
     },
-    "text": "Intermediary  Client",
+    "text": "Intermediary  ",
   },
   {
     "bbox": Rect {
-      "height": 1.2499999999999998,
-      "width": 3.1630000000000003,
-      "x": -8.34,
-      "y": -2.917,
+      "height": 12,
+      "width": 37.35600000000001,
+      "x": 35.999999999999986,
+      "y": 383.42190000000005,
     },
     "text": "Signed",
   },
   {
     "bbox": Rect {
-      "height": 1.2499999999999998,
-      "width": 2.4399999999999995,
-      "x": 13.120999999999999,
-      "y": -2.917,
+      "height": 13.03759999999994,
+      "width": 200.95240000000007,
+      "x": 293.532,
+      "y": 383.42190000000005,
     },
-    "text": "Date ",
+    "text": "Date D    D      M    M       Y     Y    Y     Y",
   },
   {
     "bbox": Rect {
-      "height": 1.722,
-      "width": 50.88890000000001,
-      "x": 0,
-      "y": -1.972,
+      "height": 15.97199999999998,
+      "width": 30.671999999999997,
+      "x": 156.096,
+      "y": 367.5219000000001,
     },
-    "text": "to provide certain personal data for these purposes and certain other statutory functions as assigned by the Oireachtas. Your personal data may be exchanged with other Government Departments and agencies in certain circumstances where this is provided for by law. Full details of Revenue’s data protection policy setting out how we will use your personal data as well as information regarding your rights as a data subject are available on our Intermediary Contact Details",
+    "text": "Client",
   },
   {
     "bbox": Rect {
-      "height": 1.2499999999999998,
-      "width": 2.7170000000000005,
-      "x": -15.495,
-      "y": -2.445,
+      "height": 12,
+      "width": 151.38,
+      "x": 221.94,
+      "y": 348.95790000000005,
+    },
+    "text": "Intermediary Contact Details",
+  },
+  {
+    "bbox": Rect {
+      "height": 15.97199999999998,
+      "width": 32.00399999999999,
+      "x": 36,
+      "y": 321.71790000000004,
     },
     "text": "Name",
   },
   {
     "bbox": Rect {
-      "height": 15,
-      "width": 55.94400000000002,
+      "height": 15.97199999999998,
+      "width": 55.343999999999994,
       "x": 277.836,
-      "y": 322.0179,
+      "y": 321.71790000000004,
     },
     "text": "Tel / Email",
   },
   {
     "bbox": Rect {
-      "height": 13.75,
-      "width": 90.44200000000004,
+      "height": 11,
+      "width": 89.89200000000002,
       "x": 36,
-      "y": 292.1022,
+      "y": 293.2022,
     },
     "text": "*Please note that ",
   },
   {
     "bbox": Rect {
-      "height": 13.75,
-      "width": 58.619,
+      "height": 11,
+      "width": 58.06900000000002,
       "x": 125.89200000000002,
-      "y": 292.1022,
+      "y": 293.2022,
     },
     "text": "incomplete",
   },
   {
     "bbox": Rect {
-      "height": 13.75,
-      "width": 367.36699999999996,
+      "height": 11,
+      "width": 366.817,
       "x": 183.96100000000004,
-      "y": 292.1022,
+      "y": 293.2022,
     },
     "text": " forms may result in the cancellation of the Intermediary Link without notice.",
   },
   {
     "bbox": Rect {
-      "height": 16.25,
-      "width": 29.418999999999983,
+      "height": 18.01800000000003,
+      "width": 28.769000000000005,
       "x": 199.0571,
-      "y": 633.4489,
+      "y": 632.4608999999999,
     },
     "text": "IN",
   },
   {
     "bbox": Rect {
-      "height": 12.5,
-      "width": 154.26000000000005,
-      "x": 202.6023,
-      "y": 603.6891,
-    },
-    "text": "D    D      M    M       Y     Y    Y     Y",
-  },
-  {
-    "bbox": Rect {
-      "height": 12.5,
-      "width": 154.26000000000005,
-      "x": 340.7244,
-      "y": 385.4595,
-    },
-    "text": "D    D      M    M       Y     Y    Y     Y",
-  },
-  {
-    "bbox": Rect {
-      "height": 12.5,
-      "width": 521.2399999999993,
+      "height": 10,
+      "width": 520.7399999999994,
       "x": 36,
-      "y": 178.2237,
+      "y": 179.2237,
     },
     "text": "The Revenue Commissioners collect taxes and duties and implement customs controls. Revenue requires customers ",
   },
   {
     "bbox": Rect {
-      "height": 1.25,
-      "width": 3.607999999999997,
-      "x": 48.36,
-      "y": -1.5,
+      "height": 10,
+      "width": 476.3599999999997,
+      "x": 36,
+      "y": 167.2237,
+    },
+    "text": "to provide certain personal data for these purposes and certain other statutory functions as assigned by the ",
+  },
+  {
+    "bbox": Rect {
+      "height": 10,
+      "width": 0,
+      "x": 36,
+      "y": 155.2237,
+    },
+    "text": "Oireachtas. Your personal data may be exchanged with other Government Departments and agencies in certain ",
+  },
+  {
+    "bbox": Rect {
+      "height": 10,
+      "width": 508.3890000000001,
+      "x": 36,
+      "y": 143.2237,
+    },
+    "text": "circumstances where this is provided for by law. Full details of Revenue’s data protection policy setting out how we ",
+  },
+  {
+    "bbox": Rect {
+      "height": 10,
+      "width": 483.5399999999994,
+      "x": 36,
+      "y": 131.2237,
+    },
+    "text": "will use your personal data as well as information regarding your rights as a data subject are available on our ",
+  },
+  {
+    "bbox": Rect {
+      "height": 10,
+      "width": 35.58000000000004,
+      "x": 519.6,
+      "y": 131.2237,
     },
     "text": "Privacy",
   },
   {
     "bbox": Rect {
-      "height": 1.25,
-      "width": 0.32800000000000296,
-      "x": 51.919,
-      "y": -1.5,
+      "height": 13.310000000000002,
+      "width": 2.7799999999999727,
+      "x": 555.19,
+      "y": 129.9737,
     },
     "text": " ",
   },
   {
     "bbox": Rect {
-      "height": 1.25,
-      "width": 3.942,
-      "x": -51.918,
-      "y": -1.5,
+      "height": 10,
+      "width": 38.92,
+      "x": 36.010000000000105,
+      "y": 119.22370000000001,
     },
     "text": "page on ",
   },
   {
     "bbox": Rect {
-      "height": 1.25,
-      "width": 7.571400000000004,
-      "x": -48.025,
-      "y": -1.5,
+      "height": 10,
+      "width": 75.214,
+      "x": 74.94000000000011,
+      "y": 119.22370000000001,
     },
     "text": "www.revenue.ie",
   },
   {
     "bbox": Rect {
-      "height": 1.25,
-      "width": 29.619000000000007,
-      "x": -40.5036,
-      "y": -1.5,
+      "height": 10,
+      "width": 295.69000000000005,
+      "x": 150.1540000000001,
+      "y": 119.22370000000001,
     },
     "text": ". Details of this policy are also available in hard copy upon request.",
   },
   {
     "bbox": Rect {
-      "height": 11.25,
-      "width": 154.8612,
+      "height": 10.817999999999998,
+      "width": 154.4112,
       "x": 36,
-      "y": 33.0697,
+      "y": 33.5197,
     },
     "text": "Designed by the Revenue Printing Centre",
   },

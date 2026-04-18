@@ -76,7 +76,7 @@ export function Toolbar({
     const [showPassword, setShowPassword] = React.useState(false)
     const [showOwnerPassword, setShowOwnerPassword] = React.useState(false)
     return (
-        <Card className="sticky top-6 flex h-[calc(100vh-48px)] flex-col rounded-[24px] border-slate-200 shadow-sm">
+        <Card className="sticky top-6 flex h-[calc(100vh-48px)] flex-col rounded-[24px] border-slate-200 dark:border-slate-700 shadow-sm dark:bg-slate-800">
             <CardContent className="flex h-full flex-col gap-2 p-3 overflow-hidden">
                 <div className="flex items-center justify-between flex-shrink-0">
                     <h1 className="text-lg font-bold tracking-tight">
@@ -112,7 +112,7 @@ export function Toolbar({
 
                 <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
                     <div>
-                        <div className="mb-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                        <div className="mb-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                             Add Items
                         </div>
                         <div className="grid grid-cols-2 gap-1">
@@ -154,7 +154,7 @@ export function Toolbar({
                     <Separator />
 
                     <div>
-                        <div className="mb-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                        <div className="mb-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                             Document
                         </div>
                         <div className="grid grid-cols-2 gap-1">
@@ -177,7 +177,7 @@ export function Toolbar({
                                 disabled={!pdfLoaded}
                                 className="h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary disabled:opacity-50"
                             />
-                            <Label htmlFor="encrypt-on-export" className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide cursor-pointer flex items-center gap-1">
+                            <Label htmlFor="encrypt-on-export" className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide cursor-pointer flex items-center gap-1">
                                 <Lock className="h-3 w-3" />
                                 Encrypt on Export
                             </Label>
@@ -185,7 +185,7 @@ export function Toolbar({
                         {encryptOnExport && pdfLoaded && (
                             <div className="space-y-1.5 pl-1 mt-1.5">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor="export-password" className="text-[11px] text-slate-500">User Password</Label>
+                                    <Label htmlFor="export-password" className="text-[11px] text-slate-500 dark:text-slate-400">User Password</Label>
                                     <div className="relative">
                                         <Input
                                             id="export-user-pw"
@@ -209,7 +209,7 @@ export function Toolbar({
                                     </div>
                                 </div>
                                 <div className="space-y-0.5">
-                                    <Label htmlFor="export-owner-password" className="text-[11px] text-slate-500">Owner Password</Label>
+                                    <Label htmlFor="export-owner-password" className="text-[11px] text-slate-500 dark:text-slate-400">Owner Password</Label>
                                     <div className="relative">
                                         <Input
                                             id="export-owner-pw"
@@ -233,12 +233,12 @@ export function Toolbar({
                                     </div>
                                 </div>
                                 <div className="space-y-0.5">
-                                    <Label htmlFor="export-algorithm" className="text-[11px] text-slate-500">Algorithm</Label>
+                                    <Label htmlFor="export-algorithm" className="text-[11px] text-slate-500 dark:text-slate-400">Algorithm</Label>
                                     <select
                                         id="export-algorithm"
                                         value={exportAlgorithm}
                                         onChange={(e) => onExportAlgorithmChange(e.target.value as EncryptionAlgorithm)}
-                                        className="h-7 w-full text-xs rounded-md border border-slate-300 px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                        className="h-7 w-full text-xs rounded-md border border-slate-300 dark:border-slate-600 px-2 py-1 bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                     >
                                         <option value="AES-256">AES-256 (recommended)</option>
                                         <option value="AES-128">AES-128</option>
@@ -278,7 +278,7 @@ function DragButton({
             onDragEnd={onDragEnd}
             onClick={onClick}
             disabled={disabled}
-            className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white p-2 text-slate-700 cursor-grab active:cursor-grabbing transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-slate-200 disabled:hover:shadow-none"
+            className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-2 text-slate-700 dark:text-slate-300 cursor-grab active:cursor-grabbing transition-all duration-150 hover:bg-slate-50 dark:hover:bg-slate-600 hover:border-slate-300 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-700 disabled:hover:border-slate-200 disabled:hover:shadow-none"
             title={label}
         >
             <Icon className="h-4 w-4" />
@@ -303,7 +303,7 @@ function CompactButton({
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-slate-700 transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-slate-200 disabled:hover:shadow-none cursor-pointer"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2.5 py-1.5 text-slate-700 dark:text-slate-300 transition-all duration-150 hover:bg-slate-50 dark:hover:bg-slate-600 hover:border-slate-300 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-700 disabled:hover:border-slate-200 disabled:hover:shadow-none cursor-pointer"
         >
             <Icon className="h-3.5 w-3.5 flex-shrink-0" />
             <span className="text-xs font-medium">{label}</span>

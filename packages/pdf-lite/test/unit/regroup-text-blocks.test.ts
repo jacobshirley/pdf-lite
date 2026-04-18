@@ -5,6 +5,7 @@ import {
     PdfContentStream,
     StateNode,
     ContentNode,
+    VirtualTextBlock,
 } from '../../src/graphics/pdf-content-stream'
 import {
     SetFontOp,
@@ -48,14 +49,14 @@ const upright = (
     text: string,
 ): TextNode => makeSeg(fontName, size, 1, 0, 0, 1, x, y, text)
 
-describe('TextBlock.regroupTextBlocks', () => {
+describe('VirtualTextBlock.regroupTextBlocks', () => {
     it('groups segments with matching baselines into one block', () => {
         const block = new TextBlock()
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
         block.addSegment(upright('F1', 12, 100, 680, 'B'))
         block.addSegment(upright('F1', 12, 110, 700, 'C'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(2)
         expect(regrouped[0].text).toBe('AC')
@@ -68,7 +69,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
         block.addSegment(upright('F1', 12, 110, 700, 'B'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(1)
         expect(regrouped[0].text).toBe('ABC')
@@ -83,7 +84,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block2.addSegment(upright('F1', 12, 145, 700, 'World'))
         block2.addSegment(upright('F1', 12, 155, 680, 'Line'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block1, block2])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block1, block2])
 
         expect(regrouped).toHaveLength(2)
         expect(regrouped[0].text).toBe('Hello World')
@@ -96,7 +97,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
         block.addSegment(upright('F1', 12, 110, 702, 'B'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(1)
         expect(regrouped[0].text).toBe('AB')
@@ -108,7 +109,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
         block.addSegment(upright('F1', 12, 100, 680, 'B'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(2)
     })
@@ -119,7 +120,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         // 90° rotated B at (100, 700) — different orientation bucket
         block.addSegment(makeSeg('F1', 12, 0, 1, -1, 0, 100, 700, 'B'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(2)
     })
@@ -132,7 +133,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(empty)
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(1)
         expect(regrouped[0].text).toBe('A')
@@ -143,7 +144,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 100, 700, 'A'))
         block.addSegment(upright('F1', 12, 110, 700, 'B'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
         const segs = regrouped[0].getSegments()
 
         expect(segs).toHaveLength(2)
@@ -165,7 +166,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
         block.addSegment(upright('F1', 12, 145, 700, 'World'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
         expect(regrouped[0].text).toBe('Hello World')
 
         regrouped[0].text = 'replaced'
@@ -173,7 +174,7 @@ describe('TextBlock.regroupTextBlocks', () => {
     })
 
     it('returns an empty array for empty input', () => {
-        expect(TextBlock.regroupTextBlocks([])).toEqual([])
+        expect(VirtualTextBlock.regroupTextBlocks([])).toEqual([])
     })
 
     it('splits segments with different fonts on the same line into separate blocks', () => {
@@ -181,7 +182,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 100, 700, 'Intermediary Number'))
         block.addSegment(upright('F2', 12, 300, 700, 'IN'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(2)
         expect(regrouped[0].text).toBe('Intermediary Number')
@@ -194,7 +195,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 145, 700, 'World'))
         block.addSegment(upright('F2', 12, 185, 700, 'Bold'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(2)
         expect(regrouped[0].text).toBe('Hello World')
@@ -208,7 +209,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 100, 680, 'C'))
         block.addSegment(upright('F2', 12, 200, 680, 'D'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(4)
         const texts = regrouped.map((r) => r.text)
@@ -224,7 +225,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 100, 700, 'Left'))
         block.addSegment(upright('F1', 12, 500, 700, 'Right'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(2)
         expect(regrouped[0].text).toBe('Left')
@@ -237,7 +238,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
         block.addSegment(upright('F1', 12, 140, 700, 'World'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(1)
         expect(regrouped[0].text).toBe('Hello World')
@@ -249,7 +250,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 250, 700, 'B'))
         block.addSegment(upright('F1', 12, 450, 700, 'C'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(3)
         expect(regrouped[0].text).toBe('A')
@@ -265,7 +266,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 210, 700, 'and '))
         block.addSegment(upright('F2', 12, 240, 700, 'detailed summary'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         // Should produce 3 blocks: "State the reasons ", "and ", "detailed summary"
         expect(regrouped).toHaveLength(3)
@@ -282,7 +283,7 @@ describe('TextBlock.regroupTextBlocks', () => {
         block.addSegment(upright('F1', 12, 140, 700, 'World'))
         block.addSegment(upright('F2', 12, 300, 700, 'Bold'))
 
-        const regrouped = TextBlock.regroupTextBlocks([block])
+        const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(2)
         expect(regrouped[0].text).toBe('Hello World')
@@ -296,7 +297,7 @@ describe('TextBlock.regroupTextBlocks', () => {
             block.addSegment(upright('F1', 12, 150, 700, 'World'))
 
             const original = block.getSegments()
-            const regrouped = TextBlock.regroupTextBlocks([block])
+            const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
             expect(regrouped).toHaveLength(1)
             const segs = regrouped[0].getSegments()
@@ -312,7 +313,7 @@ describe('TextBlock.regroupTextBlocks', () => {
             const block = new TextBlock()
             block.addSegment(upright('F1', 12, 100, 700, 'Original'))
 
-            const regrouped = TextBlock.regroupTextBlocks([block])
+            const regrouped = VirtualTextBlock.regroupTextBlocks([block])
             regrouped[0].text = 'Replaced'
 
             expect(block.toString()).toContain('Replaced')
@@ -324,7 +325,7 @@ describe('TextBlock.regroupTextBlocks', () => {
             block.addSegment(upright('F1', 12, 100, 700, 'Keep'))
             block.addSegment(upright('F1', 12, 150, 700, 'Remove'))
 
-            const regrouped = TextBlock.regroupTextBlocks([block])
+            const regrouped = VirtualTextBlock.regroupTextBlocks([block])
             regrouped[0].text = 'Kept'
 
             expect(block.text).toBe('Kept')
@@ -335,7 +336,7 @@ describe('TextBlock.regroupTextBlocks', () => {
             const block = new TextBlock()
             block.addSegment(upright('F1', 12, 100, 700, 'Hello'))
 
-            const regrouped = TextBlock.regroupTextBlocks([block])
+            const regrouped = VirtualTextBlock.regroupTextBlocks([block])
             regrouped[0].moveBy(10, -5)
 
             const str = block.toString()
@@ -376,7 +377,7 @@ describe('end-to-end edit/move via PdfContentStream', () => {
         // Parse nodes
         const blocks = collectTextBlocks(pcs.nodes)
         expect(blocks).toHaveLength(1)
-        const regrouped = TextBlock.regroupTextBlocks(blocks)
+        const regrouped = VirtualTextBlock.regroupTextBlocks(blocks)
         expect(regrouped[0].text).toBe('Hello')
 
         // Edit
@@ -384,14 +385,14 @@ describe('end-to-end edit/move via PdfContentStream', () => {
 
         // Re-extract from the SAME content stream (nodes cached)
         const blocks2 = collectTextBlocks(pcs.nodes)
-        const regrouped2 = TextBlock.regroupTextBlocks(blocks2)
+        const regrouped2 = VirtualTextBlock.regroupTextBlocks(blocks2)
         expect(regrouped2[0].text).toBe('Changed')
     })
 
     it('editText modifies content stream dataAsString', () => {
         const pcs = new PdfContentStream(SIMPLE_STREAM)
         const blocks = collectTextBlocks(pcs.nodes)
-        const regrouped = TextBlock.regroupTextBlocks(blocks)
+        const regrouped = VirtualTextBlock.regroupTextBlocks(blocks)
 
         regrouped[0].text = 'NewText'
 
@@ -406,13 +407,13 @@ describe('end-to-end edit/move via PdfContentStream', () => {
     it('moveBy modifies content stream positions', () => {
         const pcs = new PdfContentStream(SIMPLE_STREAM)
         const blocks = collectTextBlocks(pcs.nodes)
-        const regrouped = TextBlock.regroupTextBlocks(blocks)
+        const regrouped = VirtualTextBlock.regroupTextBlocks(blocks)
 
         regrouped[0].moveBy(10, -5)
 
         // Re-extract
         const blocks2 = collectTextBlocks(pcs.nodes)
-        const regrouped2 = TextBlock.regroupTextBlocks(blocks2)
+        const regrouped2 = VirtualTextBlock.regroupTextBlocks(blocks2)
         const seg = regrouped2[0].getSegments()[0]
         const tm = seg.getWorldTransform()
         expect(tm.e).toBeCloseTo(110)
@@ -423,7 +424,7 @@ describe('end-to-end edit/move via PdfContentStream', () => {
         const pcs = new PdfContentStream(TWO_BLOCK_STREAM)
         const blocks = collectTextBlocks(pcs.nodes)
         expect(blocks).toHaveLength(2)
-        const regrouped = TextBlock.regroupTextBlocks(blocks)
+        const regrouped = VirtualTextBlock.regroupTextBlocks(blocks)
         expect(regrouped).toHaveLength(2)
         expect(regrouped[0].text).toBe('Hello')
         expect(regrouped[1].text).toBe('World')
@@ -433,7 +434,7 @@ describe('end-to-end edit/move via PdfContentStream', () => {
 
         // Re-extract
         const blocks2 = collectTextBlocks(pcs.nodes)
-        const regrouped2 = TextBlock.regroupTextBlocks(blocks2)
+        const regrouped2 = VirtualTextBlock.regroupTextBlocks(blocks2)
         expect(regrouped2[0].text).toBe('Bye')
         expect(regrouped2[1].text).toBe('World')
     })
@@ -460,7 +461,7 @@ describe('end-to-end edit/move via PdfContentStream', () => {
 
         const pcs = new PdfContentStream(TD_STREAM)
         const blocks = collectTextBlocks(pcs.nodes)
-        const regrouped = TextBlock.regroupTextBlocks(blocks)
+        const regrouped = VirtualTextBlock.regroupTextBlocks(blocks)
 
         regrouped[0].moveBy(10, -5)
 
@@ -468,7 +469,7 @@ describe('end-to-end edit/move via PdfContentStream', () => {
         // Clear _nodes to force re-parse from serialized data
         pcs.dataAsString = pcs.dataAsString
         const blocks2 = collectTextBlocks(pcs.nodes)
-        const regrouped2 = TextBlock.regroupTextBlocks(blocks2)
+        const regrouped2 = VirtualTextBlock.regroupTextBlocks(blocks2)
         const seg = regrouped2[0].getSegments()[0]
         const tm = seg.getWorldTransform()
         expect(tm.e).toBeCloseTo(110)

@@ -4290,3 +4290,22 @@ export const GLYPH_NAME_TO_UNICODE: Record<string, string> = {
     zuhiragana: '\u305A',
     zukatakana: '\u30BA',
 }
+
+let _unicodeToGlyphName: Map<string, string> | null = null
+
+/**
+ * Reverse map from Unicode character to PostScript glyph name.
+ * Built lazily from GLYPH_NAME_TO_UNICODE on first access.
+ */
+export function getGlyphNameFromUnicode(unicode: string): string | undefined {
+    if (!_unicodeToGlyphName) {
+        _unicodeToGlyphName = new Map()
+        for (const [name, char] of Object.entries(GLYPH_NAME_TO_UNICODE)) {
+            // First name wins (prefer shorter/canonical names)
+            if (!_unicodeToGlyphName.has(char)) {
+                _unicodeToGlyphName.set(char, name)
+            }
+        }
+    }
+    return _unicodeToGlyphName.get(unicode)
+}

@@ -10,7 +10,7 @@ export function PdfEditor() {
     const editor = usePdfEditor()
 
     return (
-        <div className="min-h-screen bg-slate-100 p-4 text-slate-900">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-900 p-4 text-slate-900 dark:text-slate-100">
             <div className="mx-auto max-w-[1600px]">
                 <TopBar />
             </div>

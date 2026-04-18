@@ -344,6 +344,12 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
         return this.charWidths.get(charCode)
     }
 
+    getCharWidthByName(glyphName: string): number | undefined {
+        const code = this.glyphNameToCode.get(glyphName)
+        if (code !== undefined) return this.charWidths.get(code)
+        return undefined
+    }
+
     getGlyphMetrics(charCode: number): GlyphMetrics | undefined {
         return this.glyphMetrics.get(charCode)
     }

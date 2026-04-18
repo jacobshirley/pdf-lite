@@ -164,30 +164,30 @@ export function CanvasPanel({
             />
 
             {!uploadedFile ? (
-                <Card className="rounded-[24px] border-slate-200 shadow-sm">
+                <Card className="rounded-[24px] border-slate-200 dark:border-slate-700 shadow-sm dark:bg-slate-800">
                     <CardContent className="flex min-h-[500px] flex-col items-center justify-center p-8">
                         {pdfLoading ? (
                             <div className="flex flex-col items-center gap-4 text-center">
                                 <Loader2 className="h-12 w-12 animate-spin text-slate-400" />
                                 <div>
-                                    <h3 className="text-xl font-bold text-slate-900">
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                                         Loading PDF...
                                     </h3>
-                                    <p className="mt-2 text-sm text-slate-500">
+                                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                                         Please wait while we process your file
                                     </p>
                                 </div>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center gap-4 text-center">
-                                <div className="rounded-2xl bg-slate-100 p-6">
+                                <div className="rounded-2xl bg-slate-100 dark:bg-slate-700 p-6">
                                     <FileUp className="h-12 w-12 text-slate-400" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-slate-900">
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                                         No PDF loaded
                                     </h3>
-                                    <p className="mt-2 text-sm text-slate-500">
+                                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                                         Upload a PDF file to start editing form
                                         fields and text
                                     </p>
@@ -205,8 +205,8 @@ export function CanvasPanel({
                     </CardContent>
                 </Card>
             ) : (
-                <Card className="rounded-[24px] border-slate-200 py-0 shadow-sm">
-                    <div className="border-b bg-slate-50 rounded-t-[24px]">
+                <Card className="rounded-[24px] border-slate-200 dark:border-slate-700 py-0 shadow-sm dark:bg-slate-800">
+                    <div className="border-b bg-slate-50 dark:bg-slate-800 dark:border-slate-700 rounded-t-[24px]">
                         <div className="flex items-center justify-between px-4 py-2.5">
                             <div className="flex items-center gap-3">
                                 <Badge
@@ -215,7 +215,7 @@ export function CanvasPanel({
                                 >
                                     {uploadedFile.name}
                                 </Badge>
-                                <span className="text-xs text-slate-500">
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
                                     {(
                                         uploadedFile.size /
                                         1024 /
@@ -355,8 +355,8 @@ export function CanvasPanel({
                         </div>
                         {pdfLoaded && (
                             <div className="px-5 pb-2">
-                                <p className="text-xs text-slate-500">
-                                    💡 Hold <kbd className="px-1 py-0.5 text-xs bg-slate-200 rounded">Shift</kbd> and drag to pan the view
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    💡 Hold <kbd className="px-1 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 rounded">Shift</kbd> and drag to pan the view
                                 </p>
                             </div>
                         )}
@@ -375,10 +375,10 @@ export function CanvasPanel({
                                 <div className="flex flex-col items-center gap-4 text-center">
                                     <Loader2 className="h-12 w-12 animate-spin text-slate-400" />
                                     <div>
-                                        <h3 className="text-xl font-bold text-slate-900">
+                                        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                                             Loading PDF...
                                         </h3>
-                                        <p className="mt-2 text-sm text-slate-500">
+                                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                                             Please wait while we process your file
                                         </p>
                                     </div>
@@ -412,12 +412,12 @@ export function CanvasPanel({
                                             className="mb-6"
                                         >
                                             <div className="mb-2 flex items-center justify-between">
-                                                <div className="text-sm font-semibold text-slate-600">
+                                <div className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                                                     Page {context.pageNumber}
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {pageFields.length > 0 && (
-                                                        <div className="text-xs text-slate-500">
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">
                                                             {pageFields.length}{' '}
                                                             field
                                                             {pageFields.length !== 1
@@ -446,7 +446,7 @@ export function CanvasPanel({
                                                 ref={(el) => {
                                                     pageContainerElement = el
                                                 }}
-                                                className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-visible"
+                                                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white shadow-sm overflow-visible"
                                                 onClick={onBackgroundClick}
                                                 onDragOver={(e) => {
                                                     if (
@@ -460,11 +460,11 @@ export function CanvasPanel({
                                                 }}
                                                 onDragLeave={(e) => {
                                                     e.currentTarget.style.backgroundColor =
-                                                        'white'
+                                                        ''
                                                 }}
                                                 onDrop={(e) => {
                                                     e.currentTarget.style.backgroundColor =
-                                                        'white'
+                                                        ''
                                                     if (pageContainerElement) {
                                                         onPageDrop(
                                                             e,

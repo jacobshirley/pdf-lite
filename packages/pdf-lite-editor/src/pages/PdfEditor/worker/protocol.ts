@@ -88,6 +88,23 @@ export type RemoveTextBlockResult = {
     removedId: string
 }
 
+export type GraphicsShapeType = 'Line' | 'Rectangle' | 'Ellipse'
+
+export type AddGraphicsBlockOptions = {
+    shape: GraphicsShapeType
+    pageNumber?: number
+    x?: number
+    y?: number
+    width?: number
+    height?: number
+    rgb?: [number, number, number]
+    fill?: boolean
+}
+
+export type RemoveGraphicsBlockResult = {
+    removedId: string
+}
+
 export type CloneFieldResult = {
     newField: FieldDTO
     updatedOriginalId?: string
@@ -135,6 +152,14 @@ export type WorkerMethods = {
     removeTextBlock: {
         args: { id: string }
         result: RemoveTextBlockResult
+    }
+    addGraphicsBlock: {
+        args: { options: AddGraphicsBlockOptions }
+        result: GraphicsBlockDTO
+    }
+    removeGraphicsBlock: {
+        args: { id: string }
+        result: RemoveGraphicsBlockResult
     }
     editTextBlock: {
         args: { id: string; text: string }

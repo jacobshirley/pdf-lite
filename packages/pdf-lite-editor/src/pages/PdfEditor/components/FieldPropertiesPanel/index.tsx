@@ -38,11 +38,11 @@ export function FieldPropertiesPanel({
     onClose,
 }: Props) {
     return (
-        <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
-            <CardContent className="flex h-full flex-col p-0 bg-white">
-                <div className="flex items-center justify-between p-4 border-b">
+        <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-800">
+            <CardContent className="flex h-full flex-col p-0 bg-white dark:bg-slate-800">
+                <div className="flex items-center justify-between p-4 border-b dark:border-slate-700">
                     <div className="flex items-center gap-2">
-                        <Settings className="h-4 w-4 text-slate-600" />
+                        <Settings className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                         <h2 className="font-semibold text-sm">
                             Field Properties
                         </h2>
@@ -62,7 +62,7 @@ export function FieldPropertiesPanel({
                     <div className="space-y-2">
                         <Label
                             htmlFor="field-name"
-                            className="text-xs font-semibold text-slate-700"
+                            className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                         >
                             Field Name
                         </Label>
@@ -79,7 +79,7 @@ export function FieldPropertiesPanel({
                     <div className="space-y-2">
                         <Label
                             htmlFor="field-type"
-                            className="text-xs font-semibold text-slate-700"
+                            className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                         >
                             Field Type
                         </Label>
@@ -87,7 +87,7 @@ export function FieldPropertiesPanel({
                             id="field-type"
                             value={field.type || 'Unknown'}
                             disabled
-                            className="h-8 text-sm bg-slate-50"
+                            className="h-8 text-sm bg-slate-50 dark:bg-slate-700"
                         />
                     </div>
 
@@ -95,7 +95,7 @@ export function FieldPropertiesPanel({
                         <div className="space-y-2">
                             <Label
                                 htmlFor="default-state"
-                                className="text-xs font-semibold text-slate-700"
+                                className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                             >
                                 Default State
                             </Label>
@@ -105,7 +105,7 @@ export function FieldPropertiesPanel({
                                 onChange={(
                                     e: React.ChangeEvent<HTMLSelectElement>,
                                 ) => onAppearanceStateChange(e.target.value)}
-                                className="h-8 w-full text-sm rounded-md border border-slate-300 px-3 py-1 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                className="h-8 w-full text-sm rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1 bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
                             >
                                 {field.appearanceStates.map((state) => (
                                     <option key={state} value={state}>
@@ -121,7 +121,7 @@ export function FieldPropertiesPanel({
                             <div className="space-y-2">
                                 <Label
                                     htmlFor="field-value"
-                                    className="text-xs font-semibold text-slate-700"
+                                    className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                                 >
                                     Selected Value
                                 </Label>
@@ -131,7 +131,7 @@ export function FieldPropertiesPanel({
                                     onChange={(
                                         e: React.ChangeEvent<HTMLSelectElement>,
                                     ) => onValueChange(e.target.value)}
-                                    className="h-8 w-full text-sm rounded-md border border-slate-300 px-3 py-1 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                    className="h-8 w-full text-sm rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1 bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                 >
                                     {field.options.map((opt, i) => (
                                         <option key={i} value={opt.value}>
@@ -141,7 +141,7 @@ export function FieldPropertiesPanel({
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-slate-700">
+                                <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     Options
                                 </Label>
                                 <div className="space-y-1">
@@ -194,7 +194,7 @@ export function FieldPropertiesPanel({
                         <div className="space-y-2">
                             <Label
                                 htmlFor="field-value"
-                                className="text-xs font-semibold text-slate-700"
+                                className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                             >
                                 Default Value
                             </Label>
@@ -213,7 +213,7 @@ export function FieldPropertiesPanel({
                         <div className="space-y-2">
                             <Label
                                 htmlFor="font-size"
-                                className="text-xs font-semibold text-slate-700"
+                                className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                             >
                                 Font Size
                             </Label>
@@ -235,7 +235,7 @@ export function FieldPropertiesPanel({
                         <div className="space-y-2">
                             <Label
                                 htmlFor="alignment"
-                                className="text-xs font-semibold text-slate-700"
+                                className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                             >
                                 Text Alignment
                             </Label>
@@ -245,7 +245,7 @@ export function FieldPropertiesPanel({
                                 onChange={(
                                     e: React.ChangeEvent<HTMLSelectElement>,
                                 ) => onQuaddingChange(e.target.value)}
-                                className="h-8 w-full text-sm rounded-md border border-slate-300 px-3 py-1 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                className="h-8 w-full text-sm rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1 bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
                             >
                                 <option value="0">Left</option>
                                 <option value="1">Center</option>
@@ -256,14 +256,14 @@ export function FieldPropertiesPanel({
 
                     {field.rect && (
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold text-slate-700">
+                            <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                 Position & Size
                             </Label>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">
                                     <Label
                                         htmlFor="pos-x"
-                                        className="text-xs text-slate-600"
+                                        className="text-xs text-slate-600 dark:text-slate-400"
                                     >
                                         X
                                     </Label>
@@ -281,7 +281,7 @@ export function FieldPropertiesPanel({
                                 <div className="space-y-1">
                                     <Label
                                         htmlFor="pos-y"
-                                        className="text-xs text-slate-600"
+                                        className="text-xs text-slate-600 dark:text-slate-400"
                                     >
                                         Y
                                     </Label>
@@ -299,7 +299,7 @@ export function FieldPropertiesPanel({
                                 <div className="space-y-1">
                                     <Label
                                         htmlFor="width"
-                                        className="text-xs text-slate-600"
+                                        className="text-xs text-slate-600 dark:text-slate-400"
                                     >
                                         Width
                                     </Label>
@@ -322,7 +322,7 @@ export function FieldPropertiesPanel({
                                 <div className="space-y-1">
                                     <Label
                                         htmlFor="height"
-                                        className="text-xs text-slate-600"
+                                        className="text-xs text-slate-600 dark:text-slate-400"
                                     >
                                         Height
                                     </Label>
@@ -352,7 +352,7 @@ export function FieldPropertiesPanel({
                     <div className="space-y-2">
                         <Label
                             htmlFor="page-num"
-                            className="text-xs font-semibold text-slate-700"
+                            className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                         >
                             Page Number
                         </Label>
@@ -360,7 +360,7 @@ export function FieldPropertiesPanel({
                             id="page-num"
                             value={field.page}
                             disabled
-                            className="h-8 text-sm bg-slate-50"
+                            className="h-8 text-sm bg-slate-50 dark:bg-slate-700"
                         />
                     </div>
 
@@ -371,7 +371,7 @@ export function FieldPropertiesPanel({
                             type="button"
                             variant="outline"
                             onClick={onClone}
-                            className="w-full h-10 hover:bg-slate-50"
+                            className="w-full h-10 hover:bg-slate-50 dark:hover:bg-slate-700"
                         >
                             <Copy className="mr-2 h-4 w-4" />
                             Clone as Widget-Only

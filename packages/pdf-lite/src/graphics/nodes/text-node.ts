@@ -102,7 +102,7 @@ export class TextNode extends ContentNode {
         // Find and replace the existing positioning op
         const tmIdx = this.ops.findIndex((o) => o instanceof SetTextMatrixOp)
         if (tmIdx !== -1) {
-            this.ops[tmIdx] = newTmOp
+            this.replaceOrAddOp(this.ops[tmIdx], newTmOp)
             // The new Tm is absolute — strip any relative positioning ops
             // (Td/TD/T*) that would shift on top of it.
             this.ops = this.ops.filter(
@@ -114,7 +114,7 @@ export class TextNode extends ContentNode {
             // Re-inject TL ops to preserve the text leading side-effect
             if (tlOps.length > 0) {
                 const insertIdx = this.ops.indexOf(newTmOp)
-                this.ops.splice(insertIdx, 0, ...tlOps)
+                this.addOp(tlOps, insertIdx)
             }
             // Parent block's ops getter auto-syncs with segments
             return
@@ -127,18 +127,14 @@ export class TextNode extends ContentNode {
                 !(o instanceof MoveTextLeadingOp) &&
                 !(o instanceof NextLineOp),
         )
-        const showIdx = this.ops.findIndex(
+        const showOp = this.ops.find(
             (o) =>
                 o instanceof ShowTextOp ||
                 o instanceof ShowTextArrayOp ||
                 o instanceof ShowTextNextLineOp ||
                 o instanceof ShowTextNextLineSpacingOp,
         )
-        if (showIdx !== -1) {
-            this.ops.splice(showIdx, 0, ...tlOps, newTmOp)
-        } else {
-            this.ops.push(...tlOps, newTmOp)
-        }
+        this.replaceOrAddOp(showOp, newTmOp)
         // Parent block's ops getter auto-syncs with segments
     }
 
@@ -179,7 +175,7 @@ export class TextNode extends ContentNode {
         const tfOp = this.ops.find((x) => x instanceof SetFontOp)
         if (!tfOp) {
             const newTfOp = SetFontOp.create(font.resourceName, size)
-            this.ops.unshift(newTfOp)
+            this.addOp(newTfOp, 0)
         } else {
             tfOp.fontName = font.resourceName
         }
@@ -219,7 +215,7 @@ export class TextNode extends ContentNode {
         const tfOp = this.ops.find((x) => x instanceof SetFontOp)
         if (!tfOp) {
             const newTfOp = SetFontOp.create(fontName, size)
-            this.ops.unshift(newTfOp)
+            this.addOp(newTfOp, 0)
         } else {
             tfOp.fontSize = size
         }
@@ -305,14 +301,10 @@ export class TextNode extends ContentNode {
 
     set text(newText: string) {
         const newTextOp = this.writeContentStreamText(newText)
-        const textOpIndex = this.ops.findLastIndex(
+        const textOp = this.ops.findLast(
             (x) => x instanceof ShowTextOp || x instanceof ShowTextArrayOp,
         )
-        if (textOpIndex !== -1) {
-            this.ops[textOpIndex] = newTextOp
-        } else {
-            this.ops.push(newTextOp)
-        }
+        this.replaceOrAddOp(textOp, newTextOp)
     }
 
     /**
@@ -486,17 +478,12 @@ export class TextNode extends ContentNode {
     }
 
     set color(color: Color) {
-        const idx = this.ops.findLastIndex(
+        const op = this.ops.findLast(
             (o) =>
                 o instanceof SetFillColorRGBOp ||
                 o instanceof SetFillColorGrayOp ||
                 o instanceof SetFillColorCMYKOp,
         )
-        if (idx !== -1) {
-            this.ops[idx] = color.toOp()
-            return
-        }
-
-        this.ops.push(color.toOp())
+        this.replaceOrAddOp(op, color.toOp())
     }
 }

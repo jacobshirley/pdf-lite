@@ -236,12 +236,8 @@ export class TextBlock extends ContentNode {
             o instanceof ShowTextNextLineSpacingOp
 
         const newShowOp = first.writeContentStreamText(newText)
-        const oldIdx = first.ops.findIndex(isShowOp)
-        if (oldIdx !== -1) {
-            first.ops[oldIdx] = newShowOp
-        } else {
-            first.ops.push(newShowOp)
-        }
+        const op = first.ops.find(isShowOp)
+        first.replaceOrAddOp(op, newShowOp)
 
         // Clear extras — leave them as empty-ops segments in their real
         // parent's segment list; rebuilding the parent drops their content.
@@ -295,11 +291,7 @@ export class TextBlock extends ContentNode {
             const segText = segTexts[i]
 
             const tfOp = seg.ops.find((o) => o instanceof SetFontOp)
-            if (tfOp) {
-                tfOp.fontName = resName
-            } else {
-                seg.ops.unshift(SetFontOp.create(resName, seg.fontSize))
-            }
+            seg.replaceOrAddOp(tfOp, SetFontOp.create(resName, seg.fontSize))
 
             if (!segText) continue
 
@@ -308,8 +300,7 @@ export class TextBlock extends ContentNode {
             )
             if (showOp) {
                 const newShow = seg.writeContentStreamText(segText)
-                const idx = seg.ops.indexOf(showOp)
-                seg.ops[idx] = newShow
+                seg.replaceOrAddOp(showOp, newShow)
             }
         }
 
@@ -337,7 +328,7 @@ export class TextBlock extends ContentNode {
                             !(o instanceof MoveTextLeadingOp) &&
                             !(o instanceof NextLineOp),
                     )
-                    const showIdx = seg.ops.findIndex(
+                    const showOp = seg.ops.find(
                         (o) =>
                             o instanceof ShowTextOp ||
                             o instanceof ShowTextArrayOp,
@@ -350,11 +341,7 @@ export class TextBlock extends ContentNode {
                         cursorX,
                         cursorY,
                     )
-                    if (showIdx !== -1) {
-                        seg.ops.splice(showIdx, 0, newTm)
-                    } else {
-                        seg.ops.push(newTm)
-                    }
+                    seg.replaceOrAddOp(showOp, newTm)
                 }
 
                 const advance = seg.getTextAdvance()
@@ -406,15 +393,16 @@ export class TextBlock extends ContentNode {
             )
 
             if (showIdx !== -1) {
-                seg.ops.splice(showIdx, 0, color.toOp())
+                const showOp = seg.ops[showIdx]
+                seg.replaceOrAddOp(showOp, color.toOp())
                 // Restore previous color AFTER the show op to prevent the
                 // new color from bleeding to subsequent segments.  +2:
                 // skip past the inserted color op and the show op.
                 if (restoreColor) {
-                    seg.ops.splice(showIdx + 2, 0, restoreColor.toOp())
+                    seg.addOp(restoreColor.toOp(), showIdx + 2)
                 }
             } else {
-                seg.ops.push(color.toOp())
+                seg.addOp(color.toOp())
             }
         }
         // ops getter auto-syncs with segments
@@ -583,6 +571,100 @@ export class TextBlock extends ContentNode {
             if (newLocal) sib.applyShift(newLocal)
         }
         // ops getter auto-syncs with segments
+    }
+}
+
+/**
+ * A regroup-view over a set of original `TextNode`s.  Holds references to
+ * the real content-stream segments (shares `.parent` and `.prev` with the
+ * real tree) rather than baked copies.  Edit methods inherited from
+ * `TextBlock` therefore mutate the real nodes directly; rebuilds cascade
+ * to each distinct real parent block.
+ *
+ * A virtual block owns no BT/ET of its own and must NOT be serialised as
+ * a standalone block — its segments' ops already live in real content
+ * stream blocks.
+ */
+export class VirtualTextBlock extends TextBlock {
+    constructor(page?: PdfPage) {
+        super(page)
+    }
+
+    /**
+     * Add an existing real TextNode to this view without reparenting or
+     * rewriting its prev chain.  Graphics-state resolution and write-back
+     * must continue to flow through the node's real parent.
+     */
+    override addSegment(segment: TextNode): void {
+        this.segments.push(segment)
+    }
+
+    /**
+     * No-op: VirtualTextBlock doesn't own ops, and parent blocks
+     * auto-sync via their ops getter when accessed.
+     */
+    override get ops(): ContentOp[] {
+        // Virtual blocks don't own BT/ET — their segments already live
+        // in real parent blocks.  Accessing parent.ops automatically
+        // rebuilds from segments via the getter.
+        return []
+    }
+
+    override set ops(value: ContentOp[]) {
+        // Virtual blocks are read-only views; ignore writes
+    }
+
+    /**
+     * Compute the bbox in world (post-CTM) space.  The virtual block has
+     * no parent chain, so its world coincides with its local — emit the
+     * world-space union of its segments directly.
+     */
+    override getLocalBoundingBox(): Rect {
+        if (this.segments.length === 0) {
+            return new Rect({ x: 0, y: 0, width: 0, height: 0 })
+        }
+        let minX = Infinity
+        let minY = Infinity
+        let maxX = -Infinity
+        let maxY = -Infinity
+        for (const seg of this.segments) {
+            const segBbox = seg.getLocalBoundingBox()
+            const wtm = seg.getWorldTransform()
+            const corners = [
+                new Point({ x: segBbox.x, y: segBbox.y }),
+                new Point({
+                    x: segBbox.x + segBbox.width,
+                    y: segBbox.y,
+                }),
+                new Point({
+                    x: segBbox.x,
+                    y: segBbox.y + segBbox.height,
+                }),
+                new Point({
+                    x: segBbox.x + segBbox.width,
+                    y: segBbox.y + segBbox.height,
+                }),
+            ]
+            for (const c of corners) {
+                const pt = c.transform(wtm)
+                minX = Math.min(minX, pt.x)
+                minY = Math.min(minY, pt.y)
+                maxX = Math.max(maxX, pt.x)
+                maxY = Math.max(maxY, pt.y)
+            }
+        }
+        return new Rect({
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+        })
+    }
+
+    override toString(): string {
+        throw new Error(
+            'VirtualTextBlock cannot be serialised standalone; its segments already live in real content-stream blocks.',
+        )
     }
 
     /**
@@ -861,99 +943,5 @@ export class TextBlock extends ContentNode {
         }
 
         return result
-    }
-}
-
-/**
- * A regroup-view over a set of original `TextNode`s.  Holds references to
- * the real content-stream segments (shares `.parent` and `.prev` with the
- * real tree) rather than baked copies.  Edit methods inherited from
- * `TextBlock` therefore mutate the real nodes directly; rebuilds cascade
- * to each distinct real parent block.
- *
- * A virtual block owns no BT/ET of its own and must NOT be serialised as
- * a standalone block — its segments' ops already live in real content
- * stream blocks.
- */
-export class VirtualTextBlock extends TextBlock {
-    constructor(page?: PdfPage) {
-        super(page)
-    }
-
-    /**
-     * Add an existing real TextNode to this view without reparenting or
-     * rewriting its prev chain.  Graphics-state resolution and write-back
-     * must continue to flow through the node's real parent.
-     */
-    override addSegment(segment: TextNode): void {
-        this.segments.push(segment)
-    }
-
-    /**
-     * No-op: VirtualTextBlock doesn't own ops, and parent blocks
-     * auto-sync via their ops getter when accessed.
-     */
-    override get ops(): ContentOp[] {
-        // Virtual blocks don't own BT/ET — their segments already live
-        // in real parent blocks.  Accessing parent.ops automatically
-        // rebuilds from segments via the getter.
-        return []
-    }
-
-    override set ops(value: ContentOp[]) {
-        // Virtual blocks are read-only views; ignore writes
-    }
-
-    /**
-     * Compute the bbox in world (post-CTM) space.  The virtual block has
-     * no parent chain, so its world coincides with its local — emit the
-     * world-space union of its segments directly.
-     */
-    override getLocalBoundingBox(): Rect {
-        if (this.segments.length === 0) {
-            return new Rect({ x: 0, y: 0, width: 0, height: 0 })
-        }
-        let minX = Infinity
-        let minY = Infinity
-        let maxX = -Infinity
-        let maxY = -Infinity
-        for (const seg of this.segments) {
-            const segBbox = seg.getLocalBoundingBox()
-            const wtm = seg.getWorldTransform()
-            const corners = [
-                new Point({ x: segBbox.x, y: segBbox.y }),
-                new Point({
-                    x: segBbox.x + segBbox.width,
-                    y: segBbox.y,
-                }),
-                new Point({
-                    x: segBbox.x,
-                    y: segBbox.y + segBbox.height,
-                }),
-                new Point({
-                    x: segBbox.x + segBbox.width,
-                    y: segBbox.y + segBbox.height,
-                }),
-            ]
-            for (const c of corners) {
-                const pt = c.transform(wtm)
-                minX = Math.min(minX, pt.x)
-                minY = Math.min(minY, pt.y)
-                maxX = Math.max(maxX, pt.x)
-                maxY = Math.max(maxY, pt.y)
-            }
-        }
-        return new Rect({
-            x: minX,
-            y: minY,
-            width: maxX - minX,
-            height: maxY - minY,
-        })
-    }
-
-    override toString(): string {
-        throw new Error(
-            'VirtualTextBlock cannot be serialised standalone; its segments already live in real content-stream blocks.',
-        )
     }
 }

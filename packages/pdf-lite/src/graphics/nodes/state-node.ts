@@ -2,7 +2,7 @@ import { PdfPage } from '../../pdf/pdf-page'
 import { Matrix } from '../geom/matrix'
 import { Rect } from '../geom/rect'
 import { ContentOp } from '../ops/base'
-import { SetMatrixOp } from '../ops/state'
+import { RestoreStateOp, SaveStateOp, SetMatrixOp } from '../ops/state'
 import { ContentNode } from './content-node'
 
 export class StateNode extends ContentNode {
@@ -60,18 +60,12 @@ export class StateNode extends ContentNode {
         })
     }
 
-    toString(): string {
-        const parts: string[] = ['q']
-
-        for (const op of this.ops) {
-            parts.push(op.toString())
-        }
-
+    get ops(): ContentOp[] {
+        const ops: ContentOp[] = [new SaveStateOp()]
         for (const child of this.children) {
-            parts.push(child.toString())
+            ops.push(...child.ops)
         }
-
-        parts.push('Q')
-        return parts.join('\n')
+        ops.push(new RestoreStateOp())
+        return ops
     }
 }

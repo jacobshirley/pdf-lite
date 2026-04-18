@@ -7,14 +7,14 @@ import { ContentOp } from '../ops/base'
 export abstract class ContentNode {
     _page?: PdfPage
     parent?: ContentNode
-    private _ops: ContentOp[]
+    protected _ops: ContentOp[]
 
     constructor(ops?: ContentOp[], page?: PdfPage) {
         this._ops = ops ?? []
         this._page = page
     }
 
-    get ops(): ContentOp[] {
+    get ops(): ReadonlyArray<ContentOp> {
         return this._ops
     }
 
@@ -84,5 +84,30 @@ export abstract class ContentNode {
 
     toString() {
         return this.ops.map((o) => o.toString()).join('\n')
+    }
+
+    replaceOrAddOp(op: ContentOp | undefined, newOp: ContentOp) {
+        const idx = this._ops.findIndex((o) => o === op)
+        if (idx === -1) {
+            this._ops.push(newOp)
+        } else {
+            this._ops[idx] = newOp
+        }
+    }
+
+    addOp(op: ContentOp | ContentOp[], index?: number) {
+        if (Array.isArray(op)) {
+            if (index === undefined) {
+                this._ops.push(...op)
+            } else {
+                this._ops.splice(index, 0, ...op)
+            }
+        } else {
+            if (index === undefined) {
+                this._ops.push(op)
+            } else {
+                this._ops.splice(index, 0, op)
+            }
+        }
     }
 }

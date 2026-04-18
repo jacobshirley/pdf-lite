@@ -7,6 +7,7 @@ import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfPages } from './pdf-pages.js'
 import {
     GraphicsBlock,
+    PdfContents,
     PdfContentStreamObject,
     TextBlock,
     VirtualTextBlock,
@@ -122,21 +123,41 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         this.content.set('Rotate', new PdfNumber(value))
     }
 
-    get contents(): PdfObjectReference | PdfArray<PdfObjectReference> | null {
+    get contents(): PdfContents {
         const entry = this.content.get('Contents')
-        if (!entry) return null
-        if (entry instanceof PdfArray)
-            return entry as PdfArray<PdfObjectReference>
-        return entry.as(PdfObjectReference) ?? null
+        let contents: PdfContents
+
+        if (!entry) {
+            contents = new PdfContents()
+        } else if (entry instanceof PdfObjectReference) {
+            contents = entry.resolve(PdfContents)
+        } else {
+            const entries = entry.items.map((item) =>
+                item.resolve(PdfContentStreamObject),
+            )
+
+            contents = new PdfContents(entries)
+        }
+
+        contents.page = this
+
+        return contents
     }
 
     set contents(
-        value: PdfObjectReference | PdfArray<PdfObjectReference> | null,
+        value:
+            | PdfContents
+            | PdfObjectReference
+            | PdfArray<PdfObjectReference>
+            | null,
     ) {
         if (value === null) {
             this.content.delete('Contents')
         } else {
-            this.content.set('Contents', value)
+            this.content.set(
+                'Contents',
+                value instanceof PdfIndirectObject ? value.reference : value,
+            )
         }
     }
 
@@ -268,51 +289,27 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         return resName
     }
 
-    /**
-     * Get all content streams for this page as an array.
-     * Handles both single stream and array of streams cases.
-     * Returns empty array if no content streams exist.
-     */
     get contentStreams(): PdfContentStreamObject[] {
-        const contentsEntry = this.contents
-        if (!contentsEntry) return []
-
-        const streams: PdfContentStreamObject[] = []
-
-        if (contentsEntry instanceof PdfArray) {
-            // Multiple content streams
-            for (const ref of contentsEntry.items) {
-                const resolved = ref.resolve(PdfContentStreamObject)
-                resolved.page = this
-                streams.push(resolved)
-            }
-        } else if (contentsEntry instanceof PdfObjectReference) {
-            // Single content stream
-            const resolved = contentsEntry.resolve(PdfContentStreamObject)
-            resolved.page = this
-            streams.push(resolved)
-        }
-
-        return streams
+        return this.contents.content.items
     }
 
     get rawTextBlocks(): TextBlock[] {
-        return this.contentStreams.flatMap((s) => s.textBlocks)
+        return this.contents.textBlocks
     }
 
     get rawGraphicsBlocks(): GraphicsBlock[] {
-        return this.contentStreams.flatMap((s) => s.graphicsBlocks)
+        return this.contents.graphicsBlocks
     }
 
-    /**
-     * Extract text blocks and regroup them by visual line. The returned blocks carry source-segment references
-     * so that `editText()` and `moveBy()` modify the live content-stream
-     * tree in-place.
-     */
+    get graphicsBlocks(): GraphicsBlock[] {
+        return this.rawGraphicsBlocks
+    }
+
     get textBlocks(): VirtualTextBlock[] {
-        const streams = this.contentStreams
-        if (streams.length === 0) return []
-        const raw = streams.flatMap((s) => s.textBlocks)
-        return TextBlock.regroupTextBlocks(raw)
+        console.log(
+            'Regrouping text blocks for page',
+            this.contents.renderedText,
+        )
+        return VirtualTextBlock.regroupTextBlocks(this.rawTextBlocks)
     }
 }

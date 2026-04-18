@@ -377,15 +377,7 @@ export class PdfStream<
     set data(data: ByteArray) {
         const filters = this.getFilters()
         const existingPredictor = this.predictor
-        this.removeAllFilters()
-        this.header.delete('DecodeParms')
-        this.raw = data
-        if (existingPredictor) {
-            this.predictor = existingPredictor
-        }
-        for (const filter of filters) {
-            this.addFilter(filter)
-        }
+        this.raw = PdfStream.encode(data, filters, existingPredictor)
     }
 
     get dataAsString(): string {
@@ -503,23 +495,45 @@ export class PdfStream<
     }
 
     decode(): ByteArray {
-        let data: ByteArray = this.raw
-        const filters = this.getFilters()
+        return PdfStream.decode(this.raw, this.getFilters(), this.predictor)
+    }
+
+    static decode(
+        data: ByteArray,
+        filters: PdfStreamFilterType[] = [],
+        predictor?: PdfStreamPredictor,
+    ): ByteArray {
+        let result = data
 
         for (const filterName of filters) {
             const filter = PdfStream.getFilter(filterName)
-            data = filter.decode(data)
+            result = filter.decode(result)
         }
 
-        const streamPredictor = PdfStreamPredictor.fromDictionary(
-            this.header.get('DecodeParms')?.as(PdfDictionary),
-        )
-
-        if (streamPredictor) {
-            data = streamPredictor.decode(data)
+        if (predictor) {
+            result = predictor.decode(result)
         }
 
-        return data
+        return result
+    }
+
+    static encode(
+        data: ByteArray,
+        filters: PdfStreamFilterType[] = [],
+        predictor?: PdfStreamPredictor,
+    ): ByteArray {
+        let result = data
+
+        if (predictor) {
+            result = predictor.encode(result)
+        }
+
+        for (const filterName of filters) {
+            const filter = PdfStream.getFilter(filterName)
+            result = filter.encode(result)
+        }
+
+        return result
     }
 
     parseAs<T extends PdfStream>(

@@ -106,24 +106,24 @@ export class GraphicsBlock extends ContentNode {
     }
 
     moveTo(x: number, y: number) {
-        this.ops.push(MoveToOp.create(x, y))
+        this._ops.push(MoveToOp.create(x, y))
     }
 
     lineTo(x: number, y: number) {
-        this.ops.push(LineToOp.create(x, y))
+        this._ops.push(LineToOp.create(x, y))
     }
 
     stroke() {
-        this.ops.push(new StrokeOp())
+        this._ops.push(new StrokeOp())
     }
 
     fill() {
-        this.ops.push(new FillOp())
+        this._ops.push(new FillOp())
     }
 
     rgb(r: number, g: number, b: number) {
-        this.ops.push(SetStrokeColorRGBOp.create(r, g, b))
-        this.ops.push(SetFillColorRGBOp.create(r, g, b))
+        this._ops.push(SetStrokeColorRGBOp.create(r, g, b))
+        this._ops.push(SetFillColorRGBOp.create(r, g, b))
     }
 
     getLocalTransform(): Matrix {

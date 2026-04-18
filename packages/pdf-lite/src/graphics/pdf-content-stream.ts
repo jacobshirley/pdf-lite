@@ -1,6 +1,6 @@
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
 import { PdfStream } from '../core/objects/pdf-stream'
-import { PdfDictionary } from '../core'
+import { PdfArray, PdfDictionary } from '../core'
 import { PdfPage } from '../pdf/pdf-page'
 import { ByteArray } from '../types'
 import { stringToBytes } from '../utils'
@@ -11,7 +11,6 @@ import { EndPathOp, ClipOp, ClipEvenOddOp, PaintOp } from './ops/paint'
 import { ColorOp } from './ops/color'
 import { SaveStateOp, RestoreStateOp, StateOp } from './ops/state'
 import { PdfContentStreamTokeniser } from './tokeniser'
-import { PdfToken } from '../core/tokens/token.js'
 import {
     ContentNode,
     GraphicsBlock,
@@ -31,9 +30,6 @@ export {
 }
 
 export class PdfContentStream extends PdfStream {
-    _nodes: ContentNode[] | undefined
-    /** @internal Root StateNode; preserves top-level ops (e.g. cm before q). */
-    _rootNode: StateNode | undefined
     page?: PdfPage
 
     constructor(
@@ -49,72 +45,31 @@ export class PdfContentStream extends PdfStream {
         super(options)
     }
 
-    get nodes(): ContentNode[] {
-        if (!this._nodes) {
-            this._nodes = this.parseNodes()
-        }
-        return this._nodes
+    get ops(): ReadonlyArray<ContentOp> {
+        const decoded = PdfStream.decode(
+            super.raw,
+            this.getFilters(),
+            this.predictor,
+        )
+        const ops = PdfContentStreamTokeniser.tokenise(decoded)
+        return ops
     }
 
-    /** Serialize the node tree back to a content-stream string. */
-    private serializeNodes(): string {
-        const parts: string[] = []
-        // Emit root-level ops (e.g. cm transforms that appear before the
-        // first q/BT).  These belong to the implicit root StateNode and
-        // must NOT be wrapped in q/Q.
-        if (this._rootNode) {
-            for (const op of this._rootNode.ops) {
-                parts.push(op.toString())
-            }
-        }
-        if (this._nodes) {
-            for (const n of this._nodes) {
-                parts.push(n.toString())
-            }
-        }
-        return parts.join('\n')
+    override get raw(): ByteArray {
+        const ops = this.ops
+        const contentString = ops.reduce((acc, op) => acc + op.toString(), '')
+        super.raw = PdfStream.encode(
+            stringToBytes(contentString),
+            this.getFilters(),
+            this.predictor,
+        )
+        return super.raw
     }
 
-    get dataAsString(): string {
-        if (this._nodes) {
-            return this.serializeNodes()
-        }
-        return super.dataAsString
-    }
-
-    set dataAsString(value: string) {
-        this._nodes = undefined
-        this._rootNode = undefined
-        super.dataAsString = value
-    }
-
-    protected getRawData(): ByteArray | undefined {
-        if (this._nodes === undefined) return undefined
-        const contentString = this.serializeNodes()
-        return stringToBytes(contentString)
-    }
-
-    protected tokenize(): PdfToken[] {
-        const rawData = this.getRawData()
-        if (rawData) {
-            // Use the data setter so the bytes are properly re-encoded
-            // through any existing filters (e.g. FlateDecode).
-            this.data = rawData
-        }
-        return super.tokenize()
-    }
-
-    private parseNodes(): ContentNode[] {
-        const contentString = this.dataAsString
-        if (!contentString) return []
-
-        const ops = PdfContentStreamTokeniser.tokenise(contentString)
-        const root = PdfContentStream.buildNodeTree(ops, this.page)
-        this._rootNode = root
-        return root.getChildren()
-    }
-
-    static buildNodeTree(ops: ContentOp[], page?: PdfPage): StateNode {
+    static buildNodeTree(
+        ops: ReadonlyArray<ContentOp>,
+        page?: PdfPage,
+    ): StateNode {
         const root = new StateNode(page)
         const stateStack: StateNode[] = []
 
@@ -232,15 +187,6 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
 
     private _page?: PdfPage
 
-    get page(): PdfPage | undefined {
-        return this._page
-    }
-
-    set page(value: PdfPage | undefined) {
-        this._page = value
-        this.content.page = value
-    }
-
     constructor(object?: PdfIndirectObject) {
         super(object)
 
@@ -252,6 +198,15 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
             header: object?.content?.header,
             original: object?.content?.raw,
         })
+    }
+
+    get page(): PdfPage | undefined {
+        return this._page
+    }
+
+    set page(value: PdfPage | undefined) {
+        this._page = value
+        this.content.page = value
     }
 
     textBlock(): TextBlock {
@@ -277,8 +232,82 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
         this.content.dataAsString = value
     }
 
+    get ops(): ReadonlyArray<ContentOp> {
+        return this.content.ops
+    }
+
     get nodes(): ContentNode[] {
-        return this.content.nodes
+        if (!this.page) {
+            throw new Error(
+                'Page must be set on content stream to access nodes',
+            )
+        }
+        const ops = this.ops
+        const nodeTree = PdfContentStream.buildNodeTree(
+            ops,
+            this.page,
+        ).getChildren()
+        return nodeTree
+    }
+
+    get textBlocks(): TextBlock[] {
+        return this.nodes.filter((n): n is TextBlock => n instanceof TextBlock)
+    }
+
+    get graphicsBlocks(): GraphicsBlock[] {
+        return this.nodes.filter(
+            (n): n is GraphicsBlock => n instanceof GraphicsBlock,
+        )
+    }
+}
+
+export class PdfContents extends PdfIndirectObject<
+    PdfArray<PdfContentStreamObject>
+> {
+    private _page?: PdfPage
+    constructor(items?: PdfContentStreamObject[] | PdfIndirectObject) {
+        super(
+            items instanceof PdfIndirectObject
+                ? items
+                : {
+                      content: new PdfArray(items),
+                  },
+        )
+
+        if (!(this.content instanceof PdfArray)) {
+            throw new Error('Contents object must have an array content')
+        }
+
+        for (const item of this.content.items) {
+            item.becomes(PdfContentStreamObject)
+        }
+    }
+
+    get page(): PdfPage | undefined {
+        return this._page
+    }
+
+    set page(value: PdfPage) {
+        for (const stream of this.content.items) {
+            stream.page = value
+        }
+        this._page = value
+    }
+
+    get ops(): ReadonlyArray<ContentOp> {
+        return this.content.items.flatMap((s) => s.ops)
+    }
+
+    get nodes(): ContentNode[] {
+        if (!this.page) {
+            throw new Error('Page must be set on PdfContents to access nodes')
+        }
+        const ops = this.ops
+        const nodeTree = PdfContentStream.buildNodeTree(
+            ops,
+            this.page,
+        ).getChildren()
+        return nodeTree
     }
 
     get textBlocks(): TextBlock[] {
@@ -302,7 +331,7 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
      * This converts positioning operators (Td, TD) to absolute matrices (Tm) for each segment.
      */
     regroupTextBlocksByLine(): VirtualTextBlock[] {
-        return TextBlock.regroupTextBlocks(this.textBlocks)
+        return VirtualTextBlock.regroupTextBlocks(this.textBlocks)
     }
 
     get graphicsBlocks(): GraphicsBlock[] {
@@ -317,5 +346,9 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
             return result
         }
         return collect(this.nodes)
+    }
+
+    get renderedText(): string {
+        return this.textBlocks.map((b) => b.text).join('')
     }
 }

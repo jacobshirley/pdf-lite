@@ -434,7 +434,7 @@ export function inflateData(data: ByteArray): ByteArray {
 
     if (inflate.err || !inflate.result) {
         if (isWhitespace(data[data.length - 1])) {
-            data = data.slice(0, -1) // Remove trailing whitespace]
+            data = data.slice(0, -1) // Remove trailing whitespace
             return inflateData(data) // Retry inflation after removing whitespace
         }
         throw new Error(

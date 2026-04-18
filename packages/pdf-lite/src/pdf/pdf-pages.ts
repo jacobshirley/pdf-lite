@@ -163,19 +163,34 @@ export class PdfPages
         const kids = this.content.get('Kids')?.as(PdfArray)
         if (!kids) throw new Error('Pages tree has no Kids array')
 
-        // Find the index of the page to remove
+        // Find the index of the page in direct children
         const pageIndex = kids.items.findIndex(
             (ref) => ref.as(PdfObjectReference)?.resolve() === page,
         )
-        if (pageIndex === -1) {
-            throw new Error('Page not found in this Pages tree')
+
+        if (pageIndex !== -1) {
+            // Direct child - remove it
+            kids.items.splice(pageIndex, 1)
+            this.count = this.count - 1
+            this.setModified(true)
+            return
         }
 
-        // Remove the page reference from the Kids array
-        kids.items.splice(pageIndex, 1)
+        // Search recursively in child Pages nodes
+        for (const kid of this.kids) {
+            if (kid instanceof PdfPages) {
+                try {
+                    kid.remove(page)
+                    // If successful, decrement our count too
+                    this.count = this.count - 1
+                    this.setModified(true)
+                    return
+                } catch {
+                    // Not found in this subtree, continue
+                }
+            }
+        }
 
-        // Decrement page count
-        this.count = this.count - 1
-        this.setModified(true)
+        throw new Error('Page not found in this Pages tree')
     }
 }

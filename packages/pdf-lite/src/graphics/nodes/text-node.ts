@@ -396,29 +396,27 @@ export class TextNode extends ContentNode {
         let tm: Matrix
         let tlm: Matrix
 
-        // Check if this segment has positioning that should reset inheritance
-        // Td with Y=0 means "stay on same line" and should inherit base position
-        const moveOps = this.ops.filter(
-            (o) => o instanceof MoveTextOp,
-        ) as MoveTextOp[]
-        const hasLineChangingMove = moveOps.some((op) => op.y !== 0)
-
+        // Only reset inheritance for truly absolute positioning operations
+        // SetTextMatrixOp is absolute, others are typically relative
         const hasAbsolutePositioning = this.ops.some(
-            (o) =>
-                o instanceof SetTextMatrixOp ||
-                o instanceof MoveTextLeadingOp ||
-                o instanceof NextLineOp ||
-                hasLineChangingMove,
+            (o) => o instanceof SetTextMatrixOp,
         )
 
-        if (!hasAbsolutePositioning && this.prev) {
-            // Inherit from previous segment
-            const prevState = this.prev.resolveTextState()
-            const prevAdvance = this.prev.getTextAdvance()
+        // Per PDF spec, BT resets Tm and Tlm to identity.  Only inherit the
+        // text matrix from a previous segment when it belongs to the **same**
+        // TextBlock (same BT…ET pair).  The `prev` link may cross block
+        // boundaries for graphics-state inheritance (font, Tc, Tw), but the
+        // text matrix must not leak across BT boundaries.
+        const sameBlock = this.prev && this.prev.parent === this.parent
+
+        if (!hasAbsolutePositioning && sameBlock) {
+            // Inherit from previous segment for relative positioning
+            const prevState = this.prev!.resolveTextState()
+            const prevAdvance = this.prev!.getTextAdvance()
             tm = prevState.tm.translate(prevAdvance, 0)
             tlm = prevState.tlm
         } else {
-            // Start fresh for segments with absolute positioning
+            // Start fresh for absolute positioning or at a new BT boundary
             tm = Matrix.identity()
             tlm = Matrix.identity()
         }

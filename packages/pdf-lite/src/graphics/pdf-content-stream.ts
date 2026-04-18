@@ -66,6 +66,10 @@ export class PdfContentStream extends PdfStream {
         return super.raw
     }
 
+    get nodes(): ContentNode[] {
+        return PdfContentStream.buildNodeTree(this.ops, this.page).getChildren()
+    }
+
     static buildNodeTree(
         ops: ReadonlyArray<ContentOp>,
         page?: PdfPage,

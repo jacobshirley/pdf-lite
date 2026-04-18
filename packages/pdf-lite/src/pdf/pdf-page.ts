@@ -307,10 +307,6 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
     }
 
     get textBlocks(): VirtualTextBlock[] {
-        console.log(
-            'Regrouping text blocks for page',
-            this.contents.renderedText,
-        )
         return VirtualTextBlock.regroupTextBlocks(this.rawTextBlocks)
     }
 }

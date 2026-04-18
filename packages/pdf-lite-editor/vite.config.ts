@@ -2,12 +2,13 @@
 import { defineConfig } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
+
 const dirname =
     typeof __dirname !== 'undefined'
         ? __dirname
@@ -21,11 +22,7 @@ const config = defineConfig({
             projects: ['./tsconfig.json'],
         }),
         tailwindcss(),
-        tanstackStart({
-            spa: {
-                enabled: true,
-            },
-        }),
+        tanstackRouter({}),
         viteReact(),
     ],
     worker: {

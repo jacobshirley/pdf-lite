@@ -130,7 +130,8 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         if (!entry) {
             contents = new PdfContents()
         } else if (entry instanceof PdfObjectReference) {
-            contents = entry.resolve(PdfContents)
+            const entries = [entry.resolve(PdfContentStreamObject)]
+            contents = new PdfContents(entries)
         } else {
             const entries = entry.items.map((item) =>
                 item.resolve(PdfContentStreamObject),

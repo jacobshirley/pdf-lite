@@ -483,6 +483,12 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * - Fonts with a custom Differences encoding: returns `<XX...>` using the reverse map
      * - Standard/simple fonts: returns `(text)` with PDF literal string escaping
      */
+    /**
+     * For CFF fonts: maps Unicode code point → glyph ID for all cmap entries.
+     * Used by encode() to find the correct CID for any character.
+     */
+    private _unicodeToGlyphId?: Map<number, number>
+
     private _reverseToUnicodeMap?: Map<string, number> | null
 
     get reverseToUnicodeMap(): Map<string, number> | null {
@@ -512,9 +518,14 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         if (!this.requiresToUnicodeEncoding) return []
         const rev = this.reverseToUnicodeMap
         if (!rev) return []
+        const glyphMap = this._unicodeToGlyphId
         const missing: string[] = []
         for (const char of text) {
-            if (!rev.has(char)) missing.push(char)
+            if (!rev.has(char)) {
+                // CFF fonts: also check the full unicode→glyphId map
+                if (glyphMap && glyphMap.has(char.codePointAt(0) ?? 0)) continue
+                missing.push(char)
+            }
         }
         return [...new Set(missing)]
     }
@@ -528,9 +539,14 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                 : text
         if (this.isUnicode) {
             const rev = this.reverseToUnicodeMap
+            const glyphMap = this._unicodeToGlyphId
             let hex = ''
             for (const char of text) {
-                const cid = rev?.get(char)
+                let cid = rev?.get(char)
+                if (cid === undefined && glyphMap) {
+                    // CFF fallback: look up glyph ID from the full cmap
+                    cid = glyphMap.get(char.codePointAt(0) ?? 0)
+                }
                 if (cid !== undefined) {
                     hex += cid.toString(16).padStart(4, '0')
                 } else {
@@ -743,8 +759,11 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
      * @returns A PdfFont instance ready to be written to the PDF
      */
     static fromParser(parser: FontParser): PdfFont {
-        if (parser instanceof OtfParser && parser.isCFFBased()) {
-            throw new Error('CFF-based OTF fonts are not supported yet')
+        const isCFF = parser instanceof OtfParser && parser.isCFFBased()
+
+        if (isCFF) {
+            // CFF-based OTF fonts are always embedded as Type0 composite fonts
+            return PdfFont.fromFile(parser.getFontData())
         }
 
         const metrics = parser.getPdfFontDescriptor()
@@ -968,6 +987,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     static fromType0Data(
         metrics: PdfFontDescriptor,
         unicodeMappings?: Map<number, number>,
+        cffGlyphToUnicode?: Map<number, number>,
     ): PdfFont {
         const fontName = metrics.fontName ?? 'Unknown'
         const font = new PdfFont({
@@ -984,7 +1004,10 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         // Create CIDFont dictionary (descendant font)
         const cidFontDict = new PdfDictionary()
         cidFontDict.set('Type', new PdfName('Font'))
-        cidFontDict.set('Subtype', new PdfName('CIDFontType2'))
+        cidFontDict.set(
+            'Subtype',
+            new PdfName(metrics.isCFF ? 'CIDFontType0' : 'CIDFontType2'),
+        )
         cidFontDict.set('BaseFont', new PdfName(fontName))
 
         // CIDSystemInfo
@@ -1002,37 +1025,40 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             cidFontDict.set('W', PdfFont.buildCIDWidthArray(metrics.cidWidths))
         }
 
-        // CIDToGIDMap - Generate binary stream if unicodeMappings provided
-        if (unicodeMappings && unicodeMappings.size > 0) {
-            const maxCid = Math.max(...Array.from(unicodeMappings.keys()))
-            const cidToGidData = new Uint8Array((maxCid + 1) * 2)
+        // CIDToGIDMap — CFF fonts use their own internal CID mapping,
+        // so CIDToGIDMap is only needed for TrueType-based CID fonts.
+        if (!metrics.isCFF) {
+            if (unicodeMappings && unicodeMappings.size > 0) {
+                const maxCid = Math.max(...Array.from(unicodeMappings.keys()))
+                const cidToGidData = new Uint8Array((maxCid + 1) * 2)
 
-            for (let i = 0; i < cidToGidData.length; i++) {
-                cidToGidData[i] = 0
+                for (let i = 0; i < cidToGidData.length; i++) {
+                    cidToGidData[i] = 0
+                }
+
+                for (const [unicode, glyphId] of unicodeMappings.entries()) {
+                    const offset = unicode * 2
+                    cidToGidData[offset] = (glyphId >> 8) & 0xff
+                    cidToGidData[offset + 1] = glyphId & 0xff
+                }
+
+                const cidToGidStream = new PdfStream({
+                    header: new PdfDictionary(),
+                    original: cidToGidData as ByteArray,
+                })
+                cidToGidStream.addFilter('FlateDecode')
+
+                const cidToGidObject = new PdfIndirectObject({
+                    content: cidToGidStream,
+                })
+
+                cidFontDict.set('CIDToGIDMap', cidToGidObject.reference)
+            } else {
+                cidFontDict.set(
+                    'CIDToGIDMap',
+                    new PdfName(metrics.cidToGidMap ?? 'Identity'),
+                )
             }
-
-            for (const [unicode, glyphId] of unicodeMappings.entries()) {
-                const offset = unicode * 2
-                cidToGidData[offset] = (glyphId >> 8) & 0xff
-                cidToGidData[offset + 1] = glyphId & 0xff
-            }
-
-            const cidToGidStream = new PdfStream({
-                header: new PdfDictionary(),
-                original: cidToGidData as ByteArray,
-            })
-            cidToGidStream.addFilter('FlateDecode')
-
-            const cidToGidObject = new PdfIndirectObject({
-                content: cidToGidStream,
-            })
-
-            cidFontDict.set('CIDToGIDMap', cidToGidObject.reference)
-        } else {
-            cidFontDict.set(
-                'CIDToGIDMap',
-                new PdfName(metrics.cidToGidMap ?? 'Identity'),
-            )
         }
 
         const cidFontObject = new PdfIndirectObject({
@@ -1049,9 +1075,20 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             new PdfArray([cidFontObject.reference]),
         )
 
-        // Create ToUnicode CMap if mappings provided
+        // Create ToUnicode CMap if mappings provided.
+        // CFF fonts: CIDs are glyph IDs, so use cffGlyphToUnicode (glyphId → unicode).
+        // TrueType fonts: CIDs are Unicode code points, so use identity (unicode → unicode).
         if (unicodeMappings && unicodeMappings.size > 0) {
-            const cmapContent = PdfFont.generateToUnicodeCMap(unicodeMappings)
+            let cidToUnicode: Map<number, number>
+            if (cffGlyphToUnicode && cffGlyphToUnicode.size > 0) {
+                cidToUnicode = cffGlyphToUnicode
+            } else {
+                cidToUnicode = new Map<number, number>()
+                for (const [unicode] of unicodeMappings) {
+                    cidToUnicode.set(unicode, unicode)
+                }
+            }
+            const cmapContent = PdfFont.generateToUnicodeCMap(cidToUnicode)
             const cmapStream = new PdfStream({
                 header: new PdfDictionary(),
                 original: new TextEncoder().encode(cmapContent),
@@ -1077,19 +1114,19 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
         },
     ): PdfFont {
         const parser = parseFont(fontData)
-
-        if (parser instanceof OtfParser && parser.isCFFBased()) {
-            throw new Error('CFF-based OTF fonts are not supported yet')
-        }
+        const isCFF = parser instanceof OtfParser && parser.isCFFBased()
 
         const info = parser.getFontInfo()
         const fontName =
             options?.fontName ?? info.postScriptName ?? info.fullName
         const metrics = parser.getPdfFontDescriptor(fontName)
 
-        // Auto-detect if Unicode font is needed
+        // Auto-detect if Unicode font is needed.
+        // CFF-based OTF fonts are always embedded as Type0 (unicode).
         let useUnicode = options?.unicode
-        if (useUnicode === undefined) {
+        if (isCFF) {
+            useUnicode = true
+        } else if (useUnicode === undefined) {
             const cmap = parser.parseCmap()
             useUnicode = Array.from(cmap.keys()).some(
                 (unicode) => unicode > 0xff,
@@ -1100,17 +1137,36 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             const unicodeMappings =
                 options?.unicodeMappings ?? parser.parseCmap()
 
-            // Build CID widths from cmap + hmtx
+            // Build CID widths from cmap + hmtx.
+            // For CFF fonts: CIDs must be glyph IDs (no CIDToGIDMap to translate).
+            // For TrueType fonts: CIDs are Unicode code points (CIDToGIDMap translates to glyph IDs).
             const hmtx = parser.parseHmtx()
             const unitsPerEm = info.unitsPerEm
             const cidWidths: CIDWidth[] = []
             const charWidths = new Map<number, number>()
 
+            // For CFF fonts, build a glyphId→unicode map for the ToUnicode CMap
+            const cffGlyphToUnicode = isCFF
+                ? new Map<number, number>()
+                : undefined
+
             for (const [unicode, glyphId] of unicodeMappings.entries()) {
                 const glyphWidth = hmtx.get(glyphId) ?? 0
                 const scaledWidth = Math.round((glyphWidth * 1000) / unitsPerEm)
-                cidWidths.push({ cid: unicode, width: scaledWidth })
-                charWidths.set(unicode, scaledWidth)
+                const cid = isCFF ? glyphId : unicode
+                cidWidths.push({ cid, width: scaledWidth })
+                charWidths.set(cid, scaledWidth)
+
+                if (cffGlyphToUnicode) {
+                    // Multiple Unicode code points may share the same glyph ID.
+                    // Prefer the lowest code point as the primary mapping so that
+                    // common characters (e.g. U+0020 SPACE) aren't overwritten by
+                    // alternates (e.g. U+00A0 NO-BREAK SPACE).
+                    const existing = cffGlyphToUnicode.get(glyphId)
+                    if (existing === undefined || unicode < existing) {
+                        cffGlyphToUnicode.set(glyphId, unicode)
+                    }
+                }
             }
 
             const avgWidth =
@@ -1153,10 +1209,24 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                 charWidths,
                 defaultWidth: avgWidth,
                 cidWidths,
-                cidToGidMap: 'Identity',
+                cidToGidMap: isCFF ? undefined : 'Identity',
+                isCFF,
             })
 
-            return PdfFont.fromType0Data(unicodeMetrics, unicodeMappings)
+            const font = PdfFont.fromType0Data(
+                unicodeMetrics,
+                unicodeMappings,
+                cffGlyphToUnicode,
+            )
+
+            // For CFF fonts, store the full unicode→glyphId map so encode()
+            // can find the correct CID for any character (including alternates
+            // that share a glyph ID, like U+0020 and U+00A0).
+            if (isCFF) {
+                font._unicodeToGlyphId = new Map(unicodeMappings)
+            }
+
+            return font
         } else {
             return PdfFont.fromTrueTypeData(metrics)
         }

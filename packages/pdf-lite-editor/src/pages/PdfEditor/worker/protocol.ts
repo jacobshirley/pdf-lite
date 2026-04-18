@@ -173,7 +173,7 @@ export type WorkerMethods = {
     }
     setAppearanceState: {
         args: { id: string; value: string }
-        result: FieldDTO
+        result: FieldDTO[]
     }
     addField: {
         args: { type: FieldType; options?: AddFieldOptions }

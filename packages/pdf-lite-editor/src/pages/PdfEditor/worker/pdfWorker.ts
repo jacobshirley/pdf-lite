@@ -626,10 +626,30 @@ const handlers: {
     setAppearanceState({ id, value }) {
         const field = fieldRefs.get(id)
         if (!field) throw new Error(`Field ${id} not found`)
-        field.appearanceState = value
+
+        // For button fields in a group, set the parent's value
+        // which triggers mutual exclusion (deselects siblings)
+        const parent = field.parent
+        if (field instanceof PdfButtonFormField && parent) {
+            parent.value = value
+        } else {
+            field.appearanceState = value
+        }
+
+        // Return updated DTOs for all affected siblings
+        const affected: FieldDTO[] = []
+        if (parent) {
+            for (const [fid, f] of fieldRefs.entries()) {
+                if (f === field || f.parent === parent) {
+                    affected.push(fieldToDTO(f, fid))
+                }
+            }
+        } else {
+            affected.push(fieldToDTO(field, id))
+        }
 
         saveToHistory()
-        return fieldToDTO(field, id)
+        return affected
     },
 
     updateFieldOptions({ id, options }) {
@@ -800,20 +820,51 @@ const handlers: {
         let updatedOriginalName: string | undefined
         let updatedOriginalValue: string | undefined
 
+        const isButton = fieldToClone instanceof PdfButtonFormField
+        const isChoice = fieldToClone instanceof PdfChoiceFormField
+
+        function createFieldOfSameType(): PdfFormField {
+            if (isButton) return new PdfButtonFormField()
+            if (isChoice) return new PdfChoiceFormField()
+            return new PdfTextFormField()
+        }
+
         if (fieldToClone.parent) {
             parentField = fieldToClone.parent
         } else {
             isFirstClone = true
-            parentField = new PdfTextFormField()
+            parentField = createFieldOfSameType()
             parentField.name = fieldToClone.name
-            parentField.value = fieldToClone.value
-            parentField.defaultAppearance =
-                fieldToClone.defaultAppearance || '/Helv 12 Tf 0 g'
+            if (!isButton) {
+                parentField.defaultAppearance =
+                    fieldToClone.defaultAppearance || '/Helv 12 Tf 0 g'
+            }
+            if (isChoice && fieldToClone instanceof PdfChoiceFormField) {
+                ;(parentField as PdfChoiceFormField).options =
+                    fieldToClone.options
+                parentField.combo = fieldToClone.combo
+            }
+            if (isButton) {
+                // Set radio flag on the parent group
+                ;(parentField as PdfButtonFormField).radio = true
+                ;(parentField as PdfButtonFormField).noToggleToOff = true
+            }
             parentField._form = pdfDoc.acroform
 
             const originalAsWidget = fieldToClone
             originalAsWidget.content.delete('T')
             originalAsWidget.content.delete('V')
+
+            // Give the original widget a unique on-state for radio group
+            if (isButton) {
+                const originalOnState = 'Choice1'
+                originalAsWidget.onState = originalOnState
+                originalAsWidget.generateAppearance({
+                    onStateName: originalOnState,
+                })
+                originalAsWidget.appearanceState = originalOnState
+            }
+
             originalAsWidget.parent = parentField
 
             const acroformFields = pdfDoc.acroform.fields
@@ -827,11 +878,22 @@ const handlers: {
             }
             pdfDoc.acroform.addField(parentField)
 
+            // Set the parent value to the original's on-state (it starts selected)
+            if (isButton) {
+                parentField.value = 'Choice1'
+            } else {
+                parentField.value = fieldToClone.value
+            }
+
             updatedOriginalName = parentField.name
             updatedOriginalValue = parentField.value
         }
 
-        const widget = new PdfTextFormField()
+        // Determine unique on-state for the new widget in a button group
+        const siblingCount = parentField.children.length
+        const newOnState = isButton ? `Choice${siblingCount + 1}` : undefined
+
+        const widget = createFieldOfSameType()
         const offsetX = 20
         const offsetY = 20
         const [x1, y1, x2, y2] = fieldToClone.rect
@@ -846,7 +908,12 @@ const handlers: {
         widget.parent = parentField
         widget._form = pdfDoc.acroform
         if (widget.generateAppearance) {
-            widget.generateAppearance()
+            if (isButton && newOnState) {
+                widget.generateAppearance({ onStateName: newOnState })
+                widget.appearanceState = 'Off'
+            } else {
+                widget.generateAppearance()
+            }
         }
 
         const newId = `field_${nextFieldId++}`

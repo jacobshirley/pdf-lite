@@ -164,7 +164,7 @@ export function usePdfEditor() {
                 id: selectedFieldId,
                 value,
             })
-            mergeFieldDTO(updated)
+            mergeFieldDTOs(updated)
             setPdfVersion((v) => v + 1)
             updateUndoRedoState()
         } catch (error) {
@@ -323,6 +323,20 @@ export function usePdfEditor() {
                 [bytes.buffer],
             )
             setEmbeddedFonts((prev) => [...prev, fontRef])
+            // Auto-apply the uploaded font to the selected text block
+            if (selectedTextBlock) {
+                try {
+                    const updated = await client.call('setTextBlockFont', {
+                        id: selectedTextBlock.id,
+                        fontRefId: fontRef.id,
+                    })
+                    mergeTextBlockDTO(updated)
+                    setPdfVersion((v) => v + 1)
+                    updateUndoRedoState()
+                } catch (applyError) {
+                    console.error('Error applying uploaded font:', applyError)
+                }
+            }
         } catch (error) {
             console.error('Error loading font:', error)
             alert(

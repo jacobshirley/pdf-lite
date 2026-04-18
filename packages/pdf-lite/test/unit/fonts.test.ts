@@ -1159,17 +1159,61 @@ describe('Font Parsers with Minimal Test Data', () => {
             const signature = view.getUint32(0)
             const isCFF = signature === 0x4f54544f // 'OTTO'
 
+            // Both CFF-based and TrueType-based OTF fonts should work
+            const font = PdfFont.fromBytes(otfData)
+            expect(font).toBeInstanceOf(PdfFont)
+            expect(font.fontName).toBeDefined()
+
             if (isCFF) {
-                // If CFF-based, should throw
-                expect(() => PdfFont.fromBytes(otfData)).toThrow(
-                    'CFF-based OTF fonts are not supported yet',
-                )
-            } else {
-                // If not CFF-based, should work
-                const font = PdfFont.fromBytes(otfData)
-                expect(font).toBeInstanceOf(PdfFont)
-                expect(font.fontName).toBeDefined()
+                // CFF fonts are embedded as Type0 composite fonts
+                expect(font.fontType).toBe('Type0')
             }
+        })
+
+        it('should encode text with spaces correctly with CFF-based OTF font', async () => {
+            const otfData = await loadFont(OTF_FIXTURE)
+            const font = PdfFont.fromBytes(otfData)
+
+            expect(font.fontType).toBe('Type0')
+
+            // Space must be supported
+            const bad = font.unsupportedChars('Hello World')
+            expect(bad).toEqual([])
+
+            const encoded = font.encode('A B')
+            expect(encoded).toBeDefined()
+            const decoded = font.decode(encoded)
+            expect(decoded).toBe('A B')
+        })
+
+        it('should encode text correctly with CFF-based OTF font', async () => {
+            const otfData = await loadFont(OTF_FIXTURE)
+            const font = PdfFont.fromBytes(otfData)
+
+            // SourceSans3-Regular.otf is CFF-based
+            expect(font.fontType).toBe('Type0')
+
+            // Encode a simple string — should produce glyph IDs, not Unicode code points
+            const encoded = font.encode('AB')
+            expect(encoded).toBeDefined()
+
+            // The encoded hex should NOT be raw Unicode code points (0041, 0042)
+            // because CFF fonts use glyph IDs as CIDs
+            const hexStr =
+                encoded instanceof PdfHexadecimal ? encoded.toString() : ''
+            // Strip angle brackets if present
+            const rawHex = hexStr.replace(/[<>]/g, '')
+
+            // For CFF, the CIDs should be glyph IDs from the cmap table
+            // 'A' (U+0041) and 'B' (U+0042) should map to their glyph IDs,
+            // which are typically different from the Unicode code points
+            // At minimum, verify it encodes without error and produces hex output
+            expect(rawHex.length).toBeGreaterThan(0)
+            expect(rawHex.length).toBe(8) // 2 chars × 4 hex digits each
+
+            // Verify round-trip: decode should recover original text
+            const decoded = font.decode(encoded)
+            expect(decoded).toBe('AB')
         })
 
         it('should work with real WOFF font file', async () => {

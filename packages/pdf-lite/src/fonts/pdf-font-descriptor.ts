@@ -45,6 +45,7 @@ export interface PdfFontDescriptorOptions {
     cidWidths?: CIDWidth[]
     defaultWidth?: number
     cidToGidMap?: 'Identity'
+    isCFF?: boolean
 }
 
 export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
@@ -64,6 +65,7 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
     readonly cidWidths?: CIDWidth[]
     readonly defaultWidth?: number
     readonly cidToGidMap?: 'Identity'
+    readonly isCFF?: boolean
 
     private _kernMap?: Map<string, number>
 
@@ -86,6 +88,7 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
         this.cidWidths = options.cidWidths
         this.defaultWidth = options.defaultWidth
         this.cidToGidMap = options.cidToGidMap
+        this.isCFF = options.isCFF
 
         // Populate PDF dictionary via setters
         const dict = this.content
@@ -277,11 +280,12 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
     }
 
     /**
-     * Gets the embedded font file data from the FontFile2 stream.
+     * Gets the embedded font file data from the FontFile2 or FontFile3 stream.
      * Returns the in-memory fontData if no stream is attached yet.
      */
     get data(): ByteArray | undefined {
-        const ref = this.content.get('FontFile2')
+        const ref =
+            this.content.get('FontFile2') ?? this.content.get('FontFile3')
         if (ref instanceof PdfObjectReference) {
             const obj = ref.resolve()
             if (obj?.content instanceof PdfStream) {
@@ -294,7 +298,7 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
     /**
      * Sets the embedded font file data.
      * Creates a new PdfStream with FlateDecode compression and stores
-     * a reference in the FontFile2 entry.
+     * a reference in FontFile2 (TrueType) or FontFile3 (CFF/OpenType).
      */
     set data(value: ByteArray | undefined) {
         this.fontData = value
@@ -303,13 +307,20 @@ export class PdfFontDescriptor extends PdfIndirectObject<PdfDictionary> {
                 header: new PdfDictionary(),
                 original: value,
             })
-            stream.header.set('Length1', new PdfNumber(value.length))
+
+            if (this.isCFF) {
+                stream.header.set('Subtype', new PdfName('OpenType'))
+            } else {
+                stream.header.set('Length1', new PdfNumber(value.length))
+            }
             stream.addFilter('FlateDecode')
 
             const obj = new PdfIndirectObject({ content: stream })
-            this.content.set('FontFile2', obj.reference)
+            const key = this.isCFF ? 'FontFile3' : 'FontFile2'
+            this.content.set(key, obj.reference)
         } else {
             this.content.delete('FontFile2')
+            this.content.delete('FontFile3')
         }
     }
 

@@ -91,7 +91,7 @@ export function TopBar() {
                 asChild
             >
                 <a
-                    href="https://buymeacoffee.com/fosspdf"
+                    href="https://www.buymeacoffee.com/jacobshirley"
                     target="_blank"
                     rel="noopener noreferrer"
                 >

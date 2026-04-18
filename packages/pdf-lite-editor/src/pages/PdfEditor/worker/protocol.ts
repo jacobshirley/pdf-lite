@@ -54,6 +54,7 @@ export type ExtractResult = {
     fields: FieldDTO[]
     textBlocks: TextBlockDTO[]
     graphicsBlocks: GraphicsBlockDTO[]
+    pageCount: number
 }
 
 export type FontRef = {
@@ -157,6 +158,10 @@ export type WorkerMethods = {
     }
     addPage: {
         args: { width?: number; height?: number }
+        result: ExtractResult
+    }
+    removePage: {
+        args: { pageNumber: number }
         result: ExtractResult
     }
     updateFieldProperty: {

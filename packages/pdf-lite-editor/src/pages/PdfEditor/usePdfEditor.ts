@@ -13,6 +13,7 @@ export function usePdfEditor() {
     const [uploadedFile, setUploadedFile] = useState<File | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [pdfLoaded, setPdfLoaded] = useState(false)
+    const [pageCount, setPageCount] = useState(0)
     const [pdfLoading, setPdfLoading] = useState(false)
     const [zoomLevel, setZoomLevel] = useState(1.0)
     const [activeView, setActiveView] = useState<'pdf' | 'text'>('pdf')
@@ -389,6 +390,7 @@ export function usePdfEditor() {
             setExtractedFields(result.fields)
             setExtractedTextBlocks(result.textBlocks)
             setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setPageCount(result.pageCount)
             setPdfVersion((v) => v + 1)
             updateUndoRedoState()
         } catch (error) {
@@ -399,12 +401,33 @@ export function usePdfEditor() {
         }
     }
 
+    const handleRemovePage = async (pageNumber: number) => {
+        try {
+            const result = await client.call('removePage', { pageNumber })
+            setExtractedFields(result.fields)
+            setExtractedTextBlocks(result.textBlocks)
+            setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setPageCount(result.pageCount)
+            setSelectedFieldId(null)
+            setSelectedTextBlockId(null)
+            setEditingTextBlockId(null)
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error removing page:', error)
+            alert(
+                `Error removing page: ${error instanceof Error ? error.message : String(error)}`,
+            )
+        }
+    }
+
     const handleUndo = async () => {
         try {
             const result = await client.call('undo', {})
             setExtractedFields(result.fields)
             setExtractedTextBlocks(result.textBlocks)
             setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setPageCount(result.pageCount)
             setCanUndo(result.canUndo)
             setCanRedo(result.canRedo)
             setPdfVersion((v) => v + 1)
@@ -421,6 +444,7 @@ export function usePdfEditor() {
             setExtractedFields(result.fields)
             setExtractedTextBlocks(result.textBlocks)
             setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setPageCount(result.pageCount)
             setCanUndo(result.canUndo)
             setCanRedo(result.canRedo)
             setPdfVersion((v) => v + 1)
@@ -637,6 +661,7 @@ export function usePdfEditor() {
             setExtractedFields(result.fields)
             setExtractedTextBlocks(result.textBlocks)
             setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setPageCount(result.pageCount)
             setStandardFonts(fonts)
             setEmbeddedFonts([])
             setPdfBytes(await client.call('toBytes', undefined))
@@ -713,6 +738,7 @@ export function usePdfEditor() {
             setExtractedFields(result.fields)
             setExtractedTextBlocks(result.textBlocks)
             setExtractedGraphicsBlocks(result.graphicsBlocks)
+            setPageCount(result.pageCount)
             setStandardFonts(fonts)
             setEmbeddedFonts([])
             setPdfBytes(await client.call('toBytes', undefined))
@@ -742,6 +768,7 @@ export function usePdfEditor() {
         setExtractedFields([])
         setExtractedTextBlocks([])
         setExtractedGraphicsBlocks([])
+        setPageCount(0)
         setEmbeddedFonts([])
         setSelectedFieldId(null)
         setSelectedTextBlockId(null)
@@ -883,6 +910,7 @@ export function usePdfEditor() {
         uploadedFile,
         pdfLoaded,
         pdfLoading,
+        pageCount,
         zoomLevel,
         setZoomLevel,
         pdfBytes,
@@ -931,6 +959,7 @@ export function usePdfEditor() {
         handleFontChange,
         handleTextBlockFontSizeChange,
         handleAddPage,
+        handleRemovePage,
         handleUndo,
         handleRedo,
         canUndo,

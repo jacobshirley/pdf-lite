@@ -97,6 +97,8 @@ export function PdfEditor() {
                     }
                     onBackgroundClick={editor.handleBackgroundClick}
                     onPageDrop={editor.handlePageDrop}
+                    onRemovePage={editor.handleRemovePage}
+                    totalPages={editor.pageCount}
                     zoomLevel={editor.zoomLevel}
                     onZoomChange={editor.setZoomLevel}
                 />

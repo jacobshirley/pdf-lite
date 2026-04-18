@@ -30,6 +30,12 @@ const config = defineConfig({
     ],
     worker: {
         format: 'es',
+        rollupOptions: {
+            external: [],
+        },
+    },
+    optimizeDeps: {
+        exclude: ['pdf-lite'],
     },
     test: {
         projects: [

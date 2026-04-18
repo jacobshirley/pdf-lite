@@ -226,7 +226,7 @@ function findTextBlockEntry(id: string): {
 
 function extractAll(): ExtractResult {
     if (!pdfDoc) {
-        return { fields: [], textBlocks: [], graphicsBlocks: [] }
+        return { fields: [], textBlocks: [], graphicsBlocks: [], pageCount: 0 }
     }
 
     fieldRefs.clear()
@@ -309,7 +309,7 @@ function extractAll(): ExtractResult {
         }
     }
 
-    return { fields, textBlocks, graphicsBlocks }
+    return { fields, textBlocks, graphicsBlocks, pageCount: pages.length }
 }
 
 const handlers: {
@@ -505,6 +505,21 @@ const handlers: {
     addPage({ width, height }) {
         if (!pdfDoc) throw new Error('No PDF loaded')
         pdfDoc.pages.newPage({ width, height })
+        const result = extractAll()
+
+        saveToHistory()
+        return result
+    },
+
+    removePage({ pageNumber }) {
+        if (!pdfDoc) throw new Error('No PDF loaded')
+        const pages = pdfDoc.pages.toArray()
+        if (pages.length <= 1) throw new Error('Cannot delete the last page')
+        if (pageNumber < 1 || pageNumber > pages.length)
+            throw new Error(`Invalid page number: ${pageNumber}`)
+
+        const page = pages[pageNumber - 1]
+        pdfDoc.pages.remove(page)
         const result = extractAll()
 
         saveToHistory()

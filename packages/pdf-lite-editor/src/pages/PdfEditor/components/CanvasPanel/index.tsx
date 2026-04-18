@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react'
 import { Badge } from '@/components/shadcn/badge'
 import { Button } from '@/components/shadcn/button'
 import { Card, CardContent } from '@/components/shadcn/card'
-import { Eye, FileText, FileUp, Layers, Loader2, Type, Upload, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { Eye, FileText, FileUp, Layers, Loader2, Trash2, Type, Upload, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 import { PdfViewer } from '@/components/PdfViewer'
 import { PdfTextEditor } from '@/components/PdfTextEditor'
 import type {
@@ -65,6 +65,8 @@ type Props = {
         pageNumber: number,
         pageElement: HTMLElement,
     ) => void
+    onRemovePage: (pageNumber: number) => void
+    totalPages: number
 }
 
 export function CanvasPanel({
@@ -106,6 +108,8 @@ export function CanvasPanel({
     onTextBlockPositionChange,
     onBackgroundClick,
     onPageDrop,
+    onRemovePage,
+    totalPages,
 }: Props) {
     const scrollContainerRef = useRef<HTMLDivElement>(null)
     const [isPanning, setIsPanning] = useState(false)
@@ -201,9 +205,9 @@ export function CanvasPanel({
                     </CardContent>
                 </Card>
             ) : (
-                <Card className="rounded-[24px] border-slate-200 shadow-sm">
-                    <div className="border-b bg-slate-50">
-                        <div className="flex items-center justify-between px-5 py-3">
+                <Card className="rounded-[24px] border-slate-200 py-0 shadow-sm">
+                    <div className="border-b bg-slate-50 rounded-t-[24px]">
+                        <div className="flex items-center justify-between px-4 py-2.5">
                             <div className="flex items-center gap-3">
                                 <Badge
                                     variant="secondary"
@@ -411,15 +415,32 @@ export function CanvasPanel({
                                                 <div className="text-sm font-semibold text-slate-600">
                                                     Page {context.pageNumber}
                                                 </div>
-                                                {pageFields.length > 0 && (
-                                                    <div className="text-xs text-slate-500">
-                                                        {pageFields.length}{' '}
-                                                        field
-                                                        {pageFields.length !== 1
-                                                            ? 's'
-                                                            : ''}
-                                                    </div>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    {pageFields.length > 0 && (
+                                                        <div className="text-xs text-slate-500">
+                                                            {pageFields.length}{' '}
+                                                            field
+                                                            {pageFields.length !== 1
+                                                                ? 's'
+                                                                : ''}
+                                                        </div>
+                                                    )}
+                                                    {totalPages > 1 && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                onRemovePage(context.pageNumber)
+                                                            }}
+                                                            className="h-6 w-6 p-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                                            title={`Delete page ${context.pageNumber}`}
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div
                                                 ref={(el) => {

@@ -31,6 +31,8 @@ export {
 
 export class PdfContentStream extends PdfStream {
     page?: PdfPage
+    private _originalOps: ContentOp[] = []
+    private _cachedNodes?: ContentNode[]
 
     constructor(
         options:
@@ -43,16 +45,31 @@ export class PdfContentStream extends PdfStream {
             | string = '',
     ) {
         super(options)
+        this.parseOps()
     }
 
-    get ops(): ReadonlyArray<ContentOp> {
+    private parseOps(): void {
         const decoded = PdfStream.decode(
             super.raw,
             this.getFilters(),
             this.predictor,
         )
-        const ops = PdfContentStreamTokeniser.tokenise(decoded)
-        return ops
+
+        this._originalOps = PdfContentStreamTokeniser.tokenise(decoded)
+        this._cachedNodes = undefined // Clear cached nodes when re-parsing
+    }
+
+    get ops(): ContentOp[] {
+        // If we have cached nodes, rebuild ops from the current node tree
+        if (this._cachedNodes) {
+            const result: ContentOp[] = []
+            for (const node of this._cachedNodes) {
+                this.flattenNode(node, result)
+            }
+            return result
+        }
+        // Otherwise return the original parsed ops
+        return this._originalOps
     }
 
     override get raw(): ByteArray {
@@ -66,8 +83,50 @@ export class PdfContentStream extends PdfStream {
         return super.raw
     }
 
+    override set raw(value: ByteArray) {
+        super.raw = value
+        this.parseOps()
+    }
+
     get nodes(): ContentNode[] {
-        return PdfContentStream.buildNodeTree(this.ops, this.page).getChildren()
+        if (!this._cachedNodes) {
+            this._cachedNodes = PdfContentStream.buildNodeTree(
+                this._originalOps,
+                this.page,
+            ).getChildren()
+        }
+        return this._cachedNodes
+    }
+
+    /** Clear cached nodes - should be called when content is modified externally */
+    invalidateNodeCache(): void {
+        this._cachedNodes = undefined
+    }
+
+    private flattenNode(node: ContentNode, result: ContentOp[]): void {
+        if (node instanceof StateNode) {
+            // Check if this is a root-level state node (has no parent or parent is not StateNode)
+            const shouldWrapWithSaveRestore = node.parent instanceof StateNode
+
+            if (shouldWrapWithSaveRestore) {
+                result.push(new SaveStateOp())
+            }
+
+            // Add the node's direct ops
+            result.push(...node.ops)
+
+            // Recursively add children
+            for (const child of node.getChildren()) {
+                this.flattenNode(child, result)
+            }
+
+            if (shouldWrapWithSaveRestore) {
+                result.push(new RestoreStateOp())
+            }
+        } else {
+            // For TextBlock, GraphicsBlock, etc., their ops getter handles the formatting
+            result.push(...node.ops)
+        }
     }
 
     static buildNodeTree(
@@ -225,6 +284,8 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
     }
 
     add(node: ContentNode) {
+        // Clear cached nodes since we're modifying the content
+        this.content.invalidateNodeCache()
         this.content.dataAsString += node.toString() + '\n'
     }
 
@@ -233,6 +294,7 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
     }
 
     set dataAsString(value: string) {
+        this.content.invalidateNodeCache()
         this.content.dataAsString = value
     }
 
@@ -241,17 +303,11 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
     }
 
     get nodes(): ContentNode[] {
-        if (!this.page) {
-            throw new Error(
-                'Page must be set on content stream to access nodes',
-            )
+        // Set page on content stream if available
+        if (this.page) {
+            this.content.page = this.page
         }
-        const ops = this.ops
-        const nodeTree = PdfContentStream.buildNodeTree(
-            ops,
-            this.page,
-        ).getChildren()
-        return nodeTree
+        return this.content.nodes
     }
 
     get textBlocks(): TextBlock[] {
@@ -303,9 +359,6 @@ export class PdfContents extends PdfIndirectObject<
     }
 
     get nodes(): ContentNode[] {
-        if (!this.page) {
-            throw new Error('Page must be set on PdfContents to access nodes')
-        }
         const ops = this.ops
         const nodeTree = PdfContentStream.buildNodeTree(
             ops,

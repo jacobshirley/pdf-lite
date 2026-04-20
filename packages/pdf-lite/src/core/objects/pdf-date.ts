@@ -1,7 +1,14 @@
 import { PdfString } from './pdf-string.js'
 
 export class PdfDate extends PdfString {
-    constructor(date: Date) {
+    constructor(date: Date | string | PdfString) {
+        if (date instanceof PdfString) {
+            super(date.raw)
+            return
+        } else if (typeof date === 'string') {
+            super(new TextEncoder().encode(date))
+            return
+        }
         const pad = (n: number, width: number = 2): string =>
             n.toString().padStart(width, '0')
 
@@ -74,5 +81,13 @@ export class PdfDate extends PdfString {
         }
 
         return date
+    }
+
+    get tryDate(): Date | null {
+        try {
+            return this.date
+        } catch {
+            return null
+        }
     }
 }

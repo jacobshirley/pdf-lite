@@ -26,7 +26,7 @@ export class PdfAnnotation extends PdfIndirectObject<
         FT: PdfName
         T: PdfString
         DV: PdfString | PdfName
-        V: PdfString | PdfName
+        V: PdfString | PdfName | PdfObjectReference
         DA: PdfString
         DR: PdfDictionary | PdfObjectReference
         Opt: PdfArray<PdfString | PdfArray<PdfString>> | PdfObjectReference

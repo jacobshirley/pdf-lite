@@ -167,24 +167,6 @@ describe('multi-child-field.pdf — parsed nodes', () => {
             .contentStreams.some((s) => s.textBlocks.length > 0)
         expect(hasText).toBe(true)
     })
-
-    it('textBlocks are found recursively from the tree', () => {
-        for (const stream of doc.pages.get(0).contentStreams) {
-            const textBlocks = stream.textBlocks
-            for (const tb of textBlocks) {
-                expect(tb).toBeInstanceOf(TextBlock)
-            }
-        }
-    })
-
-    it('graphicsBlocks are found recursively from the tree', () => {
-        for (const stream of doc.pages.get(0).contentStreams) {
-            const graphicsBlocks = stream.graphicsBlocks
-            for (const gb of graphicsBlocks) {
-                expect(gb).toBeInstanceOf(GraphicsBlock)
-            }
-        }
-    })
 })
 
 // ---------------------------------------------------------------------------

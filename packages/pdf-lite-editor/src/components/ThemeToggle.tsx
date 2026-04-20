@@ -1,3 +1,4 @@
+import { Monitor, Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type ThemeMode = 'light' | 'dark' | 'auto'
@@ -68,7 +69,13 @@ export default function ThemeToggle() {
       : `Theme mode: ${mode}. Click to switch mode.`
 
   const icon =
-    mode === 'light' ? '☀️' : mode === 'dark' ? '🌙' : '💻'
+    mode === 'light' ? (
+      <Sun size={16} />
+    ) : mode === 'dark' ? (
+      <Moon size={16} />
+    ) : (
+      <Monitor size={16} />
+    )
 
   return (
     <button

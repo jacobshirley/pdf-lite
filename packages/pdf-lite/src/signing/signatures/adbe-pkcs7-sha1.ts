@@ -43,8 +43,6 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
     additionalCertificates: ByteArray[]
     /** Issuer certificate for OCSP requests. */
     issuerCertificate?: ByteArray
-    /** Signing date. */
-    date?: Date
     /** Revocation information or 'fetch' to retrieve automatically. */
     revocationInfo?: RevocationInfo | 'fetch'
     /** Timestamp authority configuration. */
@@ -75,7 +73,6 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
         this.certificate = options.certificate
         this.issuerCertificate = options.issuerCertificate
         this.additionalCertificates = options.additionalCertificates || []
-        this.date = options.date
         this.revocationInfo = options.revocationInfo
         this.timeStampAuthority =
             options.timeStampAuthority === true
@@ -101,7 +98,8 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
         const signedAttributes = new SignerInfo.SignedAttributes()
         const unsignedAttributes = new SignerInfo.UnsignedAttributes()
 
-        signedAttributes.push(Attribute.signingTime(this.date ?? new Date()))
+        this.signedAt ??= new Date()
+        signedAttributes.push(Attribute.signingTime(this.signedAt))
         const revocationInfo =
             this.revocationInfo === 'fetch'
                 ? await fetchRevocationInfo({

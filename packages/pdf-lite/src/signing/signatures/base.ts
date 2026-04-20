@@ -257,4 +257,86 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
         }
         return true
     }
+
+    get signedAt(): Date | null {
+        const m = this.content.get('M')
+        if (m instanceof PdfDate) {
+            return m.date
+        } else if (m instanceof PdfString) {
+            return new PdfDate(m).tryDate
+        }
+        return null
+    }
+
+    set signedAt(date: Date | null) {
+        if (date) {
+            this.content.set('M', new PdfDate(date))
+        } else {
+            this.content.delete('M')
+        }
+    }
+
+    get signerName(): string | null {
+        const nameEntry = this.content.get('Name')
+        if (nameEntry instanceof PdfString) {
+            return nameEntry.value
+        }
+        return null
+    }
+
+    set signerName(name: string | null) {
+        if (name) {
+            this.content.set('Name', new PdfString(name))
+        } else {
+            this.content.delete('Name')
+        }
+    }
+
+    get reason(): string | null {
+        const reasonEntry = this.content.get('Reason')
+        if (reasonEntry instanceof PdfString) {
+            return reasonEntry.value
+        }
+        return null
+    }
+
+    set reason(reason: string | null) {
+        if (reason) {
+            this.content.set('Reason', new PdfString(reason))
+        } else {
+            this.content.delete('Reason')
+        }
+    }
+
+    get contactInfo(): string | null {
+        const contactEntry = this.content.get('ContactInfo')
+        if (contactEntry instanceof PdfString) {
+            return contactEntry.value
+        }
+        return null
+    }
+
+    set contactInfo(contactInfo: string | null) {
+        if (contactInfo) {
+            this.content.set('ContactInfo', new PdfString(contactInfo))
+        } else {
+            this.content.delete('ContactInfo')
+        }
+    }
+
+    get location(): string | null {
+        const locationEntry = this.content.get('Location')
+        if (locationEntry instanceof PdfString) {
+            return locationEntry.value
+        }
+        return null
+    }
+
+    set location(location: string | null) {
+        if (location) {
+            this.content.set('Location', new PdfString(location))
+        } else {
+            this.content.delete('Location')
+        }
+    }
 }

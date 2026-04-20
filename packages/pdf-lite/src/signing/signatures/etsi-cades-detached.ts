@@ -53,12 +53,6 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
     additionalCertificates: ByteArray[]
     /** Issuer certificate for OCSP requests. */
     issuerCertificate?: ByteArray
-    /** Signing date. */
-    date?: Date
-    /** Reason for signing. */
-    reason?: string
-    /** Signing location. */
-    location?: string
     /** Signature algorithm parameters. */
     algorithm?: AsymmetricEncryptionAlgorithmParams
     /** Revocation information or 'fetch' to retrieve automatically. */
@@ -95,6 +89,12 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
                     : undefined,
                 M: options.date ? new PdfDate(options.date) : undefined,
                 Name: options.name ? new PdfString(options.name) : undefined,
+                Reason: options.reason
+                    ? new PdfString(options.reason)
+                    : undefined,
+                Location: options.location
+                    ? new PdfString(options.location)
+                    : undefined,
             }),
         )
 
@@ -102,9 +102,6 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
         this.certificate = options.certificate
         this.issuerCertificate = options.issuerCertificate
         this.additionalCertificates = options.additionalCertificates || []
-        this.date = options.date
-        this.reason = options.reason
-        this.location = options.location
         this.algorithm = options.algorithm
         this.revocationInfo = options.revocationInfo
         this.timeStampAuthority =
@@ -140,7 +137,8 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
             ),
         )
 
-        signedAttributes.push(Attribute.signingTime(this.date ?? new Date()))
+        this.signedAt ??= new Date()
+        signedAttributes.push(Attribute.signingTime(this.signedAt))
 
         if (this.reason) {
             signedAttributes.push(

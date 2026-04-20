@@ -180,7 +180,7 @@ export class PdfSigner {
      * @param signatureDict - The signature dictionary.
      * @returns A properly typed PdfSignatureObject subclass.
      */
-    private instantiateSignatureObject(
+    static instantiateSignatureObject(
         signatureDict: PdfIndirectObject<PdfSignatureDictionary>,
     ): PdfSignatureObject {
         const content = signatureDict.content
@@ -188,9 +188,9 @@ export class PdfSigner {
 
         // Create a PdfSignatureDictionary wrapper
         const sigDict = new PdfSignatureDictionary({
-            Type: content.get('Type'),
-            Filter: content.get('Filter'),
-            SubFilter: content.get('SubFilter'),
+            Type: content.get('Type') as any,
+            Filter: content.get('Filter') as any,
+            SubFilter: content.get('SubFilter') as any,
             Reason: content.get('Reason'),
             M: content.get('M'),
             Name: content.get('Name'),
@@ -200,7 +200,7 @@ export class PdfSigner {
             Cert: content.get('Cert'),
             ByteRange: content.get('ByteRange'),
             Contents: content.get('Contents'),
-        } as any)
+        })
 
         // Instantiate the appropriate signature type based on SubFilter
         let signatureObj: PdfSignatureObject
@@ -317,7 +317,8 @@ export class PdfSigner {
             const subFilter = signatureDict.content.get('SubFilter')!.value
 
             // Instantiate the correct signature type
-            const signature = this.instantiateSignatureObject(signatureDict)
+            const signature =
+                PdfSigner.instantiateSignatureObject(signatureDict)
 
             // Get the ByteRange from the signature dictionary
             const byteRangeEntry = signatureDict.content.get('ByteRange')

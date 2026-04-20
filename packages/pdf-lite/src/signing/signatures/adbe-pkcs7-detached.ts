@@ -36,8 +36,6 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
     additionalCertificates: ByteArray[]
     /** Issuer certificate for OCSP requests. */
     issuerCertificate?: ByteArray
-    /** Signing date. */
-    date?: Date
     /** Signature algorithm parameters. */
     algorithm?: AsymmetricEncryptionAlgorithmParams
     /** Revocation information or 'fetch' to retrieve automatically. */
@@ -70,7 +68,6 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
         this.certificate = options.certificate
         this.issuerCertificate = options.issuerCertificate
         this.additionalCertificates = options.additionalCertificates || []
-        this.date = options.date
         this.algorithm = options.algorithm
         this.revocationInfo = options.revocationInfo
         this.timeStampAuthority =
@@ -97,7 +94,8 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
         const signedAttributes = new SignerInfo.SignedAttributes()
         const unsignedAttributes = new SignerInfo.UnsignedAttributes()
 
-        signedAttributes.push(Attribute.signingTime(this.date ?? new Date()))
+        this.signedAt ??= new Date()
+        signedAttributes.push(Attribute.signingTime(this.signedAt))
 
         const revocationInfo =
             this.revocationInfo === 'fetch'

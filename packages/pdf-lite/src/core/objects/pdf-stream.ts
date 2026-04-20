@@ -528,8 +528,10 @@ export class PdfStream<
             result = predictor.encode(result)
         }
 
-        for (const filterName of filters) {
-            const filter = PdfStream.getFilter(filterName)
+        // Encode in reverse filter order: the first filter in the array
+        // is the outermost (applied last during encode, first during decode).
+        for (let i = filters.length - 1; i >= 0; i--) {
+            const filter = PdfStream.getFilter(filters[i])
             result = filter.encode(result)
         }
 

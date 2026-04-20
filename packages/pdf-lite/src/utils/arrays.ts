@@ -6,6 +6,16 @@
 export class MultiArray<T> implements Iterable<T> {
     arrays: T[][]
 
+    /**
+     * Monotonic counter bumped on every in-place mutation.  Downstream views
+     * (e.g. `ArraySegment`) snapshot this to decide whether cached bounds are
+     * still valid.
+     */
+    private _version: number = 0
+    get version(): number {
+        return this._version
+    }
+
     constructor(arrays: T[][]) {
         this.arrays = arrays
     }
@@ -48,6 +58,7 @@ export class MultiArray<T> implements Iterable<T> {
         const loc = this.locate(index)
         if (!loc) throw new Error(`MultiArray index ${index} out of bounds`)
         loc.arr[loc.local] = value
+        this._version++
     }
 
     /** Identity-based lookup across all inner arrays. */
@@ -64,6 +75,7 @@ export class MultiArray<T> implements Iterable<T> {
     /** Append to the last array. */
     push(item: T): void {
         this.lastArray.push(item)
+        this._version++
     }
 
     /**
@@ -72,14 +84,18 @@ export class MultiArray<T> implements Iterable<T> {
      * multi-pass delete that is rarely worth the complexity).
      */
     splice(start: number, deleteCount: number, ...items: T[]): T[] {
+        let result: T[]
         if (start >= this.length) {
             // Append to the end.
             const last = this.lastArray
-            return last.splice(last.length, deleteCount, ...items)
+            result = last.splice(last.length, deleteCount, ...items)
+        } else {
+            const loc = this.locate(start)
+            if (!loc) return []
+            result = loc.arr.splice(loc.local, deleteCount, ...items)
         }
-        const loc = this.locate(start)
-        if (!loc) return []
-        return loc.arr.splice(loc.local, deleteCount, ...items)
+        if (deleteCount > 0 || items.length > 0) this._version++
+        return result
     }
 
     // --- Convenience (iteration-based) ---
@@ -143,12 +159,19 @@ export class SentinelRef<T> {
  * that view the same region see the updates on their next access (since they
  * recompute bounds via `indexOf`).
  */
-export class ArraySegment<T> implements Iterable<T> {
+export class ArraySegment<T> implements Iterable<T>, ArrayLike<T> {
     readonly array: MultiArray<T>
     readonly startSentinel: SentinelRef<T>
     readonly endSentinel: SentinelRef<T>
     readonly startOffset: number
     readonly endOffset: number
+
+    // Bound cache — invalidated on array mutation or sentinel-value change.
+    private _cachedArrayVersion: number = -1
+    private _cachedStartValue: T | null = null
+    private _cachedEndValue: T | null = null
+    private _cachedStart: number = 0
+    private _cachedEnd: number = 0
 
     constructor(
         array: MultiArray<T>,
@@ -205,24 +228,90 @@ export class ArraySegment<T> implements Iterable<T> {
         })
     }
 
+    /**
+     * Refresh `_cachedStart` / `_cachedEnd` if the backing array has mutated
+     * or either sentinel ref has been reassigned since the last lookup.
+     * Otherwise this is O(1).
+     */
+    private _resolveBounds(): void {
+        const version = this.array.version
+        const sVal = this.startSentinel.value
+        const eVal = this.endSentinel.value
+        if (
+            version === this._cachedArrayVersion &&
+            sVal === this._cachedStartValue &&
+            eVal === this._cachedEndValue
+        ) {
+            return
+        }
+
+        if (sVal === null) {
+            this._cachedStart = 0
+        } else {
+            const i = this.array.indexOf(sVal)
+            if (i === -1) {
+                throw new Error(
+                    'ArraySegment: startSentinel not found in array',
+                )
+            }
+            this._cachedStart = i + this.startOffset
+        }
+
+        if (eVal === null) {
+            this._cachedEnd = this.array.length
+        } else {
+            const i = this.array.indexOf(eVal)
+            if (i === -1) {
+                throw new Error('ArraySegment: endSentinel not found in array')
+            }
+            this._cachedEnd = i + this.endOffset
+        }
+
+        this._cachedArrayVersion = version
+        this._cachedStartValue = sVal
+        this._cachedEndValue = eVal
+    }
+
     /** Resolve the inclusive-start flat index in the backing array. */
     get start(): number {
-        if (this.startSentinel.value === null) return 0
-        const i = this.array.indexOf(this.startSentinel.value)
-        if (i === -1) {
-            throw new Error('ArraySegment: startSentinel not found in array')
-        }
-        return i + this.startOffset
+        this._resolveBounds()
+        return this._cachedStart
     }
 
     /** Resolve the exclusive-end flat index in the backing array. */
     get end(): number {
-        if (this.endSentinel.value === null) return this.array.length
-        const i = this.array.indexOf(this.endSentinel.value)
-        if (i === -1) {
-            throw new Error('ArraySegment: endSentinel not found in array')
+        this._resolveBounds()
+        return this._cachedEnd
+    }
+
+    /**
+     * Check segment integrity.  Returns `{ ok: true }` if both sentinels are
+     * findable and `start <= end`, otherwise `{ ok: false, reason }`.
+     *
+     * Useful in tests and development assertions; does not throw.
+     */
+    validate(): { ok: true } | { ok: false; reason: string } {
+        const sVal = this.startSentinel.value
+        const eVal = this.endSentinel.value
+        if (sVal !== null && this.array.indexOf(sVal) === -1) {
+            return { ok: false, reason: 'startSentinel not in backing array' }
         }
-        return i + this.endOffset
+        if (eVal !== null && this.array.indexOf(eVal) === -1) {
+            return { ok: false, reason: 'endSentinel not in backing array' }
+        }
+        try {
+            const s = this.start
+            const e = this.end
+            if (e < s) {
+                return { ok: false, reason: `end (${e}) < start (${s})` }
+            }
+        } catch (err) {
+            return {
+                ok: false,
+                reason: err instanceof Error ? err.message : String(err),
+            }
+        }
+        return { ok: true }
     }
 
     get length(): number {
@@ -249,7 +338,29 @@ export class ArraySegment<T> implements Iterable<T> {
     }
 
     splice(localStart: number, deleteCount: number, ...items: T[]): T[] {
-        return this.array.splice(this.start + localStart, deleteCount, ...items)
+        const deleted = this.array.splice(
+            this.start + localStart,
+            deleteCount,
+            ...items,
+        )
+
+        // When a deleted item was a sentinel boundary and replacement items
+        // were provided, rebind the sentinel so neighbouring segments sharing
+        // it stay consistent.
+        if (items.length > 0 && deleted.length > 0) {
+            const sVal = this.startSentinel.value
+            const eVal = this.endSentinel.value
+            for (const d of deleted) {
+                if (sVal !== null && d === sVal) {
+                    this.startSentinel.value = items[0]
+                }
+                if (eVal !== null && d === eVal) {
+                    this.endSentinel.value = items[items.length - 1]
+                }
+            }
+        }
+
+        return deleted
     }
 
     indexOf(item: T): number {
@@ -338,7 +449,7 @@ export class ArraySegment<T> implements Iterable<T> {
 
 // Make indexed access typecheck via declaration merging.
 export interface ArraySegment<T> {
-    readonly [n: number]: T
+    [n: number]: T
 }
 
 /**

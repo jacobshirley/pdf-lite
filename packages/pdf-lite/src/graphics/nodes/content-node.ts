@@ -102,17 +102,9 @@ export abstract class ContentNode {
         const idx = op ? this._ops.indexOf(op) : -1
         if (idx === -1) {
             this._ops.push(newOp)
-        } else {
-            // If the replaced op is a sentinel boundary, update the ref so
-            // neighbouring segments that share the same SentinelRef stay valid.
-            if (this._ops.endSentinel.value === op) {
-                this._ops.endSentinel.value = newOp
-            }
-            if (this._ops.startSentinel.value === op) {
-                this._ops.startSentinel.value = newOp
-            }
-            this._ops.splice(idx, 1, newOp)
+            return
         }
+        this._ops.splice(idx, 1, newOp)
     }
 
     addOp(op: ContentOp | ContentOp[], index?: number) {

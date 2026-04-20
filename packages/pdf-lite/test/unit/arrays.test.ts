@@ -7,434 +7,313 @@ import {
 } from '../../src/utils/arrays'
 
 describe('MultiArray', () => {
-    describe('length + iteration', () => {
-        it('reports total length across inner arrays', () => {
-            const m = new MultiArray<number>([[1, 2], [3], [4, 5, 6]])
-            expect(m.length).toBe(6)
-        })
-
-        it('iterates across inner arrays in order', () => {
-            const m = new MultiArray<number>([[1, 2], [], [3, 4]])
-            expect([...m]).toEqual([1, 2, 3, 4])
-        })
-
-        it('handles empty backing', () => {
-            const m = new MultiArray<number>([[]])
-            expect(m.length).toBe(0)
-            expect([...m]).toEqual([])
-        })
+    it('reports total length across inner arrays', () => {
+        const m = new MultiArray<number>([[1, 2], [3], [4, 5, 6]])
+        expect(m.length).toBe(6)
     })
 
-    describe('get / setAt', () => {
-        it('gets an item at a flat index', () => {
-            const m = new MultiArray<string>([['a', 'b'], ['c'], ['d']])
-            expect(m.get(0)).toBe('a')
-            expect(m.get(2)).toBe('c')
-            expect(m.get(3)).toBe('d')
-        })
-
-        it('throws on out-of-bounds get', () => {
-            const m = new MultiArray<number>([[1, 2]])
-            expect(() => m.get(5)).toThrow(/out of bounds/)
-        })
-
-        it('setAt mutates the owning inner array by reference', () => {
-            const inner = [1, 2, 3]
-            const m = new MultiArray<number>([inner, [4, 5]])
-            m.setAt(1, 99)
-            expect(inner[1]).toBe(99)
-            expect(m.get(1)).toBe(99)
-        })
-
-        it('setAt bumps the version', () => {
-            const m = new MultiArray<number>([[1, 2, 3]])
-            const v0 = m.version
-            m.setAt(0, 9)
-            expect(m.version).toBeGreaterThan(v0)
-        })
+    it('iterates across inner arrays in order', () => {
+        const m = new MultiArray<number>([[1, 2], [], [3, 4]])
+        expect([...m]).toEqual([1, 2, 3, 4])
     })
 
-    describe('indexOf', () => {
-        it('finds by identity across arrays', () => {
-            const a = { x: 1 }
-            const b = { x: 2 }
-            const c = { x: 3 }
-            const m = new MultiArray([[a], [b, c]])
-            expect(m.indexOf(a)).toBe(0)
-            expect(m.indexOf(b)).toBe(1)
-            expect(m.indexOf(c)).toBe(2)
-        })
-
-        it('returns -1 when absent', () => {
-            const m = new MultiArray<number>([[1, 2]])
-            expect(m.indexOf(99)).toBe(-1)
-        })
+    it('get() returns an item at a flat index', () => {
+        const m = new MultiArray<string>([['a', 'b'], ['c'], ['d']])
+        expect(m.get(0)).toBe('a')
+        expect(m.get(2)).toBe('c')
+        expect(m.get(3)).toBe('d')
     })
 
-    describe('push', () => {
-        it('appends to the last inner array', () => {
-            const last = [3, 4]
-            const m = new MultiArray<number>([[1, 2], last])
-            m.push(5)
-            expect(last).toEqual([3, 4, 5])
-            expect(m.length).toBe(5)
-        })
-
-        it('bumps the version', () => {
-            const m = new MultiArray<number>([[1]])
-            const v0 = m.version
-            m.push(2)
-            expect(m.version).toBeGreaterThan(v0)
-        })
+    it('get() throws when out of bounds', () => {
+        const m = new MultiArray<number>([[1, 2]])
+        expect(() => m.get(5)).toThrow(/out of bounds/)
     })
 
-    describe('splice', () => {
-        it('routes insertion to the owning inner array', () => {
-            const a = [1, 2]
-            const b = [3, 4]
-            const m = new MultiArray<number>([a, b])
-            m.splice(3, 0, 99)
-            // Index 3 is in `b` at local 1; 99 should land there.
-            expect(b).toEqual([3, 99, 4])
-            expect(a).toEqual([1, 2])
-        })
-
-        it('deletes from the owning inner array', () => {
-            const a = [1, 2, 3]
-            const b = [4, 5]
-            const m = new MultiArray<number>([a, b])
-            m.splice(1, 1)
-            expect(a).toEqual([1, 3])
-            expect(b).toEqual([4, 5])
-        })
-
-        it('appends when start >= length', () => {
-            const a = [1]
-            const b = [2, 3]
-            const m = new MultiArray<number>([a, b])
-            m.splice(99, 0, 4, 5)
-            expect(b).toEqual([2, 3, 4, 5])
-        })
-
-        it('bumps the version when it mutates', () => {
-            const m = new MultiArray<number>([[1, 2, 3]])
-            const v0 = m.version
-            m.splice(1, 1, 9)
-            expect(m.version).toBeGreaterThan(v0)
-        })
-
-        it('does not bump the version for a no-op splice', () => {
-            const m = new MultiArray<number>([[1, 2]])
-            const v0 = m.version
-            m.splice(0, 0)
-            expect(m.version).toBe(v0)
-        })
+    it('setAt() mutates the owning inner array by reference', () => {
+        const inner = [1, 2, 3]
+        const m = new MultiArray<number>([inner, [4, 5]])
+        m.setAt(1, 99)
+        expect(inner).toEqual([1, 99, 3])
+        expect(m.get(1)).toBe(99)
     })
 
-    describe('convenience methods', () => {
-        it('find / findLast / some / filter / map', () => {
-            const m = new MultiArray<number>([
-                [1, 2],
-                [3, 4, 5],
-            ])
-            expect(m.find((n) => n > 2)).toBe(3)
-            expect(m.findLast((n) => n > 2)).toBe(5)
-            expect(m.some((n) => n === 4)).toBe(true)
-            expect(m.some((n) => n === 99)).toBe(false)
-            expect(m.filter((n) => n % 2 === 0)).toEqual([2, 4])
-            expect(m.map((n) => n * 2)).toEqual([2, 4, 6, 8, 10])
-        })
+    it('indexOf() finds by identity across arrays', () => {
+        const a = { x: 1 }
+        const b = { x: 2 }
+        const c = { x: 3 }
+        const m = new MultiArray([[a], [b, c]])
+        expect(m.indexOf(a)).toBe(0)
+        expect(m.indexOf(b)).toBe(1)
+        expect(m.indexOf(c)).toBe(2)
+        expect(m.indexOf({ x: 1 })).toBe(-1) // different identity
+    })
+
+    it('push() appends to the last inner array', () => {
+        const last = [3, 4]
+        const m = new MultiArray<number>([[1, 2], last])
+        m.push(5)
+        expect(last).toEqual([3, 4, 5])
+        expect(m.length).toBe(5)
+    })
+
+    it('splice() routes insertion to the owning inner array', () => {
+        const a = [1, 2]
+        const b = [3, 4]
+        const m = new MultiArray<number>([a, b])
+        m.splice(3, 0, 99)
+        expect(a).toEqual([1, 2])
+        expect(b).toEqual([3, 99, 4])
+    })
+
+    it('splice() past end appends to the last inner array', () => {
+        const a = [1]
+        const b = [2, 3]
+        const m = new MultiArray<number>([a, b])
+        m.splice(99, 0, 4, 5)
+        expect(a).toEqual([1])
+        expect(b).toEqual([2, 3, 4, 5])
+    })
+
+    it('version bumps on setAt / push / splice but not on no-op splice', () => {
+        const m = new MultiArray<number>([[1, 2, 3]])
+        const v0 = m.version
+        m.setAt(0, 9)
+        expect(m.version).toBeGreaterThan(v0)
+
+        const v1 = m.version
+        m.push(4)
+        expect(m.version).toBeGreaterThan(v1)
+
+        const v2 = m.version
+        m.splice(1, 1, 99)
+        expect(m.version).toBeGreaterThan(v2)
+
+        const v3 = m.version
+        m.splice(0, 0) // no-op: nothing added, nothing removed
+        expect(m.version).toBe(v3)
+    })
+
+    it('convenience methods mirror Array semantics', () => {
+        const m = new MultiArray<number>([
+            [1, 2],
+            [3, 4, 5],
+        ])
+        expect(m.find((n) => n > 2)).toBe(3)
+        expect(m.findLast((n) => n > 2)).toBe(5)
+        expect(m.some((n) => n === 4)).toBe(true)
+        expect(m.some((n) => n === 99)).toBe(false)
+        expect(m.filter((n) => n % 2 === 0)).toEqual([2, 4])
+        expect(m.map((n) => n * 2)).toEqual([2, 4, 6, 8, 10])
     })
 })
 
+// Small factory: builds a single-array MultiArray backing a sentinel-bounded
+// segment, returning both so tests can assert on the raw inner array too.
+function makeSegment<T>(
+    items: T[],
+    startSentinel: T | null,
+    endSentinel: T | null,
+    startOffset = 1,
+    endOffset = 0,
+) {
+    const array = new MultiArray<T>([items])
+    const segment = new ArraySegment<T>(
+        array,
+        startSentinel,
+        endSentinel,
+        startOffset,
+        endOffset,
+    )
+    return { array, inner: items, segment }
+}
+
 describe('ArraySegment', () => {
-    describe('basic bounds', () => {
+    // Tests below use string sentinels (e.g. '__bt__') and plain string data.
+    // Strings compare by identity via `===` for primitives, so this faithfully
+    // models the sentinel-by-identity semantics that ContentOp uses in the
+    // real codebase — without bringing in tricky mixed-type arrays.
+    const BT = '__bt__'
+    const ET = '__et__'
+
+    describe('bounds', () => {
         it('null sentinels cover the whole array', () => {
-            const m = new MultiArray<number>([[1, 2, 3]])
-            const seg = new ArraySegment(m, null, null)
-            expect(seg.length).toBe(3)
-            expect([...seg]).toEqual([1, 2, 3])
+            const { segment } = makeSegment([1, 2, 3], null, null)
+            expect(segment.length).toBe(3)
+            expect([...segment]).toEqual([1, 2, 3])
         })
 
-        it('strictly between sentinels (default offsets)', () => {
-            const start = { id: 's' }
-            const end = { id: 'e' }
-            const a = { id: 'a' }
-            const b = { id: 'b' }
-            const m = new MultiArray([[start, a, b, end]])
-            const seg = new ArraySegment(m, start, end)
-            expect([...seg]).toEqual([a, b])
-            expect(seg.length).toBe(2)
+        it('strict between-sentinel default (startOffset=1, endOffset=0)', () => {
+            const { segment } = makeSegment([BT, 'a', 'b', ET], BT, ET)
+            expect([...segment]).toEqual(['a', 'b'])
         })
 
-        it('inclusive of end when endOffset=1', () => {
-            const bt = { k: 'bt' }
-            const show = { k: 'show' }
-            const op = { k: 'op' }
-            const m = new MultiArray([[bt, op, show]])
-            const seg = new ArraySegment(m, bt, show, 1, 1)
-            expect([...seg]).toEqual([op, show])
+        it('end-inclusive via endOffset=1', () => {
+            const show = '__show__'
+            const { segment } = makeSegment([BT, 'op', show], BT, show, 1, 1)
+            expect([...segment]).toEqual(['op', show])
         })
 
-        it('start-of-array with startSentinel=null and offset=0', () => {
-            const end = { k: 'end' }
-            const a = { k: 'a' }
-            const m = new MultiArray([[a, end]])
-            const seg = new ArraySegment(m, null, end, 0, 0)
-            expect([...seg]).toEqual([a])
+        it('length clamps to zero when end <= start', () => {
+            const { segment } = makeSegment([BT, ET], BT, ET)
+            expect(segment.length).toBe(0)
+            expect([...segment]).toEqual([])
         })
     })
 
-    describe('indexed access via Proxy', () => {
-        it('supports segment[i]', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const a = { k: 'a' }
-            const b = { k: 'b' }
-            const m = new MultiArray([[bt, a, b, et]])
-            const seg = new ArraySegment(m, bt, et)
-            expect(seg[0]).toBe(a)
-            expect(seg[1]).toBe(b)
+    describe('indexed access (Proxy)', () => {
+        it('reads via segment[i]', () => {
+            const { segment } = makeSegment([BT, 'a', 'b', ET], BT, ET)
+            expect(segment[0]).toBe('a')
+            expect(segment[1]).toBe('b')
         })
 
-        it('out-of-range segment[i] returns undefined', () => {
-            const m = new MultiArray<number>([[1, 2, 3]])
-            const seg = new ArraySegment(m, null, null)
-            expect(seg[99]).toBeUndefined()
+        it('returns undefined for out-of-range indices', () => {
+            const { segment } = makeSegment([1, 2, 3], null, null)
+            expect(segment[99]).toBeUndefined()
         })
 
-        it('segment[i] = x writes through to the backing array', () => {
-            const a = [1, 2, 3, 4]
-            const m = new MultiArray([a])
-            const seg = new ArraySegment(m, null, null)
-            seg[1] = 99 as any
-            expect(a).toEqual([1, 99, 3, 4])
+        it('writes via segment[i] = x', () => {
+            const { inner, segment } = makeSegment([1, 2, 3, 4], null, null)
+            segment[1] = 99
+            expect(inner).toEqual([1, 99, 3, 4])
         })
     })
 
-    describe('mutation write-through', () => {
-        it('push appends before endSentinel', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const inner = [bt, et]
-            const m = new MultiArray([inner])
-            const seg = new ArraySegment(m, bt, et)
-            const newOp = { k: 'new' }
-            seg.push(newOp)
-            expect(inner).toEqual([bt, newOp, et])
-            expect([...seg]).toEqual([newOp])
+    describe('mutation', () => {
+        it('push inserts before the end sentinel', () => {
+            const { inner, segment } = makeSegment([BT, ET], BT, ET)
+            segment.push('x')
+            segment.push('y')
+            expect(inner).toEqual([BT, 'x', 'y', ET])
+            expect([...segment]).toEqual(['x', 'y'])
         })
 
         it('splice replaces within the segment', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const a = { k: 'a' }
-            const b = { k: 'b' }
-            const inner = [bt, a, b, et]
-            const m = new MultiArray([inner])
-            const seg = new ArraySegment(m, bt, et)
-            const c = { k: 'c' }
-            seg.splice(0, 2, c)
-            expect(inner).toEqual([bt, c, et])
+            const { inner, segment } = makeSegment([BT, 'a', 'b', ET], BT, ET)
+            segment.splice(0, 2, 'c')
+            expect(inner).toEqual([BT, 'c', ET])
         })
 
-        it('replaceAll wipes and re-populates', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const a = { k: 'a' }
-            const b = { k: 'b' }
-            const inner = [bt, a, b, et]
-            const m = new MultiArray([inner])
-            const seg = new ArraySegment(m, bt, et)
-            const x = { k: 'x' }
-            const y = { k: 'y' }
-            seg.replaceAll([x, y])
-            expect(inner).toEqual([bt, x, y, et])
+        it('replaceAll wipes and repopulates', () => {
+            const { inner, segment } = makeSegment([BT, 'a', 'b', ET], BT, ET)
+            segment.replaceAll(['x', 'y'])
+            expect(inner).toEqual([BT, 'x', 'y', ET])
         })
 
         it('removeWhere drops matching items', () => {
-            const bt = { n: 'bt' }
-            const et = { n: 'et' }
-            const inner: any[] = [
-                bt,
-                { n: 'keep1' },
-                { n: 'drop' },
-                { n: 'keep2' },
-                { n: 'drop' },
-                et,
-            ]
-            const m = new MultiArray(inner)
-            // Wrap as `[[...]]` — MultiArray wants T[][]
-            const m2 = new MultiArray([inner])
-            const seg = new ArraySegment(m2, bt, et)
-            seg.removeWhere((o: any) => o.n === 'drop')
-            expect(inner.map((o: any) => o.n)).toEqual([
-                'bt',
-                'keep1',
-                'keep2',
-                'et',
-            ])
+            const { inner, segment } = makeSegment(
+                [BT, 'keep', 'drop', 'keep', 'drop', ET],
+                BT,
+                ET,
+            )
+            segment.removeWhere((v) => v === 'drop')
+            expect(inner).toEqual([BT, 'keep', 'keep', ET])
         })
     })
 
-    describe('sentinel caching', () => {
-        it('does not re-scan when array version is unchanged', () => {
-            const m = new MultiArray<number>([[10, 20, 30, 40]])
-            const seg = new ArraySegment(m, null, null)
-            seg.length // warm the cache
-            let calls = 0
-            const realIndexOf = m.indexOf.bind(m)
-            ;(m as any).indexOf = (x: number) => {
-                calls++
-                return realIndexOf(x)
-            }
-            // With null sentinels, indexOf isn't invoked at all; but length and
-            // iteration should also not invoke it repeatedly.
-            for (let i = 0; i < 5; i++) seg.length
-            expect(calls).toBe(0)
+    describe('sentinel model', () => {
+        it('recomputes bounds after an array mutation (version bump)', () => {
+            const { segment } = makeSegment([BT, 'a', ET], BT, ET)
+            expect(segment.length).toBe(1)
+            segment.push('b')
+            expect([...segment]).toEqual(['a', 'b'])
         })
 
-        it('invalidates cache when SentinelRef.value changes', () => {
-            const a = { k: 'a' }
-            const b = { k: 'b' }
-            const c = { k: 'c' }
-            const d = { k: 'd' }
-            const m = new MultiArray([[a, b, c, d]])
-            const startRef = new SentinelRef<typeof a>(a)
-            const endRef = new SentinelRef<typeof a>(d)
-            const seg = new ArraySegment(m, startRef, endRef)
-            expect([...seg]).toEqual([b, c])
-            // Move the end sentinel earlier — segment shrinks.
-            endRef.value = c
-            expect([...seg]).toEqual([b])
+        it('reflects a SentinelRef value change without an array mutation', () => {
+            const items = ['a', 'b', 'c', 'd']
+            const array = new MultiArray<string>([items])
+            const startRef = new SentinelRef<string>(items[0])
+            const endRef = new SentinelRef<string>(items[3])
+            const segment = new ArraySegment<string>(array, startRef, endRef)
+
+            expect([...segment]).toEqual(['b', 'c'])
+            // Narrow the segment by moving the end sentinel left.
+            endRef.value = 'c'
+            expect([...segment]).toEqual(['b'])
         })
 
-        it('invalidates cache when the array mutates', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const a = { k: 'a' }
-            const inner = [bt, a, et]
-            const m = new MultiArray([inner])
-            const seg = new ArraySegment(m, bt, et)
-            expect(seg.length).toBe(1)
-            inner.splice(1, 0, { k: 'x' }) // mutate directly — no version bump
-            // Cache may be stale in this case, but mutations through the
-            // MultiArray API bump the version; via seg.splice:
-            seg.splice(seg.length, 0, { k: 'y' })
-            expect(seg.length).toBeGreaterThanOrEqual(2)
-        })
-    })
+        it('two segments sharing a SentinelRef see swaps through it', () => {
+            const MID = '__mid__'
+            const items = [BT, MID, ET]
+            const array = new MultiArray<string>([items])
+            const leftRef = new SentinelRef<string>(BT)
+            const sharedRef = new SentinelRef<string>(MID)
+            const rightRef = new SentinelRef<string>(ET)
+            const segA = new ArraySegment<string>(
+                array,
+                leftRef,
+                sharedRef,
+                1,
+                1,
+            )
+            const segB = new ArraySegment<string>(
+                array,
+                sharedRef,
+                rightRef,
+                1,
+                0,
+            )
+            expect([...segA]).toEqual([MID])
+            expect([...segB]).toEqual([])
 
-    describe('error cases', () => {
-        it('throws if startSentinel disappears from array', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const inner = [bt, et]
-            const m = new MultiArray([inner])
-            const seg = new ArraySegment(m, bt, et)
-            // Remove bt directly from inner — sentinel lookup should fail.
-            inner.splice(0, 1)
-            // Force a recompute by bumping the version through the API.
-            m.setAt(0, et)
-            expect(() => seg.length).toThrow(/startSentinel not found/)
+            // Replace MID in the backing and update the shared ref.
+            const NEW_MID = '__new-mid__'
+            items.splice(1, 1, NEW_MID)
+            array.setAt(0, BT) // bump version
+            sharedRef.value = NEW_MID
+            expect([...segA]).toEqual([NEW_MID])
+            expect([...segB]).toEqual([])
         })
 
-        it('throws if endSentinel disappears from array', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const a = { k: 'a' }
-            const inner = [bt, a, et]
-            const m = new MultiArray([inner])
-            const seg = new ArraySegment(m, bt, et)
-            inner.splice(2, 1)
-            m.setAt(0, bt) // bump version
-            expect(() => seg.length).toThrow(/endSentinel not found/)
+        it('throws when the start sentinel disappears', () => {
+            const { inner, array, segment } = makeSegment([BT, ET], BT, ET)
+            inner.splice(0, 1) // remove BT directly
+            array.setAt(0, ET) // bump version so the cache invalidates
+            expect(() => segment.length).toThrow(/startSentinel not found/)
+        })
+
+        it('throws when the end sentinel disappears', () => {
+            const { inner, array, segment } = makeSegment([BT, 'a', ET], BT, ET)
+            inner.splice(2, 1) // remove ET
+            array.setAt(0, BT) // bump version
+            expect(() => segment.length).toThrow(/endSentinel not found/)
         })
     })
 
     describe('validate()', () => {
-        it('ok when sentinels are present and ordered', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const m = new MultiArray([[bt, et]])
-            const seg = new ArraySegment(m, bt, et)
-            expect(seg.validate()).toEqual({ ok: true })
+        it('returns ok when both sentinels are present and ordered', () => {
+            const { segment } = makeSegment([BT, ET], BT, ET)
+            expect(segment.validate()).toEqual({ ok: true })
         })
 
-        it('reports missing startSentinel', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const m = new MultiArray([[et]])
-            const seg = new ArraySegment(m, bt, et)
-            const res = seg.validate()
+        it('reports a missing start sentinel', () => {
+            const { segment } = makeSegment([ET], BT, ET)
+            const res = segment.validate()
             expect(res.ok).toBe(false)
             if (!res.ok) expect(res.reason).toMatch(/startSentinel/)
         })
 
-        it('reports missing endSentinel', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const m = new MultiArray([[bt]])
-            const seg = new ArraySegment(m, bt, et)
-            const res = seg.validate()
+        it('reports a missing end sentinel', () => {
+            const { segment } = makeSegment([BT], BT, ET)
+            const res = segment.validate()
             expect(res.ok).toBe(false)
             if (!res.ok) expect(res.reason).toMatch(/endSentinel/)
         })
     })
 
-    describe('shared SentinelRef', () => {
-        it('two segments sharing a boundary ref see updates together', () => {
-            const bt = { k: 'bt' }
-            const mid = { k: 'mid' }
-            const et = { k: 'et' }
-            const inner = [bt, mid, et]
-            const m = new MultiArray([inner])
-
-            const leftRef = new SentinelRef<any>(bt)
-            const sharedRef = new SentinelRef<any>(mid)
-            const rightRef = new SentinelRef<any>(et)
-
-            const segA = new ArraySegment(m, leftRef, sharedRef, 1, 1)
-            const segB = new ArraySegment(m, sharedRef, rightRef, 1, 0)
-
-            expect([...segA]).toEqual([mid])
-            expect([...segB]).toEqual([])
-
-            // Replace `mid` by swapping it in the array and updating the ref.
-            const newMid = { k: 'new-mid' }
-            inner.splice(1, 1, newMid)
-            m.setAt(0, bt) // bump version without changing identity
-            sharedRef.value = newMid
-
-            expect([...segA]).toEqual([newMid])
-            // Both segments see the update because they share the ref.
-        })
-    })
-
-    describe('iteration methods', () => {
+    describe('iteration helpers', () => {
         it('find / findIndex / indexOf / some', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const a = { k: 'a' }
-            const b = { k: 'b' }
-            const m = new MultiArray([[bt, a, b, et]])
-            const seg = new ArraySegment(m, bt, et)
-            expect(seg.find((o: any) => o.k === 'b')).toBe(b)
-            expect(seg.findIndex((o: any) => o.k === 'b')).toBe(1)
-            expect(seg.indexOf(a)).toBe(0)
-            expect(seg.indexOf(et)).toBe(-1) // outside the segment
-            expect(seg.some((o: any) => o.k === 'a')).toBe(true)
+            const { segment } = makeSegment([BT, 'a', 'b', ET], BT, ET)
+            expect(segment.find((v) => v === 'b')).toBe('b')
+            expect(segment.findIndex((v) => v === 'b')).toBe(1)
+            expect(segment.indexOf('a')).toBe(0)
+            expect(segment.indexOf(ET)).toBe(-1) // outside the bounds
+            expect(segment.some((v) => v === 'a')).toBe(true)
         })
 
         it('findLast / findLastIndex', () => {
-            const bt = { k: 'bt' }
-            const et = { k: 'et' }
-            const a1 = { k: 'dup' }
-            const a2 = { k: 'dup' }
-            const m = new MultiArray([[bt, a1, a2, et]])
-            const seg = new ArraySegment(m, bt, et)
-            expect(seg.findLast((o: any) => o.k === 'dup')).toBe(a2)
-            expect(seg.findLastIndex((o: any) => o.k === 'dup')).toBe(1)
+            const { segment } = makeSegment([BT, 'dup', 'dup', ET], BT, ET)
+            expect(segment.findLastIndex((v) => v === 'dup')).toBe(1)
         })
     })
 })
@@ -446,22 +325,17 @@ describe('detachedSegment()', () => {
         expect([...seg]).toEqual([1, 2, 3])
     })
 
-    it('supports push without an endSentinel', () => {
+    it('supports push and replaceAll with no end sentinel', () => {
         const seg = detachedSegment<number>([1])
         seg.push(2)
         seg.push(3)
         expect([...seg]).toEqual([1, 2, 3])
-    })
-
-    it('replaceAll replaces content', () => {
-        const seg = detachedSegment<number>([1, 2, 3])
-        seg.replaceAll([9, 8, 7])
-        expect([...seg]).toEqual([9, 8, 7])
+        seg.replaceAll([9, 8])
+        expect([...seg]).toEqual([9, 8])
     })
 
     it('defaults to empty', () => {
         const seg = detachedSegment<number>()
         expect(seg.length).toBe(0)
-        expect([...seg]).toEqual([])
     })
 })

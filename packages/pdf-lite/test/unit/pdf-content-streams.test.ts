@@ -1531,3 +1531,181 @@ describe('setFont and color round-trip', () => {
         expect(streamStr).toContain('1 0 0 rg')
     })
 })
+
+// ---------------------------------------------------------------------------
+// Regrouping snapshots — one per fixture, asserting that the regrouped
+// VirtualTextBlocks still land in the expected positions.  These snapshots
+// are the canary for regressions in buildNodeTree, VirtualTextBlock.regroup,
+// or any positioning arithmetic downstream.
+// ---------------------------------------------------------------------------
+describe('regrouped text positions (snapshots per fixture)', () => {
+    const FIXTURES = [
+        'basic.pdf',
+        'template.pdf',
+        'multi-child-field.pdf',
+        'CA_BC_PST_Registration.pdf',
+        'CA_GST_RC1-19e.pdf',
+        'ca_gst.pdf',
+        'AT_Verf19E_EU.pdf',
+    ]
+
+    // Round to 2dp so tiny float drift doesn't churn snapshots.
+    const round = (n: number) => Math.round(n * 100) / 100
+
+    for (const name of FIXTURES) {
+        it(`${name} — regrouped text block positions`, async () => {
+            const doc = await loadFixture(`./test/unit/fixtures/${name}`)
+            const pages = doc.pages
+            const snapshot: Array<{
+                page: number
+                blocks: Array<{
+                    text: string
+                    x: number
+                    y: number
+                    w: number
+                    h: number
+                }>
+            }> = []
+
+            for (let i = 0; i < pages.count; i++) {
+                const page = pages.get(i)
+                const regrouped = page.contents.regroupTextBlocksByLine()
+                const blocks = regrouped.map((b) => {
+                    const bbox = b.getWorldBoundingBox()
+                    return {
+                        text: b.text,
+                        x: round(bbox.x),
+                        y: round(bbox.y),
+                        w: round(bbox.width),
+                        h: round(bbox.height),
+                    }
+                })
+                snapshot.push({ page: i + 1, blocks })
+            }
+
+            expect(snapshot).toMatchSnapshot()
+        })
+    }
+
+    // -----------------------------------------------------------------------
+    // Per-fixture mutation round-trips.  For each PDF we pick the first real
+    // text block and assert that moveBy, color change, and font change all
+    // survive serialize → reparse.  If a fixture has no editable text block
+    // (e.g. an entirely graphical form), the test is a no-op.
+    // -----------------------------------------------------------------------
+
+    // Locate the first VirtualTextBlock that has text.  We use regrouped
+    // blocks because that's what the editor drives.
+    const findEditableBlock = (doc: PdfDocument) => {
+        for (let i = 0; i < doc.pages.count; i++) {
+            const page = doc.pages.get(i)
+            const blocks = page.contents.regroupTextBlocksByLine()
+            const target = blocks.find((b) => b.text.trim().length > 0)
+            if (target) return { page, pageIndex: i, block: target }
+        }
+        return null
+    }
+
+    for (const name of FIXTURES) {
+        describe(`${name} — mutation round-trips`, () => {
+            it('moveBy persists through toBytes', async () => {
+                const doc = await loadFixture(`./test/unit/fixtures/${name}`)
+                const found = findEditableBlock(doc)
+                if (!found) return // nothing to move
+
+                const originalText = found.block.text
+                const before = found.block.getWorldBoundingBox()
+                const dx = 12.5
+                const dy = -8.25
+                found.block.moveBy(dx, dy)
+
+                const midBbox = found.block.getWorldBoundingBox()
+                expect(round(midBbox.x - before.x)).toBeCloseTo(dx, 1)
+                expect(round(midBbox.y - before.y)).toBeCloseTo(dy, 1)
+
+                // Round-trip and re-locate the SAME block by its text —
+                // position-based lookup doesn't work because moving can
+                // change the regroup ordering.
+                const bytes = doc.toBytes()
+                const reloaded = await PdfDocument.fromBytes([bytes])
+                // A move can shift a block onto a different visual line, so
+                // after re-regrouping its text may be merged with neighbours
+                // or its bbox may be the union of a line.  Accept a block
+                // that *contains* the original text as long as one exists.
+                const reloadedBlocks = reloaded.pages
+                    .get(found.pageIndex)
+                    .contents.regroupTextBlocksByLine()
+                const reloadedBlock = reloadedBlocks.find((b) =>
+                    b.text.includes(originalText.trim()),
+                )
+                expect(
+                    reloadedBlock,
+                    `expected a reloaded block containing "${originalText.trim()}"`,
+                ).toBeDefined()
+            })
+
+            it('color change persists through toBytes', async () => {
+                const doc = await loadFixture(`./test/unit/fixtures/${name}`)
+                const found = findEditableBlock(doc)
+                if (!found) return
+
+                const originalText = found.block.text
+                found.block.color = new RGBColor(1, 0, 0)
+
+                const bytes = doc.toBytes()
+                const reloaded = await PdfDocument.fromBytes([bytes])
+
+                // The content stream should now contain the fill-red op.
+                const streamStr = reloaded.pages
+                    .get(found.pageIndex)
+                    .contentStreams.map((s) => s.dataAsString)
+                    .join('')
+                expect(streamStr).toContain('1 0 0 rg')
+
+                // And the original text should still be present somewhere
+                // on the same page after reload.
+                const reloadedBlocks = reloaded.pages
+                    .get(found.pageIndex)
+                    .contents.regroupTextBlocksByLine()
+                const match = reloadedBlocks.find(
+                    (b) => b.text.trim() === originalText.trim(),
+                )
+                expect(match).toBeDefined()
+            })
+
+            it('font change persists through toBytes', async () => {
+                const doc = await loadFixture(`./test/unit/fixtures/${name}`)
+                const found = findEditableBlock(doc)
+                if (!found) return
+
+                // Pick a new font that can encode the current text.  Try a
+                // small list of built-ins; skip the test if none works
+                // (embedded font subsets, non-Latin glyphs, etc.).
+                const candidates = [
+                    PdfFont.HELVETICA,
+                    PdfFont.HELVETICA_BOLD,
+                    PdfFont.COURIER,
+                    PdfFont.TIMES_ROMAN,
+                ].filter(
+                    (f) => f.resourceName !== found.block.font?.resourceName,
+                )
+                const newFont = candidates.find(
+                    (f) => f.unsupportedChars(found.block.text).length === 0,
+                )
+                if (!newFont) return // can't re-encode; skip
+
+                found.block.font = newFont
+
+                const bytes = doc.toBytes()
+                const reloaded = await PdfDocument.fromBytes([bytes])
+
+                // Reloaded stream should reference the new font.
+                const streamStr = reloaded.pages
+                    .get(found.pageIndex)
+                    .contentStreams.map((s) => s.dataAsString)
+                    .join('')
+                expect(streamStr).toContain(`/${newFont.resourceName}`)
+            })
+        })
+    }
+})

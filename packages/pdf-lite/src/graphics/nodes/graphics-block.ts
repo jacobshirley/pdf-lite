@@ -13,12 +13,12 @@ import {
 import { FillOp, StrokeOp } from '../ops/paint'
 import { SetFillColorRGBOp, SetStrokeColorRGBOp } from '../ops/color'
 import { Rect } from '../geom/rect'
+import { ArraySegment } from '../../utils/arrays'
 import { ContentNode } from './content-node'
 
 export class GraphicsBlock extends ContentNode {
-    constructor(page?: PdfPage, ops?: ContentOp[]) {
-        super(ops)
-        this.page = page
+    constructor(page?: PdfPage, ops?: ContentOp[] | ArraySegment<ContentOp>) {
+        super(ops, page)
     }
 
     static line(options: {

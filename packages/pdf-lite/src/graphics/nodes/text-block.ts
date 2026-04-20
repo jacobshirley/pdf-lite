@@ -25,75 +25,147 @@ import { Rect } from '../geom/rect'
 import { ContentNode } from './content-node'
 import { TextNode } from './text-node'
 import { Color, GrayColor } from '../color'
+import { ArraySegment, SentinelRef, detachedSegment } from '../../utils/arrays'
 
 export class TextBlock extends ContentNode {
     protected segments: TextNode[] = []
-    private _rawOps?: ContentOp[]
     prev?: TextBlock
 
-    constructor(page?: PdfPage, ops?: ContentOp[], prev?: TextBlock) {
-        super() // Don't pass ops to parent
-        this.page = page
-        this.prev = prev
-        if (ops) {
-            this._rawOps = ops
-            this.parseSegments()
-        }
-    }
-
-    /** Auto-rebuild ops from segments when accessed */
-    override get ops(): ContentOp[] {
-        if (this.segments.length > 0) {
-            const newOps: ContentOp[] = [new BeginTextOp()]
-            for (const seg of this.segments) {
-                newOps.push(...seg.ops)
+    constructor(
+        arg?: PdfPage | ArraySegment<ContentOp>,
+        ops?: ContentOp[],
+        prev?: TextBlock,
+    ) {
+        if (arg instanceof ArraySegment) {
+            // Attached: segment already contains BT..ET in the stream.
+            super(arg)
+            this.prev = prev
+        } else {
+            super()
+            this.page = arg
+            this.prev = prev
+            if (ops) {
+                this._ops.replaceAll(ops)
             }
-            newOps.push(new EndTextOp())
-            return newOps
         }
-        return this._rawOps ?? []
+        if (this._ops.length > 0) this.syncSegmentsFromOps()
     }
 
-    override set ops(value: ContentOp[]) {
-        this._rawOps = value
+    /**
+     * Expose `_ops` directly — since TextNode segments are now *views* into
+     * `_ops.array`, their mutations already appear in `_ops`.
+     */
+    override get ops(): ArraySegment<ContentOp> {
+        return this._ops
+    }
+
+    override set ops(value: ContentOp[] | ArraySegment<ContentOp>) {
+        const items = Array.isArray(value) ? value : [...value]
+        this._ops.replaceAll(items)
         this.segments = []
-        this.parseSegments()
+        if (this._ops.length > 0) this.syncSegmentsFromOps()
     }
 
-    /** @internal */
-    private parseSegments(): void {
+    /**
+     * Build TextNode views over `this._ops.array`, using show-op identity as
+     * the right sentinel of each segment and the previous show op (or
+     * BeginTextOp) as the left sentinel.
+     *
+     * In attached mode, `_ops.array` is the stream's MultiArray, so TextNode
+     * mutations flow directly through to the stream.  In detached mode,
+     * `_ops.array` is the TextBlock's standalone backing — mutations on
+     * TextNodes still appear when iterating `TextBlock.ops` without a rebuild.
+     */
+    private syncSegmentsFromOps(): void {
+        const array = this._ops.array
+        const snapshot = [...this._ops]
+        const btOp = snapshot.find(
+            (o): o is BeginTextOp => o instanceof BeginTextOp,
+        )
+        const etOp = snapshot.findLast
+            ? snapshot.findLast((o): o is EndTextOp => o instanceof EndTextOp)
+            : (() => {
+                  for (let i = snapshot.length - 1; i >= 0; i--) {
+                      if (snapshot[i] instanceof EndTextOp)
+                          return snapshot[i] as EndTextOp
+                  }
+                  return undefined
+              })()
+
+        const isShow = (o: ContentOp): boolean =>
+            o instanceof ShowTextOp ||
+            o instanceof ShowTextArrayOp ||
+            o instanceof ShowTextNextLineOp ||
+            o instanceof ShowTextNextLineSpacingOp
+
         const segments: TextNode[] = []
-        let currentOps: ContentOp[] = []
-        // Link the first segment's prev to the last segment of the previous
-        // TextBlock so that font/size state carries across BT/ET boundaries.
         let lastSegment: TextNode | undefined = this.prev?.getSegments().at(-1)
 
-        for (const op of this._rawOps ?? []) {
-            if (op instanceof BeginTextOp || op instanceof EndTextOp) {
-                continue
-            }
+        // Shared sentinel ref — the endSentinel of segment N is the SAME
+        // SentinelRef as the startSentinel of segment N+1.  This way,
+        // replacing a show op via replaceOrAddOp (which updates the ref's
+        // .value) transparently updates both adjacent segments' bounds.
+        let prevRef = new SentinelRef<ContentOp>(btOp ?? null)
 
-            currentOps.push(op)
-            if (op instanceof ShowTextOp || op instanceof ShowTextArrayOp) {
-                const segment = new TextNode(currentOps, this.page)
-                segment.prev = lastSegment ?? undefined
-                segment.parent = this
-                segments.push(segment)
-                currentOps = []
-                lastSegment = segment
+        for (const op of snapshot) {
+            if (isShow(op)) {
+                const endRef = new SentinelRef<ContentOp>(op)
+                const segment = new ArraySegment<ContentOp>(
+                    array,
+                    prevRef,
+                    endRef,
+                    prevRef.value === null ? 0 : 1,
+                    1, // include the show op itself
+                )
+                const node = new TextNode(segment, this.page)
+                node.prev = lastSegment
+                node.parent = this as ContentNode
+                segments.push(node)
+                prevRef = endRef
+                lastSegment = node
             }
         }
 
-        // If there are leftover ops without a show operator, create an empty segment
-        // This preserves positioning and font ops even without text
-        if (currentOps.length > 0) {
-            const segment = new TextNode(currentOps, this.page)
-            segment.prev = lastSegment ?? undefined
-            segment.parent = this
-            segments.push(segment)
+        // Trailing TextNode: ops between last show and ET (or end of array).
+        if (etOp) {
+            const etRef = new SentinelRef<ContentOp>(etOp)
+            const trailing = new ArraySegment<ContentOp>(
+                array,
+                prevRef,
+                etRef,
+                prevRef.value === null ? 0 : 1,
+                0, // exclusive of ET
+            )
+            if (trailing.length > 0) {
+                const node = new TextNode(trailing, this.page)
+                node.prev = lastSegment
+                node.parent = this as ContentNode
+                segments.push(node)
+            }
+        } else if (prevRef.value !== null) {
+            // No ET — include any trailing ops up to end of array.
+            const trailing = new ArraySegment<ContentOp>(
+                array,
+                prevRef,
+                new SentinelRef<ContentOp>(null),
+                1,
+                0,
+            )
+            if (trailing.length > 0) {
+                const node = new TextNode(trailing, this.page)
+                node.prev = lastSegment
+                node.parent = this as ContentNode
+                segments.push(node)
+            }
         }
 
         this.segments = segments
+    }
+
+    /** Re-build segment views from the backing ops. */
+    resyncSegments(): void {
+        this.segments = []
+        if (this._ops.length > 0) this.syncSegmentsFromOps()
     }
 
     getSegments() {
@@ -239,14 +311,56 @@ export class TextBlock extends ContentNode {
         const op = first.ops.find(isShowOp)
         first.replaceOrAddOp(op, newShowOp)
 
-        // Clear extras — leave them as empty-ops segments in their real
-        // parent's segment list; rebuilding the parent drops their content.
-        for (let i = 1; i < segments.length; i++) {
-            segments[i].ops = []
+        // Capture each extra segment's backing range while all sentinels are
+        // still valid, then splice the backing array directly in descending
+        // order.  This avoids the "sentinel not found" failure that happens
+        // when clearing segment N removes a show op that segment N+1 uses as
+        // its start sentinel (they share a SentinelRef).
+        const clearedSegs = new Set<TextNode>()
+        const affectedParents = new Set<TextBlock>()
+        type Job = {
+            seg: TextNode
+            array: typeof first.ops.array
+            start: number
+            len: number
         }
-        // For non-virtual blocks, actually remove cleared segments
+        const jobs: Job[] = []
+        for (let i = 1; i < segments.length; i++) {
+            const seg = segments[i]
+            jobs.push({
+                seg,
+                array: seg.ops.array,
+                start: seg.ops.start,
+                len: seg.ops.length,
+            })
+        }
+        // Group by backing array, sort each group descending by start.
+        const byArray = new Map<typeof first.ops.array, Job[]>()
+        for (const job of jobs) {
+            const arr = byArray.get(job.array) ?? []
+            arr.push(job)
+            byArray.set(job.array, arr)
+        }
+        for (const arr of byArray.values()) {
+            arr.sort((a, b) => b.start - a.start)
+            for (const job of arr) {
+                job.array.splice(job.start, job.len)
+            }
+        }
+        for (const job of jobs) {
+            clearedSegs.add(job.seg)
+            if (job.seg.parent instanceof TextBlock) {
+                affectedParents.add(job.seg.parent as TextBlock)
+            }
+        }
+        // Trim this block's own segment list to just the first.
         this.segments.splice(1)
-        // ops getter auto-syncs with segments
+        // Rebuild sentinel views for affected real (attached) parent blocks.
+        for (const parent of affectedParents) {
+            if (parent === this) continue
+            parent.segments = parent.segments.filter((s) => !clearedSegs.has(s))
+            if (parent._ops.length > 0) parent.resyncSegments()
+        }
     }
 
     /**
@@ -321,17 +435,12 @@ export class TextBlock extends ContentNode {
                 const seg = this.segments[i]
 
                 if (i > 0) {
-                    seg.ops = seg.ops.filter(
+                    seg.removeOpsWhere(
                         (o) =>
-                            !(o instanceof SetTextMatrixOp) &&
-                            !(o instanceof MoveTextOp) &&
-                            !(o instanceof MoveTextLeadingOp) &&
-                            !(o instanceof NextLineOp),
-                    )
-                    const showOp = seg.ops.find(
-                        (o) =>
-                            o instanceof ShowTextOp ||
-                            o instanceof ShowTextArrayOp,
+                            o instanceof SetTextMatrixOp ||
+                            o instanceof MoveTextOp ||
+                            o instanceof MoveTextLeadingOp ||
+                            o instanceof NextLineOp,
                     )
                     const newTm = SetTextMatrixOp.create(
                         firstTm.a,
@@ -341,7 +450,16 @@ export class TextBlock extends ContentNode {
                         cursorX,
                         cursorY,
                     )
-                    seg.replaceOrAddOp(showOp, newTm)
+                    const showIdx = seg.ops.findIndex(
+                        (o) =>
+                            o instanceof ShowTextOp ||
+                            o instanceof ShowTextArrayOp,
+                    )
+                    if (showIdx !== -1) {
+                        seg.addOp(newTm, showIdx)
+                    } else {
+                        seg.addOp(newTm)
+                    }
                 }
 
                 const advance = seg.getTextAdvance()
@@ -378,11 +496,11 @@ export class TextBlock extends ContentNode {
         for (const seg of this.segments) {
             const restoreColor = prevColors.get(seg)
 
-            seg.ops = seg.ops.filter(
+            seg.removeOpsWhere(
                 (o) =>
-                    !(o instanceof SetFillColorRGBOp) &&
-                    !(o instanceof SetFillColorGrayOp) &&
-                    !(o instanceof SetFillColorCMYKOp),
+                    o instanceof SetFillColorRGBOp ||
+                    o instanceof SetFillColorGrayOp ||
+                    o instanceof SetFillColorCMYKOp,
             )
             const showIdx = seg.ops.findIndex(
                 (o) =>
@@ -393,8 +511,7 @@ export class TextBlock extends ContentNode {
             )
 
             if (showIdx !== -1) {
-                const showOp = seg.ops[showIdx]
-                seg.replaceOrAddOp(showOp, color.toOp())
+                seg.addOp(color.toOp(), showIdx)
                 // Restore previous color AFTER the show op to prevent the
                 // new color from bleeding to subsequent segments.  +2:
                 // skip past the inserted color op and the show op.
@@ -510,15 +627,28 @@ export class TextBlock extends ContentNode {
         const firstParent = firstSeg.parent
         if (firstParent instanceof TextBlock) {
             firstParent.ops = newBlockOps
-            firstParent.parseSegments()
+            // setter already reparses segments
         }
 
-        for (const seg of segs) {
-            const parent = seg.parent
-            if (parent && parent !== firstParent) {
-                seg.ops = []
-                // Parent block's ops getter auto-syncs with segments
+        // Clear other real parents' segments in reverse order so that
+        // removing a sentinel doesn't break a later segment's bounds.
+        const otherSegs = segs.filter(
+            (seg) => seg.parent && seg.parent !== firstParent,
+        )
+        const clearedOther = new Set<TextNode>()
+        const affectedOtherParents = new Set<TextBlock>()
+        for (let i = otherSegs.length - 1; i >= 0; i--) {
+            if (otherSegs[i].parent instanceof TextBlock) {
+                affectedOtherParents.add(otherSegs[i].parent as TextBlock)
             }
+            otherSegs[i].clearOps()
+            clearedOther.add(otherSegs[i])
+        }
+        for (const parent of affectedOtherParents) {
+            parent.segments = parent.segments.filter(
+                (s) => !clearedOther.has(s),
+            )
+            if (parent._ops.length > 0) parent.resyncSegments()
         }
     }
 
@@ -603,14 +733,14 @@ export class VirtualTextBlock extends TextBlock {
      * No-op: VirtualTextBlock doesn't own ops, and parent blocks
      * auto-sync via their ops getter when accessed.
      */
-    override get ops(): ContentOp[] {
+    override get ops(): ArraySegment<ContentOp> {
         // Virtual blocks don't own BT/ET — their segments already live
         // in real parent blocks.  Accessing parent.ops automatically
         // rebuilds from segments via the getter.
-        return []
+        return detachedSegment<ContentOp>([])
     }
 
-    override set ops(value: ContentOp[]) {
+    override set ops(_value: ContentOp[] | ArraySegment<ContentOp>) {
         // Virtual blocks are read-only views; ignore writes
     }
 

@@ -1173,7 +1173,9 @@ describe('real PDF text editing round-trip', () => {
             // template.pdf has multiple content streams
             expect(page.contentStreams.length).toBeGreaterThan(1)
 
-            const blocks = page.textBlocks
+            // Use rawTextBlocks to get actual TextBlock instances (not
+            // VirtualTextBlocks produced by regrouping).
+            const blocks = page.rawTextBlocks
             expect(blocks.length).toBeGreaterThan(0)
 
             const target = blocks.find((b) => b.text.trim().length > 3)
@@ -1185,11 +1187,9 @@ describe('real PDF text editing round-trip', () => {
             const seg = segs[0]
             expect(seg.parent).toBeInstanceOf(TextBlock)
 
-            // After getTextBlocks (which consolidates), the first
-            // stream's nodes should contain the seg's real parent.
-            const stream = page.contentStreams[0]
-            const nodesBlocks = stream.textBlocks
-            const found = nodesBlocks.find((b) => b === seg.parent)
+            // The unified node tree's TextBlocks should contain the seg's parent.
+            const allBlocks = page.rawTextBlocks
+            const found = allBlocks.find((b) => b === seg.parent)
             expect(found).toBeDefined()
         })
 

@@ -104,11 +104,11 @@ export class TextNode extends ContentNode {
             this.replaceOrAddOp(this.ops[tmIdx], newTmOp)
             // The new Tm is absolute — strip any relative positioning ops
             // (Td/TD/T*) that would shift on top of it.
-            this.ops = this.ops.filter(
+            this.removeOpsWhere(
                 (o) =>
-                    !(o instanceof MoveTextOp) &&
-                    !(o instanceof MoveTextLeadingOp) &&
-                    !(o instanceof NextLineOp),
+                    o instanceof MoveTextOp ||
+                    o instanceof MoveTextLeadingOp ||
+                    o instanceof NextLineOp,
             )
             // Re-inject TL ops to preserve the text leading side-effect
             if (tlOps.length > 0) {
@@ -119,21 +119,21 @@ export class TextNode extends ContentNode {
             return
         }
 
-        // No Tm — replace Td/TD/T* with Tm
-        this.ops = this.ops.filter(
+        // No Tm — strip Td/TD/T* and insert absolute Tm before the show op
+        this.removeOpsWhere(
             (o) =>
-                !(o instanceof MoveTextOp) &&
-                !(o instanceof MoveTextLeadingOp) &&
-                !(o instanceof NextLineOp),
+                o instanceof MoveTextOp ||
+                o instanceof MoveTextLeadingOp ||
+                o instanceof NextLineOp,
         )
-        const showOp = this.ops.find(
+        const showIdx = this.ops.findIndex(
             (o) =>
                 o instanceof ShowTextOp ||
                 o instanceof ShowTextArrayOp ||
                 o instanceof ShowTextNextLineOp ||
                 o instanceof ShowTextNextLineSpacingOp,
         )
-        this.replaceOrAddOp(showOp, newTmOp)
+        this.addOp(newTmOp, showIdx === -1 ? 0 : showIdx)
         // Parent block's ops getter auto-syncs with segments
     }
 
@@ -244,6 +244,19 @@ export class TextNode extends ContentNode {
             return -lastTD.y
         }
         return this.prev?.textLeading ?? 0
+    }
+
+    set matrix(newTm: Matrix) {
+        const tmOp = this.ops.find((x) => x instanceof SetTextMatrixOp)
+        const newTmOp = SetTextMatrixOp.create(
+            newTm.a,
+            newTm.b,
+            newTm.c,
+            newTm.d,
+            newTm.e,
+            newTm.f,
+        )
+        this.replaceOrAddOp(tmOp, newTmOp)
     }
 
     /**

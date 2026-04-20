@@ -1,4 +1,5 @@
 import { PdfPage } from '../../pdf/pdf-page'
+import { ArraySegment, detachedSegment } from '../../utils/arrays'
 import { Matrix } from '../geom/matrix'
 import { Point } from '../geom/point'
 import { Rect } from '../geom/rect'
@@ -7,19 +8,33 @@ import { ContentOp } from '../ops/base'
 export abstract class ContentNode {
     _page?: PdfPage
     parent?: ContentNode
-    protected _ops: ContentOp[]
+    protected _ops: ArraySegment<ContentOp>
 
-    constructor(ops?: ContentOp[], page?: PdfPage) {
-        this._ops = ops ?? []
+    /**
+     * Construct with either an existing segment (view over a stream) or a
+     * plain array (detached — wrapped in a standalone MultiArray).
+     */
+    constructor(ops?: ArraySegment<ContentOp> | ContentOp[], page?: PdfPage) {
+        if (ops instanceof ArraySegment) {
+            this._ops = ops
+        } else {
+            this._ops = detachedSegment<ContentOp>(ops ?? [])
+        }
         this._page = page
     }
 
-    get ops(): ReadonlyArray<ContentOp> {
+    get ops(): ArraySegment<ContentOp> {
         return this._ops
     }
 
-    set ops(value: ContentOp[]) {
-        this._ops = value
+    /**
+     * Replace the node's ops with the given list.  If the node is attached to
+     * a stream, the stream's backing array is spliced — write-through.  If
+     * detached, the standalone backing is simply repopulated.
+     */
+    set ops(value: ContentOp[] | ArraySegment<ContentOp>) {
+        const items = Array.isArray(value) ? value : [...value]
+        this._ops.replaceAll(items)
     }
 
     get page(): PdfPage | undefined {
@@ -32,7 +47,6 @@ export abstract class ContentNode {
                 'Cannot set page on a node whose parent belongs to a different page',
             )
         }
-
         this._page = page
     }
 
@@ -56,12 +70,10 @@ export abstract class ContentNode {
             x: localBox.x + localBox.width,
             y: localBox.y,
         }).transform(worldTransform)
-
         const bottomLeft = new Point({
             x: localBox.x,
             y: localBox.y + localBox.height,
         }).transform(worldTransform)
-
         const bottomRight = new Point({
             x: localBox.x + localBox.width,
             y: localBox.y + localBox.height,
@@ -83,31 +95,46 @@ export abstract class ContentNode {
     }
 
     toString() {
-        return this.ops.map((o) => o.toString()).join('\n')
+        return [...this.ops].map((o) => o.toString()).join('\n')
     }
 
     replaceOrAddOp(op: ContentOp | undefined, newOp: ContentOp) {
-        const idx = this._ops.findIndex((o) => o === op)
+        const idx = op ? this._ops.indexOf(op) : -1
         if (idx === -1) {
             this._ops.push(newOp)
         } else {
-            this._ops[idx] = newOp
+            // If the replaced op is a sentinel boundary, update the ref so
+            // neighbouring segments that share the same SentinelRef stay valid.
+            if (this._ops.endSentinel.value === op) {
+                this._ops.endSentinel.value = newOp
+            }
+            if (this._ops.startSentinel.value === op) {
+                this._ops.startSentinel.value = newOp
+            }
+            this._ops.splice(idx, 1, newOp)
         }
     }
 
     addOp(op: ContentOp | ContentOp[], index?: number) {
         if (Array.isArray(op)) {
             if (index === undefined) {
-                this._ops.push(...op)
+                for (const item of op) this._ops.push(item)
             } else {
                 this._ops.splice(index, 0, ...op)
             }
         } else {
-            if (index === undefined) {
-                this._ops.push(op)
-            } else {
-                this._ops.splice(index, 0, op)
-            }
+            if (index === undefined) this._ops.push(op)
+            else this._ops.splice(index, 0, op)
         }
+    }
+
+    /** Remove all ops matching `predicate` from the backing segment. */
+    removeOpsWhere(predicate: (op: ContentOp) => boolean): void {
+        this._ops.removeWhere(predicate)
+    }
+
+    /** Remove all ops from this node's segment. */
+    clearOps(): void {
+        this._ops.replaceAll([])
     }
 }

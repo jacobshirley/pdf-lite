@@ -123,7 +123,11 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
         this.content.set('Rotate', new PdfNumber(value))
     }
 
+    private _contents?: PdfContents
+
     get contents(): PdfContents {
+        if (this._contents) return this._contents
+
         const entry = this.content.get('Contents')
         let contents: PdfContents
 
@@ -142,6 +146,7 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
 
         contents.page = this
 
+        this._contents = contents
         return contents
     }
 
@@ -152,6 +157,7 @@ export class PdfPage extends PdfIndirectObject<PdfPageDictionary> {
             | PdfArray<PdfObjectReference>
             | null,
     ) {
+        this._contents = undefined
         if (value === null) {
             this.content.delete('Contents')
         } else {

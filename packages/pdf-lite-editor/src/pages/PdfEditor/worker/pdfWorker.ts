@@ -40,6 +40,7 @@ import type {
     WorkerRequest,
     WorkerResponse,
 } from './protocol'
+import { Matrix } from 'pdf-lite/graphics/geom/matrix'
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope
 
@@ -515,8 +516,6 @@ const handlers: {
 
         const targetPageNumber = options?.pageNumber || 1
         const page = pages[targetPageNumber - 1] || pages[0]
-        const stream = page.contentStreams[0]
-        if (!stream) throw new Error('Page has no content stream')
 
         const fontSize = options?.fontSize ?? 12
         const text = options?.text ?? 'New Text'
@@ -526,12 +525,12 @@ const handlers: {
         const block = new TextBlock(page)
         const seg = new TextNode()
         seg.fontSize = fontSize
-        seg.ops.unshift(SetTextMatrixOp.create(1, 0, 0, 1, x, y))
+        seg.matrix = new Matrix({ a: 1, b: 0, c: 0, d: 1, e: x, f: y })
         block.addSegment(seg)
         block.font = PdfFont.HELVETICA
         seg.text = text
 
-        stream.nodes.push(block)
+        page.contents.add(block)
 
         const id = `text_block_${nextTextBlockId++}`
         textBlockRefs.set(id, block)
@@ -551,22 +550,15 @@ const handlers: {
         const block = textBlockRefs.get(id)
         if (!block || !pdfDoc) throw new Error(`Text block ${id} not found`)
 
-        if (block instanceof VirtualTextBlock) {
-            for (const seg of block.getSegments()) {
-                seg.ops = []
-            }
-        } else {
-            const pages = pdfDoc.pages.toArray()
-            for (const page of pages) {
-                for (const stream of page.contentStreams) {
-                    const nodes = stream.nodes
-                    const idx = nodes.indexOf(block)
-                    if (idx !== -1) {
-                        nodes.splice(idx, 1)
-                        break
-                    }
-                }
-            }
+        if (!(block instanceof VirtualTextBlock)) {
+            throw new Error(
+                'Only text blocks created by the editor can be removed',
+            )
+        }
+
+        const segs = block.getSegments()
+        for (let i = segs.length - 1; i >= 0; i--) {
+            segs[i].clearOps()
         }
 
         textBlockRefs.delete(id)

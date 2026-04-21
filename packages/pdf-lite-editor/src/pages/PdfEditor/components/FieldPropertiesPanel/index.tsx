@@ -19,6 +19,12 @@ type Props = {
         value: string,
     ) => void
     onOptionsChange: (options: { label: string; value: string }[]) => void
+    onSignatureCredentialUpload: (pfxBytes: Uint8Array, password: string) => void
+    onSignatureCredentialClear: () => void
+    onSignatureMetadataChange: (
+        property: 'signerName' | 'reason' | 'location' | 'contactInfo',
+        value: string,
+    ) => void
     onClone: () => void
     onRemove: () => void
     onClose: () => void
@@ -33,6 +39,9 @@ export function FieldPropertiesPanel({
     onAppearanceStateChange,
     onRectChange,
     onOptionsChange,
+    onSignatureCredentialUpload,
+    onSignatureCredentialClear,
+    onSignatureMetadataChange,
     onClone,
     onRemove,
     onClose,
@@ -190,7 +199,16 @@ export function FieldPropertiesPanel({
                         </>
                     )}
 
-                    {field.type !== 'Checkbox' && field.type !== 'Button' && field.type !== 'Choice' && (
+                    {field.type === 'Signature' && (
+                        <SignatureSection
+                            field={field}
+                            onUpload={onSignatureCredentialUpload}
+                            onClear={onSignatureCredentialClear}
+                            onMetadataChange={onSignatureMetadataChange}
+                        />
+                    )}
+
+                    {field.type !== 'Checkbox' && field.type !== 'Button' && field.type !== 'Choice' && field.type !== 'Signature' && (
                         <div className="space-y-2">
                             <Label
                                 htmlFor="field-value"
@@ -397,5 +415,175 @@ export function FieldPropertiesPanel({
                 </div>
             </CardContent>
         </Card>
+    )
+}
+
+function SignatureSection({
+    field,
+    onUpload,
+    onClear,
+    onMetadataChange,
+}: {
+    field: ExtractedField
+    onUpload: (pfxBytes: Uint8Array, password: string) => void
+    onClear: () => void
+    onMetadataChange: (
+        property: 'signerName' | 'reason' | 'location' | 'contactInfo',
+        value: string,
+    ) => void
+}) {
+    const [pfxFile, setPfxFile] = React.useState<File | null>(null)
+    const [password, setPassword] = React.useState('')
+    const [error, setError] = React.useState<string | null>(null)
+    const [loading, setLoading] = React.useState(false)
+    const sig = field.signature
+
+    const handleLoad = async () => {
+        if (!pfxFile) return
+        setError(null)
+        setLoading(true)
+        try {
+            const buffer = await pfxFile.arrayBuffer()
+            onUpload(new Uint8Array(buffer), password)
+            setPfxFile(null)
+            setPassword('')
+        } catch (e) {
+            setError(e instanceof Error ? e.message : String(e))
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="space-y-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+            <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Signer Credential
+            </div>
+            {sig?.hasCredential ? (
+                <div className="space-y-2">
+                    <div className="text-xs text-slate-600 dark:text-slate-400 break-words">
+                        <span className="font-medium">Certificate:</span>{' '}
+                        {sig.certSubject || 'Loaded'}
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={onClear}
+                        className="w-full h-8 text-red-600 hover:text-red-700 border-red-300"
+                    >
+                        Remove Credential
+                    </Button>
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    <Input
+                        type="file"
+                        accept=".pfx,.p12"
+                        onChange={(e) =>
+                            setPfxFile(e.target.files?.[0] ?? null)
+                        }
+                        className="h-8 text-xs"
+                    />
+                    <Input
+                        type="password"
+                        placeholder="PFX password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-8 text-xs"
+                    />
+                    <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleLoad}
+                        disabled={!pfxFile || loading}
+                        className="w-full h-8 text-xs"
+                    >
+                        {loading ? 'Loading...' : 'Load .pfx'}
+                    </Button>
+                    {error && (
+                        <div className="text-xs text-red-600 break-words">
+                            {error}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <Separator />
+
+            <MetadataInput
+                label="Signer Name"
+                fieldId={field.id}
+                value={sig?.signerName ?? ''}
+                onCommit={(v) => onMetadataChange('signerName', v)}
+                placeholder="Appears as 'Digitally signed by ...'"
+            />
+            <MetadataInput
+                label="Reason"
+                fieldId={field.id}
+                value={sig?.reason ?? ''}
+                onCommit={(v) => onMetadataChange('reason', v)}
+            />
+            <MetadataInput
+                label="Location"
+                fieldId={field.id}
+                value={sig?.location ?? ''}
+                onCommit={(v) => onMetadataChange('location', v)}
+            />
+            <MetadataInput
+                label="Contact Info"
+                fieldId={field.id}
+                value={sig?.contactInfo ?? ''}
+                onCommit={(v) => onMetadataChange('contactInfo', v)}
+            />
+        </div>
+    )
+}
+
+/**
+ * Locally-controlled input that debounces writes to the worker. Re-seeds from
+ * the upstream value only when the selected field changes — otherwise typing
+ * races with the async round-trip and resets the cursor.
+ */
+function MetadataInput({
+    label,
+    fieldId,
+    value,
+    onCommit,
+    placeholder,
+}: {
+    label: string
+    fieldId: string
+    value: string
+    onCommit: (v: string) => void
+    placeholder?: string
+}) {
+    const [local, setLocal] = React.useState(value)
+
+    React.useEffect(() => {
+        setLocal(value)
+        // Re-seed only when the selected field changes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fieldId])
+
+    React.useEffect(() => {
+        if (local === value) return
+        const h = setTimeout(() => onCommit(local), 250)
+        return () => clearTimeout(h)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [local])
+
+    return (
+        <div className="space-y-2">
+            <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {label}
+            </Label>
+            <Input
+                value={local}
+                onChange={(e) => setLocal(e.target.value)}
+                placeholder={placeholder}
+                className="h-8 text-sm"
+            />
+        </div>
     )
 }

@@ -6,6 +6,15 @@ export type Rect4 = [number, number, number, number]
 
 export type BBox = { x: number; y: number; width: number; height: number }
 
+export type SignatureMetadataDTO = {
+    signerName?: string
+    reason?: string
+    location?: string
+    contactInfo?: string
+    hasCredential: boolean
+    certSubject?: string
+}
+
 export type FieldDTO = {
     id: string
     name: string
@@ -22,6 +31,7 @@ export type FieldDTO = {
     defaultAppearance?: string
     hasParent: boolean
     options?: { label: string; value: string }[]
+    signature?: SignatureMetadataDTO
 }
 
 export type TextSegmentDTO = {
@@ -211,6 +221,22 @@ export type WorkerMethods = {
     }
     updateFieldOptions: {
         args: { id: string; options: { label: string; value: string }[] }
+        result: FieldDTO
+    }
+    setSignatureCredential: {
+        args: { id: string; pfxBytes: Uint8Array; password: string }
+        result: FieldDTO
+    }
+    clearSignatureCredential: {
+        args: { id: string }
+        result: FieldDTO
+    }
+    updateSignatureMetadata: {
+        args: {
+            id: string
+            property: 'signerName' | 'reason' | 'location' | 'contactInfo'
+            value: string
+        }
         result: FieldDTO
     }
     removeField: {

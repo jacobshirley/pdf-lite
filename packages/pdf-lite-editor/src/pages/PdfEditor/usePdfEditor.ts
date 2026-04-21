@@ -575,6 +575,60 @@ export function usePdfEditor() {
         }
     }
 
+    const handleSignatureCredentialUpload = async (
+        fieldId: string,
+        pfxBytes: Uint8Array,
+        password: string,
+    ) => {
+        try {
+            const updated = await client.call('setSignatureCredential', {
+                id: fieldId,
+                pfxBytes,
+                password,
+            })
+            mergeFieldDTO(updated)
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error loading signature credential:', error)
+            alert(
+                `Error loading .pfx: ${error instanceof Error ? error.message : String(error)}`,
+            )
+        }
+    }
+
+    const handleSignatureCredentialClear = async (fieldId: string) => {
+        try {
+            const updated = await client.call('clearSignatureCredential', {
+                id: fieldId,
+            })
+            mergeFieldDTO(updated)
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error clearing signature credential:', error)
+        }
+    }
+
+    const handleSignatureMetadataChange = async (
+        fieldId: string,
+        property: 'signerName' | 'reason' | 'location' | 'contactInfo',
+        value: string,
+    ) => {
+        try {
+            const updated = await client.call('updateSignatureMetadata', {
+                id: fieldId,
+                property,
+                value,
+            })
+            mergeFieldDTO(updated)
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error updating signature metadata:', error)
+        }
+    }
+
     const handleAddField = async (
         type: FieldType,
         options?: {
@@ -979,6 +1033,9 @@ export function usePdfEditor() {
         handleRemoveTextBlock,
         handleCloneField,
         handleFieldOptionsChange,
+        handleSignatureCredentialUpload,
+        handleSignatureCredentialClear,
+        handleSignatureMetadataChange,
         handleFileUpload,
         handleOpenClick,
         handleNewPdf,

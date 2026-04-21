@@ -132,6 +132,25 @@ export function PdfEditor() {
                         onOptionsChange={(options) =>
                             editor.handleFieldOptionsChange(editor.selectedField!.id, options)
                         }
+                        onSignatureCredentialUpload={(pfxBytes, password) =>
+                            editor.handleSignatureCredentialUpload(
+                                editor.selectedField!.id,
+                                pfxBytes,
+                                password,
+                            )
+                        }
+                        onSignatureCredentialClear={() =>
+                            editor.handleSignatureCredentialClear(
+                                editor.selectedField!.id,
+                            )
+                        }
+                        onSignatureMetadataChange={(property, value) =>
+                            editor.handleSignatureMetadataChange(
+                                editor.selectedField!.id,
+                                property,
+                                value,
+                            )
+                        }
                         onClone={() =>
                             editor.handleCloneField(editor.selectedField!.id)
                         }

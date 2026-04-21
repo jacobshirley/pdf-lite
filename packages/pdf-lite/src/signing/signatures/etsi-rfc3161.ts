@@ -28,6 +28,14 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
 
     signingInfo?: SigningInfo
 
+    cloneImpl(): this {
+        const clone = new PdfEtsiRfc3161SignatureObject(this)
+        if (this.signingInfo) {
+            clone.signingInfo = { ...this.signingInfo }
+        }
+        return clone as this
+    }
+
     static create(
         options: PdfSignatureSignOptions & {
             timeStampAuthority?: TimeStampAuthority

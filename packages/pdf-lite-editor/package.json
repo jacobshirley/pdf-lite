@@ -27,6 +27,7 @@
         "lucide-react": "^0.577.0",
         "pdf-lite": "workspace:^",
         "pdfjs-dist": "5.4.296",
+        "pki-lite": "^1.0.14",
         "radix-ui": "^1.4.3",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",

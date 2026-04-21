@@ -2,6 +2,7 @@
 import {
     PdfAcroForm,
     PdfButtonFormField,
+    PdfAdbePkcs7DetachedSignatureObject,
     PdfChoiceFormField,
     PdfDocument,
     PdfFont,
@@ -58,6 +59,19 @@ let nextGraphicsBlockId = 0
 type EmbeddedFontEntry = { ref: FontRef; font: PdfFont }
 const embeddedFonts = new Map<string, EmbeddedFontEntry>()
 let nextEmbeddedFontId = 0
+
+// Signature credentials — keyed by field name (stable across history round-trips).
+type SignatureCredential = {
+    privateKey: Uint8Array<ArrayBuffer>
+    certificate: Uint8Array<ArrayBuffer>
+    additionalCertificates: Uint8Array<ArrayBuffer>[]
+    certSubject: string
+    signerName?: string
+    reason?: string
+    location?: string
+    contactInfo?: string
+}
+const signatureCredentials = new Map<string, SignatureCredential>()
 
 // Undo/Redo history
 const MAX_HISTORY = 50
@@ -143,7 +157,65 @@ function fieldToDTO(field: PdfFormField, id: string): FieldDTO {
         hasParent: !!field.parent,
         options:
             field instanceof PdfChoiceFormField ? field.options : undefined,
+        signature:
+            field instanceof PdfSignatureFormField
+                ? signatureDTO(field)
+                : undefined,
     }
+}
+
+function signatureDTO(field: PdfSignatureFormField) {
+    const cred = signatureCredentials.get(field.name)
+    return {
+        signerName: cred?.signerName ?? field.signerName ?? undefined,
+        reason: cred?.reason ?? field.reason ?? undefined,
+        location: cred?.location ?? field.location ?? undefined,
+        contactInfo: cred?.contactInfo ?? field.contactInfo ?? undefined,
+        hasCredential: !!cred,
+        certSubject: cred?.certSubject,
+    }
+}
+
+/**
+ * Ensure the field has a signature object wired to the stored credential. If
+ * one is already attached (e.g. after a history round-trip that dropped JS
+ * state), re-attach signingInfo in place rather than creating a new one.
+ */
+function applyCredentialToField(field: PdfSignatureFormField): void {
+    if (!pdfDoc) return
+    const cred = signatureCredentials.get(field.name)
+    if (!cred) return
+
+    const signingInfo = {
+        privateKey: cred.privateKey,
+        certificate: cred.certificate,
+        additionalCertificates: cred.additionalCertificates,
+    }
+
+    let sig = field.signature
+    if (sig && 'signingInfo' in sig) {
+        sig.signingInfo = signingInfo
+        sig.signerName = cred.signerName ?? null
+        sig.reason = cred.reason ?? null
+        sig.location = cred.location ?? null
+        sig.contactInfo = cred.contactInfo ?? null
+    } else {
+        sig = PdfAdbePkcs7DetachedSignatureObject.create({
+            privateKey: cred.privateKey,
+            certificate: cred.certificate,
+            additionalCertificates: cred.additionalCertificates,
+            name: cred.signerName,
+            reason: cred.reason,
+            location: cred.location,
+            contactInfo: cred.contactInfo,
+        })
+        field.signature = sig
+    }
+
+    field.generateAppearance()
+
+    const acroform = pdfDoc.acroform
+    if (acroform) acroform.signatureFlags = 3
 }
 
 function segmentToDTO(seg: any): TextSegmentDTO {
@@ -247,6 +319,14 @@ function extractAll(): ExtractResult {
     if (acroform) {
         const visit = (field: PdfFormField) => {
             if (field.rect) {
+                if (
+                    field instanceof PdfSignatureFormField &&
+                    signatureCredentials.has(field.name) &&
+                    !(field.signature as any)?.signingInfo
+                ) {
+                    // History round-trip drops signingInfo; rebuild from cache.
+                    applyCredentialToField(field)
+                }
                 const id = `field_${nextFieldId++}`
                 fieldRefs.set(id, field)
                 fields.push(fieldToDTO(field, id))
@@ -335,9 +415,11 @@ const handlers: {
         return extractAll()
     },
 
-    toBytes() {
+    async toBytes() {
         if (!pdfDoc) throw new Error('No PDF loaded')
-        return pdfDoc.toBytes()
+        const cloned = pdfDoc.clone()
+        await cloned.finalize()
+        return cloned.toBytes()
     },
 
     async toBytesWithPassword({
@@ -379,6 +461,7 @@ const handlers: {
 
         // Encrypt the document with the password
         await exportDoc.encrypt()
+        await exportDoc.finalize()
         return exportDoc.toBytes()
     },
 
@@ -576,7 +659,15 @@ const handlers: {
         const targetForValue = isWidgetOnly ? field.parent! : field
 
         if (property === 'name') {
+            const oldName = targetForValue.name
             targetForValue.name = value
+            if (oldName && oldName !== value) {
+                const cred = signatureCredentials.get(oldName)
+                if (cred) {
+                    signatureCredentials.delete(oldName)
+                    signatureCredentials.set(value, cred)
+                }
+            }
         } else if (property === 'value') {
             targetForValue.value = value
         } else if (property === 'fontSize') {
@@ -658,6 +749,84 @@ const handlers: {
             }
         }
         field.generateAppearance()
+
+        saveToHistory()
+        return fieldToDTO(field, id)
+    },
+
+    async setSignatureCredential({ id, pfxBytes, password }) {
+        if (!pdfDoc) throw new Error('No PDF loaded')
+        const field = fieldRefs.get(id)
+        if (!(field instanceof PdfSignatureFormField)) {
+            throw new Error('Field is not a signature field')
+        }
+
+        const { PFX } = await import('pki-lite/pkcs12/PFX.js')
+        const pfx = PFX.fromDer(pfxBytes as Uint8Array<ArrayBuffer>)
+        const items = await pfx.extractItems(password)
+
+        if (items.privateKeys.length === 0 || items.certificates.length === 0) {
+            throw new Error(
+                'PFX must contain at least one private key and certificate',
+            )
+        }
+
+        // Assume first cert is the signer leaf; others are the chain.
+        const leaf = items.certificates[0]
+        const chain = items.certificates.slice(1)
+        const certSubject = leaf.tbsCertificate.subject.toHumanString()
+
+        const existing = signatureCredentials.get(field.name)
+        signatureCredentials.set(field.name, {
+            privateKey: items.privateKeys[0].toDer(),
+            certificate: leaf.toDer(),
+            additionalCertificates: chain.map((c) => c.toDer()),
+            certSubject,
+            signerName: existing?.signerName ?? certSubject,
+            reason: existing?.reason,
+            location: existing?.location,
+            contactInfo: existing?.contactInfo,
+        })
+
+        applyCredentialToField(field)
+        saveToHistory()
+        return fieldToDTO(field, id)
+    },
+
+    clearSignatureCredential({ id }) {
+        if (!pdfDoc) throw new Error('No PDF loaded')
+        const field = fieldRefs.get(id)
+        if (!(field instanceof PdfSignatureFormField)) {
+            throw new Error('Field is not a signature field')
+        }
+        signatureCredentials.delete(field.name)
+        field.signature = null
+        field.generateAppearance()
+        saveToHistory()
+        return fieldToDTO(field, id)
+    },
+
+    updateSignatureMetadata({ id, property, value }) {
+        if (!pdfDoc) throw new Error('No PDF loaded')
+        const field = fieldRefs.get(id)
+        if (!(field instanceof PdfSignatureFormField)) {
+            throw new Error('Field is not a signature field')
+        }
+
+        const cred = signatureCredentials.get(field.name)
+        if (cred) {
+            cred[property] = value || undefined
+            signatureCredentials.set(field.name, cred)
+        }
+
+        const sig = field.signature
+        if (sig) {
+            if (property === 'signerName') sig.signerName = value || null
+            else if (property === 'reason') sig.reason = value || null
+            else if (property === 'location') sig.location = value || null
+            else if (property === 'contactInfo') sig.contactInfo = value || null
+            field.generateAppearance()
+        }
 
         saveToHistory()
         return fieldToDTO(field, id)
@@ -938,6 +1107,7 @@ const handlers: {
         fieldRefs.clear()
         textBlockRefs.clear()
         graphicsBlockRefs.clear()
+        signatureCredentials.clear()
         nextFieldId = 0
         nextTextBlockId = 0
         nextGraphicsBlockId = 0

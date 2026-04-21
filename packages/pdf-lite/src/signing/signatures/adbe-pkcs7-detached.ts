@@ -38,6 +38,14 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
 
     signingInfo?: SigningInfo
 
+    cloneImpl(): this {
+        const clone = new PdfAdbePkcs7DetachedSignatureObject(this)
+        if (this.signingInfo) {
+            clone.signingInfo = { ...this.signingInfo }
+        }
+        return clone as this
+    }
+
     static create(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray

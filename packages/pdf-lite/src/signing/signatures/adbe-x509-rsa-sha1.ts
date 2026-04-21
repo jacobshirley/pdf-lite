@@ -40,6 +40,14 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
 
     signingInfo?: SigningInfo
 
+    cloneImpl(): this {
+        const clone = new PdfAdbePkcsX509RsaSha1SignatureObject(this)
+        if (this.signingInfo) {
+            clone.signingInfo = { ...this.signingInfo }
+        }
+        return clone as this
+    }
+
     static create(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray

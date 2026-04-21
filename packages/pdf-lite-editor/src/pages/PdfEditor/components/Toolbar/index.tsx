@@ -14,6 +14,7 @@ import {
     FilePlus2,
     FolderOpen,
     Lock,
+    PenLine,
     Plus,
     Redo2,
     TextCursorInput,
@@ -147,6 +148,14 @@ export function Toolbar({
                                 onClick={onAddText}
                                 onDragStart={onTextDragStart}
                                 onDragEnd={onTextDragEnd}
+                            />
+                            <DragButton
+                                icon={PenLine}
+                                label="Signature"
+                                disabled={!pdfLoaded}
+                                onClick={() => onAddField('Signature')}
+                                onDragStart={() => onFieldDragStart('Signature')}
+                                onDragEnd={onFieldDragEnd}
                             />
                         </div>
                     </div>

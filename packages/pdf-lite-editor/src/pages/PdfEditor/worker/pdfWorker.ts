@@ -6,6 +6,7 @@ import {
     PdfDocument,
     PdfFont,
     PdfFormField,
+    PdfSignatureFormField,
     PdfTextFormField,
     PdfV1SecurityHandler,
     PdfV2SecurityHandler,
@@ -728,6 +729,20 @@ const handlers: {
             field.generateAppearance({ onStateName: 'Yes' })
 
             newField = field
+        } else if (type === 'Signature') {
+            const field = new PdfSignatureFormField()
+            field.fieldType = 'Signature'
+            field.name = fieldName
+            field.rect = newRect
+            field.parentRef = page.reference
+            field._form = acroform
+            field.isWidget = true
+            field.print = true
+
+            acroform.signatureFlags = 3 // SignaturesExist + AppendOnly
+            acroform.addField(field)
+            field.generateAppearance()
+            newField = field
         } else if (type === 'Choice') {
             const field = new PdfChoiceFormField()
             field.fieldType = 'Choice'
@@ -756,8 +771,8 @@ const handlers: {
             throw new Error(`Creating ${type} fields is not yet supported`)
         }
 
-        // Only add if not already added (checkbox and choice were added above)
-        if (type !== 'Checkbox' && type !== 'Choice') {
+        // Only add if not already added (checkbox, choice, and signature were added above)
+        if (type !== 'Checkbox' && type !== 'Choice' && type !== 'Signature') {
             acroform.addField(newField)
         }
 

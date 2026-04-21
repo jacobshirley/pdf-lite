@@ -874,13 +874,20 @@ export function usePdfEditor() {
             return
         }
 
-        const fieldWidth = draggedFieldType === 'Checkbox' ? 20 : 200
+        const fieldWidth =
+            draggedFieldType === 'Checkbox'
+                ? 20
+                : draggedFieldType === 'Signature'
+                  ? 260
+                  : 200
         const fieldHeight =
             draggedFieldType === 'Checkbox'
                 ? 20
                 : draggedFieldType === 'Choice'
                   ? 24
-                  : 30
+                  : draggedFieldType === 'Signature'
+                    ? 60
+                    : 30
 
         handleAddField(draggedFieldType!, {
             pageNumber,

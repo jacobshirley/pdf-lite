@@ -16,14 +16,12 @@ import {
     TextBlock,
     TextNode,
     VirtualTextBlock,
-    GraphicsBlock,
 } from 'pdf-lite'
 import {
     PdfPasswordProtectedError,
     PdfInvalidPasswordError,
 } from 'pdf-lite/errors'
 import { RGBColor } from 'pdf-lite/graphics/color/rgb-color'
-import { SetTextMatrixOp } from 'pdf-lite/graphics/ops/text'
 import type { GraphicsBlock as GraphicsBlockType } from 'pdf-lite'
 import type {
     CloneFieldResult,
@@ -43,6 +41,12 @@ import type {
     WorkerResponse,
 } from './protocol'
 import { Matrix } from 'pdf-lite/graphics/geom/matrix'
+import { PdfContentStreamObject } from 'pdf-lite/graphics/pdf-content-stream'
+import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
+import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
+import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
+import type { PdfPage } from 'pdf-lite/pdf/pdf-page'
+import type { ContentNode } from 'pdf-lite/graphics/nodes/content-node'
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope
 
@@ -216,6 +220,87 @@ function applyCredentialToField(field: PdfSignatureFormField): void {
 
     const acroform = pdfDoc.acroform
     if (acroform) acroform.signatureFlags = 3
+}
+
+/**
+ * Ensure the page's /Resources/Font dict maps `font.resourceName` to a real
+ * font object in the document. Required for text content streams that reference
+ * the font via `/<resourceName>`.
+ */
+function ensurePageFontResource(page: PdfPage, font: PdfFont): void {
+    if (!pdfDoc) return
+    const rawResources = page.content.get('Resources')
+    const resolvedResources =
+        rawResources instanceof PdfObjectReference
+            ? rawResources.resolve()?.content
+            : rawResources
+    let resources: PdfDictionary
+    if (resolvedResources instanceof PdfDictionary) {
+        resources = resolvedResources
+    } else {
+        resources = new PdfDictionary()
+        page.content.set('Resources', resources)
+    }
+
+    const rawFontDict = resources.get('Font')
+    const resolvedFontDict =
+        rawFontDict instanceof PdfObjectReference
+            ? rawFontDict.resolve()?.content
+            : rawFontDict
+    let fontDict: PdfDictionary
+    if (resolvedFontDict instanceof PdfDictionary) {
+        fontDict = resolvedFontDict
+    } else {
+        fontDict = new PdfDictionary()
+        resources.set('Font', fontDict)
+    }
+
+    if (fontDict.get(font.resourceName)) return
+
+    if (font.objectNumber < 0) pdfDoc.add(font)
+    fontDict.set(font.resourceName, font.reference)
+}
+
+/**
+ * Append a content node (text/graphics block) to a page's content stream.
+ * Prefers appending to the existing single stream; otherwise creates a new
+ * stream, registers it with the document, and wires it into /Contents.
+ */
+function appendToPageContents(
+    page: PdfPage,
+    node: ContentNode,
+): PdfContentStreamObject {
+    if (!pdfDoc) throw new Error('No PDF loaded')
+    const entry = page.content.get('Contents')
+
+    let target: PdfContentStreamObject | undefined
+    if (entry instanceof PdfObjectReference) {
+        target = entry.resolve(PdfContentStreamObject)
+    } else if (entry instanceof PdfArray && entry.items.length > 0) {
+        const last = entry.items[entry.items.length - 1]
+        if (last instanceof PdfObjectReference) {
+            target = last.resolve(PdfContentStreamObject)
+        }
+    }
+
+    if (!target) {
+        target = new PdfContentStreamObject()
+        target.page = page
+        pdfDoc.add(target)
+
+        if (entry instanceof PdfArray) {
+            entry.items.push(target.reference)
+        } else if (entry instanceof PdfObjectReference) {
+            page.contents = new PdfArray([entry, target.reference])
+        } else {
+            page.contents = target.reference
+        }
+    } else {
+        target.page = page
+    }
+
+    target.add(node)
+    return target
 }
 
 function segmentToDTO(seg: any): TextSegmentDTO {
@@ -606,20 +691,27 @@ const handlers: {
         const x = options?.x ?? 100
         const y = options?.y ?? page.height - 100
 
+        const font = PdfFont.HELVETICA
         const block = new TextBlock(page)
         const seg = new TextNode()
         seg.fontSize = fontSize
         seg.matrix = new Matrix({ a: 1, b: 0, c: 0, d: 1, e: x, f: y })
         block.addSegment(seg)
-        block.font = PdfFont.HELVETICA
+        block.font = font
         seg.text = text
 
-        page.contents.add(block)
+        ensurePageFontResource(page, font)
+        const stream = appendToPageContents(page, block)
+
+        // The block we just serialized is a detached object — grab the
+        // live view from the freshly-parsed stream nodes so later edits
+        // (move/edit text/font) mutate the actual content stream.
+        const live = stream.textBlocks[stream.textBlocks.length - 1] ?? block
 
         const id = `text_block_${nextTextBlockId++}`
-        textBlockRefs.set(id, block)
+        textBlockRefs.set(id, live)
         const result = textBlockToDTO(
-            block,
+            live,
             id,
             targetPageNumber,
             page.height,

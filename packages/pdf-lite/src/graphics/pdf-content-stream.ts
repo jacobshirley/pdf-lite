@@ -123,13 +123,15 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
     constructor(object?: PdfIndirectObject) {
         super(object)
 
-        if (!(object?.content instanceof PdfStream)) {
+        if (object && !(object.content instanceof PdfStream)) {
             throw new Error('Content stream object must have a stream content')
         }
 
+        const src =
+            object?.content instanceof PdfStream ? object.content : undefined
         this.content = new PdfContentStream({
-            header: object?.content?.header,
-            original: object?.content?.raw,
+            header: src?.header ?? new PdfDictionary(),
+            original: src?.raw ?? '',
         })
     }
 

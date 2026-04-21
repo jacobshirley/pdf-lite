@@ -59,10 +59,6 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
 
     signingInfo?: SigningInfo
 
-    constructor(other?: PdfIndirectObject) {
-        super(other)
-    }
-
     static create(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray

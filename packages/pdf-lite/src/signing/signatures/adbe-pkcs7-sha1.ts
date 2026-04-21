@@ -45,10 +45,6 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
 
     signingInfo?: SigningInfo
 
-    constructor(other?: PdfIndirectObject) {
-        super(other)
-    }
-
     static create(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray

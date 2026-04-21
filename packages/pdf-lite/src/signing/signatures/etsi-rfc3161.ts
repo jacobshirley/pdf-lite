@@ -28,10 +28,6 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
 
     signingInfo?: SigningInfo
 
-    constructor(other?: PdfIndirectObject) {
-        super(other)
-    }
-
     static create(
         options: PdfSignatureSignOptions & {
             timeStampAuthority?: TimeStampAuthority

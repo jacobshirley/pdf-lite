@@ -13,21 +13,29 @@ import { fetchRevocationInfo } from '../utils.js'
 import { PdfSignatureObject, PdfSignatureSignOptions } from './base.js'
 import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
 import { ByteArray } from '../../types.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+
+type SigningInfo = {
+    privateKey: ByteArray
+    certificate: ByteArray
+    additionalCertificates: ByteArray[]
+    issuerCertificate?: ByteArray
+    revocationInfo?: RevocationInfo | 'fetch'
+    timeStampAuthority?: TimeStampAuthority
+}
 
 /**
  * PKCS#7 SHA-1 signature object (adbe.pkcs7.sha1).
  * Creates CMS SignedData with SHA-1 hash embedded as signed content.
- *
- * @example
- * ```typescript
- * const signature = new PdfAdbePkcs7Sha1SignatureObject({
- *     privateKey: keyBytes,
- *     certificate: certBytes
- * })
- * ```
  */
 export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
-    /** Fixed algorithm for SHA-1 signatures. */
+    static {
+        PdfSignatureObject.registerSubFilter(
+            'adbe.pkcs7.sha1',
+            PdfAdbePkcs7Sha1SignatureObject,
+        )
+    }
+
     static readonly ALGORITHM: AsymmetricEncryptionAlgorithmParams = {
         type: 'RSASSA_PKCS1_v1_5',
         params: {
@@ -35,65 +43,53 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
         },
     }
 
-    /** Private key for signing. */
-    privateKey: ByteArray
-    /** Signer certificate. */
-    certificate: ByteArray
-    /** Additional certificates for chain building. */
-    additionalCertificates: ByteArray[]
-    /** Issuer certificate for OCSP requests. */
-    issuerCertificate?: ByteArray
-    /** Revocation information or 'fetch' to retrieve automatically. */
-    revocationInfo?: RevocationInfo | 'fetch'
-    /** Timestamp authority configuration. */
-    timeStampAuthority?: TimeStampAuthority
+    signingInfo?: SigningInfo
 
-    /**
-     * Creates a new PKCS#7 SHA-1 signature object.
-     *
-     * @param options - Signature configuration options.
-     */
-    constructor(
+    constructor(other?: PdfIndirectObject) {
+        super(other)
+    }
+
+    static create(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray
             certificate: ByteArray
             issuerCertificate?: ByteArray
             additionalCertificates?: ByteArray[]
-            algorithm?: AsymmetricEncryptionAlgorithmParams
             revocationInfo?: RevocationInfo | 'fetch'
             timeStampAuthority?: TimeStampAuthority | true
         },
-    ) {
-        super({
-            ...options,
-            subfilter: 'adbe.pkcs7.sha1',
-        })
-
-        this.privateKey = options.privateKey
-        this.certificate = options.certificate
-        this.issuerCertificate = options.issuerCertificate
-        this.additionalCertificates = options.additionalCertificates || []
-        this.revocationInfo = options.revocationInfo
-        this.timeStampAuthority =
-            options.timeStampAuthority === true
-                ? {
-                      url: 'http://timestamp.digicert.com',
-                  }
-                : options.timeStampAuthority
+    ): PdfAdbePkcs7Sha1SignatureObject {
+        const sig = new PdfAdbePkcs7Sha1SignatureObject()
+        sig.content = PdfSignatureObject.buildDictionary(
+            options,
+            'adbe.pkcs7.sha1',
+        )
+        sig.signingInfo = {
+            privateKey: options.privateKey,
+            certificate: options.certificate,
+            issuerCertificate: options.issuerCertificate,
+            additionalCertificates: options.additionalCertificates ?? [],
+            revocationInfo: options.revocationInfo,
+            timeStampAuthority:
+                options.timeStampAuthority === true
+                    ? { url: 'http://timestamp.digicert.com' }
+                    : options.timeStampAuthority,
+        }
+        return sig
     }
 
-    /**
-     * Signs the document bytes using PKCS#7 SHA-1 format.
-     *
-     * @param options - Signing options with bytes and revocation embedding flag.
-     * @returns The CMS SignedData and revocation information.
-     */
     sign: PdfSignatureObject['sign'] = async (options) => {
+        if (!this.signingInfo) {
+            throw new Error('Set signingInfo before signing')
+        }
+
         const { bytes } = options
 
-        const certificate: Certificate = Certificate.fromDer(this.certificate)
+        const certificate: Certificate = Certificate.fromDer(
+            this.signingInfo.certificate,
+        )
         const additionalCertificates: Certificate[] =
-            this.additionalCertificates.map(Certificate.fromDer)
+            this.signingInfo.additionalCertificates.map(Certificate.fromDer)
 
         const signedAttributes = new SignerInfo.SignedAttributes()
         const unsignedAttributes = new SignerInfo.UnsignedAttributes()
@@ -101,15 +97,15 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
         this.signedAt ??= new Date()
         signedAttributes.push(Attribute.signingTime(this.signedAt))
         const revocationInfo =
-            this.revocationInfo === 'fetch'
+            this.signingInfo.revocationInfo === 'fetch'
                 ? await fetchRevocationInfo({
                       certificates: [
-                          this.certificate,
-                          ...(this.additionalCertificates ?? []),
+                          this.signingInfo.certificate,
+                          ...this.signingInfo.additionalCertificates,
                       ],
-                      issuerCertificate: this.issuerCertificate,
+                      issuerCertificate: this.signingInfo.issuerCertificate,
                   })
-                : this.revocationInfo
+                : this.signingInfo.revocationInfo
 
         if (options.embedRevocationInfo && revocationInfo) {
             signedAttributes.push(
@@ -143,11 +139,13 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
             .setDetached(false)
             .addSigner({
                 certificate,
-                privateKeyInfo: PrivateKeyInfo.fromDer(this.privateKey),
+                privateKeyInfo: PrivateKeyInfo.fromDer(
+                    this.signingInfo.privateKey,
+                ),
                 encryptionAlgorithm: PdfAdbePkcs7Sha1SignatureObject.ALGORITHM,
                 signedAttrs: signedAttributes,
                 unsignedAttrs: unsignedAttributes,
-                tsa: this.timeStampAuthority,
+                tsa: this.signingInfo.timeStampAuthority,
             })
             .build()
 
@@ -157,20 +155,12 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
         }
     }
 
-    /**
-     * Verifies the signature against the provided document bytes.
-     *
-     * @param options - Verification options including the signed bytes.
-     * @returns The verification result.
-     */
     verify: PdfSignatureObject['verify'] = async (options) => {
         const { bytes, certificateValidation } = options
 
         try {
             const signedData = SignedData.fromCms(this.signedBytes)
 
-            // For adbe.pkcs7.sha1, the signed content is the SHA-1 hash of the document
-            // We need to compute the SHA-1 hash of the data and compare with the embedded content
             const expectedHash =
                 await DigestAlgorithmIdentifier.digestAlgorithm('SHA-1').digest(
                     bytes,
@@ -181,7 +171,6 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
                     ? {}
                     : certificateValidation || undefined
 
-            // Verify the signature with the hash as the data (non-detached mode)
             const result = await signedData.verify({
                 certificateValidation: certValidationOptions,
             })
@@ -193,7 +182,6 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
                 }
             }
 
-            // Additionally verify that the embedded hash matches the document hash
             const embeddedContent = signedData.encapContentInfo.eContent
             if (!embeddedContent) {
                 return {
@@ -202,7 +190,6 @@ export class PdfAdbePkcs7Sha1SignatureObject extends PdfSignatureObject {
                 }
             }
 
-            // Compare the hashes
             if (!this.compareArrays(embeddedContent, expectedHash)) {
                 return {
                     valid: false,

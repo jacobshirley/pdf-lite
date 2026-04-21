@@ -882,7 +882,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             await this.encrypt()
         }
 
-        this.update()
         await this.sign()
     }
 
@@ -1452,6 +1451,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             return
         }
 
+        this.update()
         await this.signer.sign()
         this._signed = true
     }

@@ -9,21 +9,28 @@ import { RevocationInfo } from '../types.js'
 import { fetchRevocationInfo } from '../utils.js'
 import { PdfArray } from '../../core/objects/pdf-array.js'
 import { PdfHexadecimal } from '../../core/objects/pdf-hexadecimal.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+
+type SigningInfo = {
+    privateKey: ByteArray
+    certificate: ByteArray
+    additionalCertificates?: ByteArray[]
+    issuerCertificate?: ByteArray
+    revocationInfo?: RevocationInfo | 'fetch'
+}
 
 /**
  * X.509 RSA-SHA1 signature object (adbe.x509.rsa_sha1).
  * Creates a raw RSA-SHA1 signature with certificates in the Cert entry.
- *
- * @example
- * ```typescript
- * const signature = new PdfAdbePkcsX509RsaSha1SignatureObject({
- *     privateKey: keyBytes,
- *     certificate: certBytes
- * })
- * ```
  */
 export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
-    /** Fixed algorithm for RSA-SHA1 signatures. */
+    static {
+        PdfSignatureObject.registerSubFilter(
+            'adbe.x509.rsa_sha1',
+            PdfAdbePkcsX509RsaSha1SignatureObject,
+        )
+    }
+
     static readonly ALGORITHM: AsymmetricEncryptionAlgorithmParams = {
         type: 'RSASSA_PKCS1_v1_5',
         params: {
@@ -31,23 +38,13 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
         },
     }
 
-    /** Private key for signing. */
-    privateKey: ByteArray
-    /** Signer certificate. */
-    certificate: ByteArray
-    /** Additional certificates for chain building. */
-    additionalCertificates?: ByteArray[]
-    /** Issuer certificate for OCSP requests. */
-    issuerCertificate?: ByteArray
-    /** Revocation information or 'fetch' to retrieve automatically. */
-    revocationInfo?: RevocationInfo | 'fetch'
+    signingInfo?: SigningInfo
 
-    /**
-     * Creates a new X.509 RSA-SHA1 signature object.
-     *
-     * @param options - Signature configuration options.
-     */
-    constructor(
+    constructor(other?: PdfIndirectObject) {
+        super(other)
+    }
+
+    static create(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray
             certificate: ByteArray
@@ -55,43 +52,43 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
             issuerCertificate?: ByteArray
             revocationInfo?: RevocationInfo | 'fetch'
         },
-    ) {
-        super({
-            ...options,
-            subfilter: 'adbe.x509.rsa_sha1',
-            certs: [
-                options.certificate,
-                ...(options.additionalCertificates ?? []),
-            ],
-        })
-
-        this.privateKey = options.privateKey
-        this.revocationInfo = options.revocationInfo
-        this.certificate = options.certificate
-        this.issuerCertificate = options.issuerCertificate
-        this.additionalCertificates = options.additionalCertificates
+    ): PdfAdbePkcsX509RsaSha1SignatureObject {
+        const sig = new PdfAdbePkcsX509RsaSha1SignatureObject()
+        sig.content = PdfSignatureObject.buildDictionary(
+            options,
+            'adbe.x509.rsa_sha1',
+            [options.certificate, ...(options.additionalCertificates ?? [])],
+        )
+        sig.signingInfo = {
+            privateKey: options.privateKey,
+            certificate: options.certificate,
+            additionalCertificates: options.additionalCertificates,
+            issuerCertificate: options.issuerCertificate,
+            revocationInfo: options.revocationInfo,
+        }
+        return sig
     }
 
-    /**
-     * Signs the document bytes using RSA-SHA1 format.
-     *
-     * @param options - Signing options with bytes.
-     * @returns The signature bytes and revocation information.
-     */
     sign: PdfSignatureObject['sign'] = async (options) => {
+        if (!this.signingInfo) {
+            throw new Error('Set signingInfo before signing')
+        }
+
         const { bytes } = options
         const revocationInfo =
-            this.revocationInfo === 'fetch'
+            this.signingInfo.revocationInfo === 'fetch'
                 ? await fetchRevocationInfo({
                       certificates: [
-                          this.certificate,
-                          ...(this.additionalCertificates ?? []),
+                          this.signingInfo.certificate,
+                          ...(this.signingInfo.additionalCertificates ?? []),
                       ],
-                      issuerCertificate: this.issuerCertificate,
+                      issuerCertificate: this.signingInfo.issuerCertificate,
                   })
-                : this.revocationInfo
+                : this.signingInfo.revocationInfo
 
-        const privateKeyInfo = PrivateKeyInfo.fromDer(this.privateKey)
+        const privateKeyInfo = PrivateKeyInfo.fromDer(
+            this.signingInfo.privateKey,
+        )
         const signatureAlgorithm = AlgorithmIdentifier.signatureAlgorithm(
             PdfAdbePkcsX509RsaSha1SignatureObject.ALGORITHM,
         )
@@ -107,12 +104,6 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
         }
     }
 
-    /**
-     * Verifies the signature against the provided document bytes.
-     *
-     * @param options - Verification options including the signed bytes.
-     * @returns The verification result.
-     */
     verify: PdfSignatureObject['verify'] = async (options) => {
         const { bytes } = options
 
@@ -148,7 +139,6 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
                 }
             }
 
-            // Parse the signature as an OctetString
             const signatureOctetString = OctetString.fromDer(this.signedBytes)
             const signatureValue = signatureOctetString.bytes
 
@@ -166,7 +156,6 @@ export class PdfAdbePkcsX509RsaSha1SignatureObject extends PdfSignatureObject {
                 if (isValid) {
                     if (options.certificateValidation === true) {
                         await cert.validate({
-                            //TODO: implement default validation options
                             checkSignature: true,
                             validateChain: true,
                             otherCertificates: certificates,

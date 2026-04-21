@@ -98,43 +98,78 @@ export abstract class PdfSignatureObject extends PdfIndirectObject<PdfSignatureD
      *
      * @param content - Either a signature dictionary or options to create one.
      */
-    constructor(
-        content:
-            | PdfSignatureDictionary
-            | (PdfSignatureSignOptions & {
-                  subfilter: PdfSignatureSubType
-                  certs?: ByteArray[]
-              }),
-    ) {
-        super(
-            content instanceof PdfSignatureDictionary
-                ? content
-                : new PdfSignatureDictionary({
-                      Type: new PdfName('Sig'),
-                      Filter: new PdfName('Adobe.PPKLite'),
-                      SubFilter: new PdfName(content.subfilter),
-                      Reason: content.reason
-                          ? new PdfString(content.reason)
-                          : undefined,
-                      ContactInfo: content.contactInfo
-                          ? new PdfString(content.contactInfo)
-                          : undefined,
-                      Location: content.location
-                          ? new PdfString(content.location)
-                          : undefined,
-                      M: content.date ? new PdfDate(content.date) : undefined,
-                      Name: content.name
-                          ? new PdfString(content.name)
-                          : undefined,
-                      Cert: content.certs
-                          ? new PdfArray(
-                                content.certs.map(
-                                    (cert) => new PdfHexadecimal(cert, 'bytes'),
-                                ),
-                            )
-                          : undefined,
-                  }),
-        )
+    constructor(content?: PdfIndirectObject | PdfSignatureDictionary) {
+        super(content)
+    }
+
+    /**
+     * Builds a signature dictionary from common signing options.
+     *
+     * @param options - Signature metadata options.
+     * @param subfilter - The signature SubFilter identifier.
+     * @param certs - Optional certificates for the Cert entry (x509 variants).
+     */
+    static buildDictionary(
+        options: PdfSignatureSignOptions,
+        subfilter: PdfSignatureSubType,
+        certs?: ByteArray[],
+    ): PdfSignatureDictionary {
+        return new PdfSignatureDictionary({
+            Type: new PdfName('Sig'),
+            Filter: new PdfName('Adobe.PPKLite'),
+            SubFilter: new PdfName(subfilter),
+            Reason: options.reason ? new PdfString(options.reason) : undefined,
+            ContactInfo: options.contactInfo
+                ? new PdfString(options.contactInfo)
+                : undefined,
+            Location: options.location
+                ? new PdfString(options.location)
+                : undefined,
+            M: options.date ? new PdfDate(options.date) : undefined,
+            Name: options.name ? new PdfString(options.name) : undefined,
+            Cert: certs
+                ? new PdfArray(
+                      certs.map((cert) => new PdfHexadecimal(cert, 'bytes')),
+                  )
+                : undefined,
+        })
+    }
+
+    private static _registry = new Map<
+        PdfSignatureSubType,
+        new (o?: PdfIndirectObject) => PdfSignatureObject
+    >()
+
+    static registerSubFilter(
+        subfilter: PdfSignatureSubType,
+        ctor: new (o?: PdfIndirectObject) => PdfSignatureObject,
+    ): void {
+        PdfSignatureObject._registry.set(subfilter, ctor)
+    }
+
+    static fromIndirectObject(other: PdfIndirectObject): PdfSignatureObject {
+        if (!(other.content instanceof PdfDictionary)) {
+            throw new Error(
+                'Invalid signature object: content is not a dictionary',
+            )
+        }
+        const subFilter = other.content.get('SubFilter')?.value as
+            | PdfSignatureSubType
+            | undefined
+        if (!subFilter) {
+            throw new Error('Signature dictionary missing SubFilter entry')
+        }
+        const cls = PdfSignatureObject._registry.get(subFilter)
+        if (!cls) {
+            throw new Error(
+                `Unsupported signature SubFilter type: ${subFilter}`,
+            )
+        }
+        return other.becomes(cls)
+    }
+
+    get isSigned(): boolean {
+        return this.content.has('Contents')
     }
 
     /**

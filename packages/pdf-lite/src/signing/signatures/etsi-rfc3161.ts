@@ -8,54 +8,53 @@ import { SignedData } from 'pki-lite/pkcs7/SignedData.js'
 import { fetchRevocationInfo } from '../utils.js'
 import { Certificate } from 'pki-lite/x509/Certificate.js'
 import { OIDs } from 'pki-lite/core/OIDs.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+
+type SigningInfo = {
+    timeStampAuthority: TimeStampAuthority
+}
 
 /**
  * RFC 3161 timestamp signature object (ETSI.RFC3161).
  * Creates document timestamps using a Time Stamp Authority (TSA).
- *
- * @example
- * ```typescript
- * const timestamp = new PdfEtsiRfc3161SignatureObject({
- *     timeStampAuthority: { url: 'http://timestamp.example.com' }
- * })
- * ```
  */
 export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
-    /** Timestamp authority configuration. */
-    timeStampAuthority: TimeStampAuthority
-
-    /**
-     * Creates a new RFC 3161 timestamp signature object.
-     *
-     * @param options - Configuration including optional TSA settings.
-     */
-    constructor(
-        options: PdfSignatureSignOptions & {
-            timeStampAuthority?: TimeStampAuthority
-            name?: string
-            reason?: string
-            contactInfo?: string
-            location?: string
-        },
-    ) {
-        super({
-            ...options,
-            subfilter: 'ETSI.RFC3161',
-        })
-
-        this.timeStampAuthority = options.timeStampAuthority ?? {
-            url: 'https://freetsa.org/tsr',
-        }
+    static {
+        PdfSignatureObject.registerSubFilter(
+            'ETSI.RFC3161',
+            PdfEtsiRfc3161SignatureObject,
+        )
     }
 
-    /**
-     * Creates a timestamp for the document bytes.
-     *
-     * @param options - Signing options with bytes to timestamp.
-     * @returns The timestamp token and revocation information.
-     * @throws Error if no timestamp token is received.
-     */
+    signingInfo?: SigningInfo
+
+    constructor(other?: PdfIndirectObject) {
+        super(other)
+    }
+
+    static create(
+        options: PdfSignatureSignOptions & {
+            timeStampAuthority?: TimeStampAuthority
+        } = {},
+    ): PdfEtsiRfc3161SignatureObject {
+        const sig = new PdfEtsiRfc3161SignatureObject()
+        sig.content = PdfSignatureObject.buildDictionary(
+            options,
+            'ETSI.RFC3161',
+        )
+        sig.signingInfo = {
+            timeStampAuthority: options.timeStampAuthority ?? {
+                url: 'https://freetsa.org/tsr',
+            },
+        }
+        return sig
+    }
+
     sign: PdfSignatureObject['sign'] = async (options) => {
+        if (!this.signingInfo) {
+            throw new Error('Set signingInfo before signing')
+        }
+
         const { bytes } = options
 
         const digestAlgorithm =
@@ -68,9 +67,9 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
             }),
             certReq: true,
         }).request({
-            url: this.timeStampAuthority.url,
-            username: this.timeStampAuthority.username,
-            password: this.timeStampAuthority.password,
+            url: this.signingInfo.timeStampAuthority.url,
+            username: this.signingInfo.timeStampAuthority.username,
+            password: this.signingInfo.timeStampAuthority.password,
         })
 
         if (!timestampResponse.timeStampToken) {
@@ -93,12 +92,6 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
         }
     }
 
-    /**
-     * Verifies the timestamp signature against the provided document bytes.
-     *
-     * @param options - Verification options including the signed bytes.
-     * @returns The verification result.
-     */
     verify: PdfSignatureObject['verify'] = async (options) => {
         const { bytes, certificateValidation } = options
 
@@ -113,8 +106,6 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
         try {
             const signedData = SignedData.fromCms(this.signedBytes)
 
-            // Extract TSTInfo from the signed data's encapsulated content
-            // The eContentType should be id-ct-TSTInfo (1.2.840.113549.1.9.16.1.4)
             const encapContentInfo = signedData.encapContentInfo
 
             if (
@@ -135,10 +126,8 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
                 }
             }
 
-            // Parse the TSTInfo from the encapsulated content
             const tstInfo = TSTInfo.fromDer(encapContentInfo.eContent)
 
-            // Verify that the messageImprint in TSTInfo matches what we computed
             const tstMessageImprint = tstInfo.messageImprint
             if (
                 tstMessageImprint.hashAlgorithm.algorithm.toString() !==
@@ -175,7 +164,6 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
                 }
             }
 
-            // Verify the signature on the SignedData
             const certValidationOptions =
                 certificateValidation === true
                     ? {}
@@ -185,7 +173,6 @@ export class PdfEtsiRfc3161SignatureObject extends PdfSignatureObject {
                 const certificates = signedData.certificates ?? []
                 for (const cert of certificates) {
                     if (!(cert instanceof Certificate)) {
-                        //TODO: support other cert types
                         continue
                     }
 

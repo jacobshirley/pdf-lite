@@ -13,15 +13,9 @@ import { OCSPResponse } from 'pki-lite/ocsp/OCSPResponse.js'
 import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
 import { OtherRevInfo } from 'pki-lite/adobe/OtherRevInfo.js'
 import { AsymmetricEncryptionAlgorithmParams } from 'pki-lite/core/index.js'
-import { PdfName } from '../../core/objects/pdf-name.js'
 import { fetchRevocationInfo } from '../utils.js'
-import { PdfString } from '../../core/objects/pdf-string.js'
-import { PdfDate } from '../../core/objects/pdf-date.js'
-import {
-    PdfSignatureDictionary,
-    PdfSignatureObject,
-    PdfSignatureSignOptions,
-} from './base.js'
+import { PdfSignatureObject, PdfSignatureSignOptions } from './base.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 import { SigningCertificateV2 } from 'pki-lite/x509/attributes/SigningCertificateV2.js'
 import {
     OtherHashAlgAndValue,
@@ -29,6 +23,17 @@ import {
 } from 'pki-lite/x509/attributes/SignaturePolicyIdentifier.js'
 import { DigestAlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
 import { ByteArray } from '../../types.js'
+
+type SigningInfo = {
+    privateKey: ByteArray
+    certificate: ByteArray
+    additionalCertificates?: ByteArray[]
+    issuerCertificate?: ByteArray
+    algorithm?: AsymmetricEncryptionAlgorithmParams
+    revocationInfo?: RevocationInfo | 'fetch'
+    timeStampAuthority?: TimeStampAuthority | true
+    policyDocument?: SignaturePolicyDocument
+}
 
 /**
  * ETSI CAdES detached signature object (ETSI.CAdES.detached).
@@ -45,29 +50,20 @@ import { ByteArray } from '../../types.js'
  * ```
  */
 export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
-    /** Private key for signing. */
-    privateKey: ByteArray
-    /** Signer certificate. */
-    certificate: ByteArray
-    /** Additional certificates for chain building. */
-    additionalCertificates: ByteArray[]
-    /** Issuer certificate for OCSP requests. */
-    issuerCertificate?: ByteArray
-    /** Signature algorithm parameters. */
-    algorithm?: AsymmetricEncryptionAlgorithmParams
-    /** Revocation information or 'fetch' to retrieve automatically. */
-    revocationInfo?: RevocationInfo | 'fetch'
-    /** Timestamp authority configuration. */
-    timeStampAuthority?: TimeStampAuthority
-    /** Signature policy document reference. */
-    policyDocument?: SignaturePolicyDocument
+    static {
+        PdfSignatureObject.registerSubFilter(
+            'ETSI.CAdES.detached',
+            PdfEtsiCadesDetachedSignatureObject,
+        )
+    }
 
-    /**
-     * Creates a new CAdES detached signature object.
-     *
-     * @param options - Signature configuration options.
-     */
-    constructor(
+    signingInfo?: SigningInfo
+
+    constructor(other?: PdfIndirectObject) {
+        super(other)
+    }
+
+    static create(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray
             certificate: ByteArray
@@ -79,38 +75,28 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
             policyDocument?: SignaturePolicyDocument
         },
     ) {
-        super(
-            new PdfSignatureDictionary({
-                Type: new PdfName('Sig'),
-                Filter: new PdfName('Adobe.PPKLite'),
-                SubFilter: new PdfName('ETSI.CAdES.detached'),
-                ContactInfo: options.contactInfo
-                    ? new PdfString(options.contactInfo)
-                    : undefined,
-                M: options.date ? new PdfDate(options.date) : undefined,
-                Name: options.name ? new PdfString(options.name) : undefined,
-                Reason: options.reason
-                    ? new PdfString(options.reason)
-                    : undefined,
-                Location: options.location
-                    ? new PdfString(options.location)
-                    : undefined,
-            }),
+        const sig = new PdfEtsiCadesDetachedSignatureObject()
+        sig.content = PdfSignatureObject.buildDictionary(
+            options,
+            'ETSI.CAdES.detached',
         )
 
-        this.privateKey = options.privateKey
-        this.certificate = options.certificate
-        this.issuerCertificate = options.issuerCertificate
-        this.additionalCertificates = options.additionalCertificates || []
-        this.algorithm = options.algorithm
-        this.revocationInfo = options.revocationInfo
-        this.timeStampAuthority =
-            options.timeStampAuthority === true
-                ? {
-                      url: 'https://freetsa.org/tsr',
-                  }
-                : options.timeStampAuthority
-        this.policyDocument = options.policyDocument
+        sig.signingInfo = {
+            privateKey: options.privateKey,
+            certificate: options.certificate,
+            issuerCertificate: options.issuerCertificate,
+            additionalCertificates: options.additionalCertificates || [],
+            algorithm: options.algorithm,
+            revocationInfo: options.revocationInfo,
+            timeStampAuthority:
+                options.timeStampAuthority === true
+                    ? {
+                          url: 'https://freetsa.org/tsr',
+                      }
+                    : options.timeStampAuthority,
+            policyDocument: options.policyDocument,
+        }
+        return sig
     }
 
     /**
@@ -120,11 +106,18 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
      * @returns The CMS SignedData and revocation information.
      */
     sign: PdfSignatureObject['sign'] = async (options) => {
+        if (!this.signingInfo) {
+            throw new Error('Set signingInfo before signing')
+        }
+
         const { bytes } = options
 
-        const certificate: Certificate = Certificate.fromDer(this.certificate)
+        const certificate: Certificate = Certificate.fromDer(
+            this.signingInfo.certificate,
+        )
         const additionalCertificates: Certificate[] =
-            this.additionalCertificates.map(Certificate.fromDer)
+            this.signingInfo.additionalCertificates?.map(Certificate.fromDer) ??
+            []
 
         const signedAttributes = new SignerInfo.SignedAttributes()
         const unsignedAttributes = new SignerInfo.UnsignedAttributes()
@@ -154,17 +147,18 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
             )
         }
 
-        if (this.policyDocument) {
+        if (this.signingInfo.policyDocument) {
             signedAttributes.push(
                 Attribute.signaturePolicyIdentifier(
                     new SignaturePolicyId({
-                        sigPolicyId: this.policyDocument.oid,
+                        sigPolicyId: this.signingInfo.policyDocument.oid,
                         sigPolicyHash: new OtherHashAlgAndValue({
                             hashAlgorithm:
                                 DigestAlgorithmIdentifier.digestAlgorithm(
-                                    this.policyDocument.hashAlgorithm,
+                                    this.signingInfo.policyDocument
+                                        .hashAlgorithm,
                                 ),
-                            hashValue: this.policyDocument.hash,
+                            hashValue: this.signingInfo.policyDocument.hash,
                         }),
                         sigPolicyQualifiers: [],
                     }),
@@ -173,15 +167,15 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
         }
 
         const revocationInfo =
-            this.revocationInfo === 'fetch'
+            this.signingInfo.revocationInfo === 'fetch'
                 ? await fetchRevocationInfo({
                       certificates: [
-                          this.certificate,
-                          ...(this.additionalCertificates ?? []),
+                          this.signingInfo.certificate,
+                          ...(this.signingInfo.additionalCertificates ?? []),
                       ],
-                      issuerCertificate: this.issuerCertificate,
+                      issuerCertificate: this.signingInfo.issuerCertificate,
                   })
-                : this.revocationInfo
+                : this.signingInfo.revocationInfo
 
         if (options.embedRevocationInfo && revocationInfo) {
             signedAttributes.push(
@@ -211,11 +205,13 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
             .setDetached(true)
             .addSigner({
                 certificate,
-                privateKeyInfo: PrivateKeyInfo.fromDer(this.privateKey),
+                privateKeyInfo: PrivateKeyInfo.fromDer(
+                    this.signingInfo.privateKey,
+                ),
                 signedAttrs: signedAttributes,
                 unsignedAttrs: unsignedAttributes,
-                tsa: this.timeStampAuthority,
-                encryptionAlgorithm: this.algorithm,
+                tsa: this.signingInfo.timeStampAuthority,
+                encryptionAlgorithm: this.signingInfo.algorithm,
             })
             .build()
 
@@ -235,7 +231,7 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
         const { bytes, certificateValidation } = options
 
         try {
-            const signedData = SignedData.fromCms(this.signedBytes)
+            const signedData = this.signedData
 
             const certValidationOptions =
                 certificateValidation === true
@@ -263,5 +259,12 @@ export class PdfEtsiCadesDetachedSignatureObject extends PdfSignatureObject {
                 ],
             }
         }
+    }
+
+    /**
+     * Parses the signed bytes as a CMS SignedData structure. See {@link SignedData} for details on the parsed content.
+     */
+    get signedData(): SignedData {
+        return SignedData.fromCms(this.signedBytes)
     }
 }

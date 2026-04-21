@@ -190,7 +190,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
     })
 
     it('should create Adobe PKCS7 signature with required properties', () => {
-        const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+        const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
         })
@@ -204,7 +204,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
 
     it('should include optional metadata in signature dictionary', () => {
         const testDate = new Date('2024-01-01T12:00:00Z')
-        const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+        const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             name: 'Jake Shirley',
@@ -226,7 +226,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
     })
 
     it('should accept additional certificates', async () => {
-        const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+        const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             issuerCertificate: rsaSigningKeys.caCert,
@@ -246,7 +246,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
     })
 
     it('should support revocation info configuration', async () => {
-        const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+        const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             revocationInfo: {
@@ -276,7 +276,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
     })
 
     it('should support automatic revocation info fetching', async () => {
-        const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+        const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             revocationInfo: 'fetch',
@@ -291,7 +291,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
         const customTSA = {
             url: 'https://freetsa.org/tsr',
         }
-        const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+        const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             timeStampAuthority: customTSA,
@@ -306,7 +306,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
     })
 
     it('should generate valid PKCS7 signature', async () => {
-        const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+        const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             issuerCertificate: rsaSigningKeys.caCert,
@@ -329,7 +329,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
         it('should verify a valid PKCS7 detached signature', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -348,7 +348,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
             const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
 
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -367,7 +367,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
         it('should verify signature with additional certificates', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -385,7 +385,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
         it('should verify signature with certificate chain validation using trusted CA', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -411,7 +411,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
 
             // Create signature with embedded OCSP response
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -443,7 +443,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
 
             // Create signature with embedded CRL
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -475,7 +475,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
 
             // Create signature with both CRL and OCSP embedded
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -508,7 +508,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
         it('should pass certificateValidation: true to use default validation', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -534,7 +534,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
         it('should verify signature with trust anchor certificate', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -582,7 +582,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
 
             // Create signature without including CA cert in chain
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 // Note: NOT including the CA certificate
@@ -617,7 +617,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
         it('should verify signature with multiple trust anchors', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcs7DetachedSignatureObject({
+            const sigObj = PdfAdbePkcs7DetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -653,7 +653,7 @@ describe('PdfAdbePkcs7DetachedSignatureObject', () => {
 
 describe('PdfEtsiCadesDetachedSignatureObject', () => {
     it('should create ETSI CAdES signature with required properties', () => {
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+        const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
         })
@@ -667,7 +667,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
 
     it('should include optional metadata in signature dictionary', () => {
         const testDate = new Date('2024-01-01T12:00:00Z')
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+        const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             name: 'Jake Shirley',
@@ -693,17 +693,17 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
             hashAlgorithm: 'SHA-256' as const,
         }
 
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+        const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             policyDocument: policyDoc,
         })
 
-        expect(sigObj.policyDocument).toEqual(policyDoc)
+        expect(sigObj.signingInfo!.policyDocument).toEqual(policyDoc)
     })
 
     it('should generate valid CAdES signature', async () => {
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+        const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             issuerCertificate: rsaSigningKeys.caCert,
@@ -720,7 +720,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
     })
 
     it('should accept additional certificates', async () => {
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+        const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             issuerCertificate: rsaSigningKeys.caCert,
@@ -740,7 +740,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
     })
 
     it('should support revocation info configuration', async () => {
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+        const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             revocationInfo: {
@@ -770,7 +770,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
     })
 
     it('should support automatic revocation info fetching', async () => {
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+        const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             revocationInfo: 'fetch',
@@ -785,7 +785,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
         const customTSA = {
             url: 'https://freetsa.org/tsr',
         }
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+        const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             timeStampAuthority: customTSA,
@@ -800,7 +800,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
     })
 
     it('should generate valid PKCS7 signature', async () => {
-        const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+        const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             issuerCertificate: rsaSigningKeys.caCert,
@@ -823,7 +823,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
         it('should verify a valid CAdES detached signature', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+            const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -842,7 +842,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
             const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
 
-            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+            const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -861,7 +861,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
 
             // Create signature with embedded OCSP response
-            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+            const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -893,7 +893,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
 
             // Create signature with embedded CRL
-            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+            const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -924,7 +924,7 @@ describe('PdfEtsiCadesDetachedSignatureObject', () => {
         it('should verify CAdES signature with trust anchor certificate', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfEtsiCadesDetachedSignatureObject({
+            const sigObj = PdfEtsiCadesDetachedSignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -960,7 +960,7 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
     })
 
     it('should create Adobe PKCS7 SHA1 signature with required properties', () => {
-        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+        const sigObj = PdfAdbePkcs7Sha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
         })
@@ -974,7 +974,7 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
 
     it('should include optional metadata in signature dictionary', () => {
         const testDate = new Date('2024-01-01T12:00:00Z')
-        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+        const sigObj = PdfAdbePkcs7Sha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             name: 'Jake Shirley',
@@ -996,7 +996,7 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
     })
 
     it('should accept additional certificates', async () => {
-        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+        const sigObj = PdfAdbePkcs7Sha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             issuerCertificate: rsaSigningKeys.caCert,
@@ -1016,7 +1016,7 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
     })
 
     it('should support revocation info configuration', async () => {
-        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+        const sigObj = PdfAdbePkcs7Sha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             revocationInfo: {
@@ -1046,7 +1046,7 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
     })
 
     it('should support automatic revocation info fetching', async () => {
-        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+        const sigObj = PdfAdbePkcs7Sha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             revocationInfo: 'fetch',
@@ -1061,7 +1061,7 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
         const customTSA = {
             url: 'https://freetsa.org/tsr',
         }
-        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+        const sigObj = PdfAdbePkcs7Sha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             timeStampAuthority: customTSA,
@@ -1076,7 +1076,7 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
     })
 
     it('should generate valid PKCS7 SHA1 signature', async () => {
-        const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+        const sigObj = PdfAdbePkcs7Sha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             issuerCertificate: rsaSigningKeys.caCert,
@@ -1096,7 +1096,7 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
         it('should verify a valid PKCS7 SHA1 signature', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+            const sigObj = PdfAdbePkcs7Sha1SignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -1115,7 +1115,7 @@ describe('PdfAdbePkcs7Sha1SignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
             const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
 
-            const sigObj = new PdfAdbePkcs7Sha1SignatureObject({
+            const sigObj = PdfAdbePkcs7Sha1SignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -1138,7 +1138,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
     })
 
     it('should create Adobe X509 RSA SHA1 signature with required properties', () => {
-        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+        const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
         })
@@ -1152,7 +1152,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
 
     it('should include optional metadata in signature dictionary', () => {
         const testDate = new Date('2024-01-01T12:00:00Z')
-        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+        const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             name: 'Jake Shirley',
@@ -1174,7 +1174,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
     })
 
     it('should include certificate in Cert array', () => {
-        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+        const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
         })
@@ -1185,7 +1185,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
     })
 
     it('should accept additional certificates', () => {
-        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+        const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             additionalCertificates: [rsaSigningKeys.caCert],
@@ -1197,7 +1197,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
     })
 
     it('should support revocation info configuration', async () => {
-        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+        const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             revocationInfo: {
@@ -1216,7 +1216,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
     })
 
     it('should support automatic revocation info fetching', async () => {
-        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+        const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             revocationInfo: 'fetch',
@@ -1228,7 +1228,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
     })
 
     it('should generate valid X509 RSA SHA1 signature', async () => {
-        const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+        const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             date: new Date('2024-01-01T12:00:00Z'),
@@ -1247,7 +1247,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
         it('should verify a valid X509 RSA SHA1 signature', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -1266,7 +1266,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
             const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
 
-            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -1284,7 +1284,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
         it('should verify signature with additional certificates', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -1302,7 +1302,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
         it('should verify signature with certificate validation', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [rsaSigningKeys.caCert],
@@ -1325,7 +1325,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
         it('should verify signature with multiple certificates in Cert array', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 additionalCertificates: [
@@ -1347,7 +1347,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
 
             // Sign with one key
-            const sigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            const sigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
                 privateKey: rsaSigningKeys.privateKey,
                 certificate: rsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -1356,7 +1356,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
             const { signedBytes } = await sigObj.sign({ bytes: testData })
 
             // Create a new signature object with a different certificate
-            const wrongSigObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
+            const wrongSigObj = PdfAdbePkcsX509RsaSha1SignatureObject.create({
                 privateKey: otherRsaSigningKeys.privateKey,
                 certificate: otherRsaSigningKeys.cert,
                 date: new Date('2024-01-01T12:00:00Z'),
@@ -1373,7 +1373,7 @@ describe('PdfAdbePkcsX509RsaSha1SignatureObject', () => {
 
 describe('PdfEtsiRfc3161SignatureObject', () => {
     it('should create ETSI RFC3161 signature with required properties', () => {
-        const sigObj = new PdfEtsiRfc3161SignatureObject({})
+        const sigObj = PdfEtsiRfc3161SignatureObject.create({})
 
         expect(sigObj.content.get('Filter')?.toString()).toBe('/Adobe.PPKLite')
         expect(sigObj.content.get('SubFilter')?.toString()).toBe(
@@ -1383,9 +1383,11 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
     })
 
     it('should use default timestamp authority URL', () => {
-        const sigObj = new PdfEtsiRfc3161SignatureObject({})
+        const sigObj = PdfEtsiRfc3161SignatureObject.create({})
 
-        expect(sigObj.timeStampAuthority.url).toBe('https://freetsa.org/tsr')
+        expect(sigObj.signingInfo!.timeStampAuthority.url).toBe(
+            'https://freetsa.org/tsr',
+        )
     })
 
     it('should accept custom timestamp authority URL', () => {
@@ -1394,19 +1396,19 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
             username: 'user',
             password: 'pass',
         }
-        const sigObj = new PdfEtsiRfc3161SignatureObject({
+        const sigObj = PdfEtsiRfc3161SignatureObject.create({
             timeStampAuthority: customTSA,
         })
 
-        expect(sigObj.timeStampAuthority.url).toBe(
+        expect(sigObj.signingInfo!.timeStampAuthority.url).toBe(
             'https://custom-tsa.example.com/tsr',
         )
-        expect(sigObj.timeStampAuthority.username).toBe('user')
-        expect(sigObj.timeStampAuthority.password).toBe('pass')
+        expect(sigObj.signingInfo!.timeStampAuthority.username).toBe('user')
+        expect(sigObj.signingInfo!.timeStampAuthority.password).toBe('pass')
     })
 
     it('should include optional metadata in signature dictionary', () => {
-        const sigObj = new PdfEtsiRfc3161SignatureObject({
+        const sigObj = PdfEtsiRfc3161SignatureObject.create({
             name: 'Timestamp Authority',
             reason: 'Document Timestamping',
             location: 'Server',
@@ -1426,7 +1428,7 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
     })
 
     it('should generate valid RFC3161 timestamp signature', async () => {
-        const sigObj = new PdfEtsiRfc3161SignatureObject({
+        const sigObj = PdfEtsiRfc3161SignatureObject.create({
             timeStampAuthority: {
                 url: 'https://freetsa.org/tsr',
             },
@@ -1445,7 +1447,7 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
         it('should verify a valid RFC3161 timestamp', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfEtsiRfc3161SignatureObject({
+            const sigObj = PdfEtsiRfc3161SignatureObject.create({
                 timeStampAuthority: {
                     url: 'https://freetsa.org/tsr',
                 },
@@ -1464,7 +1466,7 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
             const testData = stringToBytes('Hello, PDF!')
             const tamperedData = stringToBytes('Hello, PDF! TAMPERED')
 
-            const sigObj = new PdfEtsiRfc3161SignatureObject({
+            const sigObj = PdfEtsiRfc3161SignatureObject.create({
                 timeStampAuthority: {
                     url: 'https://freetsa.org/tsr',
                 },
@@ -1483,7 +1485,7 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
         it('should verify timestamp with certificate validation', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfEtsiRfc3161SignatureObject({
+            const sigObj = PdfEtsiRfc3161SignatureObject.create({
                 timeStampAuthority: {
                     url: 'https://freetsa.org/tsr',
                 },
@@ -1505,7 +1507,7 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
         it('should detect message imprint mismatch', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfEtsiRfc3161SignatureObject({
+            const sigObj = PdfEtsiRfc3161SignatureObject.create({
                 timeStampAuthority: {
                     url: 'https://freetsa.org/tsr',
                 },
@@ -1530,7 +1532,7 @@ describe('PdfEtsiRfc3161SignatureObject', () => {
         it('should verify timestamp token structure', async () => {
             const testData = stringToBytes('Hello, PDF!')
 
-            const sigObj = new PdfEtsiRfc3161SignatureObject({
+            const sigObj = PdfEtsiRfc3161SignatureObject.create({
                 timeStampAuthority: {
                     url: 'https://freetsa.org/tsr',
                 },
@@ -1622,7 +1624,7 @@ describe('PdfSigner.verify', () => {
     it('should verify a signed PDF document', async () => {
         const document = await createBasicPDF()
 
-        const sig = new PdfAdbePkcs7DetachedSignatureObject({
+        const sig = PdfAdbePkcs7DetachedSignatureObject.create({
             privateKey: rsaSigningKeys.privateKey,
             certificate: rsaSigningKeys.cert,
             date: new Date('2024-01-01T12:00:00Z'),

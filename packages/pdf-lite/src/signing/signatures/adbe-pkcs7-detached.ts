@@ -12,43 +12,37 @@ import { AsymmetricEncryptionAlgorithmParams } from 'pki-lite/core/index.js'
 import { fetchRevocationInfo } from '../utils.js'
 import { PdfSignatureObject, PdfSignatureSignOptions } from './base.js'
 import { ByteArray } from '../../types.js'
+import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
+
+type SigningInfo = {
+    privateKey: ByteArray
+    certificate: ByteArray
+    additionalCertificates: ByteArray[]
+    issuerCertificate?: ByteArray
+    algorithm?: AsymmetricEncryptionAlgorithmParams
+    revocationInfo?: RevocationInfo | 'fetch'
+    timeStampAuthority?: TimeStampAuthority
+}
 
 /**
  * PKCS#7 detached signature object (adbe.pkcs7.detached).
  * Creates CMS SignedData with the document hash as external data.
- *
- * @example
- * ```typescript
- * const signature = new PdfAdbePkcs7DetachedSignatureObject({
- *     privateKey: keyBytes,
- *     certificate: certBytes,
- *     reason: 'Document approval',
- *     timeStampAuthority: true
- * })
- * ```
  */
 export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
-    /** Private key for signing. */
-    privateKey: ByteArray
-    /** Signer certificate. */
-    certificate: ByteArray
-    /** Additional certificates for chain building. */
-    additionalCertificates: ByteArray[]
-    /** Issuer certificate for OCSP requests. */
-    issuerCertificate?: ByteArray
-    /** Signature algorithm parameters. */
-    algorithm?: AsymmetricEncryptionAlgorithmParams
-    /** Revocation information or 'fetch' to retrieve automatically. */
-    revocationInfo?: RevocationInfo | 'fetch'
-    /** Timestamp authority configuration. */
-    timeStampAuthority?: TimeStampAuthority
+    static {
+        PdfSignatureObject.registerSubFilter(
+            'adbe.pkcs7.detached',
+            PdfAdbePkcs7DetachedSignatureObject,
+        )
+    }
 
-    /**
-     * Creates a new PKCS#7 detached signature object.
-     *
-     * @param options - Signature configuration options.
-     */
-    constructor(
+    signingInfo?: SigningInfo
+
+    constructor(other?: PdfIndirectObject) {
+        super(other)
+    }
+
+    static create(
         options: PdfSignatureSignOptions & {
             privateKey: ByteArray
             certificate: ByteArray
@@ -58,38 +52,39 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
             revocationInfo?: RevocationInfo | 'fetch'
             timeStampAuthority?: TimeStampAuthority | true
         },
-    ) {
-        super({
-            ...options,
-            subfilter: 'adbe.pkcs7.detached',
-        })
-
-        this.privateKey = options.privateKey
-        this.certificate = options.certificate
-        this.issuerCertificate = options.issuerCertificate
-        this.additionalCertificates = options.additionalCertificates || []
-        this.algorithm = options.algorithm
-        this.revocationInfo = options.revocationInfo
-        this.timeStampAuthority =
-            options.timeStampAuthority === true
-                ? {
-                      url: 'http://timestamp.digicert.com',
-                  }
-                : options.timeStampAuthority
+    ): PdfAdbePkcs7DetachedSignatureObject {
+        const sig = new PdfAdbePkcs7DetachedSignatureObject()
+        sig.content = PdfSignatureObject.buildDictionary(
+            options,
+            'adbe.pkcs7.detached',
+        )
+        sig.signingInfo = {
+            privateKey: options.privateKey,
+            certificate: options.certificate,
+            issuerCertificate: options.issuerCertificate,
+            additionalCertificates: options.additionalCertificates ?? [],
+            algorithm: options.algorithm,
+            revocationInfo: options.revocationInfo,
+            timeStampAuthority:
+                options.timeStampAuthority === true
+                    ? { url: 'http://timestamp.digicert.com' }
+                    : options.timeStampAuthority,
+        }
+        return sig
     }
 
-    /**
-     * Signs the document bytes using PKCS#7 detached format.
-     *
-     * @param options - Signing options with bytes and revocation embedding flag.
-     * @returns The CMS SignedData and revocation information.
-     */
     sign: PdfSignatureObject['sign'] = async (options) => {
+        if (!this.signingInfo) {
+            throw new Error('Set signingInfo before signing')
+        }
+
         const { bytes } = options
 
-        const certificate: Certificate = Certificate.fromDer(this.certificate)
+        const certificate: Certificate = Certificate.fromDer(
+            this.signingInfo.certificate,
+        )
         const additionalCertificates: Certificate[] =
-            this.additionalCertificates.map(Certificate.fromDer)
+            this.signingInfo.additionalCertificates.map(Certificate.fromDer)
 
         const signedAttributes = new SignerInfo.SignedAttributes()
         const unsignedAttributes = new SignerInfo.UnsignedAttributes()
@@ -98,15 +93,15 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
         signedAttributes.push(Attribute.signingTime(this.signedAt))
 
         const revocationInfo =
-            this.revocationInfo === 'fetch'
+            this.signingInfo.revocationInfo === 'fetch'
                 ? await fetchRevocationInfo({
                       certificates: [
-                          this.certificate,
-                          ...(this.additionalCertificates ?? []),
+                          this.signingInfo.certificate,
+                          ...this.signingInfo.additionalCertificates,
                       ],
-                      issuerCertificate: this.issuerCertificate,
+                      issuerCertificate: this.signingInfo.issuerCertificate,
                   })
-                : this.revocationInfo
+                : this.signingInfo.revocationInfo
 
         if (options.embedRevocationInfo && revocationInfo) {
             signedAttributes.push(
@@ -136,11 +131,13 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
             .setDetached(true)
             .addSigner({
                 certificate,
-                privateKeyInfo: PrivateKeyInfo.fromDer(this.privateKey),
-                encryptionAlgorithm: this.algorithm,
+                privateKeyInfo: PrivateKeyInfo.fromDer(
+                    this.signingInfo.privateKey,
+                ),
+                encryptionAlgorithm: this.signingInfo.algorithm,
                 signedAttrs: signedAttributes,
                 unsignedAttrs: unsignedAttributes,
-                tsa: this.timeStampAuthority,
+                tsa: this.signingInfo.timeStampAuthority,
             })
             .build()
 
@@ -150,12 +147,6 @@ export class PdfAdbePkcs7DetachedSignatureObject extends PdfSignatureObject {
         }
     }
 
-    /**
-     * Verifies the signature against the provided document bytes.
-     *
-     * @param options - Verification options including the signed bytes.
-     * @returns The verification result.
-     */
     verify: PdfSignatureObject['verify'] = async (options) => {
         const { bytes, certificateValidation } = options
 

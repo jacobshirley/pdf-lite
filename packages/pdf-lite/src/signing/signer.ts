@@ -3,11 +3,6 @@ import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfDocumentSecurityStoreObject } from './document-security-store.js'
 import {
     PdfSignatureObject,
-    PdfAdbePkcs7DetachedSignatureObject,
-    PdfAdbePkcs7Sha1SignatureObject,
-    PdfAdbePkcsX509RsaSha1SignatureObject,
-    PdfEtsiCadesDetachedSignatureObject,
-    PdfEtsiRfc3161SignatureObject,
     PdfSignatureDictionary,
 } from './signatures/index.js'
 import {
@@ -183,72 +178,7 @@ export class PdfSigner {
     static instantiateSignatureObject(
         signatureDict: PdfIndirectObject<PdfSignatureDictionary>,
     ): PdfSignatureObject {
-        const content = signatureDict.content
-        const subFilter = content.get('SubFilter')!.value
-
-        // Create a PdfSignatureDictionary wrapper
-        const sigDict = new PdfSignatureDictionary({
-            Type: content.get('Type') as any,
-            Filter: content.get('Filter') as any,
-            SubFilter: content.get('SubFilter') as any,
-            Reason: content.get('Reason'),
-            M: content.get('M'),
-            Name: content.get('Name'),
-            Reference: content.get('Reference'),
-            ContactInfo: content.get('ContactInfo'),
-            Location: content.get('Location'),
-            Cert: content.get('Cert'),
-            ByteRange: content.get('ByteRange'),
-            Contents: content.get('Contents'),
-        })
-
-        // Instantiate the appropriate signature type based on SubFilter
-        let signatureObj: PdfSignatureObject
-
-        switch (subFilter) {
-            case 'adbe.pkcs7.detached':
-                signatureObj = new PdfAdbePkcs7DetachedSignatureObject({
-                    privateKey: new Uint8Array(),
-                    certificate: new Uint8Array(),
-                })
-                break
-            case 'adbe.pkcs7.sha1':
-                signatureObj = new PdfAdbePkcs7Sha1SignatureObject({
-                    privateKey: new Uint8Array(),
-                    certificate: new Uint8Array(),
-                })
-                break
-            case 'adbe.x509.rsa_sha1':
-                signatureObj = new PdfAdbePkcsX509RsaSha1SignatureObject({
-                    privateKey: new Uint8Array(),
-                    certificate: new Uint8Array(),
-                })
-                break
-            case 'ETSI.CAdES.detached':
-                signatureObj = new PdfEtsiCadesDetachedSignatureObject({
-                    privateKey: new Uint8Array(),
-                    certificate: new Uint8Array(),
-                })
-                break
-            case 'ETSI.RFC3161':
-                signatureObj = new PdfEtsiRfc3161SignatureObject({
-                    timeStampAuthority: {
-                        url: '',
-                    },
-                })
-                break
-            default:
-                throw new Error(
-                    `Unsupported signature SubFilter type: ${subFilter}`,
-                )
-        }
-
-        // Replace the content with the actual signature dictionary
-        signatureObj.content = sigDict
-        signatureObj.objectNumber = signatureDict.objectNumber
-        signatureObj.generationNumber = signatureDict.generationNumber
-
-        return signatureObj
+        return PdfSignatureObject.fromIndirectObject(signatureDict)
     }
 
     /**

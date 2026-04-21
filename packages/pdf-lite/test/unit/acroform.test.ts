@@ -8,6 +8,10 @@ import { PdfAcroForm } from '../../src/acroform/pdf-acro-form.js'
 import { PdfTextFormField } from '../../src/acroform/fields/pdf-text-form-field'
 import { PdfButtonFormField } from '../../src/acroform/fields/pdf-button-form-field'
 import { PdfChoiceFormField } from '../../src/acroform/fields/pdf-choice-form-field'
+import { PdfSignatureFormField } from '../../src/acroform/fields/pdf-signature-form-field'
+import { PdfAdbePkcs7DetachedSignatureObject } from '../../src/signing/signatures/adbe-pkcs7-detached'
+import { PdfSigner } from '../../src/signing/signer'
+import { rsaSigningKeys } from './fixtures/rsa-2048'
 import { PdfObjectReference } from '../../src/core/objects/pdf-object-reference'
 import {
     PdfDictionary,
@@ -1546,6 +1550,125 @@ describe('AcroForm Appearance Generation', () => {
         // Save to file
         await server.commands.writeFile(
             './test/unit/tmp/all-field-types-v2.pdf',
+            bytesToBase64(document.toBytes()),
+            { encoding: 'base64' },
+        )
+    })
+
+    it('should render a signature form field in a real signed PDF', async () => {
+        const document = new PdfDocument()
+
+        // Font
+        const font = new PdfIndirectObject({
+            content: (() => {
+                const d = new PdfDictionary()
+                d.set('Type', new PdfName('Font'))
+                d.set('Subtype', new PdfName('Type1'))
+                d.set('BaseFont', new PdfName('Helvetica'))
+                return d
+            })(),
+        })
+        document.add(font)
+
+        // Page content
+        const contentStream = new PdfIndirectObject({
+            content: new PdfStream({
+                header: new PdfDictionary(),
+                original: 'BT /F1 18 Tf 72 740 Td (Signature Field Demo) Tj ET',
+            }),
+        })
+        document.add(contentStream)
+
+        // Page
+        const pageDict = new PdfDictionary()
+        pageDict.set('Type', new PdfName('Page'))
+        pageDict.set(
+            'MediaBox',
+            new PdfArray([
+                new PdfNumber(0),
+                new PdfNumber(0),
+                new PdfNumber(612),
+                new PdfNumber(792),
+            ]),
+        )
+        pageDict.set('Contents', contentStream.reference)
+        const pageResources = new PdfDictionary()
+        const pageFontDict = new PdfDictionary()
+        pageFontDict.set('F1', font.reference)
+        pageResources.set('Font', pageFontDict)
+        pageDict.set('Resources', pageResources)
+        pageDict.set('Annots', new PdfArray([]))
+        const page = new PdfIndirectObject({ content: pageDict })
+        document.add(page)
+
+        // Pages + Catalog
+        const pagesDict = new PdfDictionary()
+        pagesDict.set('Type', new PdfName('Pages'))
+        pagesDict.set('Kids', new PdfArray([page.reference]))
+        pagesDict.set('Count', new PdfNumber(1))
+        const pages = new PdfIndirectObject({ content: pagesDict })
+        page.content.set('Parent', pages.reference)
+        document.add(pages)
+
+        const catalogDict = new PdfDictionary()
+        catalogDict.set('Type', new PdfName('Catalog'))
+        catalogDict.set('Pages', pages.reference)
+        const catalog = new PdfIndirectObject({ content: catalogDict })
+
+        // AcroForm
+        const acroFormDict = new PdfDictionary()
+        acroFormDict.set('Fields', new PdfArray([]))
+        const formFontDict = new PdfDictionary()
+        formFontDict.set('Helv', font.reference)
+        const formResources = new PdfDictionary()
+        formResources.set('Font', formFontDict)
+        acroFormDict.set('DR', formResources)
+        acroFormDict.set('DA', new PdfString('/Helv 10 Tf 0 g'))
+        const acroFormObj = new PdfIndirectObject({ content: acroFormDict })
+        document.add(acroFormObj)
+        catalogDict.set('AcroForm', acroFormObj.reference)
+        document.add(catalog)
+        document.trailerDict.set('Root', catalog.reference)
+
+        const acroform = document.acroform!
+        acroform.signatureFlags = 3 // SignaturesExist + AppendOnly
+
+        // Signature form field widget (register first so it gets a stable obj number)
+        const field = PdfSignatureFormField.blank({
+            name: 'DemoSignature',
+            rect: [72, 650, 340, 710],
+        })
+        field.form = acroform
+        field.parentRef = page.reference
+        document.add(field)
+
+        // Signature object
+        const sig = PdfAdbePkcs7DetachedSignatureObject.create({
+            privateKey: rsaSigningKeys.privateKey,
+            certificate: rsaSigningKeys.cert,
+            additionalCertificates: [rsaSigningKeys.caCert],
+            date: new Date(),
+            name: 'Jake Shirley',
+            reason: 'Demo signature',
+            location: 'Earth',
+            contactInfo: 'jake@example.com',
+        })
+
+        field.signature = sig
+        field.generateAppearance()
+        acroform.addField(field)
+
+        expect(field.isSigned).toBe(true)
+        expect(field.signature).toBeInstanceOf(
+            PdfAdbePkcs7DetachedSignatureObject,
+        )
+        expect(field.signerName).toBe('Jake Shirley')
+        expect(field.reason).toBe('Demo signature')
+
+        await document.sign()
+
+        await server.commands.writeFile(
+            './test/unit/tmp/signature-form-field.pdf',
             bytesToBase64(document.toBytes()),
             { encoding: 'base64' },
         )

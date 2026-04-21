@@ -456,7 +456,7 @@ function createSignaturePage(
 }
 
 // Page 2: Adobe PKCS7 Detached
-const pkcs7DetachedSig = new PdfAdbePkcs7DetachedSignatureObject({
+const pkcs7DetachedSig = PdfAdbePkcs7DetachedSignatureObject.create({
     privateKey: rsaSigningKeys.privateKey,
     certificate: rsaSigningKeys.cert,
     issuerCertificate: rsaSigningKeys.caCert,
@@ -473,7 +473,7 @@ allSignatures.push(pkcs7DetachedSig)
 allPages.push(createSignaturePage('Adobe PKCS7 Detached', pkcs7DetachedSig, 2))
 
 // Page 3: Adobe PKCS7 SHA1
-const pkcs7Sha1Sig = new PdfAdbePkcs7Sha1SignatureObject({
+const pkcs7Sha1Sig = PdfAdbePkcs7Sha1SignatureObject.create({
     privateKey: rsaSigningKeys.privateKey,
     certificate: rsaSigningKeys.cert,
     issuerCertificate: rsaSigningKeys.caCert,
@@ -486,7 +486,7 @@ allSignatures.push(pkcs7Sha1Sig)
 allPages.push(createSignaturePage('Adobe PKCS7 SHA1', pkcs7Sha1Sig, 3))
 
 // Page 4: Adobe X509 RSA SHA1
-const x509RsaSha1Sig = new PdfAdbePkcsX509RsaSha1SignatureObject({
+const x509RsaSha1Sig = PdfAdbePkcsX509RsaSha1SignatureObject.create({
     privateKey: rsaSigningKeys.privateKey,
     certificate: rsaSigningKeys.cert,
     additionalCertificates: [rsaSigningKeys.caCert],
@@ -503,7 +503,7 @@ allSignatures.push(x509RsaSha1Sig)
 allPages.push(createSignaturePage('Adobe X509 RSA SHA1', x509RsaSha1Sig, 4))
 
 // Page 5: ETSI CAdES Detached
-const cadesDetachedSig = new PdfEtsiCadesDetachedSignatureObject({
+const cadesDetachedSig = PdfEtsiCadesDetachedSignatureObject.create({
     privateKey: rsaSigningKeys.privateKey,
     certificate: rsaSigningKeys.cert,
     issuerCertificate: rsaSigningKeys.caCert,
@@ -520,7 +520,7 @@ allSignatures.push(cadesDetachedSig)
 allPages.push(createSignaturePage('ETSI CAdES Detached', cadesDetachedSig, 5))
 
 // Page 6: ETSI RFC3161 (Timestamp)
-const rfc3161Sig = new PdfEtsiRfc3161SignatureObject({
+const rfc3161Sig = PdfEtsiRfc3161SignatureObject.create({
     timeStampAuthority: {
         url: 'https://freetsa.org/tsr',
     },
@@ -1676,7 +1676,7 @@ function createSignaturePage(
 }
 
 // Page 2: Adobe PKCS7 Detached
-const pkcs7DetachedSig = new PdfAdbePkcs7DetachedSignatureObject({
+const pkcs7DetachedSig = PdfAdbePkcs7DetachedSignatureObject.create({
     privateKey: rsaSigningKeys.privateKey,
     certificate: rsaSigningKeys.cert,
     issuerCertificate: rsaSigningKeys.caCert,
@@ -1693,7 +1693,7 @@ allSignatures.push(pkcs7DetachedSig)
 allPages.push(createSignaturePage('Adobe PKCS7 Detached', pkcs7DetachedSig, 2))
 
 // Page 3: Adobe PKCS7 SHA1
-const pkcs7Sha1Sig = new PdfAdbePkcs7Sha1SignatureObject({
+const pkcs7Sha1Sig = PdfAdbePkcs7Sha1SignatureObject.create({
     privateKey: rsaSigningKeys.privateKey,
     certificate: rsaSigningKeys.cert,
     issuerCertificate: rsaSigningKeys.caCert,
@@ -1706,7 +1706,7 @@ allSignatures.push(pkcs7Sha1Sig)
 allPages.push(createSignaturePage('Adobe PKCS7 SHA1', pkcs7Sha1Sig, 3))
 
 // Page 4: Adobe X509 RSA SHA1
-const x509RsaSha1Sig = new PdfAdbePkcsX509RsaSha1SignatureObject({
+const x509RsaSha1Sig = PdfAdbePkcsX509RsaSha1SignatureObject.create({
     privateKey: rsaSigningKeys.privateKey,
     certificate: rsaSigningKeys.cert,
     additionalCertificates: [rsaSigningKeys.caCert],
@@ -1723,7 +1723,7 @@ allSignatures.push(x509RsaSha1Sig)
 allPages.push(createSignaturePage('Adobe X509 RSA SHA1', x509RsaSha1Sig, 4))
 
 // Page 5: ETSI CAdES Detached
-const cadesDetachedSig = new PdfEtsiCadesDetachedSignatureObject({
+const cadesDetachedSig = PdfEtsiCadesDetachedSignatureObject.create({
     privateKey: rsaSigningKeys.privateKey,
     certificate: rsaSigningKeys.cert,
     issuerCertificate: rsaSigningKeys.caCert,
@@ -1740,7 +1740,7 @@ allSignatures.push(cadesDetachedSig)
 allPages.push(createSignaturePage('ETSI CAdES Detached', cadesDetachedSig, 5))
 
 // Page 6: ETSI RFC3161 (Timestamp)
-const rfc3161Sig = new PdfEtsiRfc3161SignatureObject({
+const rfc3161Sig = PdfEtsiRfc3161SignatureObject.create({
     timeStampAuthority: {
         url: 'https://freetsa.org/tsr',
     },

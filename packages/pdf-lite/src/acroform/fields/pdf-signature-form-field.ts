@@ -1,35 +1,22 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js'
-import { PdfSignatureObject } from '../../signing/signatures/base.js'
+import { PdfSignatureObject } from '../../signing/signatures/index.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
-import { PdfSigner } from '../../signing/signer.js'
 
 /**
  * Signature form field (FT = /Sig).
  *
- * An AcroForm widget whose `/V` is a signature dictionary (see
- * {@link PdfSignatureObject}).  Use this class to create visible
- * placeholders for signatures in a document; the actual cryptographic
- * signing is handled separately by a {@link PdfSignatureObject}.
- *
- * Unsigned fields have no `/V` entry.  Attaching a {@link PdfSignatureObject}
- * (or referencing an indirect {@link PdfSignatureObject}) via
- * {@link signature} flips `isSigned` to `true`.
+ * An AcroForm widget whose `/V` is an indirect reference to a signature
+ * dictionary (see {@link PdfSignatureObject}).  Use this class to create
+ * visible placeholders for signatures in a document; the actual
+ * cryptographic signing is handled separately by a {@link PdfSignatureObject}.
  */
 export class PdfSignatureFormField extends PdfFormField {
     static {
         PdfFormField.registerFieldType('Sig', PdfSignatureFormField)
     }
 
-    /**
-     * Create a blank signature-placeholder field not yet attached to any
-     * document.  The caller is responsible for adding this field (and its
-     * widget) to the document's AcroForm and the target page's `/Annots`.
-     *
-     * (Named `blank` rather than `createPlaceholder` to avoid shadowing
-     * `PdfIndirectObject.createPlaceholder`.)
-     */
     static blank(
         options: {
             name?: string
@@ -44,51 +31,86 @@ export class PdfSignatureFormField extends PdfFormField {
         return field
     }
 
-    /**
-     * `true` when this field has a signature dictionary attached (i.e. `/V`
-     * is set).  Does **not** validate the signature's cryptographic contents.
-     */
     get isSigned(): boolean {
         return this.signature !== null
     }
 
     /**
-     * The attached signature dictionary, if any.  Resolves references
-     * transparently.  `null` when the field is an unsigned placeholder.
+     * The attached signature, resolved into the correct
+     * {@link PdfSignatureObject} subclass based on its `/SubFilter`.
+     * Returns `null` when unsigned.
      */
     get signature(): PdfSignatureObject | null {
         const v = this.content.get('V')
         if (v instanceof PdfObjectReference) {
-            return PdfSigner.instantiateSignatureObject(v.resolve())
+            const resolved = v.resolve()
+            if (!resolved) return null
+            return PdfSignatureObject.fromIndirectObject(resolved)
         }
         return null
     }
 
     /**
-     * Attach a signature dictionary to this field.  Accepts either a raw
-     * {@link PdfSignatureObject} (stored inline on `/V`) or any
-     * {@link PdfIndirectObject} wrapping one (stored as an indirect
-     * reference, which is the form Adobe emits).
-     *
-     * Pass `null` to detach and revert the field to an unsigned placeholder.
+     * Attach a signature by indirect reference. Pass `null` to detach.
      */
     set signature(signature: PdfIndirectObject | null | undefined) {
         if (signature === null || signature === undefined) {
             this.content.delete('V')
             return
         }
-
         this.content.set('V', signature.reference)
     }
 
-    /**
-     * Generate a placeholder appearance for an unsigned signature field: an
-     * XObject with the field's bounding box but no drawn content.  Viewers
-     * will still render the field's widget border/background.
-     *
-     * Subclasses that need a richer visual (e.g. "Sign here" label) can
-     * override.
-     */
+    get signerName(): string | null {
+        return this.signature?.signerName ?? null
+    }
+
+    set signerName(name: string | null) {
+        this.requireSignature().signerName = name
+    }
+
+    get reason(): string | null {
+        return this.signature?.reason ?? null
+    }
+
+    set reason(reason: string | null) {
+        this.requireSignature().reason = reason
+    }
+
+    get location(): string | null {
+        return this.signature?.location ?? null
+    }
+
+    set location(location: string | null) {
+        this.requireSignature().location = location
+    }
+
+    get contactInfo(): string | null {
+        return this.signature?.contactInfo ?? null
+    }
+
+    set contactInfo(contactInfo: string | null) {
+        this.requireSignature().contactInfo = contactInfo
+    }
+
+    get signedAt(): Date | null {
+        return this.signature?.signedAt ?? null
+    }
+
+    set signedAt(date: Date | null) {
+        this.requireSignature().signedAt = date
+    }
+
+    private requireSignature(): PdfSignatureObject {
+        const sig = this.signature
+        if (!sig) {
+            throw new Error(
+                'Field has no signature attached. Assign one via `field.signature = PdfXxxSignatureObject.create({...})` first.',
+            )
+        }
+        return sig
+    }
+
     generateAppearance(): boolean {
         const rect = this.rect
         if (!rect || rect.length !== 4) return false
@@ -97,10 +119,43 @@ export class PdfSignatureFormField extends PdfFormField {
         const width = x2 - x1
         const height = y2 - y1
 
+        const sig = this.signature
+        const lines: string[] = []
+        if (sig) {
+            if (sig.signerName)
+                lines.push(`Digitally signed by ${sig.signerName}`)
+            if (sig.signedAt) {
+                const d = sig.signedAt
+                lines.push(
+                    `Date: ${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}:${String(d.getUTCSeconds()).padStart(2, '0')} UTC`,
+                )
+            }
+            if (sig.reason) lines.push(`Reason: ${sig.reason}`)
+            if (sig.location) lines.push(`Location: ${sig.location}`)
+        }
+
+        const fontSize = 9
+        const lineHeight = fontSize + 2
+        let contentStream = ''
+        if (lines.length > 0) {
+            const topY = height - lineHeight
+            contentStream = `q 0.5 0.5 0.5 RG 0.5 w 0.5 0.5 ${width - 1} ${height - 1} re S Q BT /Helv ${fontSize} Tf 0 g 4 ${topY} Td `
+            for (let i = 0; i < lines.length; i++) {
+                const text = lines[i]
+                    .replace(/\\/g, '\\\\')
+                    .replace(/[()]/g, (m) => `\\${m}`)
+                if (i > 0) contentStream += `0 -${lineHeight} Td `
+                contentStream += `(${text}) Tj `
+            }
+            contentStream += 'ET'
+        }
+
         const appearance = new PdfAppearanceStream({
             width,
             height,
-            contentStream: '',
+            contentStream,
+            resources:
+                lines.length > 0 ? this.buildFontResources('Helv') : undefined,
         })
         this.appearanceStream = appearance
         if (!this.print) this.print = true

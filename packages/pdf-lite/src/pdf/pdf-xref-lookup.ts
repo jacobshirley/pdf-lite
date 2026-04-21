@@ -70,10 +70,21 @@ export class PdfXrefLookup {
                     'Provided object is not a valid XRef table or stream',
                 )
             }
+            this.size++
         } else {
+            // PDF spec 7.5.4: object 0 must always be a free entry
+            // (head of the free list) with generation number 65535.
+            this.entries.set(
+                0,
+                new PdfXRefTableEntry({
+                    objectNumber: 0,
+                    generationNumber: 65535,
+                    byteOffset: 0,
+                    inUse: false,
+                }),
+            )
             this.object = this.update()
         }
-        this.size++
 
         if (this.object instanceof PdfIndirectObject)
             this.object.orderIndex = PdfIndirectObject.MAX_ORDER_INDEX

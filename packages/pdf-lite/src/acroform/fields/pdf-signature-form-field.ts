@@ -1,6 +1,7 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js'
 import { PdfSignatureObject } from '../../signing/signatures/index.js'
+import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 
@@ -150,12 +151,18 @@ export class PdfSignatureFormField extends PdfFormField {
             contentStream += 'ET'
         }
 
+        // Adobe Acrobat requires a /Resources dict on the signature appearance
+        // XObject even when empty — otherwise it throws "Expected a dict
+        // object" during signature verification.
+        const resources =
+            (lines.length > 0 ? this.buildFontResources('Helv') : undefined) ??
+            new PdfDictionary()
+
         const appearance = new PdfAppearanceStream({
             width,
             height,
             contentStream,
-            resources:
-                lines.length > 0 ? this.buildFontResources('Helv') : undefined,
+            resources,
         })
         this.appearanceStream = appearance
         if (!this.print) this.print = true

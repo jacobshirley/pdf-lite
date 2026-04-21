@@ -1342,7 +1342,9 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                 refMap.set(id, { main: main, others: new Set<Ref<number>>() })
             }
 
-            if (main) refMap.get(id)!.main = main
+            if (main) {
+                refMap.get(id)!.main = main
+            }
             if (other) refMap.get(id)!.others!.add(other)
         }
 

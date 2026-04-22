@@ -26,6 +26,15 @@ import { ContentNode } from './content-node'
 import { TextNode } from './text-node'
 import { Color, GrayColor } from '../color'
 import { ArraySegment, SentinelRef, detachedSegment } from '../../utils/arrays'
+import { PdfDefaultAppearance } from '../../acroform/fields/pdf-default-appearance'
+import {
+    parseMarkdownSegments,
+    type StyledSegment,
+} from '../../utils/parse-markdown-segments'
+import { SetLineWidthOp } from '../ops/state'
+import { MoveToOp, LineToOp } from '../ops/path'
+import { StrokeOp } from '../ops/paint'
+import { GraphicsBlock } from './graphics-block'
 
 export class TextBlock extends ContentNode {
     protected segments: TextNode[] = []
@@ -701,6 +710,850 @@ export class TextBlock extends ContentNode {
             if (newLocal) sib.applyShift(newLocal)
         }
         // ops getter auto-syncs with segments
+    }
+
+    // ─── Authoring builders ─────────────────────────────────────────────
+
+    static readonly DEFAULT_LINE_HEIGHT_FACTOR = 1.2
+    /** Italic shear applied via `c` component of Tm (≈ tan 15°). */
+    static readonly ITALIC_SHEAR = 0.267
+    /** Faux-bold stroke width as a fraction of font size. */
+    static readonly BOLD_STROKE_RATIO = 0.04
+
+    /**
+     * Materialise the block's BT/ET body as a flat typed-op list.
+     * Useful when composing a larger content stream (e.g. an appearance
+     * stream wrapper) from multiple node children.
+     */
+    materialize(): ContentOp[] {
+        const ops: ContentOp[] = [new BeginTextOp()]
+        for (const seg of this.segments) {
+            for (const op of seg.ops) ops.push(op)
+        }
+        ops.push(new EndTextOp())
+        return ops
+    }
+
+    /**
+     * Build a single-line text block sized to the given rect.  When
+     * `da.fontSize <= 0` the builder auto-scales; when it's fixed and
+     * the text overflows, it shrinks to fit.  Returns the block and the
+     * final DA (which the caller usually emits before the block).
+     */
+    static singleLine(opts: {
+        text: string
+        width: number
+        height: number
+        da: PdfDefaultAppearance
+        quadding?: 0 | 1 | 2
+        padding?: number
+        resolvedFonts?: Map<string, PdfFont>
+        fontVariantNames?: {
+            bold?: string
+            italic?: string
+            boldItalic?: string
+        }
+    }): { block: TextBlock; da: PdfDefaultAppearance } {
+        const padding = opts.padding ?? 2
+        const availableWidth = opts.width - 2 * padding
+        const availableHeight = opts.height - 2 * padding
+        const autoScale = opts.da.fontSize <= 0
+        const measureCtx = {
+            fontName: opts.da.fontName,
+            resolvedFonts: opts.resolvedFonts,
+            boldFontName: opts.fontVariantNames?.bold,
+        }
+
+        let fontSize = autoScale
+            ? Math.min(12, availableHeight)
+            : opts.da.fontSize
+        const currentWidth = TextBlock._measureTextWidth(
+            opts.text,
+            opts.da.fontName,
+            fontSize,
+            opts.resolvedFonts,
+        )
+        if (currentWidth > availableWidth) {
+            fontSize = TextBlock._calculateFittingFontSize(
+                opts.text,
+                availableWidth,
+                measureCtx,
+                { startSize: fontSize },
+            )
+        }
+        if (autoScale) fontSize = Math.max(fontSize, 0.5)
+
+        const finalDa = new PdfDefaultAppearance(
+            opts.da.fontName,
+            fontSize,
+            opts.da.colorOp,
+        )
+        const textWidth = TextBlock._measureTextWidth(
+            opts.text,
+            opts.da.fontName,
+            fontSize,
+            opts.resolvedFonts,
+        )
+        const textX = TextBlock._calcTextX(
+            opts.quadding ?? 0,
+            padding,
+            availableWidth,
+            textWidth,
+        )
+        const textY = (opts.height - fontSize) / 2 + fontSize * 0.2
+        const font = TextBlock._resolveFont(
+            opts.da.fontName,
+            opts.resolvedFonts,
+        )
+        const block = new TextBlock()
+        block.addSegment(
+            TextNode.create({
+                text: opts.text,
+                font,
+                fontSize,
+                move: { dx: textX, dy: textY },
+            }),
+        )
+        return { block, da: finalDa }
+    }
+
+    /**
+     * Build a word-wrapped multi-line text block.  Auto-scales when
+     * `da.fontSize <= 0`; shrinks otherwise if the wrapped result won't
+     * fit the available height.  Each wrapped line is a separate
+     * TextNode segment positioned relative to the previous line.
+     */
+    static multiline(opts: {
+        text: string
+        width: number
+        height: number
+        da: PdfDefaultAppearance
+        quadding?: 0 | 1 | 2
+        padding?: number
+        lineHeightFactor?: number
+        resolvedFonts?: Map<string, PdfFont>
+        fontVariantNames?: {
+            bold?: string
+            italic?: string
+            boldItalic?: string
+        }
+    }): { block: TextBlock; da: PdfDefaultAppearance } {
+        const padding = opts.padding ?? 2
+        const availableWidth = opts.width - 2 * padding
+        const availableHeight = opts.height - 2 * padding
+        const lhFactor =
+            opts.lineHeightFactor ?? TextBlock.DEFAULT_LINE_HEIGHT_FACTOR
+        const autoScale = opts.da.fontSize <= 0
+        const measureCtx = {
+            fontName: opts.da.fontName,
+            resolvedFonts: opts.resolvedFonts,
+            boldFontName: opts.fontVariantNames?.bold,
+        }
+
+        let fontSize = autoScale ? 12 : opts.da.fontSize
+        const trial = TextBlock._wrapTextToLines(
+            opts.text,
+            availableWidth,
+            fontSize,
+            measureCtx,
+        )
+        if (trial.length * fontSize * lhFactor > availableHeight) {
+            fontSize = TextBlock._calculateFittingFontSize(
+                opts.text,
+                availableWidth,
+                measureCtx,
+                {
+                    startSize: fontSize,
+                    maxHeight: availableHeight,
+                    lineHeightFactor: lhFactor,
+                },
+            )
+        }
+        if (autoScale) fontSize = Math.max(fontSize, 0.5)
+
+        const finalDa = new PdfDefaultAppearance(
+            opts.da.fontName,
+            fontSize,
+            opts.da.colorOp,
+        )
+        const renderLineHeight = fontSize * lhFactor
+        const startY = opts.height - padding - fontSize
+        const lines = TextBlock._wrapTextToLines(
+            opts.text,
+            availableWidth,
+            fontSize,
+            measureCtx,
+        )
+        const font = TextBlock._resolveFont(
+            opts.da.fontName,
+            opts.resolvedFonts,
+        )
+        const block = new TextBlock()
+        let prevLineX = 0
+        for (let i = 0; i < lines.length; i++) {
+            const lineText = lines[i].replace(/\r/g, '')
+            const lineWidth = TextBlock._measureTextWidth(
+                lineText,
+                opts.da.fontName,
+                fontSize,
+                opts.resolvedFonts,
+            )
+            const lineX = TextBlock._calcTextX(
+                opts.quadding ?? 0,
+                padding,
+                availableWidth,
+                lineWidth,
+            )
+            const move =
+                i === 0
+                    ? { dx: lineX, dy: startY }
+                    : { dx: lineX - prevLineX, dy: -renderLineHeight }
+            prevLineX = lineX
+            block.addSegment(
+                TextNode.create({
+                    text: lineText,
+                    font,
+                    fontSize,
+                    move,
+                }),
+            )
+        }
+        return { block, da: finalDa }
+    }
+
+    /**
+     * Build a comb-field block: one character per cell, centred
+     * horizontally.  Auto-sizes when `da.fontSize <= 0`, then shrinks
+     * further if any single glyph overflows its cell.  Each cell is its
+     * own TextNode positioned via an absolute Tm.
+     */
+    static comb(opts: {
+        text: string
+        width: number
+        height: number
+        maxLen: number
+        da: PdfDefaultAppearance
+        padding?: number
+        resolvedFonts?: Map<string, PdfFont>
+    }): { block: TextBlock; da: PdfDefaultAppearance } {
+        const padding = opts.padding ?? 2
+        const chars = [...opts.text]
+        const cellWidth = opts.width / opts.maxLen
+        let fontSize = opts.da.fontSize
+        if (fontSize <= 0) {
+            fontSize = Math.min(opts.height - 2 * padding, cellWidth)
+        }
+        let maxCharWidth = 0
+        let widestChar = chars[0] ?? ''
+        for (const char of chars) {
+            const cw = TextBlock._measureTextWidth(
+                char,
+                opts.da.fontName,
+                fontSize,
+                opts.resolvedFonts,
+            )
+            if (cw > maxCharWidth) {
+                maxCharWidth = cw
+                widestChar = char
+            }
+        }
+        if (maxCharWidth > cellWidth) {
+            fontSize = TextBlock._calculateFittingFontSize(
+                widestChar,
+                cellWidth,
+                {
+                    fontName: opts.da.fontName,
+                    resolvedFonts: opts.resolvedFonts,
+                },
+                { startSize: fontSize },
+            )
+        }
+        const finalDa = new PdfDefaultAppearance(
+            opts.da.fontName,
+            fontSize,
+            opts.da.colorOp,
+        )
+        const textY = (opts.height - fontSize) / 2 + fontSize * 0.2
+        const font = TextBlock._resolveFont(
+            opts.da.fontName,
+            opts.resolvedFonts,
+        )
+        const block = new TextBlock()
+        for (let i = 0; i < chars.length && i < opts.maxLen; i++) {
+            const charWidth = TextBlock._measureTextWidth(
+                chars[i],
+                opts.da.fontName,
+                fontSize,
+                opts.resolvedFonts,
+            )
+            const cellX = cellWidth * i + (cellWidth - charWidth) / 2
+            block.addSegment(
+                TextNode.create({
+                    text: chars[i],
+                    font,
+                    fontSize,
+                    matrix: new Matrix({
+                        a: 1,
+                        b: 0,
+                        c: 0,
+                        d: 1,
+                        e: cellX,
+                        f: textY,
+                    }),
+                }),
+            )
+        }
+        return { block, da: finalDa }
+    }
+
+    /**
+     * Build a single row (used to compose list-box style layouts).
+     * Positions the text at the given `baselineY` with alignment within
+     * the available width.  No auto-scaling.
+     */
+    static row(opts: {
+        text: string
+        baselineY: number
+        availableWidth: number
+        padding?: number
+        da: PdfDefaultAppearance
+        quadding?: 0 | 1 | 2
+        resolvedFonts?: Map<string, PdfFont>
+    }): TextBlock {
+        const padding = opts.padding ?? 2
+        const textWidth = TextBlock._measureTextWidth(
+            opts.text,
+            opts.da.fontName,
+            opts.da.fontSize,
+            opts.resolvedFonts,
+        )
+        const textX = TextBlock._calcTextX(
+            opts.quadding ?? 0,
+            padding,
+            opts.availableWidth,
+            textWidth,
+        )
+        const font = TextBlock._resolveFont(
+            opts.da.fontName,
+            opts.resolvedFonts,
+        )
+        const block = new TextBlock()
+        block.addSegment(
+            TextNode.create({
+                text: opts.text,
+                font,
+                fontSize: opts.da.fontSize,
+                move: { dx: textX, dy: opts.baselineY },
+            }),
+        )
+        return block
+    }
+
+    /**
+     * Build a markdown-styled block (bold, italic, strikethrough) plus
+     * an optional sibling GraphicsBlock carrying the strikethrough
+     * stroke paths (which live outside the BT…ET group).
+     */
+    static markdown(opts: {
+        markdown: string
+        width: number
+        height: number
+        da: PdfDefaultAppearance
+        multiline?: boolean
+        quadding?: 0 | 1 | 2
+        padding?: number
+        lineHeightFactor?: number
+        resolvedFonts?: Map<string, PdfFont>
+        fontVariantNames?: {
+            bold?: string
+            italic?: string
+            boldItalic?: string
+        }
+    }): {
+        block: TextBlock
+        da: PdfDefaultAppearance
+        strikes?: GraphicsBlock
+    } {
+        const padding = opts.padding ?? 2
+        const availableWidth = opts.width - 2 * padding
+        const availableHeight = opts.height - 2 * padding
+        const lhFactor =
+            opts.lineHeightFactor ?? TextBlock.DEFAULT_LINE_HEIGHT_FACTOR
+        const autoScale = opts.da.fontSize <= 0
+        const measureCtx = {
+            fontName: opts.da.fontName,
+            resolvedFonts: opts.resolvedFonts,
+            boldFontName: opts.fontVariantNames?.bold,
+        }
+        const plain = parseMarkdownSegments(opts.markdown)
+            .map((s) => s.text)
+            .join('')
+
+        // Auto-scale / overflow-shrink against plain text metrics.
+        let fontSize = autoScale ? 12 : opts.da.fontSize
+        if (opts.multiline) {
+            const trial = TextBlock._wrapTextToLines(
+                plain,
+                availableWidth,
+                fontSize,
+                measureCtx,
+            )
+            if (trial.length * fontSize * lhFactor > availableHeight) {
+                fontSize = TextBlock._calculateFittingFontSize(
+                    plain,
+                    availableWidth,
+                    measureCtx,
+                    {
+                        startSize: fontSize,
+                        maxHeight: availableHeight,
+                        lineHeightFactor: lhFactor,
+                    },
+                )
+            }
+        } else if (
+            TextBlock._measureTextWidth(
+                plain,
+                opts.da.fontName,
+                fontSize,
+                opts.resolvedFonts,
+            ) > availableWidth
+        ) {
+            fontSize = TextBlock._calculateFittingFontSize(
+                plain,
+                availableWidth,
+                measureCtx,
+                { startSize: fontSize },
+            )
+        }
+        if (autoScale) fontSize = Math.max(fontSize, 0.5)
+
+        const finalDa = new PdfDefaultAppearance(
+            opts.da.fontName,
+            fontSize,
+            opts.da.colorOp,
+        )
+        const renderLineHeight = fontSize * lhFactor
+        const segments = parseMarkdownSegments(opts.markdown)
+        const allStrikes: { x: number; y: number; width: number }[] = []
+        const block = new TextBlock()
+
+        if (opts.multiline) {
+            const lines = TextBlock._wrapTextToLines(
+                plain,
+                availableWidth,
+                fontSize,
+                measureCtx,
+            )
+            const styledLines = TextBlock._splitStyledSegmentsToLines(
+                segments,
+                lines,
+            )
+            const startY = opts.height - padding - fontSize
+            for (let i = 0; i < styledLines.length; i++) {
+                const rects = TextBlock._addStyledRunsToBlock(
+                    block,
+                    styledLines[i],
+                    padding,
+                    startY - i * renderLineHeight,
+                    fontSize,
+                    opts.da.fontName,
+                    opts.resolvedFonts,
+                    opts.fontVariantNames,
+                )
+                allStrikes.push(...rects)
+            }
+        } else {
+            const textX = TextBlock._calcTextX(
+                opts.quadding ?? 0,
+                padding,
+                availableWidth,
+                TextBlock._measureTextWidth(
+                    plain,
+                    opts.da.fontName,
+                    fontSize,
+                    opts.resolvedFonts,
+                ),
+            )
+            const textY = (opts.height - fontSize) / 2 + fontSize * 0.2
+            const rects = TextBlock._addStyledRunsToBlock(
+                block,
+                segments,
+                textX,
+                textY,
+                fontSize,
+                opts.da.fontName,
+                opts.resolvedFonts,
+                opts.fontVariantNames,
+            )
+            allStrikes.push(...rects)
+        }
+
+        if (allStrikes.length === 0) return { block, da: finalDa }
+        const lineWidth = Math.max(0.5, fontSize * 0.06)
+        const strikes = new GraphicsBlock()
+        strikes.ops.push(SetLineWidthOp.create(Number(lineWidth.toFixed(3))))
+        for (const r of allStrikes) {
+            const sy = Number((r.y + fontSize * 0.35).toFixed(3))
+            strikes.ops.push(MoveToOp.create(Number(r.x.toFixed(3)), sy))
+            strikes.ops.push(
+                LineToOp.create(Number((r.x + r.width).toFixed(3)), sy),
+            )
+            strikes.ops.push(new StrokeOp())
+        }
+        return { block, da: finalDa, strikes }
+    }
+
+    // ─── Internal helpers ───────────────────────────────────────────────
+
+    private static _calcTextX(
+        quadding: number,
+        padding: number,
+        availableWidth: number,
+        textWidth: number,
+    ): number {
+        if (quadding === 2)
+            return padding + Math.max(availableWidth - textWidth, 0)
+        if (quadding === 1)
+            return padding + Math.max((availableWidth - textWidth) / 2, 0)
+        return padding
+    }
+
+    private static _measureTextWidth(
+        text: string,
+        fontName: string,
+        fontSize: number,
+        resolvedFonts?: Map<string, PdfFont>,
+    ): number {
+        const font =
+            resolvedFonts?.get(fontName) ?? PdfFont.getStandardFont(fontName)
+        if (font?.widths && font.firstChar !== undefined) {
+            return font.measureString(text, fontSize)
+        }
+        return PdfFont.HELVETICA.measureString(text, fontSize)
+    }
+
+    private static _measureTextWidthWithFont(
+        text: string,
+        variantName: string | undefined,
+        fallbackFontName: string,
+        fontSize: number,
+        resolvedFonts?: Map<string, PdfFont>,
+    ): number {
+        const font = variantName ? resolvedFonts?.get(variantName) : undefined
+        if (!font)
+            return TextBlock._measureTextWidth(
+                text,
+                fallbackFontName,
+                fontSize,
+                resolvedFonts,
+            )
+        return font.measureString(text, fontSize)
+    }
+
+    private static _wrapTextToLines(
+        text: string,
+        maxWidth: number,
+        fontSize: number,
+        ctx: {
+            fontName: string
+            resolvedFonts?: Map<string, PdfFont>
+            boldFontName?: string
+        },
+    ): string[] {
+        const measure = (t: string): number =>
+            ctx.boldFontName
+                ? TextBlock._measureTextWidthWithFont(
+                      t,
+                      ctx.boldFontName,
+                      ctx.fontName,
+                      fontSize,
+                      ctx.resolvedFonts,
+                  )
+                : TextBlock._measureTextWidth(
+                      t,
+                      ctx.fontName,
+                      fontSize,
+                      ctx.resolvedFonts,
+                  )
+        const breakLongWord = (word: string): string[] => {
+            const lines: string[] = []
+            let current = ''
+            for (const ch of word) {
+                const test = current + ch
+                if (measure(test) <= maxWidth) current = test
+                else {
+                    if (current) lines.push(current)
+                    current = ch
+                }
+            }
+            if (current) lines.push(current)
+            return lines.length > 0 ? lines : [word]
+        }
+        const paragraphs = text.split('\n')
+        const out: string[] = []
+        for (const paragraph of paragraphs) {
+            if (measure(paragraph) <= maxWidth) {
+                out.push(paragraph)
+                continue
+            }
+            const words = paragraph.split(' ')
+            let current = ''
+            for (const word of words) {
+                const test = current ? `${current} ${word}` : word
+                if (measure(test) <= maxWidth) current = test
+                else if (current) {
+                    out.push(current)
+                    current = word
+                } else {
+                    const broken = breakLongWord(word)
+                    out.push(...broken.slice(0, -1))
+                    current = broken[broken.length - 1]
+                }
+            }
+            if (current) out.push(current)
+        }
+        return out
+    }
+
+    private static _calculateFittingFontSize(
+        text: string,
+        maxWidth: number,
+        ctx: {
+            fontName: string
+            resolvedFonts?: Map<string, PdfFont>
+            boldFontName?: string
+        },
+        opts: {
+            startSize: number
+            maxHeight?: number
+            lineHeightFactor?: number
+            minSize?: number
+        },
+    ): number {
+        const minSize = opts.minSize ?? 0.5
+        const lineHeight =
+            opts.lineHeightFactor ?? TextBlock.DEFAULT_LINE_HEIGHT_FACTOR
+        const fits = (size: number): boolean => {
+            if (opts.maxHeight !== undefined) {
+                const lines = TextBlock._wrapTextToLines(
+                    text,
+                    maxWidth,
+                    size,
+                    ctx,
+                )
+                return lines.length * size * lineHeight <= opts.maxHeight
+            }
+            const m = ctx.boldFontName
+                ? TextBlock._measureTextWidthWithFont(
+                      text,
+                      ctx.boldFontName,
+                      ctx.fontName,
+                      size,
+                      ctx.resolvedFonts,
+                  )
+                : TextBlock._measureTextWidth(
+                      text,
+                      ctx.fontName,
+                      size,
+                      ctx.resolvedFonts,
+                  )
+            return m <= maxWidth
+        }
+        if (fits(opts.startSize)) return opts.startSize
+        if (!fits(minSize)) return minSize
+        let lo = minSize
+        let hi = opts.startSize
+        while (hi - lo > 0.5) {
+            const mid = Math.round((lo + hi) / 2 / 0.5) * 0.5
+            if (fits(mid)) lo = mid
+            else hi = mid
+        }
+        return lo
+    }
+
+    private static _resolveFont(
+        fontName: string,
+        resolvedFonts?: Map<string, PdfFont>,
+    ): PdfFont {
+        return (
+            resolvedFonts?.get(fontName) ??
+            PdfFont.getStandardFont(fontName) ??
+            PdfFont.HELVETICA
+        )
+    }
+
+    private static _resolveVariantFontName(
+        bold: boolean,
+        italic: boolean,
+        names:
+            | { bold?: string; italic?: string; boldItalic?: string }
+            | undefined,
+    ): string | undefined {
+        if (bold && italic && names?.boldItalic) return names.boldItalic
+        if (bold && names?.bold) return names.bold
+        if (italic && names?.italic) return names.italic
+        return undefined
+    }
+
+    private static _addStyledRunsToBlock(
+        block: TextBlock,
+        lineSegs: StyledSegment[],
+        startX: number,
+        startY: number,
+        fontSize: number,
+        regularFontName: string,
+        resolvedFonts: Map<string, PdfFont> | undefined,
+        variantNames:
+            | { bold?: string; italic?: string; boldItalic?: string }
+            | undefined,
+    ): { x: number; y: number; width: number }[] {
+        const regularFont = TextBlock._resolveFont(
+            regularFontName,
+            resolvedFonts,
+        )
+        const strikes: { x: number; y: number; width: number }[] = []
+        let x = startX
+        for (const seg of lineSegs) {
+            const variantName = TextBlock._resolveVariantFontName(
+                seg.bold,
+                seg.italic,
+                variantNames,
+            )
+            if (variantName) {
+                const variantFont =
+                    resolvedFonts?.get(variantName) ?? regularFont
+                const segWidth = variantFont.measureString(seg.text, fontSize)
+                block.addSegment(
+                    TextNode.create({
+                        text: seg.text,
+                        font: variantFont,
+                        fontSize,
+                        matrix: new Matrix({
+                            a: 1,
+                            b: 0,
+                            c: 0,
+                            d: 1,
+                            e: Number(x.toFixed(3)),
+                            f: Number(startY.toFixed(3)),
+                        }),
+                        renderingMode: 0,
+                    }),
+                )
+                if (seg.strikethrough)
+                    strikes.push({ x, y: startY, width: segWidth })
+                x += segWidth
+            } else {
+                const shear = seg.italic ? TextBlock.ITALIC_SHEAR : 0
+                const lineWidth = seg.bold
+                    ? fontSize * TextBlock.BOLD_STROKE_RATIO
+                    : undefined
+                const renderingMode = seg.bold ? 2 : 0
+                block.addSegment(
+                    TextNode.create({
+                        text: seg.text,
+                        font: regularFont,
+                        fontSize,
+                        matrix: new Matrix({
+                            a: 1,
+                            b: 0,
+                            c: shear,
+                            d: 1,
+                            e: Number(x.toFixed(3)),
+                            f: Number(startY.toFixed(3)),
+                        }),
+                        lineWidth,
+                        renderingMode,
+                    }),
+                )
+                const segWidth = TextBlock._measureTextWidth(
+                    seg.text,
+                    regularFontName,
+                    fontSize,
+                    resolvedFonts,
+                )
+                if (seg.strikethrough)
+                    strikes.push({ x, y: startY, width: segWidth })
+                x += segWidth
+            }
+        }
+        // Restore a clean state for any following content by emitting a
+        // fresh Tf and Tr 0 via a zero-width segment (no show op, no
+        // segment created — we just append the ops as a trailing segment
+        // with empty text via a marker).  Simplest: skip — the q…Q
+        // wrapper in the appearance factory will restore graphics state.
+        return strikes
+    }
+
+    private static _splitStyledSegmentsToLines(
+        segments: StyledSegment[],
+        lines: string[],
+    ): StyledSegment[][] {
+        type StyledChar = {
+            char: string
+            bold: boolean
+            italic: boolean
+            strikethrough: boolean
+        }
+        const chars: StyledChar[] = []
+        for (const seg of segments) {
+            for (const char of seg.text) {
+                chars.push({
+                    char,
+                    bold: seg.bold,
+                    italic: seg.italic,
+                    strikethrough: seg.strikethrough,
+                })
+            }
+        }
+        const result: StyledSegment[][] = []
+        let pos = 0
+        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+            if (lineIdx > 0 && pos < chars.length) {
+                const c = chars[pos].char
+                if (c === ' ' || c === '\n' || c === '\r') pos++
+            }
+            const lineSegs: StyledSegment[] = []
+            let curText = ''
+            let curBold = false
+            let curItalic = false
+            let curStrike = false
+            const lineLen = lines[lineIdx].replace(/\r/g, '').length
+            for (let j = 0; j < lineLen && pos < chars.length; j++, pos++) {
+                const { char, bold, italic, strikethrough } = chars[pos]
+                if (curText === '') {
+                    curText = char
+                    curBold = bold
+                    curItalic = italic
+                    curStrike = strikethrough
+                } else if (
+                    bold !== curBold ||
+                    italic !== curItalic ||
+                    strikethrough !== curStrike
+                ) {
+                    lineSegs.push({
+                        text: curText,
+                        bold: curBold,
+                        italic: curItalic,
+                        strikethrough: curStrike,
+                    })
+                    curText = char
+                    curBold = bold
+                    curItalic = italic
+                    curStrike = strikethrough
+                } else {
+                    curText += char
+                }
+            }
+            if (curText)
+                lineSegs.push({
+                    text: curText,
+                    bold: curBold,
+                    italic: curItalic,
+                    strikethrough: curStrike,
+                })
+            result.push(lineSegs)
+        }
+        return result
     }
 }
 

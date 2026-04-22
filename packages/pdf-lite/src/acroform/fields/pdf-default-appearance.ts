@@ -1,5 +1,12 @@
 import { PdfString } from '../../core/objects/pdf-string.js'
 import { encodeToPDFDocEncoding } from '../../utils/encodeToPDFDocEncoding.js'
+import { SetFontOp } from '../../graphics/ops/text.js'
+import {
+    SetFillColorGrayOp,
+    SetFillColorRGBOp,
+    SetFillColorCMYKOp,
+} from '../../graphics/ops/color.js'
+import type { ContentOp } from '../../graphics/ops/base.js'
 
 /**
  * Value object that parses and builds DA (Default Appearance) strings.
@@ -54,6 +61,36 @@ export class PdfDefaultAppearance extends PdfString {
 
     toString(): string {
         return `/${this._fontName} ${this._fontSize} Tf ${this._colorOp}`
+    }
+
+    /**
+     * Materialise this DA as a pair of typed content-stream ops:
+     * `[SetFontOp, <fill-colour op>]`.  Callers that emit typed ops
+     * directly should push these instead of the raw DA string.
+     */
+    toOps(): ContentOp[] {
+        const fontOp = SetFontOp.create(this._fontName, this._fontSize)
+        const co = this._colorOp.trim()
+        const nums = co.split(/\s+/)
+        const kind = nums.pop()
+        const vals = nums.map(Number)
+        let colorOp: ContentOp
+        if (kind === 'rg' && vals.length === 3) {
+            colorOp = SetFillColorRGBOp.create(vals[0], vals[1], vals[2])
+        } else if (kind === 'g' && vals.length === 1) {
+            colorOp = SetFillColorGrayOp.create(vals[0])
+        } else if (kind === 'k' && vals.length === 4) {
+            colorOp = SetFillColorCMYKOp.create(
+                vals[0],
+                vals[1],
+                vals[2],
+                vals[3],
+            )
+        } else {
+            // Fallback: default to black gray.
+            colorOp = SetFillColorGrayOp.create(0)
+        }
+        return [fontOp, colorOp]
     }
 
     static parse(da: string): PdfDefaultAppearance | null {

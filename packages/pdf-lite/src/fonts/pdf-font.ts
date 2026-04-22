@@ -493,6 +493,25 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
     }
 
     /**
+     * Sum glyph advances for `text` at `fontSize`. Characters with no
+     * width entry fall back to `fontSize * missingWidthFactor` (default
+     * 0.6, a common heuristic for proportional Latin fonts).
+     */
+    measureString(
+        text: string,
+        fontSize: number,
+        opts?: { missingWidthFactor?: number },
+    ): number {
+        const fallback = fontSize * (opts?.missingWidthFactor ?? 0.6)
+        let width = 0
+        for (const char of text) {
+            const w = this.getCharacterWidth(char.charCodeAt(0), fontSize)
+            width += w !== null ? w : fallback
+        }
+        return width
+    }
+
+    /**
      * Returns the resource name for string coercion.
      * This enables using PdfFont objects in template literals like:
      * ```typescript

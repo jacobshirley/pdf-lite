@@ -1,5 +1,5 @@
 import { PdfFormField } from './pdf-form-field.js'
-import { PdfAppearanceStream } from '../appearance/pdf-appearance-stream.js'
+import { PdfAppearanceStream } from '../../graphics/pdf-appearance-stream.js'
 import { PdfSignatureObject } from '../../signing/signatures/index.js'
 import { PdfDictionary } from '../../core/objects/pdf-dictionary.js'
 import { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'

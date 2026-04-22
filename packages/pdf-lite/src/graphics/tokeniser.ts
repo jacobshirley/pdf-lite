@@ -75,6 +75,13 @@ import {
     ShowTextNextLineSpacingOp,
     ShowTextOp,
 } from './ops/text'
+import {
+    BeginMarkedContentOp,
+    BeginMarkedContentPropsOp,
+    EndMarkedContentOp,
+    MarkedPointOp,
+    MarkedPointPropsOp,
+} from './ops/marked-content'
 
 /**
  * Map of operator keyword → subclass constructor. Each constructor accepts
@@ -153,6 +160,12 @@ const OPERATOR_CLASSES: Record<string, ContentOpCtor> = {
     gs: SetGraphicsStateOp,
     // --- xobject ---
     Do: InvokeXObjectOp,
+    // --- marked content ---
+    BMC: BeginMarkedContentOp,
+    BDC: BeginMarkedContentPropsOp,
+    EMC: EndMarkedContentOp,
+    MP: MarkedPointOp,
+    DP: MarkedPointPropsOp,
 }
 
 const SPACE = 0x20

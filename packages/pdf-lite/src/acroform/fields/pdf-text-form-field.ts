@@ -1,6 +1,6 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
-import { PdfTextAppearanceStream } from '../appearance/pdf-text-appearance-stream.js'
+import { PdfAppearanceStream } from '../../graphics/pdf-appearance-stream.js'
 import { PdfFont } from '../../fonts/pdf-font.js'
 
 /**
@@ -51,7 +51,7 @@ export class PdfTextFormField extends PdfFormField {
         const isUnicode = font?.isUnicode ?? false
         const reverseEncodingMap = font?.reverseEncodingMap
 
-        this.appearanceStream = new PdfTextAppearanceStream({
+        this.appearanceStream = PdfAppearanceStream.textField({
             rect: rect,
             value: this.value,
             da: parsed,

@@ -2841,7 +2841,7 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             expect(afterET).toContain('Q')
             // m (moveto) and l (lineto) and S (stroke) path operators
             expect(afterET).toMatch(/\d+\.\d+ \d+\.\d+ m/)
-            expect(afterET).toMatch(/\d+\.\d+ \d+\.\d+ l S/)
+            expect(afterET).toMatch(/\d+\.\d+ \d+\.\d+ l\s+S/)
 
             acroform.needAppearances = false
             await server.commands.writeFile(

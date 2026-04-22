@@ -1,6 +1,6 @@
 import { PdfFormField } from './pdf-form-field.js'
 import { PdfDefaultAppearance } from './pdf-default-appearance.js'
-import { PdfChoiceAppearanceStream } from '../appearance/pdf-choice-appearance-stream.js'
+import { PdfAppearanceStream } from '../../graphics/pdf-appearance-stream.js'
 import { PdfObjectReference } from '../../core/objects/pdf-object-reference.js'
 import { PdfArray } from '../../core/objects/pdf-array.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
@@ -117,7 +117,7 @@ export class PdfChoiceFormField extends PdfFormField {
         const isUnicode = font?.isUnicode ?? false
         const reverseEncodingMap = font?.reverseEncodingMap
 
-        this.appearanceStream = new PdfChoiceAppearanceStream({
+        this.appearanceStream = PdfAppearanceStream.choiceField({
             rect: rect as [number, number, number, number],
             value,
             da: parsed,

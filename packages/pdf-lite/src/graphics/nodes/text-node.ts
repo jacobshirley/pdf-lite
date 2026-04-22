@@ -10,6 +10,7 @@ import {
     SetFontOp,
     SetTextLeadingOp,
     SetTextMatrixOp,
+    SetTextRenderingModeOp,
     SetWordSpacingOp,
     ShowTextArrayOp,
     ShowTextNextLineOp,
@@ -17,6 +18,7 @@ import {
     ShowTextOp,
     ShowTextSegment,
 } from '../ops/text'
+import { SetLineWidthOp } from '../ops/state'
 import {
     SetFillColorCMYKOp,
     SetFillColorGrayOp,
@@ -29,6 +31,54 @@ import { CMYKColor, Color, GrayColor, RGBColor } from '../color'
 
 export class TextNode extends ContentNode {
     prev?: TextNode
+
+    /**
+     * Build an authored TextNode from structured options. Emits Tf
+     * (font + size), an optional fill-colour op, a positioning op, then
+     * a Tj/TJ show op encoded via the font.  The `font` PdfFont is
+     * cached on the node so `.text =` writes re-encode correctly
+     * without requiring a `page.fontMap` lookup.
+     */
+    static create(opts: {
+        text: string
+        font: PdfFont
+        fontSize: number
+        color?: Color
+        /** Absolute position via Tm. */
+        matrix?: Matrix
+        /** Relative position via Td. Ignored when `matrix` is set. */
+        move?: { dx: number; dy: number }
+        /** Text rendering mode (0 = fill, 2 = fill+stroke for faux-bold). */
+        renderingMode?: number
+        /** Line width (used with rendering mode 2 for faux-bold stroke). */
+        lineWidth?: number
+    }): TextNode {
+        const ops: ContentOp[] = [
+            SetFontOp.create(opts.font.resourceName, opts.fontSize),
+        ]
+        if (opts.color) ops.push(opts.color.toOp())
+        if (opts.matrix) {
+            const m = opts.matrix
+            ops.push(SetTextMatrixOp.create(m.a, m.b, m.c, m.d, m.e, m.f))
+        } else if (opts.move) {
+            ops.push(MoveTextOp.create(opts.move.dx, opts.move.dy))
+        }
+        if (opts.lineWidth !== undefined) {
+            ops.push(SetLineWidthOp.create(opts.lineWidth))
+        }
+        if (opts.renderingMode !== undefined) {
+            ops.push(SetTextRenderingModeOp.create(opts.renderingMode))
+        }
+        // Emit a plain `Tj` with font-encoded bytes. We deliberately
+        // bypass `writeContentStreamText` (which emits kerned `TJ`
+        // arrays when the font has kern pairs) because appearance
+        // streams traditionally use simple `Tj` — callers relying on
+        // byte-level output shape should get that.
+        ops.push(ShowTextOp.create(opts.font.encode(opts.text)))
+        const node = new TextNode(ops)
+        node._fontOverride = opts.font
+        return node
+    }
 
     /**
      * Compute the new local Tm that a segment should have after a
@@ -170,7 +220,17 @@ export class TextNode extends ContentNode {
         return textOp.decodeWithFont(this.font)
     }
 
+    /**
+     * Cached PdfFont for authoring from scratch — when set (via the
+     * `font` setter), subsequent `.font` reads return this directly
+     * without requiring a page.fontMap lookup. Preserves existing
+     * round-trip semantics: for parsed nodes, `.font` still resolves
+     * through the page.
+     */
+    private _fontOverride?: PdfFont
+
     get font(): PdfFont {
+        if (this._fontOverride) return this._fontOverride
         const defaultFont = PdfFont.HELVETICA
         const lastTf = this.ops.find((x) => x instanceof SetFontOp)
 
@@ -183,6 +243,7 @@ export class TextNode extends ContentNode {
     }
 
     set font(font: PdfFont) {
+        this._fontOverride = font
         const size = this.fontSize
         const tfOp = this.ops.find((x) => x instanceof SetFontOp)
         if (!tfOp) {

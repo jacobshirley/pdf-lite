@@ -1,5 +1,5 @@
 import { PdfFormField } from './pdf-form-field.js'
-import { PdfButtonAppearanceStream } from '../appearance/pdf-button-appearance-stream.js'
+import { PdfAppearanceStream } from '../../graphics/pdf-appearance-stream.js'
 import { PdfString } from '../../core/objects/pdf-string.js'
 import type { PdfAcroForm } from '../pdf-acro-form.js'
 import type { PdfIndirectObject } from '../../core/objects/pdf-indirect-object.js'
@@ -123,16 +123,15 @@ export class PdfButtonFormField extends PdfFormField {
         const effectiveFlags =
             this.flags.flags | (this.parent?.flags?.flags ?? 0)
 
-        const yesAppearance = PdfButtonAppearanceStream.buildYesContent(
+        const yesAppearance = PdfAppearanceStream.buttonYesField(
             width,
             height,
             effectiveFlags,
         )
 
-        const noAppearance = new PdfButtonAppearanceStream({
+        const noAppearance = PdfAppearanceStream.buttonField({
             width,
             height,
-            contentStream: '',
         })
 
         const existingOnState = this.onState

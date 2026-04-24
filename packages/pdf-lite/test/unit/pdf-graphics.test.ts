@@ -437,6 +437,7 @@ describe('PdfGraphics', () => {
                 expect(content).toMatchInlineSnapshot(`
                   "/TestFont 12 Tf 0 g
                   BT
+                  /TestFont 12 Tf 0 g
                   /TestFont 12 Tf
                   1 0 0 1 10.000 20.000 Tm
                   0 Tr

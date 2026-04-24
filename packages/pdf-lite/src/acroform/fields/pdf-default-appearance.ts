@@ -58,7 +58,7 @@ export class PdfDefaultAppearance extends PdfString {
     }
 
     static parse(da: string): PdfDefaultAppearance | null {
-        const fontMatch = da.match(/\/([\w-]+)\s+([\d.]+)\s+Tf/)
+        const fontMatch = da.match(/\/([\S]+)\s+([\d.]+)\s+Tf/)
         if (!fontMatch) return null
 
         const fontName = PdfName.unescapeName(fontMatch[1])

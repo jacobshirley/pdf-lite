@@ -106,7 +106,15 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                 )
             }
             this.content = fontObj.content as PdfFontDictionary
-            this.resourceName = fontObj.reference.key
+            // Preserve resourceName from PdfFont sources; fall back to
+            // reference key for raw indirect objects already in a document,
+            // and finally generate a fresh name for unassigned objects.
+            this.resourceName =
+                fontObj instanceof PdfFont
+                    ? fontObj.resourceName
+                    : fontObj.objectNumber >= 0
+                      ? fontObj.reference.key
+                      : PdfFont.nextResourceName()
             return
         }
 

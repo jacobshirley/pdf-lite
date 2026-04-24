@@ -14,6 +14,12 @@ Re-exports [PdfDocument](pdf-document/classes/PdfDocument.md)
 
 ---
 
+### PdfDocumentBatch
+
+Re-exports [PdfDocumentBatch](pdf-document/classes/PdfDocumentBatch.md)
+
+---
+
 ### PdfPage
 
 Re-exports [PdfPage](pdf-page/classes/PdfPage.md)

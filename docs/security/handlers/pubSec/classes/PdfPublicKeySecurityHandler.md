@@ -146,6 +146,24 @@ True if metadata should be encrypted.
 
 ---
 
+### clone()
+
+> **clone**(): `this`
+
+Creates a shallow clone of this security handler with an independent
+encryption dictionary, so that mutating the clone (e.g. during
+finalize/encrypt) does not affect the original.
+
+#### Returns
+
+`this`
+
+#### Overrides
+
+[`PdfSecurityHandler`](../../base/classes/PdfSecurityHandler.md).[`clone`](../../base/classes/PdfSecurityHandler.md#clone)
+
+---
+
 ### computeObjectKey()
 
 > **computeObjectKey**(`objectNumber?`, `generationNumber?`): `Promise`\<[`ByteArray`](../../../../types/type-aliases/ByteArray.md)\>
@@ -485,6 +503,23 @@ The document ID array.
 #### Overrides
 
 [`PdfSecurityHandler`](../../base/classes/PdfSecurityHandler.md).[`setDocumentId`](../../base/classes/PdfSecurityHandler.md#setdocumentid)
+
+---
+
+### testPassword()
+
+> **testPassword**(): `Promise`\<`boolean`\>
+
+Tests whether the current password can decrypt this document.
+Returns true if the password is valid, false otherwise.
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+#### Overrides
+
+[`PdfSecurityHandler`](../../base/classes/PdfSecurityHandler.md).[`testPassword`](../../base/classes/PdfSecurityHandler.md#testpassword)
 
 ---
 

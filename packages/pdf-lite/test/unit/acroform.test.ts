@@ -2728,4 +2728,38 @@ describe('AcroForm Appearance Stream Font Resources', () => {
             )
         })
     })
+
+    it('should register appearance stream references from all revisions', async () => {
+        // Load a multi-revision PDF with AcroForm fields
+        const pdfBuffer = base64ToBytes(
+            await server.commands.readFile(
+                './test/unit/fixtures/template.pdf',
+                { encoding: 'base64' },
+            ),
+        )
+
+        const document = await PdfDocument.fromBytes([pdfBuffer])
+        expect(document.revisions.length).toBeGreaterThan(1)
+
+        const acroform = document.acroform
+        if (!acroform) throw new Error('No AcroForm found')
+
+        // Import values — this creates new appearance stream objects
+        // referenced from field widgets that live in earlier revisions
+        const fields = acroform.exportData()
+        const fieldNames = Object.keys(fields)
+        expect(fieldNames.length).toBeGreaterThan(0)
+
+        const valuesToSet: Record<string, string> = {}
+        for (const name of fieldNames) {
+            valuesToSet[name] = 'test value'
+        }
+        acroform.importData(valuesToSet)
+
+        // Serialize and verify no dangling "-1 0 R" references
+        const outputBytes = document.toBytes()
+        const outputText = new TextDecoder('latin1').decode(outputBytes)
+        const danglingRefs = outputText.match(/-1 0 R/g)
+        expect(danglingRefs).toBeNull()
+    })
 })

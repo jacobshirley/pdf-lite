@@ -1362,9 +1362,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * (e.g. appearance streams created by generateAppearance).
      */
     private registerNewReferences(): void {
-        const missing = this.collectMissingReferences(
-            ...this.latestRevision.objects,
-        )
+        const missing = this.collectMissingReferences(...this.objects)
         if (missing.length > 0) {
             this.add(...missing)
         }

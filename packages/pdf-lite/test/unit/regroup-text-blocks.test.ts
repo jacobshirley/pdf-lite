@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
     TextBlock,
-    TextNode,
+    TextRun,
     PdfContentStream,
     StateNode,
     ContentNode,
@@ -34,8 +34,8 @@ const makeSeg = (
     x: number,
     y: number,
     text: string,
-): TextNode =>
-    new TextNode([
+): TextRun =>
+    new TextRun([
         SetFontOp.create(fontName, size),
         SetTextMatrixOp.create(a, b, c, d, x, y),
         ShowTextOp.create(text),
@@ -47,14 +47,14 @@ const upright = (
     x: number,
     y: number,
     text: string,
-): TextNode => makeSeg(fontName, size, 1, 0, 0, 1, x, y, text)
+): TextRun => makeSeg(fontName, size, 1, 0, 0, 1, x, y, text)
 
 describe('VirtualTextBlock.regroupTextBlocks', () => {
-    it('groups segments with matching baselines into one block', () => {
+    it('groups runs with matching baselines into one block', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 100, 700, 'A'))
-        block.addSegment(upright('F1', 12, 100, 680, 'B'))
-        block.addSegment(upright('F1', 12, 110, 700, 'C'))
+        block.addRun(upright('F1', 12, 100, 700, 'A'))
+        block.addRun(upright('F1', 12, 100, 680, 'B'))
+        block.addRun(upright('F1', 12, 110, 700, 'C'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -63,11 +63,11 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
         expect(regrouped[1].text).toBe('B')
     })
 
-    it('sorts segments within a line by x ascending', () => {
+    it('sorts runs within a line by x ascending', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 120, 700, 'C'))
-        block.addSegment(upright('F1', 12, 100, 700, 'A'))
-        block.addSegment(upright('F1', 12, 110, 700, 'B'))
+        block.addRun(upright('F1', 12, 120, 700, 'C'))
+        block.addRun(upright('F1', 12, 100, 700, 'A'))
+        block.addRun(upright('F1', 12, 110, 700, 'B'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -75,14 +75,14 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
         expect(regrouped[0].text).toBe('ABC')
     })
 
-    it('flattens segments across multiple input blocks', () => {
+    it('flattens runs across multiple input blocks', () => {
         const block1 = new TextBlock()
-        block1.addSegment(upright('F1', 12, 100, 700, 'Hello '))
-        block1.addSegment(upright('F1', 12, 100, 680, 'Bottom '))
+        block1.addRun(upright('F1', 12, 100, 700, 'Hello '))
+        block1.addRun(upright('F1', 12, 100, 680, 'Bottom '))
 
         const block2 = new TextBlock()
-        block2.addSegment(upright('F1', 12, 145, 700, 'World'))
-        block2.addSegment(upright('F1', 12, 155, 680, 'Line'))
+        block2.addRun(upright('F1', 12, 145, 700, 'World'))
+        block2.addRun(upright('F1', 12, 155, 680, 'Line'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block1, block2])
 
@@ -94,8 +94,8 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
     it('treats close-enough baselines as the same line (within 0.5x fontSize)', () => {
         const block = new TextBlock()
         // 2pt baseline jitter at 12pt fontSize → tolerance 6 → same line.
-        block.addSegment(upright('F1', 12, 100, 700, 'A'))
-        block.addSegment(upright('F1', 12, 110, 702, 'B'))
+        block.addRun(upright('F1', 12, 100, 700, 'A'))
+        block.addRun(upright('F1', 12, 110, 702, 'B'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -106,8 +106,8 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
     it('separates lines that exceed the tolerance', () => {
         const block = new TextBlock()
         // 20pt baseline delta at 12pt fontSize → tolerance 6 → different lines.
-        block.addSegment(upright('F1', 12, 100, 700, 'A'))
-        block.addSegment(upright('F1', 12, 100, 680, 'B'))
+        block.addRun(upright('F1', 12, 100, 700, 'A'))
+        block.addRun(upright('F1', 12, 100, 680, 'B'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -116,22 +116,20 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
 
     it('buckets rotated text separately from upright text', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 100, 700, 'A'))
+        block.addRun(upright('F1', 12, 100, 700, 'A'))
         // 90° rotated B at (100, 700) — different orientation bucket
-        block.addSegment(makeSeg('F1', 12, 0, 1, -1, 0, 100, 700, 'B'))
+        block.addRun(makeSeg('F1', 12, 0, 1, -1, 0, 100, 700, 'B'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
         expect(regrouped).toHaveLength(2)
     })
 
-    it('skips empty position-only segments', () => {
-        const empty = new TextNode([
-            SetTextMatrixOp.create(1, 0, 0, 1, 50, 750),
-        ])
+    it('skips empty position-only runs', () => {
+        const empty = new TextRun([SetTextMatrixOp.create(1, 0, 0, 1, 50, 750)])
         const block = new TextBlock()
-        block.addSegment(empty)
-        block.addSegment(upright('F1', 12, 100, 700, 'A'))
+        block.addRun(empty)
+        block.addRun(upright('F1', 12, 100, 700, 'A'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -139,22 +137,22 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
         expect(regrouped[0].text).toBe('A')
     })
 
-    it('bakes standalone state + absolute Tm into each output segment', () => {
+    it('bakes standalone state + absolute Tm into each output run', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 100, 700, 'A'))
-        block.addSegment(upright('F1', 12, 110, 700, 'B'))
+        block.addRun(upright('F1', 12, 100, 700, 'A'))
+        block.addRun(upright('F1', 12, 110, 700, 'B'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
-        const segs = regrouped[0].getSegments()
+        const runs = regrouped[0].getRuns()
 
-        expect(segs).toHaveLength(2)
-        for (const seg of segs) {
-            expect(seg.ops.some((o) => o instanceof SetFontOp)).toBe(true)
-            expect(seg.ops.some((o) => o instanceof SetTextMatrixOp)).toBe(true)
-            expect(seg.ops.some((o) => o instanceof ShowTextOp)).toBe(true)
+        expect(runs).toHaveLength(2)
+        for (const run of runs) {
+            expect(run.ops.some((o) => o instanceof SetFontOp)).toBe(true)
+            expect(run.ops.some((o) => o instanceof SetTextMatrixOp)).toBe(true)
+            expect(run.ops.some((o) => o instanceof ShowTextOp)).toBe(true)
         }
 
-        const firstTm = segs[0].ops.find(
+        const firstTm = runs[0].ops.find(
             (o): o is SetTextMatrixOp => o instanceof SetTextMatrixOp,
         )!
         expect(firstTm.e).toBeCloseTo(100, 5)
@@ -163,8 +161,8 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
 
     it('allows text replacement on a regrouped block', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
-        block.addSegment(upright('F1', 12, 145, 700, 'World'))
+        block.addRun(upright('F1', 12, 100, 700, 'Hello '))
+        block.addRun(upright('F1', 12, 145, 700, 'World'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
         expect(regrouped[0].text).toBe('Hello World')
@@ -177,10 +175,10 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
         expect(VirtualTextBlock.regroupTextBlocks([])).toEqual([])
     })
 
-    it('splits segments with different fonts on the same line into separate blocks', () => {
+    it('splits runs with different fonts on the same line into separate blocks', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 100, 700, 'Intermediary Number'))
-        block.addSegment(upright('F2', 12, 300, 700, 'IN'))
+        block.addRun(upright('F1', 12, 100, 700, 'Intermediary Number'))
+        block.addRun(upright('F2', 12, 300, 700, 'IN'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -189,11 +187,11 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
         expect(regrouped[1].text).toBe('IN')
     })
 
-    it('keeps same-font segments together when splitting by font', () => {
+    it('keeps same-font runs together when splitting by font', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
-        block.addSegment(upright('F1', 12, 145, 700, 'World'))
-        block.addSegment(upright('F2', 12, 185, 700, 'Bold'))
+        block.addRun(upright('F1', 12, 100, 700, 'Hello '))
+        block.addRun(upright('F1', 12, 145, 700, 'World'))
+        block.addRun(upright('F2', 12, 185, 700, 'Bold'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -204,10 +202,10 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
 
     it('splits by font across different lines independently', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 100, 700, 'A'))
-        block.addSegment(upright('F2', 12, 200, 700, 'B'))
-        block.addSegment(upright('F1', 12, 100, 680, 'C'))
-        block.addSegment(upright('F2', 12, 200, 680, 'D'))
+        block.addRun(upright('F1', 12, 100, 700, 'A'))
+        block.addRun(upright('F2', 12, 200, 700, 'B'))
+        block.addRun(upright('F1', 12, 100, 680, 'C'))
+        block.addRun(upright('F2', 12, 200, 680, 'D'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -219,11 +217,11 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
         expect(texts).toContain('D')
     })
 
-    it('splits same-font segments that are far apart horizontally', () => {
+    it('splits same-font runs that are far apart horizontally', () => {
         const block = new TextBlock()
         // "Left" at x=100, "Right" at x=500 — gap far exceeds 3× fontSize
-        block.addSegment(upright('F1', 12, 100, 700, 'Left'))
-        block.addSegment(upright('F1', 12, 500, 700, 'Right'))
+        block.addRun(upright('F1', 12, 100, 700, 'Left'))
+        block.addRun(upright('F1', 12, 500, 700, 'Right'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -232,11 +230,11 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
         expect(regrouped[1].text).toBe('Right')
     })
 
-    it('keeps close same-font segments together despite small gaps', () => {
+    it('keeps close same-font runs together despite small gaps', () => {
         const block = new TextBlock()
         // "Hello " at x=100, "World" at x=140 — gap well within 3× fontSize
-        block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
-        block.addSegment(upright('F1', 12, 140, 700, 'World'))
+        block.addRun(upright('F1', 12, 100, 700, 'Hello '))
+        block.addRun(upright('F1', 12, 140, 700, 'World'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -246,9 +244,9 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
 
     it('splits into three groups with two large gaps', () => {
         const block = new TextBlock()
-        block.addSegment(upright('F1', 12, 50, 700, 'A'))
-        block.addSegment(upright('F1', 12, 250, 700, 'B'))
-        block.addSegment(upright('F1', 12, 450, 700, 'C'))
+        block.addRun(upright('F1', 12, 50, 700, 'A'))
+        block.addRun(upright('F1', 12, 250, 700, 'B'))
+        block.addRun(upright('F1', 12, 450, 700, 'C'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -258,13 +256,13 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
         expect(regrouped[2].text).toBe('C')
     })
 
-    it('splits same-font segments when a different-font segment sits between them', () => {
+    it('splits same-font runs when a different-font run sits between them', () => {
         const block = new TextBlock()
         // "State the reasons " (italic F2) → "and " (bold F1) → "detailed summary" (italic F2)
-        // The italic segments are close together but a bold word sits between them
-        block.addSegment(upright('F2', 12, 100, 700, 'State the reasons '))
-        block.addSegment(upright('F1', 12, 210, 700, 'and '))
-        block.addSegment(upright('F2', 12, 240, 700, 'detailed summary'))
+        // The italic runs are close together but a bold word sits between them
+        block.addRun(upright('F2', 12, 100, 700, 'State the reasons '))
+        block.addRun(upright('F1', 12, 210, 700, 'and '))
+        block.addRun(upright('F2', 12, 240, 700, 'detailed summary'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -276,12 +274,12 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
         expect(texts).toContain('detailed summary')
     })
 
-    it('does not split same-font segments when no other font sits between them', () => {
+    it('does not split same-font runs when no other font sits between them', () => {
         const block = new TextBlock()
-        // Two F1 segments close together with an F2 segment elsewhere on the line
-        block.addSegment(upright('F1', 12, 100, 700, 'Hello '))
-        block.addSegment(upright('F1', 12, 140, 700, 'World'))
-        block.addSegment(upright('F2', 12, 300, 700, 'Bold'))
+        // Two F1 runs close together with an F2 run elsewhere on the line
+        block.addRun(upright('F1', 12, 100, 700, 'Hello '))
+        block.addRun(upright('F1', 12, 140, 700, 'World'))
+        block.addRun(upright('F2', 12, 300, 700, 'Bold'))
 
         const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
@@ -291,27 +289,27 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
     })
 
     describe('view semantics', () => {
-        it('regrouped segments are the original TextNode instances', () => {
+        it('regrouped runs are the original TextRun instances', () => {
             const block = new TextBlock()
-            block.addSegment(upright('F1', 12, 100, 700, 'Hello'))
-            block.addSegment(upright('F1', 12, 150, 700, 'World'))
+            block.addRun(upright('F1', 12, 100, 700, 'Hello'))
+            block.addRun(upright('F1', 12, 150, 700, 'World'))
 
-            const original = block.getSegments()
+            const original = block.getRuns()
             const regrouped = VirtualTextBlock.regroupTextBlocks([block])
 
             expect(regrouped).toHaveLength(1)
-            const segs = regrouped[0].getSegments()
-            expect(segs).toHaveLength(2)
-            expect(segs[0]).toBe(original[0])
-            expect(segs[1]).toBe(original[1])
+            const runs = regrouped[0].getRuns()
+            expect(runs).toHaveLength(2)
+            expect(runs[0]).toBe(original[0])
+            expect(runs[1]).toBe(original[1])
             // Parent links are preserved — still pointing at the real block.
-            expect(segs[0].parent).toBe(block)
-            expect(segs[1].parent).toBe(block)
+            expect(runs[0].parent).toBe(block)
+            expect(runs[1].parent).toBe(block)
         })
 
         it('editText on the virtual block updates the real parent', () => {
             const block = new TextBlock()
-            block.addSegment(upright('F1', 12, 100, 700, 'Original'))
+            block.addRun(upright('F1', 12, 100, 700, 'Original'))
 
             const regrouped = VirtualTextBlock.regroupTextBlocks([block])
             regrouped[0].text = 'Replaced'
@@ -320,10 +318,10 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
             expect(block.toString()).not.toContain('Original')
         })
 
-        it('editText collapses multiple segments into the first', () => {
+        it('editText collapses multiple runs into the first', () => {
             const block = new TextBlock()
-            block.addSegment(upright('F1', 12, 100, 700, 'Keep'))
-            block.addSegment(upright('F1', 12, 150, 700, 'Remove'))
+            block.addRun(upright('F1', 12, 100, 700, 'Keep'))
+            block.addRun(upright('F1', 12, 150, 700, 'Remove'))
 
             const regrouped = VirtualTextBlock.regroupTextBlocks([block])
             regrouped[0].text = 'Kept'
@@ -334,7 +332,7 @@ describe('VirtualTextBlock.regroupTextBlocks', () => {
 
         it('moveBy on the virtual block shifts the real parent Tm', () => {
             const block = new TextBlock()
-            block.addSegment(upright('F1', 12, 100, 700, 'Hello'))
+            block.addRun(upright('F1', 12, 100, 700, 'Hello'))
 
             const regrouped = VirtualTextBlock.regroupTextBlocks([block])
             regrouped[0].moveBy(10, -5)
@@ -414,8 +412,8 @@ describe('end-to-end edit/move via PdfContentStream', () => {
         // Re-extract
         const blocks2 = collectTextBlocks(pcs.nodes)
         const regrouped2 = VirtualTextBlock.regroupTextBlocks(blocks2)
-        const seg = regrouped2[0].getSegments()[0]
-        const tm = seg.getWorldTransform()
+        const run = regrouped2[0].getRuns()[0]
+        const tm = run.getWorldTransform()
         expect(tm.e).toBeCloseTo(110)
         expect(tm.f).toBeCloseTo(695)
     })
@@ -450,7 +448,7 @@ describe('end-to-end edit/move via PdfContentStream', () => {
         expect(str).toContain('Inside')
     })
 
-    it('moveBy works with Td-based source segments', () => {
+    it('moveBy works with Td-based source runs', () => {
         const TD_STREAM = [
             'BT',
             '/F1 12 Tf',
@@ -470,8 +468,8 @@ describe('end-to-end edit/move via PdfContentStream', () => {
         pcs.dataAsString = pcs.dataAsString
         const blocks2 = collectTextBlocks(pcs.nodes)
         const regrouped2 = VirtualTextBlock.regroupTextBlocks(blocks2)
-        const seg = regrouped2[0].getSegments()[0]
-        const tm = seg.getWorldTransform()
+        const run = regrouped2[0].getRuns()[0]
+        const tm = run.getWorldTransform()
         expect(tm.e).toBeCloseTo(110)
         expect(tm.f).toBeCloseTo(695)
     })

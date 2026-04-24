@@ -1,5 +1,5 @@
 export { ContentNode } from './content-node'
-export { TextNode } from './text-node'
+export { TextRun } from './text-run'
 export { TextBlock, VirtualTextBlock } from './text-block'
 export { GraphicsBlock } from './graphics-block'
 export { StateNode } from './state-node'

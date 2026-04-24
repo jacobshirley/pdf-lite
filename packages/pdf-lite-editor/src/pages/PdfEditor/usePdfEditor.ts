@@ -92,7 +92,7 @@ export function usePdfEditor() {
     const selectedTextBlock =
         extractedTextBlocks.find((tb) => tb.id === selectedTextBlockId) || null
 
-    const selectedTextSegments = selectedTextBlock?.segments ?? []
+    const selectedTextRuns = selectedTextBlock?.runs ?? []
 
     const showRightPane =
         !!(selectedFieldId && selectedField) || !!selectedTextBlock
@@ -1002,7 +1002,7 @@ export function usePdfEditor() {
         embeddedFonts,
         selectedField,
         selectedTextBlock,
-        selectedTextSegments,
+        selectedTextRuns,
         showRightPane,
         setSelectedFieldId,
         setSelectedTextBlockId,

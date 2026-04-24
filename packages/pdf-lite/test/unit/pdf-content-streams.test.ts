@@ -4,7 +4,7 @@ import { PdfDocument } from '../../src/pdf/pdf-document'
 import {
     PdfContentStreamObject,
     TextBlock,
-    TextNode,
+    TextRun,
     GraphicsBlock,
     StateNode,
     VirtualTextBlock,
@@ -176,11 +176,11 @@ describe('PdfContentStreamObject.add() and dataAsString', () => {
     it('add() appends a node to the stream', () => {
         const s = makeStream('')
         const block = new TextBlock()
-        const text = new TextNode()
+        const text = new TextRun()
         text.font = PdfFont.HELVETICA
         text.fontSize = 12
         text.text = 'Hello'
-        block.addSegment(text)
+        block.addRun(text)
         s.add(block)
         expect(s.dataAsString).toContain('/F1 12 Tf')
         expect(s.dataAsString).toContain('(Hello) Tj')
@@ -329,12 +329,12 @@ describe('TextBlock', () => {
         expect(tb.text).toContain(')')
     })
 
-    it('should have lines for each text segment', () => {
+    it('should have lines for each text run', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
         const tb = s.nodes[0] as TextBlock
-        expect(tb.getSegments()).toHaveLength(1)
-        expect(tb.getSegments()[0]).toBeInstanceOf(TextNode)
-        expect(tb.getSegments()[0].text).toBe('Hello')
+        expect(tb.getRuns()).toHaveLength(1)
+        expect(tb.getRuns()[0]).toBeInstanceOf(TextRun)
+        expect(tb.getRuns()[0].text).toBe('Hello')
     })
 
     it('should split multi-line BT blocks into separate lines', () => {
@@ -346,10 +346,10 @@ describe('TextBlock', () => {
         expect(regrouped).toHaveLength(2)
         const tb1 = regrouped[0] as TextBlock
         const tb2 = regrouped[1] as TextBlock
-        expect(tb1.getSegments()).toHaveLength(1)
-        expect(tb1.getSegments()[0].text).toBe('Line1')
-        expect(tb2.getSegments()).toHaveLength(1)
-        expect(tb2.getSegments()[0].text).toBe('Line2')
+        expect(tb1.getRuns()).toHaveLength(1)
+        expect(tb1.getRuns()[0].text).toBe('Line1')
+        expect(tb2.getRuns()).toHaveLength(1)
+        expect(tb2.getRuns()[0].text).toBe('Line2')
     })
 
     it('getLocalTransform returns identity (container)', () => {
@@ -361,7 +361,7 @@ describe('TextBlock', () => {
         expect(tm.e).toBe(0)
         expect(tm.f).toBe(0)
         // Segment carries the actual transform
-        const segTm = tb.getSegments()[0].getLocalTransform()
+        const segTm = tb.getRuns()[0].getLocalTransform()
         expect(segTm.e).toBeCloseTo(100, 0)
         expect(segTm.f).toBeCloseTo(700, 0)
     })
@@ -391,26 +391,26 @@ describe('TextBlock', () => {
         expect(str).toContain('>>')
     })
 
-    it('moveBy shifts all segments uniformly without double-shifting', () => {
-        // 3 segments: first has Tm, rest rely on text advance (no Tm/Td)
+    it('moveBy shifts all runs uniformly without double-shifting', () => {
+        // 3 runs: first has Tm, rest rely on text advance (no Tm/Td)
         const s = makeStream(
             'BT /F1 10 Tf 1 0 0 1 100 700 Tm (A) Tj (B) Tj (C) Tj ET',
         )
         const tb = s.textBlocks[0]
-        const segs = tb.getSegments()
-        expect(segs).toHaveLength(3)
+        const runs = tb.getRuns()
+        expect(runs).toHaveLength(3)
 
         // Record original positions
-        const origPositions = segs.map((seg) => {
-            const tm = seg.getLocalTransform()
+        const origPositions = runs.map((run) => {
+            const tm = run.getLocalTransform()
             return { x: tm.e, y: tm.f }
         })
 
         // Move by (50, -20)
         tb.moveBy(50, -20)
 
-        // After move, each segment should be shifted by exactly (50, -20)
-        const newSegs = tb.getSegments()
+        // After move, each run should be shifted by exactly (50, -20)
+        const newSegs = tb.getRuns()
         for (let i = 0; i < newSegs.length; i++) {
             const tm = newSegs[i].getLocalTransform()
             expect(tm.e).toBeCloseTo(origPositions[i].x + 50, 5)
@@ -486,15 +486,15 @@ describe('TextBlock.text setter', () => {
         expect(str).toContain('100 700 Td')
     })
 
-    it('should collapse multiple segments into one', () => {
+    it('should collapse multiple runs into one', () => {
         const s = makeStream(
             'BT /F1 12 Tf 1 0 0 1 100 700 Tm (A) Tj (B) Tj (C) Tj ET',
         )
         const tb = s.textBlocks[0]
-        expect(tb.getSegments()).toHaveLength(3)
+        expect(tb.getRuns()).toHaveLength(3)
         tb.text = 'ABC'
-        // After setting text, extra segments are removed
-        expect(tb.getSegments()).toHaveLength(1)
+        // After setting text, extra runs are removed
+        expect(tb.getRuns()).toHaveLength(1)
         expect(tb.text).toBe('ABC')
     })
 
@@ -512,67 +512,67 @@ describe('TextBlock.text setter', () => {
         expect(tb.text).toBe('Hello (World)')
     })
 
-    it('should create a segment when block has none', () => {
+    it('should create a run when block has none', () => {
         const tb = new TextBlock()
         tb.text = 'Created'
         expect(tb.text).toBe('Created')
-        expect(tb.getSegments()).toHaveLength(1)
+        expect(tb.getRuns()).toHaveLength(1)
     })
 
-    it('should add text op when no existing text op in segment', () => {
+    it('should add text op when no existing text op in run', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td ET')
         const tb = s.textBlocks[0]
-        // The segment has Tf and Td but no Tj
+        // The run has Tf and Td but no Tj
         tb.text = 'Inserted'
         expect(tb.text).toBe('Inserted')
     })
 })
 
 describe('Text.font and Text.fontSize setters', () => {
-    it('should set font on a text segment', () => {
+    it('should set font on a text run', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
-        const seg = s.textBlocks[0].getSegments()[0]
-        expect(seg.fontSize).toBe(12)
+        const run = s.textBlocks[0].getRuns()[0]
+        expect(run.fontSize).toBe(12)
 
-        seg.font = PdfFont.COURIER
-        const str = seg.ops.toString()
+        run.font = PdfFont.COURIER
+        const str = run.ops.toString()
         expect(str).toContain(`/${PdfFont.COURIER.resourceName} 12 Tf`)
     })
 
     it('should preserve fontSize when setting font', () => {
         const s = makeStream('BT /F1 24 Tf 100 700 Td (Hello) Tj ET')
-        const seg = s.textBlocks[0].getSegments()[0]
-        seg.font = PdfFont.TIMES_ROMAN
-        expect(seg.fontSize).toBe(24)
+        const run = s.textBlocks[0].getRuns()[0]
+        run.font = PdfFont.TIMES_ROMAN
+        expect(run.fontSize).toBe(24)
     })
 
-    it('should set fontSize on a text segment', () => {
+    it('should set fontSize on a text run', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
-        const seg = s.textBlocks[0].getSegments()[0]
-        seg.fontSize = 24
-        expect(seg.fontSize).toBe(24)
-        const str = seg.ops.toString()
+        const run = s.textBlocks[0].getRuns()[0]
+        run.fontSize = 24
+        expect(run.fontSize).toBe(24)
+        const str = run.ops.toString()
         expect(str).toContain('/F1 24 Tf')
     })
 
     it('should preserve font when setting fontSize', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
-        const seg = s.textBlocks[0].getSegments()[0]
-        seg.fontSize = 36
-        const str = seg.ops.toString()
+        const run = s.textBlocks[0].getRuns()[0]
+        run.fontSize = 36
+        const str = run.ops.toString()
         expect(str).toContain('/F1 36 Tf')
     })
 
-    it('should prepend Tf when segment has no existing Tf', () => {
+    it('should prepend Tf when run has no existing Tf', () => {
         const s = makeStream(
             'BT /F1 12 Tf 100 700 Td (Hello) Tj 0 -14 Td (Line2) Tj ET',
         )
         const regrouped = VirtualTextBlock.regroupTextBlocks(s.textBlocks)
-        const segs = regrouped[1].getSegments()
-        const seg = segs[0]
-        // This segment inherits font from prev, has no own Tf
-        seg.fontSize = 18
-        const str = seg.ops.toString()
+        const runs = regrouped[1].getRuns()
+        const run = runs[0]
+        // This run inherits font from prev, has no own Tf
+        run.fontSize = 18
+        const str = run.ops.toString()
         expect(str).toContain('18 Tf')
     })
 })
@@ -665,7 +665,7 @@ describe('AT_Verf19E_EU.pdf — regrouped text blocks', () => {
         ).toBe(false)
     })
 
-    it('splits "Yes" and "No" when they are separate text segments', () => {
+    it('splits "Yes" and "No" when they are separate text runs', () => {
         const page = doc.pages.get(1)
         const textBlocks = page.rawTextBlocks
         const regrouped = VirtualTextBlock.regroupTextBlocks(textBlocks)
@@ -679,14 +679,14 @@ describe('AT_Verf19E_EU.pdf — regrouped text blocks', () => {
     })
 })
 
-describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
+describe('AT_Verf19E_EU.pdf — moveBy preserves run cohesion', () => {
     let doc: PdfDocument
 
     beforeAll(async () => {
         doc = await loadFixture('./test/unit/fixtures/AT_Verf19E_EU.pdf')
     })
 
-    it('moving "Identification" block keeps segments together', () => {
+    it('moving "Identification" block keeps runs together', () => {
         // Find the page with "Identification"
         let page, blocks, idBlock
         for (let p = 0; p < doc.pages.count; p++) {
@@ -697,9 +697,9 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
         expect(idBlock).toBeDefined()
 
-        const segs = idBlock!.getSegments()
-        // Record world positions of all segments before move
-        const before = segs.map((s) => {
+        const runs = idBlock!.getRuns()
+        // Record world positions of all runs before move
+        const before = runs.map((s) => {
             const wt = s.getWorldTransform()
             return { e: wt.e, f: wt.f, text: s.text }
         })
@@ -707,9 +707,9 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         // Move by (50, -30)
         idBlock!.moveBy(50, -30)
 
-        // Check that every segment shifted by the same (50, -30)
-        for (let i = 0; i < segs.length; i++) {
-            const wt = segs[i].getWorldTransform()
+        // Check that every run shifted by the same (50, -30)
+        for (let i = 0; i < runs.length; i++) {
+            const wt = runs[i].getWorldTransform()
             expect(wt.e).toBeCloseTo(before[i].e + 50, 0)
             expect(wt.f).toBeCloseTo(before[i].f - 30, 0)
         }
@@ -732,7 +732,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
         expect(idBlock).toBeDefined()
 
-        // Snapshot EVERY block's segment positions before the move
+        // Snapshot EVERY block's run positions before the move
         type Snap = {
             blockIdx: number
             segIdx: number
@@ -742,15 +742,15 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
         const before: Snap[] = []
         for (let bi = 0; bi < blocks.length; bi++) {
-            const segs = blocks[bi].getSegments()
-            for (let si = 0; si < segs.length; si++) {
-                const wt = segs[si].getWorldTransform()
+            const runs = blocks[bi].getRuns()
+            for (let si = 0; si < runs.length; si++) {
+                const wt = runs[si].getWorldTransform()
                 before.push({
                     blockIdx: bi,
                     segIdx: si,
                     e: wt.e,
                     f: wt.f,
-                    text: segs[si].text,
+                    text: runs[si].text,
                 })
             }
         }
@@ -761,10 +761,10 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         const displaced: string[] = []
         let snapIdx = 0
         for (let bi = 0; bi < blocks.length; bi++) {
-            const segs = blocks[bi].getSegments()
-            for (let si = 0; si < segs.length; si++) {
+            const runs = blocks[bi].getRuns()
+            for (let si = 0; si < runs.length; si++) {
                 const snap = before[snapIdx++]
-                const wt = segs[si].getWorldTransform()
+                const wt = runs[si].getWorldTransform()
                 if (bi === idIdx) {
                     // Moved block: should shift by (50, -30)
                     if (
@@ -772,7 +772,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
                         Math.abs(wt.f - (snap.f + -30)) > 1
                     ) {
                         displaced.push(
-                            `MOVED block[${bi}].seg[${si}] "${snap.text}": expected (${snap.e + 50},${snap.f - 30}) got (${wt.e.toFixed(1)},${wt.f.toFixed(1)})`,
+                            `MOVED block[${bi}].run[${si}] "${snap.text}": expected (${snap.e + 50},${snap.f - 30}) got (${wt.e.toFixed(1)},${wt.f.toFixed(1)})`,
                         )
                     }
                 } else {
@@ -782,7 +782,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
                         Math.abs(wt.f - snap.f) > 0.5
                     ) {
                         displaced.push(
-                            `block[${bi}].seg[${si}] "${snap.text}": expected (${snap.e.toFixed(1)},${snap.f.toFixed(1)}) got (${wt.e.toFixed(1)},${wt.f.toFixed(1)})`,
+                            `block[${bi}].run[${si}] "${snap.text}": expected (${snap.e.toFixed(1)},${snap.f.toFixed(1)}) got (${wt.e.toFixed(1)},${wt.f.toFixed(1)})`,
                         )
                     }
                 }
@@ -835,7 +835,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
         const pristineSnaps: PristineSnap[] = []
         for (const b of pBlocks) {
-            for (const s of b.getSegments()) {
+            for (const s of b.getRuns()) {
                 const wt = s.getWorldTransform()
                 pristineSnaps.push({
                     e: wt.e,
@@ -846,8 +846,8 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
             }
         }
 
-        // Collect moved segment texts WITH their pristine positions
-        const movedSegs = mIdBlock!.getSegments()
+        // Collect moved run texts WITH their pristine positions
+        const movedSegs = mIdBlock!.getRuns()
         const movedPristinePositions = movedSegs.map((s: any) => {
             const wt = s.getWorldTransform()
             return { text: s.text, origE: wt.e, origF: wt.f }
@@ -863,7 +863,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         const rPage = reloaded.pages.get(mPageIdx)
         const rBlocks = rPage.textBlocks
 
-        // Find closest pristine match for a reloaded segment
+        // Find closest pristine match for a reloaded run
         const findClosestPristine = (
             text: string,
             targetE: number,
@@ -893,12 +893,12 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
 
         for (const b of rBlocks) {
-            for (const s of b.getSegments()) {
+            for (const s of b.getRuns()) {
                 const wt = s.getWorldTransform()
                 const movedArr = movedExpected.get(s.text)
 
                 if (movedArr && movedArr.length > 0) {
-                    // This might be a moved segment — find closest expected position
+                    // This might be a moved run — find closest expected position
                     let closestIdx = 0
                     let closestDist = Infinity
                     for (let i = 0; i < movedArr.length; i++) {
@@ -912,13 +912,13 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
                         }
                     }
                     if (closestDist < 5) {
-                        // Matches a moved segment — consume it
+                        // Matches a moved run — consume it
                         movedArr.splice(closestIdx, 1)
                         continue
                     }
                 }
 
-                // Non-moved segment: match to closest pristine snap at same position
+                // Non-moved run: match to closest pristine snap at same position
                 const match = findClosestPristine(s.text, wt.e, wt.f)
                 if (match) {
                     match.used = true
@@ -948,7 +948,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
         expect(idBlock).toBeDefined()
 
-        const segsBefore = idBlock!.getSegments()
+        const segsBefore = idBlock!.getRuns()
         const beforePositions = segsBefore.map((s: any) => {
             const wt = s.getWorldTransform()
             return { e: wt.e, f: wt.f, text: s.text }
@@ -970,8 +970,8 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
         expect(found).toBeDefined()
 
-        const segsAfter = found!.getSegments()
-        // Each segment should have moved by exactly (50, -30)
+        const segsAfter = found!.getRuns()
+        // Each run should have moved by exactly (50, -30)
         for (
             let i = 0;
             i < Math.min(beforePositions.length, segsAfter.length);
@@ -983,7 +983,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         }
     })
 
-    it('moving "Company/Business name" block keeps all 7 segments together', async () => {
+    it('moving "Company/Business name" block keeps all 7 runs together', async () => {
         const doc2 = await loadFixture('./test/unit/fixtures/AT_Verf19E_EU.pdf')
         const page = doc2.pages.get(0)
         const blocks = page.textBlocks
@@ -992,19 +992,19 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         )
         expect(target).toBeDefined()
 
-        const segs = target!.getSegments()
-        expect(segs.length).toBe(7)
+        const runs = target!.getRuns()
+        expect(runs.length).toBe(7)
 
-        const before = segs.map((s: any) => {
+        const before = runs.map((s: any) => {
             const wt = s.getWorldTransform()
             return { e: wt.e, f: wt.f }
         })
 
         target!.moveBy(50, -30)
 
-        // All 7 segments must shift by exactly (50, -30)
-        for (let i = 0; i < segs.length; i++) {
-            const wt = segs[i].getWorldTransform()
+        // All 7 runs must shift by exactly (50, -30)
+        for (let i = 0; i < runs.length; i++) {
+            const wt = runs[i].getWorldTransform()
             expect(wt.e).toBeCloseTo(before[i].e + 50, 0)
             expect(wt.f).toBeCloseTo(before[i].f - 30, 0)
         }
@@ -1017,7 +1017,7 @@ describe('AT_Verf19E_EU.pdf — moveBy preserves segment cohesion', () => {
         expect(target2).toBeDefined()
         expect(target2!.text).toContain('registration certificate')
         expect(target2!.text).toContain('Federal State')
-        expect(target2!.getSegments().length).toBe(7)
+        expect(target2!.getRuns().length).toBe(7)
     })
 })
 
@@ -1062,15 +1062,15 @@ describe('real PDF text editing round-trip', () => {
             expect(page.contentStreams.length).toBeGreaterThan(1)
         })
 
-        it('getTextBlocks segments are live references into the content stream', () => {
+        it('getTextBlocks runs are live references into the content stream', () => {
             const page = doc.pages.get(0)
             const blocks = page.textBlocks
             expect(blocks.length).toBeGreaterThan(0)
 
             for (const block of blocks) {
-                for (const seg of block.getSegments()) {
-                    expect(seg.parent).toBeDefined()
-                    expect(seg.parent).toBeInstanceOf(TextBlock)
+                for (const run of block.getRuns()) {
+                    expect(run.parent).toBeDefined()
+                    expect(run.parent).toBeInstanceOf(TextBlock)
                 }
             }
         })
@@ -1124,7 +1124,7 @@ describe('real PDF text editing round-trip', () => {
             expect(target).toBeDefined()
 
             const originalText = target!.text
-            const segBefore = target!.getSegments()[0]
+            const segBefore = target!.getRuns()[0]
             const tmBefore = segBefore.getWorldTransform()
 
             target!.moveBy(50, -30)
@@ -1139,7 +1139,7 @@ describe('real PDF text editing round-trip', () => {
             const found = reloadedBlocks.find((b) => b.text === originalText)
             expect(found).toBeDefined()
 
-            const segAfter = found!.getSegments()[0]
+            const segAfter = found!.getRuns()[0]
             const tmAfter = segAfter.getWorldTransform()
             expect(tmAfter.e).toBeCloseTo(tmBefore.e + 50, 0)
             expect(tmAfter.f).toBeCloseTo(tmBefore.f - 30, 0)
@@ -1148,7 +1148,7 @@ describe('real PDF text editing round-trip', () => {
 
     // template.pdf likely has a single content stream
     describe('single-stream page (template.pdf)', () => {
-        it('getTextBlocks segments are live references to content-stream nodes', async () => {
+        it('getTextBlocks runs are live references to content-stream nodes', async () => {
             const doc = await loadFixture('./test/unit/fixtures/template.pdf')
             const page = doc.pages.get(0)
 
@@ -1163,15 +1163,15 @@ describe('real PDF text editing round-trip', () => {
             const target = blocks.find((b) => b.text.trim().length > 3)
             expect(target).toBeDefined()
 
-            const segs = target!.getSegments()
-            expect(segs.length).toBeGreaterThan(0)
+            const runs = target!.getRuns()
+            expect(runs.length).toBeGreaterThan(0)
 
-            const seg = segs[0]
-            expect(seg.parent).toBeInstanceOf(TextBlock)
+            const run = runs[0]
+            expect(run.parent).toBeInstanceOf(TextBlock)
 
-            // The unified node tree's TextBlocks should contain the seg's parent.
+            // The unified node tree's TextBlocks should contain the run's parent.
             const allBlocks = page.rawTextBlocks
-            const found = allBlocks.find((b) => b === seg.parent)
+            const found = allBlocks.find((b) => b === run.parent)
             expect(found).toBeDefined()
         })
 
@@ -1181,8 +1181,8 @@ describe('real PDF text editing round-trip', () => {
             const blocks = page.textBlocks
 
             const target = blocks.find((b) => b.text.trim().length > 3)!
-            const seg = target.getSegments()[0]
-            const parentBlock = seg.parent! as TextBlock
+            const run = target.getRuns()[0]
+            const parentBlock = run.parent! as TextBlock
 
             const oldText = parentBlock.text
             expect(oldText.length).toBeGreaterThan(0)
@@ -1239,7 +1239,7 @@ describe('real PDF text editing round-trip', () => {
         // CA_BC_PST_Registration.pdf uses TD (MoveTextLeadingOp) which sets TL.
         // When moveBy converts TD to absolute Tm, the TL side-effect must be
         // preserved as an explicit TL op, otherwise later T* ops in sibling
-        // segments produce overlapping text.
+        // runs produce overlapping text.
         const doc = await loadFixture(
             './test/unit/fixtures/CA_BC_PST_Registration.pdf',
         )
@@ -1309,7 +1309,7 @@ describe('real PDF text editing round-trip', () => {
 // TextBlock.setFont
 // ---------------------------------------------------------------------------
 describe('TextBlock.setFont', () => {
-    it('changes font name in single-segment block', () => {
+    it('changes font name in single-run block', () => {
         const s = makeStream('BT /F1 12 Tf 100 700 Td (Hello) Tj ET')
         const tb = s.textBlocks[0]
         tb.font = PdfFont.COURIER
@@ -1326,7 +1326,7 @@ describe('TextBlock.setFont', () => {
     })
 
     it('captures text BEFORE changing font (no decode corruption)', () => {
-        // Two segments to exercise the pre-capture path
+        // Two runs to exercise the pre-capture path
         const s = makeStream(
             'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Abc) Tj 1 0 0 1 130 700 Tm (Def) Tj ET',
         )
@@ -1335,26 +1335,26 @@ describe('TextBlock.setFont', () => {
         expect(tb.text).toBe('AbcDef')
     })
 
-    it('recalculates Tm positions for multi-segment blocks', () => {
-        // Two segments at known positions
+    it('recalculates Tm positions for multi-run blocks', () => {
+        // Two runs at known positions
         const s = makeStream(
             'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Hello) Tj 1 0 0 1 160 700 Tm (World) Tj ET',
         )
         const tb = s.textBlocks[0]
-        const seg0Before = tb.getSegments()[0].getLocalTransform()
+        const seg0Before = tb.getRuns()[0].getLocalTransform()
 
         tb.font = PdfFont.COURIER
 
-        const segs = tb.getSegments()
-        const seg0After = segs[0].getLocalTransform()
-        const seg1After = segs[1].getLocalTransform()
+        const runs = tb.getRuns()
+        const seg0After = runs[0].getLocalTransform()
+        const seg1After = runs[1].getLocalTransform()
 
-        // First segment keeps original position
+        // First run keeps original position
         expect(seg0After.e).toBeCloseTo(seg0Before.e, 1)
         expect(seg0After.f).toBeCloseTo(seg0Before.f, 1)
 
-        // Second segment should be repositioned based on first segment's advance
-        const advance0 = segs[0].getTextAdvance()
+        // Second run should be repositioned based on first run's advance
+        const advance0 = runs[0].getTextAdvance()
         expect(seg1After.e).toBeCloseTo(100 + advance0, 1)
         expect(seg1After.f).toBeCloseTo(700, 1)
     })
@@ -1367,7 +1367,7 @@ describe('TextBlock.setFont', () => {
         expect(tb.toString()).toContain(`/${font.resourceName} 12 Tf`)
     })
 
-    it('updates source segments when regrouped', () => {
+    it('updates source runs when regrouped', () => {
         const s = makeStream(
             'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Part1) Tj 1 0 0 1 160 700 Tm (Part2) Tj ET',
         )
@@ -1384,12 +1384,12 @@ describe('TextBlock.setFont', () => {
         const s = makeStream('BT /F1 24 Tf 100 700 Td (Big) Tj ET')
         const tb = s.textBlocks[0]
         tb.font = PdfFont.TIMES_BOLD
-        const seg = tb.getSegments()[0]
-        expect(seg.fontSize).toBe(24)
+        const run = tb.getRuns()[0]
+        expect(run.fontSize).toBe(24)
     })
 
-    it('skips segments with no text', () => {
-        // Second "segment" has Tf but no show op
+    it('skips runs with no text', () => {
+        // Second "run" has Tf but no show op
         const s = makeStream(
             'BT /F1 12 Tf 1 0 0 1 100 700 Tm (Hello) Tj /F2 10 Tf ET',
         )
@@ -1438,7 +1438,7 @@ describe('TextBlock.color', () => {
         expect(str).toContain('0 0 1 rg')
     })
 
-    it('updates source segments when regrouped', () => {
+    it('updates source runs when regrouped', () => {
         const s = makeStream('BT /F1 12 Tf 1 0 0 1 100 700 Tm (Hello) Tj ET')
         const regrouped = VirtualTextBlock.regroupTextBlocks(s.textBlocks)
         regrouped[0].color = new RGBColor(1, 0, 0)
@@ -1468,21 +1468,21 @@ describe('TextBlock.color', () => {
         expect(rgOps.length).toBeGreaterThanOrEqual(1)
         expect(rgOps[0]).toBe('1 0 0 rg')
 
-        // After the first segment's show op, there should be a color restore
+        // After the first run's show op, there should be a color restore
         // (either gray 0 g or rgb 0 0 0 rg) before the second show op
         const grayOps = [...streamStr.matchAll(/\b0 g\b/g)]
         const restoreRgOps = rgOps.filter((op) => op !== '1 0 0 rg')
         expect(grayOps.length + restoreRgOps.length).toBeGreaterThanOrEqual(1)
     })
 
-    it('handles multiple segments in one block', () => {
+    it('handles multiple runs in one block', () => {
         const s = makeStream(
             'BT /F1 12 Tf 1 0 0 1 100 700 Tm (A) Tj 1 0 0 1 110 700 Tm (B) Tj ET',
         )
         const tb = s.textBlocks[0]
         tb.color = new RGBColor(0.5, 0.5, 0.5)
         const str = tb.toString()
-        // Both segments should have the color op
+        // Both runs should have the color op
         const colorMatches = str.match(/0\.5 0\.5 0\.5 rg/g)
         expect(colorMatches?.length).toBeGreaterThanOrEqual(2)
     })

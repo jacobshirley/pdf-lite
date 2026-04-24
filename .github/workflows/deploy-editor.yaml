@@ -1,0 +1,30 @@
+name: Deploy Editor
+on:
+    push:
+        branches:
+            - editor
+    workflow_dispatch:
+permissions:
+    contents: read
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        name: Deploy to Cloudflare Pages
+        steps:
+            - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+            - uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6
+              with:
+                  run_install: true
+            - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
+              with:
+                  node-version: '24'
+                  cache: 'pnpm'
+            - name: Build
+              run: pnpm --filter pdf-lite-editor compile
+            - name: Deploy to Cloudflare Pages
+              uses: cloudflare/pages-action@v1
+              with:
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  projectName: pdf-lite-editor
+                  directory: packages/pdf-lite-editor/dist

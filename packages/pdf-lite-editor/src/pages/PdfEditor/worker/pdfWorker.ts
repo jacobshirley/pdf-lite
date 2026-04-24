@@ -14,7 +14,7 @@ import {
     PdfV4SecurityHandler,
     PdfV5SecurityHandler,
     TextBlock,
-    TextNode,
+    TextRun,
     VirtualTextBlock,
 } from 'pdf-lite'
 import {
@@ -303,14 +303,14 @@ function appendToPageContents(
     return target
 }
 
-function segmentToDTO(seg: any): TextSegmentDTO {
-    const font = seg.font
-    const color = seg.color
+function segmentToDTO(run: any): TextSegmentDTO {
+    const font = run.font
+    const color = run.color
     return {
-        text: seg.text ?? '',
+        text: run.text ?? '',
         fontName: font?.fontName || 'Unknown',
         fontType: font?.fontType || 'Unknown',
-        fontSize: seg.fontSize ?? 12,
+        fontSize: run.fontSize ?? 12,
         colorHex: color?.toHexString?.() ?? '#000000',
     }
 }
@@ -335,7 +335,7 @@ function textBlockToDTO(
             height: bbox.height,
         },
         text: block.text,
-        segments: block.getSegments().map(segmentToDTO),
+        runs: block.getRuns().map(segmentToDTO),
     }
 }
 
@@ -623,8 +623,8 @@ const handlers: {
     setTextBlockFontSize({ id, fontSize }) {
         const entry = findTextBlockEntry(id)
         if (!entry) throw new Error(`Text block ${id} not found`)
-        for (const seg of entry.block.getSegments()) {
-            seg.fontSize = fontSize
+        for (const run of entry.block.getRuns()) {
+            run.fontSize = fontSize
         }
         const result = textBlockToDTO(
             entry.block,
@@ -693,12 +693,12 @@ const handlers: {
 
         const font = PdfFont.HELVETICA
         const block = new TextBlock(page)
-        const seg = new TextNode()
-        seg.fontSize = fontSize
-        seg.matrix = new Matrix({ a: 1, b: 0, c: 0, d: 1, e: x, f: y })
-        block.addSegment(seg)
+        const run = new TextRun()
+        run.fontSize = fontSize
+        run.matrix = new Matrix({ a: 1, b: 0, c: 0, d: 1, e: x, f: y })
+        block.addRun(run)
         block.font = font
-        seg.text = text
+        run.text = text
 
         ensurePageFontResource(page, font)
         const stream = appendToPageContents(page, block)
@@ -732,9 +732,9 @@ const handlers: {
             )
         }
 
-        const segs = block.getSegments()
-        for (let i = segs.length - 1; i >= 0; i--) {
-            segs[i].clearOps()
+        const runs = block.getRuns()
+        for (let i = runs.length - 1; i >= 0; i--) {
+            runs[i].clearOps()
         }
 
         textBlockRefs.delete(id)

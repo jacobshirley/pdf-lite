@@ -130,10 +130,10 @@ export class MultiArray<T> implements Iterable<T> {
 }
 
 /**
- * A mutable reference cell for a sentinel value.  Multiple segments that
- * share the same boundary (e.g. the show-op between two adjacent TextNodes)
+ * A mutable reference cell for a sentinel value.  Multiple runs that
+ * share the same boundary (e.g. the show-op between two adjacent TextRuns)
  * hold the **same** SentinelRef, so replacing the referenced item in one
- * place transparently updates all segments' bounds.
+ * place transparently updates all runs' bounds.
  */
 export class SentinelRef<T> {
     value: T | null
@@ -148,14 +148,14 @@ export class SentinelRef<T> {
  * or deletions elsewhere in the array don't invalidate the region.
  *
  * `startSentinel` and `endSentinel` default to offsets +1 and +0 respectively,
- * meaning the segment's content is strictly *between* the two sentinels.  The
+ * meaning the run's content is strictly *between* the two sentinels.  The
  * `startOffset` / `endOffset` constructor args let callers change that: for
- * example, a TextBlock whose segment should include its own BT and ET markers
+ * example, a TextBlock whose run should include its own BT and ET markers
  * passes `startOffset: 0, endOffset: 1`.
  *
  * Sentinels may hold `null`, meaning "start of array" or "end of array".
  *
- * All mutations route through the backing MultiArray, so other live segments
+ * All mutations route through the backing MultiArray, so other live runs
  * that view the same region see the updates on their next access (since they
  * recompute bounds via `indexOf`).
  */
@@ -285,7 +285,7 @@ export class ArraySegment<T> implements Iterable<T>, ArrayLike<T> {
     }
 
     /**
-     * Check segment integrity.  Returns `{ ok: true }` if both sentinels are
+     * Check run integrity.  Returns `{ ok: true }` if both sentinels are
      * findable and `start <= end`, otherwise `{ ok: false, reason }`.
      *
      * Useful in tests and development assertions; does not throw.
@@ -332,7 +332,7 @@ export class ArraySegment<T> implements Iterable<T>, ArrayLike<T> {
         this.array.setAt(this.start + i, value)
     }
 
-    /** Append at the segment's trailing edge. */
+    /** Append at the run's trailing edge. */
     push(item: T): void {
         this.array.splice(this.end, 0, item)
     }
@@ -345,7 +345,7 @@ export class ArraySegment<T> implements Iterable<T>, ArrayLike<T> {
         )
 
         // When a deleted item was a sentinel boundary and replacement items
-        // were provided, rebind the sentinel so neighbouring segments sharing
+        // were provided, rebind the sentinel so neighbouring runs sharing
         // it stay consistent.
         if (items.length > 0 && deleted.length > 0) {
             const sVal = this.startSentinel.value
@@ -433,7 +433,7 @@ export class ArraySegment<T> implements Iterable<T>, ArrayLike<T> {
         }
     }
 
-    /** Replace every item of the segment with the given items. */
+    /** Replace every item of the run with the given items. */
     replaceAll(items: T[]): void {
         this.splice(0, this.length, ...items)
     }
@@ -453,7 +453,7 @@ export interface ArraySegment<T> {
 }
 
 /**
- * Build a freestanding segment over a single-array MultiArray.  Useful for
+ * Build a freestanding run over a single-array MultiArray.  Useful for
  * nodes that aren't yet attached to a content stream.
  */
 export function detachedSegment<T>(items: T[] = []): ArraySegment<T> {

@@ -366,18 +366,18 @@ describe('PdfContentStreamTokeniser', () => {
         })
     })
 
-    describe('ShowTextArrayOp segments', () => {
-        it('parses mixed string/hex/number segments from [...] TJ', () => {
+    describe('ShowTextArrayOp runs', () => {
+        it('parses mixed string/hex/number runs from [...] TJ', () => {
             const ops = tokenise('[(He) -10 <AB> 5 (llo)] TJ\n')
             const tj = ops[0] as ShowTextArrayOp
             expect(tj).toBeInstanceOf(ShowTextArrayOp)
-            const segs = tj.segments
-            expect(segs).toHaveLength(5)
-            expect((segs[0] as { value: string }).value).toBe('He')
-            expect((segs[1] as { value: number }).value).toBe(-10)
-            expect((segs[2] as { hexString: string }).hexString).toBe('AB')
-            expect((segs[3] as { value: number }).value).toBe(5)
-            expect((segs[4] as { value: string }).value).toBe('llo')
+            const runs = tj.segments
+            expect(runs).toHaveLength(5)
+            expect((runs[0] as { value: string }).value).toBe('He')
+            expect((runs[1] as { value: number }).value).toBe(-10)
+            expect((runs[2] as { hexString: string }).hexString).toBe('AB')
+            expect((runs[3] as { value: number }).value).toBe(5)
+            expect((runs[4] as { value: string }).value).toBe('llo')
         })
 
         it('returns an empty array for an empty TJ operand', () => {
@@ -385,12 +385,12 @@ describe('PdfContentStreamTokeniser', () => {
             expect((ops[0] as ShowTextArrayOp).segments).toEqual([])
         })
 
-        it('honours balanced parens and backslash escapes inside segments', () => {
+        it('honours balanced parens and backslash escapes inside runs', () => {
             const ops = tokenise('[(a\\)b) (c(d)e)] TJ\n')
-            const segs = (ops[0] as ShowTextArrayOp).segments
-            expect(segs).toHaveLength(2)
-            expect((segs[0] as { value: string }).value).toBe('a)b')
-            expect((segs[1] as { value: string }).value).toBe('c(d)e')
+            const runs = (ops[0] as ShowTextArrayOp).segments
+            expect(runs).toHaveLength(2)
+            expect((runs[0] as { value: string }).value).toBe('a)b')
+            expect((runs[1] as { value: string }).value).toBe('c(d)e')
         })
     })
 

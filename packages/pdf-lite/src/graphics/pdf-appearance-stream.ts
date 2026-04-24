@@ -25,7 +25,7 @@ import {
     EndMarkedContentOp,
 } from './ops/marked-content.js'
 import type { ContentOp } from './ops/base.js'
-import { TextBlock, GraphicsBlock } from './nodes/index.js'
+import { TextBlock } from './nodes/index.js'
 
 interface FontVariantNames {
     bold?: string
@@ -67,30 +67,6 @@ interface ButtonFieldOptions {
     width: number
     height: number
     contentStream?: string
-}
-
-function buttonResources(): PdfDictionary {
-    const resources = new PdfDictionary()
-    const fonts = new PdfDictionary()
-    fonts.set('ZaDb', PdfFont.ZAPF_DINGBATS.reference)
-    resources.set('Font', fonts)
-    return resources
-}
-
-/**
- * Push a TextBlock's body ops (BT…ET) onto `dst`. When `strikes` is
- * provided its path ops are appended after ET (same graphics-state
- * group) so strikethrough strokes are painted over the text.
- */
-function emitBlock(
-    dst: ContentOp[],
-    block: TextBlock,
-    strikes?: GraphicsBlock,
-): void {
-    for (const op of block.materialize()) dst.push(op)
-    if (strikes) {
-        for (const op of strikes.ops) dst.push(op)
-    }
 }
 
 /**
@@ -145,6 +121,23 @@ export class PdfAppearanceStream extends PdfContentStreamObject {
         this.content.rawAsString = newContent
     }
 
+    private static _buttonResources(): PdfDictionary {
+        const resources = new PdfDictionary()
+        const fonts = new PdfDictionary()
+        fonts.set('ZaDb', PdfFont.ZAPF_DINGBATS.reference)
+        resources.set('Font', fonts)
+        return resources
+    }
+
+    /**
+     * Append a `TextBlock`'s BT…ET ops onto `dst`. When `strikes` is
+     * supplied, its path ops are emitted inside their own q…Q group
+     * (so `w` / paint state doesn't leak) right after the text block.
+     */
+    private static _emitBlock(dst: ContentOp[], block: TextBlock): void {
+        for (const op of block.ops) dst.push(op)
+    }
+
     /**
      * Text field appearance.  Dispatches between single-line, multiline,
      * comb, and markdown `TextBlock` builders based on the flags.
@@ -163,10 +156,8 @@ export class PdfAppearanceStream extends PdfContentStreamObject {
         const padding = 2
 
         let block: TextBlock
-        let da: PdfDefaultAppearance
-        let strikes: GraphicsBlock | undefined
         if (ctx.comb && ctx.maxLen) {
-            ;({ block, da } = TextBlock.comb({
+            block = TextBlock.comb({
                 text: ctx.value,
                 width,
                 height,
@@ -174,9 +165,9 @@ export class PdfAppearanceStream extends PdfContentStreamObject {
                 da: ctx.da,
                 padding,
                 resolvedFonts: ctx.resolvedFonts,
-            }))
+            })
         } else if (ctx.markdown) {
-            ;({ block, da, strikes } = TextBlock.markdown({
+            block = TextBlock.markdown({
                 markdown: ctx.markdown,
                 width,
                 height,
@@ -186,9 +177,9 @@ export class PdfAppearanceStream extends PdfContentStreamObject {
                 padding,
                 resolvedFonts: ctx.resolvedFonts,
                 fontVariantNames: ctx.fontVariantNames,
-            }))
+            })
         } else if (ctx.multiline) {
-            ;({ block, da } = TextBlock.multiline({
+            block = TextBlock.multiline({
                 text: ctx.value,
                 width,
                 height,
@@ -197,9 +188,9 @@ export class PdfAppearanceStream extends PdfContentStreamObject {
                 padding,
                 resolvedFonts: ctx.resolvedFonts,
                 fontVariantNames: ctx.fontVariantNames,
-            }))
+            })
         } else {
-            ;({ block, da } = TextBlock.singleLine({
+            block = TextBlock.singleLine({
                 text: ctx.value,
                 width,
                 height,
@@ -207,14 +198,14 @@ export class PdfAppearanceStream extends PdfContentStreamObject {
                 quadding,
                 padding,
                 resolvedFonts: ctx.resolvedFonts,
-            }))
+            })
         }
 
         const ops = stream.content.ops
         ops.push(BeginMarkedContentOp.create('Tx'))
         ops.push(new SaveStateOp())
-        for (const op of da.toOps()) ops.push(op)
-        emitBlock(ops, block, strikes)
+        if (block.da) for (const op of block.da.toOps()) ops.push(op)
+        PdfAppearanceStream._emitBlock(ops, block)
         ops.push(new RestoreStateOp())
         ops.push(new EndMarkedContentOp())
         return stream
@@ -267,11 +258,11 @@ export class PdfAppearanceStream extends PdfContentStreamObject {
                     quadding,
                     resolvedFonts: ctx.resolvedFonts,
                 })
-                emitBlock(ops, row)
+                PdfAppearanceStream._emitBlock(ops, row)
             }
         } else {
             // Combo / simple: single-line value (+ optional dropdown arrow).
-            const { block, da } = TextBlock.singleLine({
+            const block = TextBlock.singleLine({
                 text: ctx.value,
                 width,
                 height,
@@ -280,8 +271,8 @@ export class PdfAppearanceStream extends PdfContentStreamObject {
                 padding,
                 resolvedFonts: ctx.resolvedFonts,
             })
-            for (const op of da.toOps()) ops.push(op)
-            emitBlock(ops, block)
+            if (block.da) for (const op of block.da.toOps()) ops.push(op)
+            PdfAppearanceStream._emitBlock(ops, block)
 
             if (isCombo) {
                 const arrowWidth = height * 0.8
@@ -324,7 +315,7 @@ export class PdfAppearanceStream extends PdfContentStreamObject {
             width: opts.width,
             height: opts.height,
             contentStream: opts.contentStream ?? '',
-            resources: buttonResources(),
+            resources: PdfAppearanceStream._buttonResources(),
         })
     }
 

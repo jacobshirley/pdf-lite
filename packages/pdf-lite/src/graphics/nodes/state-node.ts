@@ -9,20 +9,14 @@ import { ContentNode } from './content-node'
 export class StateNode extends ContentNode {
     protected children: ContentNode[] = []
 
-    /** True when this node's segment is a live view over a real stream. */
-    attached: boolean = false
-
-    constructor(arg?: PdfPage | ArraySegment<ContentOp>, page?: PdfPage) {
-        if (arg instanceof ArraySegment) {
-            super(arg, page)
-            this.attached = true
-        } else {
-            super(undefined, arg)
-        }
+    constructor(page?: PdfPage) {
+        super(undefined, page)
     }
 
     getLocalTransform(): Matrix {
-        const lastCm = this.ops.findLast((x) => x instanceof SetMatrixOp)
+        const lastCm = this.ops.findLast(
+            (x: ContentOp) => x instanceof SetMatrixOp,
+        )
         if (lastCm) return lastCm.matrix
         return Matrix.identity()
     }
@@ -62,22 +56,12 @@ export class StateNode extends ContentNode {
         })
     }
 
-    /**
-     * Ops emitted for this state node.
-     * - Attached: the segment already contains q + children + Q (or the entire
-     *   stream for root), so return it verbatim.
-     * - Detached: synthesize `q ... children.ops ... Q` for serialization.
-     */
     override get ops(): ArraySegment<ContentOp> {
-        if (this.attached) return this._ops
-        // Detached: build a fresh standalone segment containing bracket ops.
         const flat: ContentOp[] = [new SaveStateOp()]
         for (const child of this.children) {
             for (const op of child.ops) flat.push(op)
         }
         flat.push(new RestoreStateOp())
-        // Push into the detached segment so callers treat it like ops.
-        // (Replaces any prior synthetic contents.)
         this._ops.replaceAll(flat)
         return this._ops
     }

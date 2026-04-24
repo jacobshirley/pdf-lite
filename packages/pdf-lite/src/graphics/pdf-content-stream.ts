@@ -17,7 +17,7 @@ import {
     GraphicsBlock,
     StateNode,
     TextBlock,
-    TextNode,
+    TextRun,
     VirtualTextBlock,
 } from './nodes'
 import { ArraySegment, MultiArray } from '../utils/arrays'
@@ -27,7 +27,7 @@ export {
     GraphicsBlock,
     StateNode,
     TextBlock,
-    TextNode,
+    TextRun,
     VirtualTextBlock,
 }
 
@@ -280,7 +280,7 @@ export class PdfContents extends PdfIndirectObject<
 
     /**
      * Regroup text blocks by visual line position.
-     * This converts positioning operators (Td, TD) to absolute matrices (Tm) for each segment.
+     * This converts positioning operators (Td, TD) to absolute matrices (Tm) for each run.
      */
     regroupTextBlocksByLine(): VirtualTextBlock[] {
         return VirtualTextBlock.regroupTextBlocks(this.textBlocks)
@@ -308,7 +308,7 @@ export class PdfContents extends PdfIndirectObject<
         ops: ContentOp[],
         page?: PdfPage,
         /** When supplied, TextBlocks are created as attached views over this
-         *  backing array so that segment mutations flow through to the source. */
+         *  backing array so that run mutations flow through to the source. */
         backing?: MultiArray<ContentOp>,
     ): StateNode {
         const root = new StateNode(page)
@@ -319,7 +319,7 @@ export class PdfContents extends PdfIndirectObject<
         let graphicsOps: (PaintOp | PathOp | ColorOp)[] = []
         let currentState: StateNode = root
         let inTextBlock = false
-        // Track the previous TextBlock so segments can inherit font state
+        // Track the previous TextBlock so runs can inherit font state
         // across BT/ET boundaries without modifying the original ops.
         let lastTextBlock: TextBlock | undefined
         // Save/restore lastTextBlock along with the graphics state stack
@@ -344,18 +344,18 @@ export class PdfContents extends PdfIndirectObject<
                 // provided, otherwise detached (copies ops).
                 let block: TextBlock
                 if (backing && btOp) {
-                    const segment = new ArraySegment<ContentOp>(
+                    const run = new ArraySegment<ContentOp>(
                         backing,
                         btOp,
                         op,
                         0, // include BT
                         1, // include ET
                     )
-                    block = new TextBlock(segment, undefined, lastTextBlock)
+                    block = new TextBlock(run, undefined, lastTextBlock)
                 } else {
                     block = new TextBlock(page, textOps, lastTextBlock)
                 }
-                if (block.getSegments().length > 0) {
+                if (block.getRuns().length > 0) {
                     currentState.addChild(block)
                     lastTextBlock = block
                 }

@@ -29,11 +29,11 @@ import { ContentNode } from './content-node'
 import { ContentOp } from '../ops'
 import { CMYKColor, Color, GrayColor, RGBColor } from '../color'
 
-export class TextNode extends ContentNode {
-    prev?: TextNode
+export class TextRun extends ContentNode {
+    prev?: TextRun
 
     /**
-     * Build an authored TextNode from structured options. Emits Tf
+     * Build an authored TextRun from structured options. Emits Tf
      * (font + size), an optional fill-colour op, a positioning op, then
      * a Tj/TJ show op encoded via the font.  The `font` PdfFont is
      * cached on the node so `.text =` writes re-encode correctly
@@ -52,7 +52,7 @@ export class TextNode extends ContentNode {
         renderingMode?: number
         /** Line width (used with rendering mode 2 for faux-bold stroke). */
         lineWidth?: number
-    }): TextNode {
+    }): TextRun {
         const ops: ContentOp[] = [
             SetFontOp.create(opts.font.resourceName, opts.fontSize),
         ]
@@ -75,13 +75,13 @@ export class TextNode extends ContentNode {
         // streams traditionally use simple `Tj` — callers relying on
         // byte-level output shape should get that.
         ops.push(ShowTextOp.create(opts.font.encode(opts.text)))
-        const node = new TextNode(ops)
+        const node = new TextRun(ops)
         node._fontOverride = opts.font
         return node
     }
 
     /**
-     * Compute the new local Tm that a segment should have after a
+     * Compute the new local Tm that a run should have after a
      * world-space shift of (dx, dy).  Pure — no side effects.
      */
     computeShift(dx: number, dy: number): Matrix | null {
@@ -107,7 +107,7 @@ export class TextNode extends ContentNode {
 
     /**
      * Compute the local Tm that would produce the given world transform for
-     * `seg`, accounting for its parent's composed transform.  Pure.
+     * `run`, accounting for its parent's composed transform.  Pure.
      */
     computeLocalFromWorld(targetWorld: Matrix): Matrix | null {
         const currentWorld = this.getWorldTransform()
@@ -121,7 +121,7 @@ export class TextNode extends ContentNode {
     }
 
     /**
-     * Apply a pre-computed local Tm to a segment, replacing its
+     * Apply a pre-computed local Tm to a run, replacing its
      * positioning ops and rebuilding its parent TextBlock.
      */
     applyShift(newLocal: Matrix): void {
@@ -165,7 +165,7 @@ export class TextNode extends ContentNode {
                 const insertIdx = this.ops.indexOf(newTmOp)
                 this.addOp(tlOps, insertIdx)
             }
-            // Parent block's ops getter auto-syncs with segments
+            // Parent block's ops getter auto-syncs with runs
             return
         }
 
@@ -184,7 +184,7 @@ export class TextNode extends ContentNode {
                 o instanceof ShowTextNextLineSpacingOp,
         )
         this.addOp(newTmOp, showIdx === -1 ? 0 : showIdx)
-        // Parent block's ops getter auto-syncs with segments
+        // Parent block's ops getter auto-syncs with runs
     }
 
     override get page(): PdfPage | undefined {
@@ -378,11 +378,11 @@ export class TextNode extends ContentNode {
             return ShowTextOp.create(this.font.encode(entries[0].text))
         }
 
-        const segments: ShowTextSegment[] = entries.map((e) =>
+        const runs: ShowTextSegment[] = entries.map((e) =>
             'kern' in e ? new PdfNumber(e.kern) : this.font.encode(e.text),
         )
 
-        return ShowTextArrayOp.create(segments)
+        return ShowTextArrayOp.create(runs)
     }
 
     set text(newText: string) {
@@ -394,12 +394,12 @@ export class TextNode extends ContentNode {
     }
 
     /**
-     * Compute the text-space advance width of this segment's show operator.
+     * Compute the text-space advance width of this run's show operator.
      * After Tj/TJ, the text position advances by this amount.
      *
      * For Tj: sum of glyph widths, plus Tc per glyph and Tw per space.
-     * For TJ: same, summed across string segments, with each numeric
-     *   segment `n` contributing `-n/1000 * fontSize` (per PDF spec).
+     * For TJ: same, summed across string runs, with each numeric
+     *   run `n` contributing `-n/1000 * fontSize` (per PDF spec).
      */
     getTextAdvance(): number {
         const fontSize = this.fontSize
@@ -437,14 +437,14 @@ export class TextNode extends ContentNode {
                 if (operand) total += measureOperand(operand)
             } else if (op instanceof ShowTextArrayOp) {
                 sawShowOp = true
-                for (const segment of op.segments) {
-                    if (segment instanceof PdfNumber) {
+                for (const run of op.segments) {
+                    if (run instanceof PdfNumber) {
                         // TJ numeric entries are kern adjustments in
                         // thousandths of a unit of text space — they
                         // *reduce* the advance.
-                        total -= (segment.value / 1000) * fontSize
+                        total -= (run.value / 1000) * fontSize
                     } else {
-                        total += measureOperand(segment)
+                        total += measureOperand(run)
                     }
                 }
             }
@@ -452,7 +452,7 @@ export class TextNode extends ContentNode {
 
         if (sawShowOp) return total
 
-        // Fallback for segments without an explicit show op: estimate from
+        // Fallback for runs without an explicit show op: estimate from
         // `this.text` using a rough average glyph width.
         if (this.text) {
             return this.text.length * fontSize * 0.6
@@ -462,7 +462,7 @@ export class TextNode extends ContentNode {
 
     /**
      * Resolve the text matrix (Tm) and text line matrix (Tlm) at the START
-     * of this segment's text rendering.
+     * of this run's text rendering.
      * - Tm: the actual position where glyphs are placed
      * - Tlm: the base for Td/TD/T* calculations (not advanced by text rendering)
      */
@@ -477,14 +477,14 @@ export class TextNode extends ContentNode {
         )
 
         // Per PDF spec, BT resets Tm and Tlm to identity.  Only inherit the
-        // text matrix from a previous segment when it belongs to the **same**
+        // text matrix from a previous run when it belongs to the **same**
         // TextBlock (same BT…ET pair).  The `prev` link may cross block
         // boundaries for graphics-state inheritance (font, Tc, Tw), but the
         // text matrix must not leak across BT boundaries.
         const sameBlock = this.prev && this.prev.parent === this.parent
 
         if (!hasAbsolutePositioning && sameBlock) {
-            // Inherit from previous segment for relative positioning
+            // Inherit from previous run for relative positioning
             const prevState = this.prev!.resolveTextState()
             const prevAdvance = this.prev!.getTextAdvance()
             tm = prevState.tm.translate(prevAdvance, 0)
@@ -495,7 +495,7 @@ export class TextNode extends ContentNode {
             tlm = Matrix.identity()
         }
 
-        // Process positioning operators in this segment
+        // Process positioning operators in this run
         for (const op of this.ops) {
             if (op instanceof SetTextMatrixOp) {
                 // Tm is absolute — sets both Tm and Tlm, ignoring inheritance

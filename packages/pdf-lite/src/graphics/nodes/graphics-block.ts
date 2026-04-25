@@ -126,6 +126,35 @@ export class GraphicsBlock extends ContentNode {
         this._ops.push(SetFillColorRGBOp.create(r, g, b))
     }
 
+    moveBy(dx: number, dy: number): void {
+        for (const op of this.ops) {
+            if (op instanceof MoveToOp || op instanceof LineToOp) {
+                op.x += dx
+                op.y += dy
+            } else if (op instanceof RectangleOp) {
+                op.x += dx
+                op.y += dy
+            } else if (op instanceof CurveToOp) {
+                op.x1 += dx
+                op.y1 += dy
+                op.x2 += dx
+                op.y2 += dy
+                op.x3 += dx
+                op.y3 += dy
+            } else if (op instanceof CurveToV) {
+                op.x2 += dx
+                op.y2 += dy
+                op.x3 += dx
+                op.y3 += dy
+            } else if (op instanceof CurveToY) {
+                op.x1 += dx
+                op.y1 += dy
+                op.x3 += dx
+                op.y3 += dy
+            }
+        }
+    }
+
     getLocalTransform(): Matrix {
         return Matrix.identity()
     }

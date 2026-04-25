@@ -59,6 +59,11 @@ type Props = {
         dx: number,
         dy: number,
     ) => void
+    onGraphicsBlockPositionChange: (
+        blockId: string,
+        dx: number,
+        dy: number,
+    ) => void
     onBackgroundClick: () => void
     onPageDrop: (
         e: React.DragEvent,
@@ -106,6 +111,7 @@ export function CanvasPanel({
     onTextEditCommit,
     onTextEditCancel,
     onTextBlockPositionChange,
+    onGraphicsBlockPositionChange,
     onBackgroundClick,
     onPageDrop,
     onRemovePage,
@@ -474,8 +480,8 @@ export function CanvasPanel({
                                                     }
                                                 }}
                                             >
-                                                <div className="relative inline-block" style={{ 
-                                                    transform: `scale(${zoomLevel})`, 
+                                                <div className="relative inline-block overflow-hidden" style={{
+                                                    transform: `scale(${zoomLevel})`,
                                                     transformOrigin: 'top left',
                                                     marginRight: `${(zoomLevel - 1) * 100}%`,
                                                     marginBottom: `${(zoomLevel - 1) * 100}%`
@@ -558,6 +564,9 @@ export function CanvasPanel({
                                                                     }
                                                                     graphicsBlock={
                                                                         graphicsBlock
+                                                                    }
+                                                                    onPositionChange={
+                                                                        onGraphicsBlockPositionChange
                                                                     }
                                                                 />
                                                             ),

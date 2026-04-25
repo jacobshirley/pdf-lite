@@ -171,6 +171,10 @@ export type WorkerMethods = {
         args: { id: string }
         result: RemoveGraphicsBlockResult
     }
+    moveGraphicsBlock: {
+        args: { id: string; dx: number; dy: number }
+        result: GraphicsBlockDTO
+    }
     editTextBlock: {
         args: { id: string; text: string }
         result: TextBlockDTO

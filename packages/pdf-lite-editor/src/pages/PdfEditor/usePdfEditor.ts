@@ -494,6 +494,27 @@ export function usePdfEditor() {
         }
     }
 
+    const handleGraphicsBlockPositionChange = async (
+        blockId: string,
+        dx: number,
+        dy: number,
+    ) => {
+        try {
+            const updated = await client.call('moveGraphicsBlock', {
+                id: blockId,
+                dx,
+                dy,
+            })
+            setExtractedGraphicsBlocks((prev) =>
+                prev.map((b) => (b.id === updated.id ? updated : b)),
+            )
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error moving graphics block:', error)
+        }
+    }
+
     const handleAddTextBlock = async (options?: {
         pageNumber?: number
         x?: number
@@ -1027,6 +1048,7 @@ export function usePdfEditor() {
         canRedo,
         handleColorChange,
         handleTextBlockPositionChange,
+        handleGraphicsBlockPositionChange,
         handleRemoveField,
         handleAddField,
         handleAddTextBlock,

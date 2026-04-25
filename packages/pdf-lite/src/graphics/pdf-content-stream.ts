@@ -395,7 +395,7 @@ export class PdfContents extends PdfIndirectObject<
             }
 
             if (op instanceof StateOp) {
-                currentState.ops.push(op)
+                currentState.addDirectOp(op)
                 continue
             }
 

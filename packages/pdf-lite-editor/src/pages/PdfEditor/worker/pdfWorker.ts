@@ -24,6 +24,7 @@ import {
 import { RGBColor } from 'pdf-lite/graphics/color/rgb-color'
 import type { GraphicsBlock as GraphicsBlockType } from 'pdf-lite'
 import type {
+    AddGraphicsBlockOptions,
     CloneFieldResult,
     ExtractResult,
     FieldDTO,
@@ -718,6 +719,42 @@ const handlers: {
             page.width,
         )
 
+        saveToHistory()
+        return result
+    },
+
+    moveGraphicsBlock({ id, dx, dy }) {
+        const block = graphicsBlockRefs.get(id)
+        if (!block || !pdfDoc) throw new Error(`Graphics block ${id} not found`)
+        block.moveBy(dx, dy)
+        const pages = pdfDoc.pages.toArray()
+        const blockPage = block.page
+        let pageNumber = 1
+        let pageHeight = 792
+        let pageWidth = 612
+        if (blockPage) {
+            const idx = pages.findIndex((p) => p === blockPage)
+            if (idx !== -1) {
+                pageNumber = idx + 1
+                pageHeight = blockPage.height
+                pageWidth = blockPage.width
+            }
+        }
+        saveToHistory()
+        return graphicsBlockToDTO(block, id, pageNumber, pageHeight, pageWidth)
+    },
+
+    addGraphicsBlock({
+        options: _options,
+    }: {
+        options: AddGraphicsBlockOptions
+    }): GraphicsBlockDTO {
+        throw new Error('addGraphicsBlock not yet implemented')
+    },
+
+    removeGraphicsBlock({ id }) {
+        graphicsBlockRefs.delete(id)
+        const result: RemoveGraphicsBlockResult = { removedId: id }
         saveToHistory()
         return result
     },

@@ -99,6 +99,9 @@ export function PdfEditor() {
                     onTextBlockPositionChange={
                         editor.handleTextBlockPositionChange
                     }
+                    onGraphicsBlockPositionChange={
+                        editor.handleGraphicsBlockPositionChange
+                    }
                     onBackgroundClick={editor.handleBackgroundClick}
                     onPageDrop={editor.handlePageDrop}
                     onRemovePage={editor.handleRemovePage}

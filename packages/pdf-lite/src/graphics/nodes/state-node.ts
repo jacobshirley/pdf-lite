@@ -8,17 +8,24 @@ import { ContentNode } from './content-node'
 
 export class StateNode extends ContentNode {
     protected children: ContentNode[] = []
+    private readonly _directOps: ContentOp[] = []
 
     constructor(page?: PdfPage) {
         super(undefined, page)
     }
 
+    addDirectOp(op: ContentOp): void {
+        this._directOps.push(op)
+    }
+
     getLocalTransform(): Matrix {
-        const lastCm = this.ops.findLast(
-            (x: ContentOp) => x instanceof SetMatrixOp,
-        )
-        if (lastCm) return lastCm.matrix
-        return Matrix.identity()
+        let matrix = Matrix.identity()
+        for (const op of this._directOps) {
+            if (op instanceof SetMatrixOp) {
+                matrix = matrix.multiply(op.matrix)
+            }
+        }
+        return matrix
     }
 
     addChild(node: ContentNode): void {
@@ -57,7 +64,7 @@ export class StateNode extends ContentNode {
     }
 
     override get ops(): ArraySegment<ContentOp> {
-        const flat: ContentOp[] = [new SaveStateOp()]
+        const flat: ContentOp[] = [new SaveStateOp(), ...this._directOps]
         for (const child of this.children) {
             for (const op of child.ops) flat.push(op)
         }

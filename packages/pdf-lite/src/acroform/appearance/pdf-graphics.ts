@@ -50,11 +50,6 @@ export class PdfGraphics {
 
     beginText(): this {
         this.lines.push('BT')
-        // Re-emit font inside text object — some viewers (e.g. pdfjs)
-        // require Tf inside BT..ET before any text rendering operator.
-        if (this.defaultAppearance) {
-            this.lines.push(this.defaultAppearance.toString())
-        }
         return this
     }
 

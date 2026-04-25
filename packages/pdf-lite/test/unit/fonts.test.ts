@@ -325,12 +325,12 @@ describe('Font Embedding', () => {
                 stemV: 80,
             }
 
-            // Unicode mappings: CID -> Unicode code point
+            // unicodeMappings is Map<Unicode, GlyphID>
             const unicodeMappings = new Map<number, number>([
-                [1, 0x0041], // CID 1 -> 'A'
-                [2, 0x0042], // CID 2 -> 'B'
-                [3, 0x0043], // CID 3 -> 'C'
-                [100, 0x4e2d], // CID 100 -> '中'
+                [0x0041, 1], // Unicode 'A' -> GID 1
+                [0x0042, 2], // Unicode 'B' -> GID 2
+                [0x0043, 3], // Unicode 'C' -> GID 3
+                [0x4e2d, 100], // Unicode '中' -> GID 100
             ])
 
             const font = PdfFont.fromType0Data(
@@ -342,6 +342,62 @@ describe('Font Embedding', () => {
             font.resourceName = 'F1'
 
             expect(font.resourceName).toBe('F1')
+        })
+
+        it('should generate identity ToUnicode CMap entries (CID maps to same Unicode)', () => {
+            const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
+
+            const descriptor: UnicodeFontDescriptor = {
+                fontName: 'IdentityCMapFont',
+                fontFamily: 'Test',
+                fontWeight: 400,
+                flags: 32,
+                fontBBox: [-200, -200, 1000, 900],
+                italicAngle: 0,
+                ascent: 900,
+                descent: -200,
+                capHeight: 700,
+                stemV: 80,
+            }
+
+            // unicodeMappings: Map<Unicode, GlyphID>
+            const unicodeMappings = new Map<number, number>([
+                [0x0041, 36], // 'A' -> GID 36
+                [0x0042, 37], // 'B' -> GID 37
+                [0x017b, 200], // 'Ż' -> GID 200
+            ])
+
+            const font = PdfFont.fromType0Data(
+                mockFontData,
+                'IdentityCMapFont',
+                descriptor,
+                unicodeMappings,
+            )
+
+            // Access the ToUnicode stream's uncompressed content.
+            // The font dict has ToUnicode -> PdfObjectReference whose target
+            // is a PdfIndirectObject wrapping a PdfStream.  Walk through
+            // document.add to wire up resolvers, then resolve.
+            const document = new PdfDocument()
+            document.add(font)
+            const toUnicodeRef = font.content.get('ToUnicode') as any
+            const toUnicodeObj = toUnicodeRef.resolve()
+            const cmapText = new TextDecoder().decode(
+                toUnicodeObj.content.decode(),
+            )
+
+            // ToUnicode CMap should have identity mappings:
+            // CID 0041 -> Unicode 0041 (not GID 0024)
+            // CID 0042 -> Unicode 0042 (not GID 0025)
+            // CID 017B -> Unicode 017B (not GID 00C8)
+            expect(cmapText).toContain('<0041> <0041>')
+            expect(cmapText).toContain('<0042> <0042>')
+            expect(cmapText).toContain('<017B> <017B>')
+
+            // Must NOT contain GID values in the ToUnicode output column
+            expect(cmapText).not.toContain('<0041> <0024>')
+            expect(cmapText).not.toContain('<0042> <0025>')
+            expect(cmapText).not.toContain('<017B> <00C8>')
         })
 
         it('should generate CIDToGIDMap binary stream with unicode mappings', async () => {

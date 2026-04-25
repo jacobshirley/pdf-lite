@@ -876,7 +876,14 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
 
         // Create ToUnicode CMap if mappings provided
         if (unicodeMappings && unicodeMappings.size > 0) {
-            const cmapContent = PdfFont.generateToUnicodeCMap(unicodeMappings)
+            // unicodeMappings is Map<Unicode, GID> but ToUnicode needs
+            // Map<CID, Unicode>.  Since CID = Unicode codepoint in our
+            // Identity-H scheme, the ToUnicode is an identity mapping.
+            const toUnicodeMap = new Map<number, number>()
+            for (const unicode of unicodeMappings.keys()) {
+                toUnicodeMap.set(unicode, unicode)
+            }
+            const cmapContent = PdfFont.generateToUnicodeCMap(toUnicodeMap)
             const cmapStream = new PdfStream({
                 header: new PdfDictionary(),
                 original: new TextEncoder().encode(cmapContent),

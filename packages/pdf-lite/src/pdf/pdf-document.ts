@@ -1351,6 +1351,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             // Third pass: reuse tokens from second pass since xref should now be stable
             // (xref binary size should not change because W widths and entry count are same).
             this.calculateOffsets(tokens)
+            this.updateRevisions()
         } finally {
             this._updating = false
         }
@@ -1407,6 +1408,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns A cloned PdfDocument instance
      */
     cloneImpl(): this {
+        this.update()
         const clonedRevisions = this.revisions.map((rev) => rev.clone())
         const cloned = new PdfDocument({
             revisions: clonedRevisions,

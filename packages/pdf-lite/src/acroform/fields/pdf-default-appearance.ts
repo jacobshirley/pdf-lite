@@ -1,4 +1,5 @@
 import { PdfString } from '../../core/objects/pdf-string.js'
+import { PdfName } from '../../core/objects/pdf-name.js'
 import { encodeToPDFDocEncoding } from '../../utils/encodeToPDFDocEncoding.js'
 import { GrayColor } from '../../graphics/color/gray-color.js'
 import { RGBColor } from '../../graphics/color/rgb-color.js'
@@ -18,7 +19,7 @@ export class PdfDefaultAppearance extends PdfString {
     private _colorOp: string
 
     constructor(fontName: string, fontSize: number, colorOp: string) {
-        super(`/${fontName} ${fontSize} Tf ${colorOp}`)
+        super(`/${PdfName.escapeName(fontName)} ${fontSize} Tf ${colorOp}`)
         this._fontName = fontName
         this._fontSize = fontSize
         this._colorOp = colorOp
@@ -57,7 +58,7 @@ export class PdfDefaultAppearance extends PdfString {
     }
 
     toString(): string {
-        return `/${this._fontName} ${this._fontSize} Tf ${this._colorOp}`
+        return `/${PdfName.escapeName(this._fontName)} ${this._fontSize} Tf ${this._colorOp}`
     }
 
     /**
@@ -91,10 +92,10 @@ export class PdfDefaultAppearance extends PdfString {
     }
 
     static parse(da: string): PdfDefaultAppearance | null {
-        const fontMatch = da.match(/\/([\w-]+)\s+([\d.]+)\s+Tf/)
+        const fontMatch = da.match(/\/([\S]+)\s+([\d.]+)\s+Tf/)
         if (!fontMatch) return null
 
-        const fontName = fontMatch[1]
+        const fontName = PdfName.unescapeName(fontMatch[1])
         const fontSize = parseFloat(fontMatch[2]) || 0
 
         let colorOp = '0 g'

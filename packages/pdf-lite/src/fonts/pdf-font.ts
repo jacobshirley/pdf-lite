@@ -30,6 +30,7 @@ import CourierObliqueAfm from './vendor/Adobe/Core14/Courier-Oblique.json'
 import CourierBoldObliqueAfm from './vendor/Adobe/Core14/Courier-BoldOblique.json'
 import SymbolAfm from './vendor/Adobe/Core14/Symbol.json'
 import ZapfDingbatsAfm from './vendor/Adobe/Core14/ZapfDingbats.json'
+import { stringToBytes } from '../utils/stringToBytes.js'
 
 type PdfFontDictionary = PdfDictionary<{
     Type: PdfName<'Font'>
@@ -111,8 +112,16 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
                 )
             }
             this.content = fontObj.content as PdfFontDictionary
-            this.resourceName = fontObj.reference.key
             this.metrics = PdfFontDescriptor.fromPdfFontDict(this.content)
+            // Preserve resourceName from PdfFont sources; fall back to
+            // reference key for raw indirect objects already in a document,
+            // and finally generate a fresh name for unassigned objects.
+            this.resourceName =
+                fontObj instanceof PdfFont
+                    ? fontObj.resourceName
+                    : fontObj.objectNumber >= 0
+                      ? fontObj.reference.key
+                      : PdfFont.nextResourceName()
             return
         }
 
@@ -1137,7 +1146,7 @@ export class PdfFont extends PdfIndirectObject<PdfFontDictionary> {
             const cmapContent = PdfFont.generateToUnicodeCMap(cidToUnicode)
             const cmapStream = new PdfStream({
                 header: new PdfDictionary(),
-                original: new TextEncoder().encode(cmapContent),
+                original: stringToBytes(cmapContent),
             })
             cmapStream.addFilter('FlateDecode')
 

@@ -7,21 +7,25 @@ import { Label } from '@/components/shadcn/label'
 import {
     CheckSquare,
     ChevronDown,
+    Circle,
     Download,
     Eye,
     EyeOff,
     FilePlus,
     FilePlus2,
     FolderOpen,
+    Image,
     Lock,
+    Minus,
     PenLine,
-    Plus,
     Redo2,
+    Square,
     TextCursorInput,
     Type,
     Undo2,
 } from 'lucide-react'
 import type { EncryptionAlgorithm, FieldType } from '../../types'
+import type { GraphicsShapeType } from '../../worker/protocol'
 
 type Props = {
     pdfLoaded: boolean
@@ -31,6 +35,10 @@ type Props = {
     onAddText: () => void
     onTextDragStart: () => void
     onTextDragEnd: () => void
+    onAddGraphics: (shape: GraphicsShapeType) => void
+    onAddImage: () => void
+    imageInputRef: React.RefObject<HTMLInputElement | null>
+    onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
     onNew: () => void
     onOpen: () => void
     onExport: () => void
@@ -57,6 +65,10 @@ export function Toolbar({
     onAddText,
     onTextDragStart,
     onTextDragEnd,
+    onAddGraphics,
+    onAddImage,
+    imageInputRef,
+    onImageUpload,
     onNew,
     onOpen,
     onExport,
@@ -156,6 +168,37 @@ export function Toolbar({
                                 onClick={() => onAddField('Signature')}
                                 onDragStart={() => onFieldDragStart('Signature')}
                                 onDragEnd={onFieldDragEnd}
+                            />
+                            <CompactButton
+                                icon={Square}
+                                label="Rectangle"
+                                onClick={() => onAddGraphics('Rectangle')}
+                                disabled={!pdfLoaded}
+                            />
+                            <CompactButton
+                                icon={Circle}
+                                label="Ellipse"
+                                onClick={() => onAddGraphics('Ellipse')}
+                                disabled={!pdfLoaded}
+                            />
+                            <CompactButton
+                                icon={Minus}
+                                label="Line"
+                                onClick={() => onAddGraphics('Line')}
+                                disabled={!pdfLoaded}
+                            />
+                            <CompactButton
+                                icon={Image}
+                                label="Image"
+                                onClick={onAddImage}
+                                disabled={!pdfLoaded}
+                            />
+                            <input
+                                ref={imageInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/gif,image/webp"
+                                onChange={onImageUpload}
+                                className="hidden"
                             />
                         </div>
                     </div>

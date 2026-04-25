@@ -13,16 +13,31 @@ import {
     PdfV2SecurityHandler,
     PdfV4SecurityHandler,
     PdfV5SecurityHandler,
+    GraphicsBlock,
     TextBlock,
     TextRun,
     VirtualTextBlock,
+    isJpeg,
+    getJpegDimensions,
 } from 'pdf-lite'
 import {
     PdfPasswordProtectedError,
     PdfInvalidPasswordError,
 } from 'pdf-lite/errors'
 import { RGBColor } from 'pdf-lite/graphics/color/rgb-color'
-import type { GraphicsBlock as GraphicsBlockType } from 'pdf-lite'
+import {
+    SetFillColorRGBOp,
+    SetStrokeColorRGBOp,
+} from 'pdf-lite/graphics/ops/color'
+import { FillOp, StrokeOp } from 'pdf-lite/graphics/ops/paint'
+import {
+    MoveToOp,
+    LineToOp,
+    RectangleOp,
+    CurveToOp,
+    CurveToV,
+    CurveToY,
+} from 'pdf-lite/graphics/ops/path'
 import type {
     AddGraphicsBlockOptions,
     CloneFieldResult,
@@ -30,6 +45,7 @@ import type {
     FieldDTO,
     FontRef,
     GraphicsBlockDTO,
+    GraphicsShapeType,
     Rect4,
     RemoveFieldResult,
     RemoveGraphicsBlockResult,
@@ -46,6 +62,9 @@ import { PdfContentStreamObject } from 'pdf-lite/graphics/pdf-content-stream'
 import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
 import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
 import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
+import { StateNode } from 'pdf-lite/graphics/nodes/state-node'
+import { ImageNode } from 'pdf-lite/graphics/nodes/image-node'
+import { SetMatrixOp } from 'pdf-lite/graphics/ops/state'
 import type { PdfPage } from 'pdf-lite/pdf/pdf-page'
 import type { ContentNode } from 'pdf-lite/graphics/nodes/content-node'
 
@@ -55,7 +74,11 @@ let pdfDoc: PdfDocument | null = null
 
 const fieldRefs = new Map<string, PdfFormField>()
 const textBlockRefs = new Map<string, TextBlock>()
-const graphicsBlockRefs = new Map<string, GraphicsBlockType>()
+const graphicsBlockRefs = new Map<string, GraphicsBlock>()
+const graphicsBlockMeta = new Map<
+    string,
+    { shapeType?: GraphicsShapeType; colorHex?: string; fill?: boolean }
+>()
 
 let nextFieldId = 0
 let nextTextBlockId = 0
@@ -341,13 +364,47 @@ function textBlockToDTO(
 }
 
 function graphicsBlockToDTO(
-    block: GraphicsBlockType,
+    block: GraphicsBlock,
     id: string,
     pageNumber: number,
     pageHeight: number,
     pageWidth: number,
 ): GraphicsBlockDTO {
     const bbox = block.getWorldBoundingBox()
+    const meta = graphicsBlockMeta.get(id)
+
+    // Try to detect color from ops if no metadata stored
+    let colorHex = meta?.colorHex
+    if (!colorHex) {
+        for (const op of block.ops) {
+            if (
+                op instanceof SetFillColorRGBOp ||
+                op instanceof SetStrokeColorRGBOp
+            ) {
+                const r = Math.round(op.r * 255)
+                const g = Math.round(op.g * 255)
+                const b = Math.round(op.b * 255)
+                colorHex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+                break
+            }
+        }
+    }
+
+    // Try to detect fill from ops
+    let fill = meta?.fill
+    if (fill === undefined) {
+        for (const op of block.ops) {
+            if (op instanceof FillOp) {
+                fill = true
+                break
+            }
+            if (op instanceof StrokeOp) {
+                fill = false
+                break
+            }
+        }
+    }
+
     return {
         id,
         page: pageNumber,
@@ -359,6 +416,9 @@ function graphicsBlockToDTO(
             width: bbox.width,
             height: bbox.height,
         },
+        shapeType: meta?.shapeType,
+        colorHex,
+        fill,
     }
 }
 
@@ -394,9 +454,11 @@ function extractAll(): ExtractResult {
     fieldRefs.clear()
     textBlockRefs.clear()
     graphicsBlockRefs.clear()
+    graphicsBlockMeta.clear()
     nextFieldId = 0
     nextTextBlockId = 0
     nextGraphicsBlockId = 0
+    nextImageXObjectId = 0
 
     const pages = pdfDoc.pages.toArray()
     const fields: FieldDTO[] = []
@@ -744,19 +806,290 @@ const handlers: {
         return graphicsBlockToDTO(block, id, pageNumber, pageHeight, pageWidth)
     },
 
+    resizeGraphicsBlock({ id, newWidth, newHeight }) {
+        const block = graphicsBlockRefs.get(id)
+        if (!block || !pdfDoc) throw new Error(`Graphics block ${id} not found`)
+
+        if (block instanceof ImageNode) {
+            // Images: resize by changing the cm matrix on the parent StateNode
+            if (block.parent instanceof StateNode) {
+                for (const op of block.parent.directOps) {
+                    if (op instanceof SetMatrixOp) {
+                        op.a = newWidth
+                        op.d = newHeight
+                        break
+                    }
+                }
+            }
+        } else {
+            // Regular shapes: scale all coordinate ops relative to the bounding box origin
+            const bbox = block.getLocalBoundingBox()
+            if (bbox.width > 0 && bbox.height > 0) {
+                const sx = newWidth / bbox.width
+                const sy = newHeight / bbox.height
+                const ox = bbox.x
+                const oy = bbox.y
+
+                for (const op of block.ops) {
+                    if (op instanceof MoveToOp || op instanceof LineToOp) {
+                        op.x = ox + (op.x - ox) * sx
+                        op.y = oy + (op.y - oy) * sy
+                    } else if (op instanceof RectangleOp) {
+                        op.x = ox + (op.x - ox) * sx
+                        op.y = oy + (op.y - oy) * sy
+                        op.width = op.width * sx
+                        op.height = op.height * sy
+                    } else if (op instanceof CurveToOp) {
+                        op.x1 = ox + (op.x1 - ox) * sx
+                        op.y1 = oy + (op.y1 - oy) * sy
+                        op.x2 = ox + (op.x2 - ox) * sx
+                        op.y2 = oy + (op.y2 - oy) * sy
+                        op.x3 = ox + (op.x3 - ox) * sx
+                        op.y3 = oy + (op.y3 - oy) * sy
+                    } else if (op instanceof CurveToV) {
+                        op.x2 = ox + (op.x2 - ox) * sx
+                        op.y2 = oy + (op.y2 - oy) * sy
+                        op.x3 = ox + (op.x3 - ox) * sx
+                        op.y3 = oy + (op.y3 - oy) * sy
+                    } else if (op instanceof CurveToY) {
+                        op.x1 = ox + (op.x1 - ox) * sx
+                        op.y1 = oy + (op.y1 - oy) * sy
+                        op.x3 = ox + (op.x3 - ox) * sx
+                        op.y3 = oy + (op.y3 - oy) * sy
+                    }
+                }
+            }
+        }
+
+        const pages = pdfDoc.pages.toArray()
+        const blockPage = block.page
+        let pageNumber = 1
+        let pageHeight = 792
+        let pageWidth = 612
+        if (blockPage) {
+            const idx = pages.findIndex((p) => p === blockPage)
+            if (idx !== -1) {
+                pageNumber = idx + 1
+                pageHeight = blockPage.height
+                pageWidth = blockPage.width
+            }
+        }
+        saveToHistory()
+        return graphicsBlockToDTO(block, id, pageNumber, pageHeight, pageWidth)
+    },
+
     addGraphicsBlock({
-        options: _options,
+        options,
     }: {
         options: AddGraphicsBlockOptions
     }): GraphicsBlockDTO {
-        throw new Error('addGraphicsBlock not yet implemented')
+        if (!pdfDoc) throw new Error('No PDF loaded')
+        const pages = pdfDoc.pages.toArray()
+        const targetPageNumber = options.pageNumber ?? 1
+        const page = pages[targetPageNumber - 1]
+        if (!page) throw new Error(`Page ${targetPageNumber} not found`)
+
+        const x = options.x ?? 100
+        const y = options.y ?? page.height - 200
+        const width = options.width ?? 100
+        const height = options.height ?? 100
+        const rgb = options.rgb as [number, number, number] | undefined
+        const fill = options.fill ?? false
+
+        // Image shape uses a completely different embedding path
+        if (options.shape === 'Image') {
+            if (!options.imageBytes)
+                throw new Error('Image bytes are required for Image shape')
+            const imageBytes = options.imageBytes
+            let imgWidth = width
+            let imgHeight = height
+            if (isJpeg(imageBytes)) {
+                const dims = getJpegDimensions(imageBytes)
+                imgWidth = dims.width
+                imgHeight = dims.height
+            }
+            // Scale to fit within a reasonable size (max 200pt on longest side)
+            const maxDim = 200
+            const displayWidth =
+                options.width ??
+                (imgWidth > imgHeight
+                    ? maxDim
+                    : maxDim * (imgWidth / imgHeight))
+            const displayHeight =
+                options.height ??
+                (imgHeight > imgWidth
+                    ? maxDim
+                    : maxDim * (imgHeight / imgWidth))
+
+            const { stream } = embedImageXObject(
+                page,
+                imageBytes,
+                imgWidth,
+                imgHeight,
+                x,
+                y,
+                displayWidth,
+                displayHeight,
+            )
+
+            // Find the live ImageNode from the re-parsed stream
+            const allBlocks = stream.graphicsBlocks
+            const live = allBlocks[allBlocks.length - 1]
+            if (!live)
+                throw new Error('Failed to find embedded image in stream')
+
+            const id = `graphics_block_${nextGraphicsBlockId++}`
+            graphicsBlockRefs.set(id, live)
+            graphicsBlockMeta.set(id, { shapeType: 'Image' })
+
+            const result = graphicsBlockToDTO(
+                live,
+                id,
+                targetPageNumber,
+                page.height,
+                page.width,
+            )
+            saveToHistory()
+            return result
+        }
+
+        let block: GraphicsBlock
+        switch (options.shape) {
+            case 'Rectangle':
+                block = GraphicsBlock.rectangle({
+                    x,
+                    y,
+                    width,
+                    height,
+                    rgb,
+                    fill,
+                })
+                break
+            case 'Ellipse':
+                block = GraphicsBlock.ellipse({
+                    x: x + width / 2,
+                    y: y + height / 2,
+                    radiusX: width / 2,
+                    radiusY: height / 2,
+                    rgb,
+                    fill,
+                })
+                break
+            case 'Line':
+                block = GraphicsBlock.line({
+                    x1: x,
+                    y1: y,
+                    x2: x + width,
+                    y2: y + height,
+                    rgb,
+                })
+                break
+            default:
+                throw new Error(`Unsupported shape: ${options.shape}`)
+        }
+
+        const stream = appendToPageContents(page, block)
+
+        // Grab the live view from the freshly-parsed stream
+        const liveBlocks = stream.graphicsBlocks
+        const live = liveBlocks[liveBlocks.length - 1] ?? block
+
+        const id = `graphics_block_${nextGraphicsBlockId++}`
+        graphicsBlockRefs.set(id, live)
+
+        const colorHex = rgb
+            ? `#${Math.round(rgb[0] * 255)
+                  .toString(16)
+                  .padStart(2, '0')}${Math.round(rgb[1] * 255)
+                  .toString(16)
+                  .padStart(2, '0')}${Math.round(rgb[2] * 255)
+                  .toString(16)
+                  .padStart(2, '0')}`
+            : undefined
+        graphicsBlockMeta.set(id, { shapeType: options.shape, colorHex, fill })
+
+        const result = graphicsBlockToDTO(
+            live,
+            id,
+            targetPageNumber,
+            page.height,
+            page.width,
+        )
+
+        saveToHistory()
+        return result
     },
 
     removeGraphicsBlock({ id }) {
         graphicsBlockRefs.delete(id)
+        graphicsBlockMeta.delete(id)
         const result: RemoveGraphicsBlockResult = { removedId: id }
         saveToHistory()
         return result
+    },
+
+    updateGraphicsBlock({ id, rgb, fill }) {
+        const block = graphicsBlockRefs.get(id)
+        if (!block || !pdfDoc) throw new Error(`Graphics block ${id} not found`)
+
+        if (rgb) {
+            // Remove existing color ops and add new ones
+            const ops = block.ops as unknown as any[]
+            for (let i = ops.length - 1; i >= 0; i--) {
+                if (
+                    ops[i] instanceof SetFillColorRGBOp ||
+                    ops[i] instanceof SetStrokeColorRGBOp
+                ) {
+                    ops.splice(i, 1)
+                }
+            }
+            // Insert color ops at the beginning (before path ops)
+            const strokeOp = SetStrokeColorRGBOp.create(rgb[0], rgb[1], rgb[2])
+            const fillOp = SetFillColorRGBOp.create(rgb[0], rgb[1], rgb[2])
+            ops.unshift(strokeOp, fillOp)
+        }
+
+        if (fill !== undefined) {
+            // Swap paint op: replace stroke with fill or vice versa
+            const ops = block.ops as unknown as any[]
+            for (let i = ops.length - 1; i >= 0; i--) {
+                if (ops[i] instanceof FillOp || ops[i] instanceof StrokeOp) {
+                    ops[i] = fill ? new FillOp() : new StrokeOp()
+                    break
+                }
+            }
+        }
+
+        // Update metadata
+        const meta = graphicsBlockMeta.get(id) ?? {}
+        if (rgb) {
+            meta.colorHex = `#${Math.round(rgb[0] * 255)
+                .toString(16)
+                .padStart(2, '0')}${Math.round(rgb[1] * 255)
+                .toString(16)
+                .padStart(2, '0')}${Math.round(rgb[2] * 255)
+                .toString(16)
+                .padStart(2, '0')}`
+        }
+        if (fill !== undefined) meta.fill = fill
+        graphicsBlockMeta.set(id, meta)
+
+        const pages = pdfDoc.pages.toArray()
+        const blockPage = block.page
+        let pageNumber = 1
+        let pageHeight = 792
+        let pageWidth = 612
+        if (blockPage) {
+            const idx = pages.findIndex((p) => p === blockPage)
+            if (idx !== -1) {
+                pageNumber = idx + 1
+                pageHeight = blockPage.height
+                pageWidth = blockPage.width
+            }
+        }
+
+        saveToHistory()
+        return graphicsBlockToDTO(block, id, pageNumber, pageHeight, pageWidth)
     },
 
     removeTextBlock({ id }) {
@@ -1236,10 +1569,12 @@ const handlers: {
         fieldRefs.clear()
         textBlockRefs.clear()
         graphicsBlockRefs.clear()
+        graphicsBlockMeta.clear()
         signatureCredentials.clear()
         nextFieldId = 0
         nextTextBlockId = 0
         nextGraphicsBlockId = 0
+        nextImageXObjectId = 0
         historyStack.length = 0
         historyIndex = -1
     },

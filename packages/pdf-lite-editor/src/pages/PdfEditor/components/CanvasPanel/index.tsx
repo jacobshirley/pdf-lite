@@ -64,6 +64,15 @@ type Props = {
         dx: number,
         dy: number,
     ) => void
+    onGraphicsBlockResize: (
+        blockId: string,
+        newWidth: number,
+        newHeight: number,
+        dx: number,
+        dy: number,
+    ) => void
+    selectedGraphicsBlockId: string | null
+    onGraphicsBlockSelect: (id: string) => void
     onBackgroundClick: () => void
     onPageDrop: (
         e: React.DragEvent,
@@ -112,6 +121,9 @@ export function CanvasPanel({
     onTextEditCancel,
     onTextBlockPositionChange,
     onGraphicsBlockPositionChange,
+    onGraphicsBlockResize,
+    selectedGraphicsBlockId,
+    onGraphicsBlockSelect,
     onBackgroundClick,
     onPageDrop,
     onRemovePage,
@@ -565,8 +577,17 @@ export function CanvasPanel({
                                                                     graphicsBlock={
                                                                         graphicsBlock
                                                                     }
+                                                                    isSelected={
+                                                                        graphicsBlock.id === selectedGraphicsBlockId
+                                                                    }
                                                                     onPositionChange={
                                                                         onGraphicsBlockPositionChange
+                                                                    }
+                                                                    onResize={
+                                                                        onGraphicsBlockResize
+                                                                    }
+                                                                    onSelect={
+                                                                        onGraphicsBlockSelect
                                                                     }
                                                                 />
                                                             ),

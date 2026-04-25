@@ -1,5 +1,6 @@
 import { CanvasPanel } from './components/CanvasPanel'
 import { FieldPropertiesPanel } from './components/FieldPropertiesPanel'
+import { GraphicsPropertiesPanel } from './components/GraphicsPropertiesPanel'
 import { TextPropertiesPanel } from './components/TextPropertiesPanel'
 import { Toolbar } from './components/Toolbar'
 import { PasswordDialog } from './components/PasswordDialog'
@@ -38,6 +39,10 @@ export function PdfEditor() {
                     onAddText={() => editor.handleAddTextBlock()}
                     onTextDragStart={editor.handleTextDragStart}
                     onTextDragEnd={editor.handleTextDragEnd}
+                    onAddGraphics={editor.handleAddGraphicsBlock}
+                    onAddImage={editor.handleAddImage}
+                    imageInputRef={editor.imageInputRef}
+                    onImageUpload={editor.handleImageUpload}
                     onNew={editor.handleNewPdf}
                     onOpen={editor.handleOpenClick}
                     onExport={editor.handleExportPdf}
@@ -102,6 +107,11 @@ export function PdfEditor() {
                     onGraphicsBlockPositionChange={
                         editor.handleGraphicsBlockPositionChange
                     }
+                    onGraphicsBlockResize={
+                        editor.handleGraphicsBlockResize
+                    }
+                    selectedGraphicsBlockId={editor.selectedGraphicsBlockId}
+                    onGraphicsBlockSelect={editor.handleGraphicsBlockSelect}
                     onBackgroundClick={editor.handleBackgroundClick}
                     onPageDrop={editor.handlePageDrop}
                     onRemovePage={editor.handleRemovePage}
@@ -187,6 +197,24 @@ export function PdfEditor() {
                             }
                             onClose={() => editor.setSelectedTextBlockId(null)}
                         />
+                        </div>
+                    </>
+                )}
+
+                {editor.selectedGraphicsBlock && !editor.selectedFieldId && !editor.selectedTextBlock && (
+                    <>
+                        <div className="fixed right-4 top-4 bottom-4 w-80 z-50">
+                            <GraphicsPropertiesPanel
+                                graphicsBlock={editor.selectedGraphicsBlock}
+                                onColorChange={editor.handleGraphicsBlockColorChange}
+                                onFillChange={editor.handleGraphicsBlockFillChange}
+                                onRemove={() =>
+                                    editor.handleRemoveGraphicsBlock(
+                                        editor.selectedGraphicsBlock!.id,
+                                    )
+                                }
+                                onClose={() => editor.setSelectedGraphicsBlockId(null)}
+                            />
                         </div>
                     </>
                 )}

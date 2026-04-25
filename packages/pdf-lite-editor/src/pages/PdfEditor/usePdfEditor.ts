@@ -7,6 +7,7 @@ import type {
     FieldType,
     FontRef,
 } from './types'
+import type { GraphicsShapeType } from './worker/protocol'
 import { getSharedPdfWorkerClient } from './worker/pdfWorkerClient'
 
 export function usePdfEditor() {
@@ -44,6 +45,9 @@ export function usePdfEditor() {
     const [selectedTextBlockId, setSelectedTextBlockId] = useState<
         string | null
     >(null)
+    const [selectedGraphicsBlockId, setSelectedGraphicsBlockId] = useState<
+        string | null
+    >(null)
     const [pdfVersion, setPdfVersion] = useState<number>(0)
     const [pdfBytes, setPdfBytes] = useState<Uint8Array | undefined>(undefined)
     const [pdfDebugText, setPdfDebugText] = useState<string>('')
@@ -58,6 +62,7 @@ export function usePdfEditor() {
     const [standardFonts, setStandardFonts] = useState<FontRef[]>([])
     const [embeddedFonts, setEmbeddedFonts] = useState<FontRef[]>([])
     const fontInputRef = useRef<HTMLInputElement>(null)
+    const imageInputRef = useRef<HTMLInputElement>(null)
 
     const client =
         typeof Worker !== 'undefined'
@@ -94,8 +99,15 @@ export function usePdfEditor() {
 
     const selectedTextRuns = selectedTextBlock?.runs ?? []
 
+    const selectedGraphicsBlock =
+        extractedGraphicsBlocks.find(
+            (gb) => gb.id === selectedGraphicsBlockId,
+        ) || null
+
     const showRightPane =
-        !!(selectedFieldId && selectedField) || !!selectedTextBlock
+        !!(selectedFieldId && selectedField) ||
+        !!selectedTextBlock ||
+        !!selectedGraphicsBlock
 
     const mergeFieldDTO = (updated: ExtractedField) => {
         setExtractedFields((prev) =>
@@ -127,6 +139,8 @@ export function usePdfEditor() {
 
     const handleFieldSelect = (fieldId: string) => {
         setSelectedFieldId(fieldId)
+        setSelectedTextBlockId(null)
+        setSelectedGraphicsBlockId(null)
     }
 
     const handleFieldPropertyChange = async (
@@ -512,6 +526,38 @@ export function usePdfEditor() {
             updateUndoRedoState()
         } catch (error) {
             console.error('Error moving graphics block:', error)
+        }
+    }
+
+    const handleGraphicsBlockResize = async (
+        blockId: string,
+        newWidth: number,
+        newHeight: number,
+        dx: number,
+        dy: number,
+    ) => {
+        try {
+            // First resize, then move if origin shifted (e.g. from north/west edge drag)
+            const resized = await client.call('resizeGraphicsBlock', {
+                id: blockId,
+                newWidth,
+                newHeight,
+            })
+            let updated = resized
+            if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                updated = await client.call('moveGraphicsBlock', {
+                    id: blockId,
+                    dx,
+                    dy,
+                })
+            }
+            setExtractedGraphicsBlocks((prev) =>
+                prev.map((b) => (b.id === updated.id ? updated : b)),
+            )
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error resizing graphics block:', error)
         }
     }
 
@@ -981,11 +1027,166 @@ export function usePdfEditor() {
         }
         setSelectedFieldId(null)
         setSelectedTextBlockId(null)
+        setSelectedGraphicsBlockId(null)
     }
 
     const handleTextBlockSelect = (id: string) => {
         setSelectedTextBlockId(id)
         setSelectedFieldId(null)
+        setSelectedGraphicsBlockId(null)
+    }
+
+    const handleGraphicsBlockSelect = (id: string) => {
+        setSelectedGraphicsBlockId(id)
+        setSelectedFieldId(null)
+        setSelectedTextBlockId(null)
+    }
+
+    const handleAddGraphicsBlock = async (shape: GraphicsShapeType) => {
+        try {
+            const newBlock = await client.call('addGraphicsBlock', {
+                options: { shape },
+            })
+            setExtractedGraphicsBlocks((prev) => [...prev, newBlock])
+            setSelectedGraphicsBlockId(newBlock.id)
+            setSelectedFieldId(null)
+            setSelectedTextBlockId(null)
+            setShowGraphicsLayer(true)
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error adding graphics block:', error)
+        }
+    }
+
+    const handleRemoveGraphicsBlock = async (id: string) => {
+        try {
+            await client.call('removeGraphicsBlock', { id })
+            setExtractedGraphicsBlocks((prev) =>
+                prev.filter((b) => b.id !== id),
+            )
+            if (selectedGraphicsBlockId === id) {
+                setSelectedGraphicsBlockId(null)
+            }
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error removing graphics block:', error)
+        }
+    }
+
+    const handleGraphicsBlockColorChange = async (hex: string) => {
+        if (!selectedGraphicsBlockId) return
+        const h = hex.replace('#', '')
+        const rgb: [number, number, number] = [
+            parseInt(h.slice(0, 2), 16) / 255,
+            parseInt(h.slice(2, 4), 16) / 255,
+            parseInt(h.slice(4, 6), 16) / 255,
+        ]
+        try {
+            const updated = await client.call('updateGraphicsBlock', {
+                id: selectedGraphicsBlockId,
+                rgb,
+            })
+            setExtractedGraphicsBlocks((prev) =>
+                prev.map((b) => (b.id === updated.id ? updated : b)),
+            )
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error updating graphics color:', error)
+        }
+    }
+
+    const handleGraphicsBlockFillChange = async (fill: boolean) => {
+        if (!selectedGraphicsBlockId) return
+        try {
+            const updated = await client.call('updateGraphicsBlock', {
+                id: selectedGraphicsBlockId,
+                fill,
+            })
+            setExtractedGraphicsBlocks((prev) =>
+                prev.map((b) => (b.id === updated.id ? updated : b)),
+            )
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error updating graphics fill:', error)
+        }
+    }
+
+    const handleAddImage = () => {
+        imageInputRef.current?.click()
+    }
+
+    const handleImageUpload = async (
+        e: React.ChangeEvent<HTMLInputElement>,
+    ) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        // Reset the input so the same file can be re-selected
+        e.target.value = ''
+
+        try {
+            const arrayBuffer = await file.arrayBuffer()
+            const bytes = new Uint8Array(arrayBuffer)
+
+            // Check if it's a JPEG — pass raw bytes directly
+            const isJpeg =
+                bytes.length > 2 && bytes[0] === 0xff && bytes[1] === 0xd8
+            if (isJpeg) {
+                const newBlock = await client.call('addGraphicsBlock', {
+                    options: { shape: 'Image' as const, imageBytes: bytes },
+                })
+                setExtractedGraphicsBlocks((prev) => [...prev, newBlock])
+                setSelectedGraphicsBlockId(newBlock.id)
+                setSelectedFieldId(null)
+                setSelectedTextBlockId(null)
+                setShowGraphicsLayer(true)
+                setPdfVersion((v) => v + 1)
+                updateUndoRedoState()
+                return
+            }
+
+            // For non-JPEG (PNG, GIF, WebP), decode via canvas to raw RGB
+            const bitmap = await createImageBitmap(
+                new Blob([bytes], { type: file.type }),
+            )
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+            const ctx = canvas.getContext('2d')!
+            ctx.drawImage(bitmap, 0, 0)
+            const imageData = ctx.getImageData(
+                0,
+                0,
+                bitmap.width,
+                bitmap.height,
+            )
+            // Convert RGBA to RGB
+            const rgbBytes = new Uint8Array(bitmap.width * bitmap.height * 3)
+            for (let i = 0, j = 0; i < imageData.data.length; i += 4, j += 3) {
+                rgbBytes[j] = imageData.data[i]
+                rgbBytes[j + 1] = imageData.data[i + 1]
+                rgbBytes[j + 2] = imageData.data[i + 2]
+            }
+
+            const newBlock = await client.call('addGraphicsBlock', {
+                options: {
+                    shape: 'Image' as const,
+                    imageBytes: rgbBytes,
+                    width: bitmap.width,
+                    height: bitmap.height,
+                },
+            })
+            setExtractedGraphicsBlocks((prev) => [...prev, newBlock])
+            setSelectedGraphicsBlockId(newBlock.id)
+            setSelectedFieldId(null)
+            setSelectedTextBlockId(null)
+            setShowGraphicsLayer(true)
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error adding image:', error)
+        }
     }
 
     return {
@@ -1001,6 +1202,7 @@ export function usePdfEditor() {
         setActiveView,
         fileInputRef,
         fontInputRef,
+        imageInputRef,
         extractedFields,
         extractedTextBlocks,
         extractedGraphicsBlocks,
@@ -1049,6 +1251,17 @@ export function usePdfEditor() {
         handleColorChange,
         handleTextBlockPositionChange,
         handleGraphicsBlockPositionChange,
+        handleGraphicsBlockResize,
+        handleGraphicsBlockSelect,
+        handleAddGraphicsBlock,
+        handleRemoveGraphicsBlock,
+        handleGraphicsBlockColorChange,
+        handleGraphicsBlockFillChange,
+        handleAddImage,
+        handleImageUpload,
+        selectedGraphicsBlockId,
+        selectedGraphicsBlock,
+        setSelectedGraphicsBlockId,
         handleRemoveField,
         handleAddField,
         handleAddTextBlock,

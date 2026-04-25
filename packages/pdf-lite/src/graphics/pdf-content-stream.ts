@@ -2,6 +2,10 @@ import { PdfIndirectObject } from '../core/objects/pdf-indirect-object'
 import { PdfStream } from '../core/objects/pdf-stream'
 import { PdfArray, PdfDictionary } from '../core'
 import { PdfPage } from '../pdf/pdf-page'
+import { PdfDocument } from '../pdf/pdf-document'
+import { PdfName } from '../core/objects/pdf-name'
+import { PdfNumber } from '../core/objects/pdf-number'
+import { PdfObjectReference } from '../core/objects/pdf-object-reference'
 import { ByteArray } from '../types'
 import { stringToBytes } from '../utils'
 import { PdfToken } from '../core/tokens/token'
@@ -15,6 +19,7 @@ import {
     RestoreStateOp,
     StateOp,
     InvokeXObjectOp,
+    SetMatrixOp,
 } from './ops/state'
 import { PdfContentStreamTokeniser } from './tokeniser'
 import {
@@ -37,6 +42,9 @@ export {
     TextRun,
     VirtualTextBlock,
 }
+
+export { isJpeg, getJpegDimensions } from '../utils/jpeg-utils'
+import { isJpeg, getJpegDimensions } from '../utils/jpeg-utils'
 
 export class PdfContentStream extends PdfStream {
     private _page?: PdfPage
@@ -164,6 +172,99 @@ export class PdfContentStreamObject extends PdfIndirectObject<PdfContentStream> 
 
     add(node: ContentNode) {
         this.content.dataAsString += node.toString() + '\n'
+    }
+
+    addImage(
+        document: PdfDocument,
+        options: {
+            imageBytes: Uint8Array
+            x: number
+            y: number
+            displayWidth: number
+            displayHeight: number
+            xobjectName?: string
+        },
+    ): { stateNode: StateNode; imageNode: ImageNode; xobjectName: string } {
+        const page = this.page
+        if (!page) throw new Error('Content stream has no page set')
+
+        const imageBytes = options.imageBytes
+        const jpeg = isJpeg(imageBytes)
+        let imgWidth = options.displayWidth
+        let imgHeight = options.displayHeight
+        if (jpeg) {
+            const dims = getJpegDimensions(imageBytes)
+            imgWidth = dims.width
+            imgHeight = dims.height
+        }
+
+        const xobjectName =
+            options.xobjectName ?? `Im${Date.now().toString(36)}`
+
+        // Create image XObject stream
+        const header = new PdfDictionary()
+        header.set('Type', new PdfName('XObject'))
+        header.set('Subtype', new PdfName('Image'))
+        header.set('Width', new PdfNumber(imgWidth))
+        header.set('Height', new PdfNumber(imgHeight))
+        header.set('ColorSpace', new PdfName('DeviceRGB'))
+        header.set('BitsPerComponent', new PdfNumber(8))
+        if (jpeg) {
+            header.set('Filter', new PdfName('DCTDecode'))
+        }
+        const imgStream = new PdfStream({
+            header,
+            original: imageBytes as Uint8Array<ArrayBuffer>,
+        })
+        const imgObj = new PdfIndirectObject({ content: imgStream })
+        document.add(imgObj)
+
+        // Register in page /Resources/XObject
+        const rawResources = page.content.get('Resources')
+        const resolvedResources =
+            rawResources instanceof PdfObjectReference
+                ? rawResources.resolve()?.content
+                : rawResources
+        let resources: PdfDictionary
+        if (resolvedResources instanceof PdfDictionary) {
+            resources = resolvedResources
+        } else {
+            resources = new PdfDictionary()
+            page.content.set('Resources', resources)
+        }
+        const rawXobjDict = resources.get('XObject')
+        const resolvedXobjDict =
+            rawXobjDict instanceof PdfObjectReference
+                ? rawXobjDict.resolve()?.content
+                : rawXobjDict
+        let xobjDict: PdfDictionary
+        if (resolvedXobjDict instanceof PdfDictionary) {
+            xobjDict = resolvedXobjDict
+        } else {
+            xobjDict = new PdfDictionary()
+            resources.set('XObject', xobjDict)
+        }
+        xobjDict.set(xobjectName, imgObj.reference)
+
+        // Build StateNode with cm + ImageNode: q <cm> <Do> Q
+        const stateNode = new StateNode(page)
+        stateNode.addDirectOp(
+            SetMatrixOp.create(
+                options.displayWidth,
+                0,
+                0,
+                options.displayHeight,
+                options.x,
+                options.y,
+            ),
+        )
+        const imageNode = new ImageNode(page, [
+            InvokeXObjectOp.create(xobjectName),
+        ])
+        stateNode.addChild(imageNode)
+        this.add(stateNode)
+
+        return { stateNode, imageNode, xobjectName }
     }
 
     get dataAsString(): string {

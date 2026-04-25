@@ -58,6 +58,9 @@ export type GraphicsBlockDTO = {
     pageHeight: number
     pageWidth: number
     bbox: BBox
+    shapeType?: GraphicsShapeType
+    colorHex?: string
+    fill?: boolean
 }
 
 export type ExtractResult = {
@@ -98,7 +101,7 @@ export type RemoveTextBlockResult = {
     removedId: string
 }
 
-export type GraphicsShapeType = 'Line' | 'Rectangle' | 'Ellipse'
+export type GraphicsShapeType = 'Line' | 'Rectangle' | 'Ellipse' | 'Image'
 
 export type AddGraphicsBlockOptions = {
     shape: GraphicsShapeType
@@ -109,6 +112,7 @@ export type AddGraphicsBlockOptions = {
     height?: number
     rgb?: [number, number, number]
     fill?: boolean
+    imageBytes?: Uint8Array
 }
 
 export type RemoveGraphicsBlockResult = {
@@ -173,6 +177,14 @@ export type WorkerMethods = {
     }
     moveGraphicsBlock: {
         args: { id: string; dx: number; dy: number }
+        result: GraphicsBlockDTO
+    }
+    resizeGraphicsBlock: {
+        args: { id: string; newWidth: number; newHeight: number }
+        result: GraphicsBlockDTO
+    }
+    updateGraphicsBlock: {
+        args: { id: string; rgb?: [number, number, number]; fill?: boolean }
         result: GraphicsBlockDTO
     }
     editTextBlock: {

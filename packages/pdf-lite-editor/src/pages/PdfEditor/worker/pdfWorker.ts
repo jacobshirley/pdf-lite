@@ -290,10 +290,7 @@ function ensurePageFontResource(page: PdfPage, font: PdfFont): void {
  * Prefers appending to the existing single stream; otherwise creates a new
  * stream, registers it with the document, and wires it into /Contents.
  */
-function appendToPageContents(
-    page: PdfPage,
-    node: ContentNode,
-): PdfContentStreamObject {
+function getOrCreateContentStream(page: PdfPage): PdfContentStreamObject {
     if (!pdfDoc) throw new Error('No PDF loaded')
     const entry = page.content.get('Contents')
 
@@ -323,6 +320,14 @@ function appendToPageContents(
         target.page = page
     }
 
+    return target
+}
+
+function appendToPageContents(
+    page: PdfPage,
+    node: ContentNode,
+): PdfContentStreamObject {
+    const target = getOrCreateContentStream(page)
     target.add(node)
     return target
 }
@@ -458,7 +463,6 @@ function extractAll(): ExtractResult {
     nextFieldId = 0
     nextTextBlockId = 0
     nextGraphicsBlockId = 0
-    nextImageXObjectId = 0
 
     const pages = pdfDoc.pages.toArray()
     const fields: FieldDTO[] = []
@@ -921,16 +925,14 @@ const handlers: {
                     ? maxDim
                     : maxDim * (imgHeight / imgWidth))
 
-            const { stream } = embedImageXObject(
-                page,
+            const stream = getOrCreateContentStream(page)
+            stream.addImage(pdfDoc, {
                 imageBytes,
-                imgWidth,
-                imgHeight,
                 x,
                 y,
                 displayWidth,
                 displayHeight,
-            )
+            })
 
             // Find the live ImageNode from the re-parsed stream
             const allBlocks = stream.graphicsBlocks
@@ -1574,7 +1576,6 @@ const handlers: {
         nextFieldId = 0
         nextTextBlockId = 0
         nextGraphicsBlockId = 0
-        nextImageXObjectId = 0
         historyStack.length = 0
         historyIndex = -1
     },

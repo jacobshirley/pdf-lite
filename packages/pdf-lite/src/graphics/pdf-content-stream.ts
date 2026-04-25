@@ -10,11 +10,17 @@ import { BeginTextOp, EndTextOp } from './ops/text'
 import { PathOp } from './ops/path'
 import { EndPathOp, ClipOp, ClipEvenOddOp, PaintOp } from './ops/paint'
 import { ColorOp } from './ops/color'
-import { SaveStateOp, RestoreStateOp, StateOp } from './ops/state'
+import {
+    SaveStateOp,
+    RestoreStateOp,
+    StateOp,
+    InvokeXObjectOp,
+} from './ops/state'
 import { PdfContentStreamTokeniser } from './tokeniser'
 import {
     ContentNode,
     GraphicsBlock,
+    ImageNode,
     StateNode,
     TextBlock,
     TextRun,
@@ -25,6 +31,7 @@ import { ArraySegment, MultiArray } from '../utils/arrays'
 export {
     ContentNode,
     GraphicsBlock,
+    ImageNode,
     StateNode,
     TextBlock,
     TextRun,
@@ -384,7 +391,6 @@ export class PdfContents extends PdfIndirectObject<
             }
 
             if (op instanceof RestoreStateOp) {
-                // Flush any stray graphics ops before restoring state
                 for (const g of graphicsOps) currentState.ops.push(g)
                 graphicsOps = []
                 if (stateStack.length > 0) {
@@ -394,26 +400,48 @@ export class PdfContents extends PdfIndirectObject<
                 continue
             }
 
+            if (op instanceof InvokeXObjectOp) {
+                // Image invocation — create an ImageNode child.
+                // The cm/gs stay on the StateNode as directOps.
+                const img = new ImageNode(page, [op])
+                currentState.addChild(img)
+                continue
+            }
+
             if (op instanceof StateOp) {
                 currentState.addDirectOp(op)
                 continue
             }
 
             // Outside text block: graphics
-            if (op instanceof PaintOp) {
+            // Check ClipOp, ClipEvenOddOp, and EndPathOp BEFORE PaintOp
+            // because they extend PaintOp but need different handling.
+            if (op instanceof ClipOp || op instanceof ClipEvenOddOp) {
+                graphicsOps.push(op)
+            } else if (op instanceof EndPathOp) {
+                if (
+                    graphicsOps.some(
+                        (g) =>
+                            g instanceof ClipOp || g instanceof ClipEvenOddOp,
+                    )
+                ) {
+                    // Clip path — push to current StateNode's directOps so
+                    // it round-trips. The clip belongs to the q/Q group;
+                    // a child ImageNode will handle the actual image.
+                    for (const g of graphicsOps) currentState.addDirectOp(g)
+                    currentState.addDirectOp(op)
+                    graphicsOps = []
+                } else {
+                    // Plain end-path with no clip — discard path ops
+                    graphicsOps = []
+                }
+            } else if (op instanceof PaintOp) {
                 graphicsOps.push(op)
                 const gBlock = new GraphicsBlock(page, graphicsOps)
                 currentState.addChild(gBlock)
                 graphicsOps = []
-            } else if (
-                op instanceof PathOp ||
-                op instanceof ColorOp ||
-                op instanceof ClipOp ||
-                op instanceof ClipEvenOddOp
-            ) {
+            } else if (op instanceof PathOp || op instanceof ColorOp) {
                 graphicsOps.push(op)
-            } else if (op instanceof EndPathOp) {
-                graphicsOps = []
             } else {
                 // Preserve all other ops (e.g. marked-content BDC/EMC,
                 // XObject invocations, inline images, etc.) so they

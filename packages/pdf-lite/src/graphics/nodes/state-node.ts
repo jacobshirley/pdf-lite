@@ -4,6 +4,7 @@ import { Matrix } from '../geom/matrix'
 import { Rect } from '../geom/rect'
 import { ContentOp } from '../ops/base'
 import { RestoreStateOp, SaveStateOp, SetMatrixOp } from '../ops/state'
+import { RectangleOp, MoveToOp, LineToOp } from '../ops/path'
 import { ContentNode } from './content-node'
 
 export class StateNode extends ContentNode {
@@ -18,6 +19,10 @@ export class StateNode extends ContentNode {
         this._directOps.push(op)
     }
 
+    get directOps(): readonly ContentOp[] {
+        return this._directOps
+    }
+
     getLocalTransform(): Matrix {
         let matrix = Matrix.identity()
         for (const op of this._directOps) {
@@ -26,6 +31,21 @@ export class StateNode extends ContentNode {
             }
         }
         return matrix
+    }
+
+    moveBy(dx: number, dy: number): void {
+        for (const op of this._directOps) {
+            if (op instanceof RectangleOp) {
+                op.x += dx
+                op.y += dy
+            } else if (op instanceof MoveToOp || op instanceof LineToOp) {
+                op.x += dx
+                op.y += dy
+            } else if (op instanceof SetMatrixOp) {
+                op.e += dx
+                op.f += dy
+            }
+        }
     }
 
     addChild(node: ContentNode): void {

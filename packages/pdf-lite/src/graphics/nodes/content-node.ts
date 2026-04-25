@@ -129,4 +129,6 @@ export abstract class ContentNode {
     clearOps(): void {
         this._ops.replaceAll([])
     }
+
+    abstract moveBy(dx: number, dy: number): void
 }

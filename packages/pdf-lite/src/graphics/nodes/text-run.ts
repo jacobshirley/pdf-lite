@@ -582,4 +582,22 @@ export class TextRun extends ContentNode {
         )
         this.replaceOrAddOp(op, color.toOp())
     }
+
+    moveBy(dx: number, dy: number): void {
+        // Update the local Tm by pre-translating it with the given delta
+        const shift = this.computeShift(dx, dy)
+        if (shift) {
+            const newTm = shift.multiply(this.getLocalTransform())
+            this.applyShift(newTm)
+        }
+
+        // Propagate to next run in the same block (e.g. for consistent
+        // movement of adjacent runs in a TextBlock).  Don't propagate to
+        // subsequent blocks — if the next run's parent is different, it's
+        // in a different BT/ET scope and likely has its own independent
+        // positioning.
+        if (this.prev && this.prev.parent === this.parent) {
+            this.prev.moveBy(dx, dy)
+        }
+    }
 }

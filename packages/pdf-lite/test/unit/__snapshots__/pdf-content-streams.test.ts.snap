@@ -90,16 +90,9 @@ exports[`regrouped text positions (snapshots per fixture) > AT_Verf19E_EU.pdf â€
       },
       {
         "h": 10,
-        "text": "5.Manager/s or other ",
-        "w": 20.09,
+        "text": "5.Manager/s or other authorised signatories: ",
+        "w": 189.7,
         "x": 62.64,
-        "y": 476.12,
-      },
-      {
-        "h": 10,
-        "text": "authorised signatories: ",
-        "w": 95.86,
-        "x": 156.48,
         "y": 476.12,
       },
       {
@@ -175,7 +168,7 @@ exports[`regrouped text positions (snapshots per fixture) > AT_Verf19E_EU.pdf â€
       {
         "h": 15,
         "text": "Verf 19-E ",
-        "w": 0.6,
+        "w": 72.6,
         "x": 57.6,
         "y": 22.4,
       },
@@ -217,7 +210,7 @@ exports[`regrouped text positions (snapshots per fixture) > AT_Verf19E_EU.pdf â€
       {
         "h": 10,
         "text": "third world country companies/businesses ",
-        "w": 0.4,
+        "w": 197.2,
         "x": 133.08,
         "y": 130.34,
       },
@@ -1037,7 +1030,7 @@ exports[`regrouped text positions (snapshots per fixture) > CA_BC_PST_Registrati
       {
         "h": 13.13,
         "text": "names.  For example, if your business is a corporation ",
-        "w": 37.87,
+        "w": 340.26,
         "x": 21.6,
         "y": 228.5,
       },
@@ -1156,7 +1149,7 @@ exports[`regrouped text positions (snapshots per fixture) > CA_BC_PST_Registrati
       {
         "h": 13.13,
         "text": "PST is generally payable on any assets (e.g. furniture, ",
-        "w": 0.52,
+        "w": 353.33,
         "x": 331.2,
         "y": 241.09,
       },
@@ -10734,7 +10727,7 @@ exports[`regrouped text positions (snapshots per fixture) > ca_gst.pdf â€” regro
       {
         "h": 12.5,
         "text": "Â canada.ca/gst-hst-financial-institutions",
-        "w": 186.09,
+        "w": 192.09,
         "x": 87.15,
         "y": 421.72,
       },
@@ -12110,7 +12103,7 @@ exports[`regrouped text positions (snapshots per fixture) > template.pdf â€” reg
       {
         "h": 12.5,
         "text": "Oireachtas. Your personal data may be exchanged with other Government Departments and agencies in certain ",
-        "w": 0.5,
+        "w": 636.5,
         "x": 36,
         "y": 154.22,
       },
@@ -12424,7 +12417,7 @@ exports[`template.pdf â€” content streams > should keep a snapshot of content no
   {
     "bbox": Rect {
       "height": 12.5,
-      "width": 0.5,
+      "width": 636.4999999999999,
       "x": 36,
       "y": 154.2237,
     },

@@ -169,7 +169,7 @@ export function PdfEditor() {
                         <div className="fixed right-4 top-4 bottom-4 w-80 z-50">
                             <TextPropertiesPanel
                             textBlock={editor.selectedTextBlock}
-                            segments={editor.selectedTextSegments}
+                            runs={editor.selectedTextRuns}
                             standardFonts={editor.standardFonts}
                             embeddedFonts={editor.embeddedFonts}
                             fontInputRef={editor.fontInputRef}

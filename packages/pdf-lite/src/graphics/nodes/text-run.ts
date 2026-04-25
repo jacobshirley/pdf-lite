@@ -450,10 +450,12 @@ export class TextRun extends ContentNode {
             }
         }
 
-        if (sawShowOp) return total
+        // When a show op was found but all character widths were null (font
+        // has no width data), fall through to the length-based estimate
+        // so gap detection in regroupTextBlocks uses the right prevEnd.
+        if (sawShowOp && total > 0) return total
 
-        // Fallback for runs without an explicit show op: estimate from
-        // `this.text` using a rough average glyph width.
+        // Fallback: estimate from character count and an average glyph width.
         if (this.text) {
             return this.text.length * fontSize * 0.6
         }

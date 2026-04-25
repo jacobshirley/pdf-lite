@@ -13,7 +13,7 @@ import type {
 
 type Props = {
     textBlock: ExtractedTextBlock
-    segments: TextSegmentDTO[]
+    runs: TextSegmentDTO[]
     standardFonts: FontRef[]
     embeddedFonts: FontRef[]
     fontInputRef: React.RefObject<HTMLInputElement | null>
@@ -31,7 +31,7 @@ const UPLOAD_SENTINEL = '__upload_font__'
 
 export function TextPropertiesPanel({
     textBlock,
-    segments,
+    runs,
     standardFonts,
     embeddedFonts,
     fontInputRef,
@@ -46,7 +46,7 @@ export function TextPropertiesPanel({
 }: Props) {
     const bbox = textBlock.bbox
     const allFonts = [...standardFonts, ...embeddedFonts]
-    const seg = segments[0]
+    const seg = runs[0]
     const currentFontName = seg?.fontName || 'Unknown'
 
     const handleFontSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -221,13 +221,13 @@ export function TextPropertiesPanel({
                         </div>
                     )}
 
-                    {segments.length > 1 && (
+                    {runs.length > 1 && (
                         <div>
                             <Label className="text-xs text-slate-500 dark:text-slate-400">
-                                {segments.length} segments in this block
+                                {runs.length} runs in this block
                             </Label>
                             <div className="mt-1 max-h-[120px] overflow-y-auto space-y-1">
-                                {segments.map((s, i) => (
+                                {runs.map((s, i) => (
                                     <div
                                         key={i}
                                         className="text-xs px-2 py-1 bg-slate-50 dark:bg-slate-700 rounded border border-slate-100 dark:border-slate-600"

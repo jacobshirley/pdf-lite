@@ -72,7 +72,7 @@ export class TextBlock extends ContentNode {
     get da(): PdfDefaultAppearance | undefined {
         const run = this.runs[0]
         if (!run) return undefined
-        const tf = run.ops.find((x): x is SetFontOp => x instanceof SetFontOp)
+        const tf = run.ops.find((x) => x instanceof SetFontOp)
         const fontName = tf?.fontName ?? this.prev?.da?.fontName ?? 'Helv'
         const fontSize = run.fontSize
         const color = run.color ?? this.prev?.color ?? new GrayColor(0)

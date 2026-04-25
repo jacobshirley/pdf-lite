@@ -49,7 +49,7 @@ export type TextBlockDTO = {
     pageWidth: number
     bbox: BBox
     text: string
-    segments: TextSegmentDTO[]
+    runs: TextSegmentDTO[]
 }
 
 export type GraphicsBlockDTO = {

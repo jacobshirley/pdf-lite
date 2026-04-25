@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/shadcn/button'
 import { Card, CardContent } from '@/components/shadcn/card'
 import { Input } from '@/components/shadcn/input'
@@ -49,6 +49,12 @@ export function TextPropertiesPanel({
     const seg = runs[0]
     const currentFontName = seg?.fontName || 'Unknown'
 
+    const [localText, setLocalText] = useState(textBlock.text)
+    const isFocused = useRef(false)
+    useEffect(() => {
+        if (!isFocused.current) setLocalText(textBlock.text)
+    }, [textBlock.text])
+
     const handleFontSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value
         if (value === UPLOAD_SENTINEL) {
@@ -92,10 +98,13 @@ export function TextPropertiesPanel({
                         </Label>
                         <textarea
                             id="tb-text"
-                            value={textBlock.text}
-                            onChange={(
-                                e: React.ChangeEvent<HTMLTextAreaElement>,
-                            ) => onTextChange(e.target.value)}
+                            value={localText}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                                setLocalText(e.target.value)
+                                onTextChange(e.target.value)
+                            }}
+                            onFocus={() => { isFocused.current = true }}
+                            onBlur={() => { isFocused.current = false }}
                             className="w-full min-h-[60px] text-sm rounded-md border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-y"
                             rows={3}
                         />

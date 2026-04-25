@@ -109,7 +109,6 @@ export function PdfEditor() {
 
                 {editor.selectedFieldId && editor.selectedField && (
                     <>
-                        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => editor.setSelectedFieldId(null)} />
                         <div className="fixed right-4 top-4 bottom-4 w-80 z-50">
                             <FieldPropertiesPanel
                         field={editor.selectedField}
@@ -165,7 +164,6 @@ export function PdfEditor() {
 
                 {editor.selectedTextBlock && !editor.selectedFieldId && (
                     <>
-                        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => editor.setSelectedTextBlockId(null)} />
                         <div className="fixed right-4 top-4 bottom-4 w-80 z-50">
                             <TextPropertiesPanel
                             textBlock={editor.selectedTextBlock}

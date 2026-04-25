@@ -1,10 +1,13 @@
 import { PdfString } from '../../core/objects/pdf-string.js'
 import { PdfName } from '../../core/objects/pdf-name.js'
 import { encodeToPDFDocEncoding } from '../../utils/encodeToPDFDocEncoding.js'
-import { GrayColor } from '../../graphics/color/gray-color.js'
-import { RGBColor } from '../../graphics/color/rgb-color.js'
-import { CMYKColor } from '../../graphics/color/cmyk-color.js'
-import type { Color } from '../../graphics/color/color.js'
+import { ContentOp } from '../../graphics/ops/base.js'
+import { SetFontOp } from '../../graphics/ops/text.js'
+import {
+    SetFillColorCMYKOp,
+    SetFillColorGrayOp,
+    SetFillColorRGBOp,
+} from '../../graphics/ops/color.js'
 
 /**
  * Value object that parses and builds DA (Default Appearance) strings.

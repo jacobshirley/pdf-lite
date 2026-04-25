@@ -16,7 +16,14 @@ import { ByteArray } from '../../src/types'
 import { PdfFont } from '../../src/fonts/pdf-font'
 import { PdfFontDescriptor } from '../../src/fonts/pdf-font-descriptor'
 import type { AfmKernPair } from '../../src/fonts/types'
-import { PdfDictionary, PdfHexadecimal, PdfNumber, PdfString } from '../../src'
+import {
+    PdfDictionary,
+    PdfHexadecimal,
+    PdfIndirectObject,
+    PdfNumber,
+    PdfStream,
+    PdfString,
+} from '../../src'
 import { PdfArray } from '../../src/core/objects/pdf-array'
 import { PdfName } from '../../src/core/objects/pdf-name'
 
@@ -324,20 +331,21 @@ describe('Font Embedding', () => {
         })
 
         it('should generate identity ToUnicode CMap entries (CID maps to same Unicode)', () => {
-            const mockFontData = new Uint8Array([0x00, 0x01, 0x00, 0x00])
+            const mockFontData = new Uint8Array([
+                0x00, 0x01, 0x00, 0x00,
+            ]) as ByteArray
 
-            const descriptor: UnicodeFontDescriptor = {
+            const metrics = new PdfFontDescriptor({
                 fontName: 'IdentityCMapFont',
-                fontFamily: 'Test',
+                fontData: mockFontData,
                 fontWeight: 400,
-                flags: 32,
-                fontBBox: [-200, -200, 1000, 900],
                 italicAngle: 0,
-                ascent: 900,
-                descent: -200,
+                ascender: 900,
+                descender: -200,
                 capHeight: 700,
-                stemV: 80,
-            }
+                stdVW: 80,
+                bbox: { llx: -200, lly: -200, urx: 1000, ury: 900 },
+            })
 
             // unicodeMappings: Map<Unicode, GlyphID>
             const unicodeMappings = new Map<number, number>([
@@ -346,12 +354,7 @@ describe('Font Embedding', () => {
                 [0x017b, 200], // 'Ż' -> GID 200
             ])
 
-            const font = PdfFont.fromType0Data(
-                mockFontData,
-                'IdentityCMapFont',
-                descriptor,
-                unicodeMappings,
-            )
+            const font = PdfFont.fromType0Data(metrics, unicodeMappings)
 
             // Access the ToUnicode stream's uncompressed content.
             // The font dict has ToUnicode -> PdfObjectReference whose target
@@ -359,8 +362,10 @@ describe('Font Embedding', () => {
             // document.add to wire up resolvers, then resolve.
             const document = new PdfDocument()
             document.add(font)
-            const toUnicodeRef = font.content.get('ToUnicode') as any
-            const toUnicodeObj = toUnicodeRef.resolve()
+            const toUnicodeRef = font.content.get('ToUnicode')!
+            const toUnicodeObj = toUnicodeRef.resolve(
+                PdfIndirectObject<PdfStream>,
+            )
             const cmapText = new TextDecoder().decode(
                 toUnicodeObj.content.decode(),
             )

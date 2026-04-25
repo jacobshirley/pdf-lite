@@ -59,7 +59,7 @@ describe('PdfAppearanceStream', () => {
                     const content = stream.content.rawAsString
                     expect(content).toContain('BT') // begin text
                     expect(content).toContain('ET') // end text
-                    expect(content).toContain('/TestFont 12 Tf 0 g') // original font size
+                    expect(content).toContain('/TestFont 12 Tf') // original font size
                     expect(content).toContain('(Hi) Tj')
                 })
 
@@ -174,10 +174,8 @@ describe('PdfAppearanceStream', () => {
                     expect(content).toContain('(B) Tj')
                     expect(content).toContain('(C) Tj')
                     expect(content).toContain('(D) Tj')
-                    // Should contain positioning commands (Td)
-                    expect(
-                        content.match(/[0-9.-]+ [0-9.-]+ Td/g)?.length,
-                    ).toBeGreaterThan(0)
+                    // Should contain positioning commands (Tm for absolute cell placement)
+                    expect(content.match(/Tm/g)?.length).toBeGreaterThan(0)
                 })
 
                 it('should scale font down for wide characters in comb cells', () => {

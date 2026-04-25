@@ -6,6 +6,7 @@ import {
     TextBlock,
     TextRun,
     GraphicsBlock,
+    ImageNode,
     StateNode,
     VirtualTextBlock,
 } from '../../src/graphics/pdf-content-stream'
@@ -13,8 +14,9 @@ import { PdfStream } from '../../src/core/objects/pdf-stream'
 import { PdfIndirectObject } from '../../src/core/objects/pdf-indirect-object'
 import { PdfFont } from '../../src/fonts/pdf-font'
 import { ByteArray } from '../../src/types'
-import { MoveToOp } from '../../src/graphics/ops/path'
+import { MoveToOp, RectangleOp } from '../../src/graphics/ops/path'
 import { RGBColor } from '../../src/graphics/color'
+import { SetMatrixOp } from '../../src/graphics/ops/state'
 
 const FIXTURE = './test/unit/fixtures/multi-child-field.pdf'
 
@@ -1708,4 +1710,143 @@ describe('regrouped text positions (snapshots per fixture)', () => {
             })
         })
     }
+})
+
+// ---------------------------------------------------------------------------
+// ImageNode
+// ---------------------------------------------------------------------------
+describe('ImageNode', () => {
+    // Simulates: q 20 755 200 18 re W n q /GS0 gs 201 0 0 18 20 755 cm /Im0 Do Q Q
+    const CLIP_IMAGE_STREAM =
+        'q 20 755 200 18 re W n q /GS0 gs 201 0 0 18 20 755 cm /Im0 Do Q Q'
+
+    it('is created for Do invocations', () => {
+        const s = makeStream(CLIP_IMAGE_STREAM)
+        const blocks = s.graphicsBlocks
+        const imageNodes = blocks.filter((b) => b instanceof ImageNode)
+        expect(imageNodes).toHaveLength(1)
+        expect(imageNodes[0]).toBeInstanceOf(ImageNode)
+    })
+
+    it('holds only the Do op', () => {
+        const s = makeStream(CLIP_IMAGE_STREAM)
+        const img = s.graphicsBlocks.find(
+            (b) => b instanceof ImageNode,
+        ) as ImageNode
+        const opNames = [...img.ops].map((o) => o.constructor.name)
+        expect(opNames).toEqual(['InvokeXObjectOp'])
+    })
+
+    it('has the correct name from Do operand', () => {
+        const s = makeStream(CLIP_IMAGE_STREAM)
+        const img = s.graphicsBlocks.find(
+            (b) => b instanceof ImageNode,
+        ) as ImageNode
+        expect(img.name).toBe('Im0')
+    })
+
+    it('computes world bounding box from parent cm', () => {
+        const s = makeStream(CLIP_IMAGE_STREAM)
+        const img = s.graphicsBlocks.find(
+            (b) => b instanceof ImageNode,
+        ) as ImageNode
+        const bbox = img.getWorldBoundingBox()
+        expect(bbox.x).toBeCloseTo(20, 0)
+        expect(bbox.y).toBeCloseTo(755, 0)
+        expect(bbox.width).toBeCloseTo(201, 0)
+        expect(bbox.height).toBeCloseTo(18, 0)
+    })
+
+    it('has a parent StateNode with the cm', () => {
+        const s = makeStream(CLIP_IMAGE_STREAM)
+        const img = s.graphicsBlocks.find(
+            (b) => b instanceof ImageNode,
+        ) as ImageNode
+        expect(img.parent).toBeInstanceOf(StateNode)
+        const parent = img.parent as StateNode
+        const hasCm = parent.directOps.some((op) => op instanceof SetMatrixOp)
+        expect(hasCm).toBe(true)
+    })
+
+    it('has a grandparent StateNode with the clip rect', () => {
+        const s = makeStream(CLIP_IMAGE_STREAM)
+        const img = s.graphicsBlocks.find(
+            (b) => b instanceof ImageNode,
+        ) as ImageNode
+        const grandparent = img.parent?.parent as StateNode
+        expect(grandparent).toBeInstanceOf(StateNode)
+        const hasRect = grandparent.directOps.some(
+            (op) => op instanceof RectangleOp,
+        )
+        expect(hasRect).toBe(true)
+    })
+
+    describe('moveBy', () => {
+        it('shifts the cm translation on the parent StateNode', () => {
+            const s = makeStream(CLIP_IMAGE_STREAM)
+            const img = s.graphicsBlocks.find(
+                (b) => b instanceof ImageNode,
+            ) as ImageNode
+            const parent = img.parent as StateNode
+            const cm = parent.directOps.find(
+                (op) => op instanceof SetMatrixOp,
+            ) as SetMatrixOp
+            const origE = cm.e
+            const origF = cm.f
+
+            img.moveBy(10, -5)
+
+            expect(cm.e).toBeCloseTo(origE + 10)
+            expect(cm.f).toBeCloseTo(origF - 5)
+        })
+
+        it('shifts the clip rectangle on the grandparent StateNode', () => {
+            const s = makeStream(CLIP_IMAGE_STREAM)
+            const img = s.graphicsBlocks.find(
+                (b) => b instanceof ImageNode,
+            ) as ImageNode
+            const grandparent = img.parent!.parent as StateNode
+            const rect = grandparent.directOps.find(
+                (op) => op instanceof RectangleOp,
+            ) as RectangleOp
+            const origX = rect.x
+            const origY = rect.y
+
+            img.moveBy(10, -5)
+
+            expect(rect.x).toBeCloseTo(origX + 10)
+            expect(rect.y).toBeCloseTo(origY - 5)
+        })
+
+        it('updates the world bounding box after move', () => {
+            const s = makeStream(CLIP_IMAGE_STREAM)
+            const img = s.graphicsBlocks.find(
+                (b) => b instanceof ImageNode,
+            ) as ImageNode
+            const before = img.getWorldBoundingBox()
+
+            img.moveBy(50, -30)
+
+            const after = img.getWorldBoundingBox()
+            expect(after.x).toBeCloseTo(before.x + 50, 0)
+            expect(after.y).toBeCloseTo(before.y - 30, 0)
+            expect(after.width).toBeCloseTo(before.width, 0)
+            expect(after.height).toBeCloseTo(before.height, 0)
+        })
+    })
+
+    it('does not create ImageNode for plain graphics', () => {
+        const s = makeStream('100 200 50 30 re S')
+        const blocks = s.graphicsBlocks
+        expect(blocks).toHaveLength(1)
+        expect(blocks[0]).toBeInstanceOf(GraphicsBlock)
+        expect(blocks[0]).not.toBeInstanceOf(ImageNode)
+    })
+
+    it('creates ImageNode for Do without clip path', () => {
+        const s = makeStream('q 100 0 0 50 20 30 cm /Im0 Do Q')
+        const blocks = s.graphicsBlocks
+        const imageNodes = blocks.filter((b) => b instanceof ImageNode)
+        expect(imageNodes).toHaveLength(1)
+    })
 })

@@ -25,19 +25,6 @@ import {
     PdfInvalidPasswordError,
 } from 'pdf-lite/errors'
 import { RGBColor } from 'pdf-lite/graphics/color/rgb-color'
-import {
-    SetFillColorRGBOp,
-    SetStrokeColorRGBOp,
-} from 'pdf-lite/graphics/ops/color'
-import { FillOp, StrokeOp } from 'pdf-lite/graphics/ops/paint'
-import {
-    MoveToOp,
-    LineToOp,
-    RectangleOp,
-    CurveToOp,
-    CurveToV,
-    CurveToY,
-} from 'pdf-lite/graphics/ops/path'
 import type {
     AddGraphicsBlockOptions,
     CloneFieldResult,
@@ -62,9 +49,6 @@ import { PdfContentStreamObject } from 'pdf-lite/graphics/pdf-content-stream'
 import { PdfObjectReference } from 'pdf-lite/core/objects/pdf-object-reference'
 import { PdfArray } from 'pdf-lite/core/objects/pdf-array'
 import { PdfDictionary } from 'pdf-lite/core/objects/pdf-dictionary'
-import { StateNode } from 'pdf-lite/graphics/nodes/state-node'
-import { ImageNode } from 'pdf-lite/graphics/nodes/image-node'
-import { SetMatrixOp } from 'pdf-lite/graphics/ops/state'
 import type { PdfPage } from 'pdf-lite/pdf/pdf-page'
 import type { ContentNode } from 'pdf-lite/graphics/nodes/content-node'
 
@@ -378,36 +362,17 @@ function graphicsBlockToDTO(
     const bbox = block.getWorldBoundingBox()
     const meta = graphicsBlockMeta.get(id)
 
-    // Try to detect color from ops if no metadata stored
     let colorHex = meta?.colorHex
     if (!colorHex) {
-        for (const op of block.ops) {
-            if (
-                op instanceof SetFillColorRGBOp ||
-                op instanceof SetStrokeColorRGBOp
-            ) {
-                const r = Math.round(op.r * 255)
-                const g = Math.round(op.g * 255)
-                const b = Math.round(op.b * 255)
-                colorHex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-                break
-            }
+        const color = block.fillColor ?? block.strokeColor
+        if (color) {
+            colorHex = color.toHexString()
         }
     }
 
-    // Try to detect fill from ops
     let fill = meta?.fill
     if (fill === undefined) {
-        for (const op of block.ops) {
-            if (op instanceof FillOp) {
-                fill = true
-                break
-            }
-            if (op instanceof StrokeOp) {
-                fill = false
-                break
-            }
-        }
+        fill = block.isFilled()
     }
 
     return {
@@ -814,56 +779,7 @@ const handlers: {
         const block = graphicsBlockRefs.get(id)
         if (!block || !pdfDoc) throw new Error(`Graphics block ${id} not found`)
 
-        if (block instanceof ImageNode) {
-            // Images: resize by changing the cm matrix on the parent StateNode
-            if (block.parent instanceof StateNode) {
-                for (const op of block.parent.directOps) {
-                    if (op instanceof SetMatrixOp) {
-                        op.a = newWidth
-                        op.d = newHeight
-                        break
-                    }
-                }
-            }
-        } else {
-            // Regular shapes: scale all coordinate ops relative to the bounding box origin
-            const bbox = block.getLocalBoundingBox()
-            if (bbox.width > 0 && bbox.height > 0) {
-                const sx = newWidth / bbox.width
-                const sy = newHeight / bbox.height
-                const ox = bbox.x
-                const oy = bbox.y
-
-                for (const op of block.ops) {
-                    if (op instanceof MoveToOp || op instanceof LineToOp) {
-                        op.x = ox + (op.x - ox) * sx
-                        op.y = oy + (op.y - oy) * sy
-                    } else if (op instanceof RectangleOp) {
-                        op.x = ox + (op.x - ox) * sx
-                        op.y = oy + (op.y - oy) * sy
-                        op.width = op.width * sx
-                        op.height = op.height * sy
-                    } else if (op instanceof CurveToOp) {
-                        op.x1 = ox + (op.x1 - ox) * sx
-                        op.y1 = oy + (op.y1 - oy) * sy
-                        op.x2 = ox + (op.x2 - ox) * sx
-                        op.y2 = oy + (op.y2 - oy) * sy
-                        op.x3 = ox + (op.x3 - ox) * sx
-                        op.y3 = oy + (op.y3 - oy) * sy
-                    } else if (op instanceof CurveToV) {
-                        op.x2 = ox + (op.x2 - ox) * sx
-                        op.y2 = oy + (op.y2 - oy) * sy
-                        op.x3 = ox + (op.x3 - ox) * sx
-                        op.y3 = oy + (op.y3 - oy) * sy
-                    } else if (op instanceof CurveToY) {
-                        op.x1 = ox + (op.x1 - ox) * sx
-                        op.y1 = oy + (op.y1 - oy) * sy
-                        op.x3 = ox + (op.x3 - ox) * sx
-                        op.y3 = oy + (op.y3 - oy) * sy
-                    }
-                }
-            }
-        }
+        block.resizeTo(newWidth, newHeight)
 
         const pages = pdfDoc.pages.toArray()
         const blockPage = block.page
@@ -1023,6 +939,10 @@ const handlers: {
     },
 
     removeGraphicsBlock({ id }) {
+        const block = graphicsBlockRefs.get(id)
+        if (block) {
+            block.remove()
+        }
         graphicsBlockRefs.delete(id)
         graphicsBlockMeta.delete(id)
         const result: RemoveGraphicsBlockResult = { removedId: id }
@@ -1034,30 +954,21 @@ const handlers: {
         const block = graphicsBlockRefs.get(id)
         if (!block || !pdfDoc) throw new Error(`Graphics block ${id} not found`)
 
-        if (rgb) {
-            // Remove existing color ops and add new ones
-            const ops = block.ops as unknown as any[]
-            for (let i = ops.length - 1; i >= 0; i--) {
-                if (
-                    ops[i] instanceof SetFillColorRGBOp ||
-                    ops[i] instanceof SetStrokeColorRGBOp
-                ) {
-                    ops.splice(i, 1)
-                }
-            }
-            // Insert color ops at the beginning (before path ops)
-            const strokeOp = SetStrokeColorRGBOp.create(rgb[0], rgb[1], rgb[2])
-            const fillOp = SetFillColorRGBOp.create(rgb[0], rgb[1], rgb[2])
-            ops.unshift(strokeOp, fillOp)
-        }
+        if (rgb || fill !== undefined) {
+            const currentColor = block.fillColor ?? block.strokeColor
+            const newColor = rgb
+                ? new RGBColor(rgb[0], rgb[1], rgb[2])
+                : currentColor
+            const shouldFill = fill ?? block.fillColor !== undefined
 
-        if (fill !== undefined) {
-            // Swap paint op: replace stroke with fill or vice versa
-            const ops = block.ops as unknown as any[]
-            for (let i = ops.length - 1; i >= 0; i--) {
-                if (ops[i] instanceof FillOp || ops[i] instanceof StrokeOp) {
-                    ops[i] = fill ? new FillOp() : new StrokeOp()
-                    break
+            block.fillColor = undefined
+            block.strokeColor = undefined
+
+            if (newColor) {
+                if (shouldFill) {
+                    block.fillColor = newColor
+                } else {
+                    block.strokeColor = newColor
                 }
             }
         }

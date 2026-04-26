@@ -6,7 +6,7 @@ import { Rect } from '../geom/rect'
 import { ContentOp } from '../ops/base'
 
 export abstract class ContentNode {
-    _page?: PdfPage
+    private _page?: PdfPage
     parent?: ContentNode
     protected _ops: ArraySegment<ContentOp>
 
@@ -128,6 +128,10 @@ export abstract class ContentNode {
     /** Remove all ops from this node's segment. */
     clearOps(): void {
         this._ops.replaceAll([])
+    }
+
+    remove(): void {
+        this.clearOps()
     }
 
     abstract moveBy(dx: number, dy: number): void

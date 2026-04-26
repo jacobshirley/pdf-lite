@@ -193,11 +193,11 @@ describe('PdfContentStreamObject.add() and dataAsString', () => {
         const a = new GraphicsBlock()
         a.moveTo(10, 10)
         a.lineTo(100, 10)
-        a.stroke()
+        a.strokeColor = new RGBColor(0, 0, 0)
         const b = new GraphicsBlock()
         b.moveTo(10, 20)
         b.lineTo(100, 20)
-        b.stroke()
+        b.strokeColor = new RGBColor(0, 0, 0)
         s.add(a)
         s.add(b)
         const lines = s.dataAsString.trim().split('\n')
@@ -600,7 +600,7 @@ describe('GraphicsBlock static factories', () => {
             y2: 0,
             rgb: [1, 0, 0],
         })
-        expect(block.ops.toString()).toContain('1 0 0 rg')
+        expect(block.ops.toString()).toContain('1 0 0 RG')
     })
 
     it('rectangle() with fill uses f operator', () => {

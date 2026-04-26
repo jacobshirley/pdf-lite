@@ -94,7 +94,9 @@ export class PdfContentStream extends PdfStream {
             this.predictor,
         )
 
-        this.ops = PdfContentStreamTokeniser.tokenise(decoded)
+        const parsed = PdfContentStreamTokeniser.tokenise(decoded)
+        this.ops.length = 0
+        this.ops.push(...parsed)
     }
 
     override get raw(): ByteArray {
@@ -504,7 +506,19 @@ export class PdfContents extends PdfIndirectObject<
             if (op instanceof InvokeXObjectOp) {
                 // Image invocation — create an ImageNode child.
                 // The cm/gs stay on the StateNode as directOps.
-                const img = new ImageNode(page, [op])
+                let img: ImageNode
+                if (backing) {
+                    const segment = new ArraySegment<ContentOp>(
+                        backing,
+                        op,
+                        op,
+                        0,
+                        1,
+                    )
+                    img = new ImageNode(page, segment)
+                } else {
+                    img = new ImageNode(page, [op])
+                }
                 currentState.addChild(img)
                 continue
             }
@@ -538,7 +552,19 @@ export class PdfContents extends PdfIndirectObject<
                 }
             } else if (op instanceof PaintOp) {
                 graphicsOps.push(op)
-                const gBlock = new GraphicsBlock(page, graphicsOps)
+                let gBlock: GraphicsBlock
+                if (backing && graphicsOps.length > 0) {
+                    const segment = new ArraySegment<ContentOp>(
+                        backing,
+                        graphicsOps[0],
+                        graphicsOps[graphicsOps.length - 1],
+                        0, // include first op
+                        1, // include last op
+                    )
+                    gBlock = new GraphicsBlock(page, segment)
+                } else {
+                    gBlock = new GraphicsBlock(page, graphicsOps)
+                }
                 currentState.addChild(gBlock)
                 graphicsOps = []
             } else if (op instanceof PathOp || op instanceof ColorOp) {

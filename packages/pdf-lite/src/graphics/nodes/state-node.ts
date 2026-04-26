@@ -86,6 +86,8 @@ export class StateNode extends ContentNode {
     override get ops(): ArraySegment<ContentOp> {
         const flat: ContentOp[] = [new SaveStateOp(), ...this._directOps]
         for (const child of this.children) {
+            child.parent = this
+            child.page = this.page
             for (const op of child.ops) flat.push(op)
         }
         flat.push(new RestoreStateOp())

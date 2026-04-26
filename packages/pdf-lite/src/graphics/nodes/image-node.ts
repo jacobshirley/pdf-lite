@@ -1,6 +1,6 @@
 import { PdfPage } from '../../pdf/pdf-page'
 import { ContentOp } from '../ops/base'
-import { InvokeXObjectOp } from '../ops/state'
+import { InvokeXObjectOp, SetMatrixOp } from '../ops/state'
 import { Rect } from '../geom/rect'
 import { ArraySegment } from '../../utils/arrays'
 import { GraphicsBlock } from './graphics-block'
@@ -46,5 +46,26 @@ export class ImageNode extends GraphicsBlock {
         // applies the parent's transform (which includes cm) to get
         // the actual position.
         return new Rect({ x: 0, y: 0, width: 1, height: 1 })
+    }
+
+    override resizeTo(newWidth: number, newHeight: number): void {
+        if (this.parent instanceof StateNode) {
+            for (const op of this.parent.directOps) {
+                if (op instanceof SetMatrixOp) {
+                    op.a = newWidth
+                    op.d = newHeight
+                    return
+                }
+            }
+        }
+    }
+
+    override remove(): void {
+        // Clear the entire parent StateNode (q cm Do Q) rather than just the Do op
+        if (this.parent instanceof StateNode) {
+            this.parent.ops = []
+        } else {
+            this.ops = []
+        }
     }
 }

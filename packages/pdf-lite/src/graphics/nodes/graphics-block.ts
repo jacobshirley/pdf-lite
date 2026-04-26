@@ -10,11 +10,32 @@ import {
     MoveToOp,
     RectangleOp,
 } from '../ops/path'
-import { FillOp, StrokeOp } from '../ops/paint'
-import { SetFillColorRGBOp, SetStrokeColorRGBOp } from '../ops/color'
+import {
+    CloseAndStrokeOp,
+    CloseFillAndStrokeEvenOddOp,
+    CloseFillAndStrokeOp,
+    FillAlternateOp,
+    FillAndStrokeEvenOddOp,
+    FillAndStrokeOp,
+    FillEvenOddOp,
+    FillOp,
+    StrokeOp,
+} from '../ops/paint'
+import {
+    ColorOp,
+    SetFillColorCMYKOp,
+    SetFillColorGrayOp,
+    SetFillColorRGBOp,
+    SetStrokeColorCMYKOp,
+    SetStrokeColorGrayOp,
+    SetStrokeColorRGBOp,
+} from '../ops/color'
 import { Rect } from '../geom/rect'
 import { ArraySegment } from '../../utils/arrays'
 import { ContentNode } from './content-node'
+import { Color, RGBColor } from '../color'
+import { CMYKColor } from '../color/cmyk-color'
+import { GrayColor } from '../color/gray-color'
 
 export class GraphicsBlock extends ContentNode {
     constructor(page?: PdfPage, ops?: ContentOp[] | ArraySegment<ContentOp>) {
@@ -32,10 +53,11 @@ export class GraphicsBlock extends ContentNode {
         const block = new GraphicsBlock()
         block.moveTo(x1, y1)
         block.lineTo(x2, y2)
-        if (rgb) {
-            block.rgb(...rgb)
-        }
-        block.stroke()
+        block.strokeColor = new RGBColor(
+            rgb?.[0] ?? 0,
+            rgb?.[1] ?? 0,
+            rgb?.[2] ?? 0,
+        )
         return block
     }
 
@@ -54,13 +76,11 @@ export class GraphicsBlock extends ContentNode {
         block.lineTo(x + width, y + height)
         block.lineTo(x, y + height)
         block.lineTo(x, y)
-        if (rgb) {
-            block.rgb(...rgb)
-        }
+        const color = new RGBColor(rgb?.[0] ?? 0, rgb?.[1] ?? 0, rgb?.[2] ?? 0)
         if (fill) {
-            block.fill()
+            block.fillColor = color
         } else {
-            block.stroke()
+            block.strokeColor = color
         }
         return block
     }
@@ -94,13 +114,11 @@ export class GraphicsBlock extends ContentNode {
         block.lineTo(x + radiusX, y - controlY)
         block.lineTo(x + radiusX, y)
 
-        if (rgb) {
-            block.rgb(...rgb)
-        }
+        const color = new RGBColor(rgb?.[0] ?? 0, rgb?.[1] ?? 0, rgb?.[2] ?? 0)
         if (fill) {
-            block.fill()
+            block.fillColor = color
         } else {
-            block.stroke()
+            block.strokeColor = color
         }
         return block
     }
@@ -113,17 +131,184 @@ export class GraphicsBlock extends ContentNode {
         this._ops.push(LineToOp.create(x, y))
     }
 
-    stroke() {
-        this._ops.push(new StrokeOp())
+    get fillColor(): Color | undefined {
+        for (const op of this.ops) {
+            if (op instanceof SetFillColorRGBOp)
+                return new RGBColor(op.r, op.g, op.b)
+            if (op instanceof SetFillColorCMYKOp)
+                return new CMYKColor(op.c, op.m, op.y, op.k)
+            if (op instanceof SetFillColorGrayOp) return new GrayColor(op.gray)
+        }
+        return undefined
     }
 
-    fill() {
-        this._ops.push(new FillOp())
+    set fillColor(color: Color | undefined) {
+        const ops = this.ops
+        // Find existing fill color op index
+        let idx = -1
+        for (let i = 0; i < ops.length; i++) {
+            if (
+                ops[i] instanceof SetFillColorRGBOp ||
+                ops[i] instanceof SetFillColorCMYKOp ||
+                ops[i] instanceof SetFillColorGrayOp
+            ) {
+                idx = i
+                break
+            }
+        }
+        if (color) {
+            const newOp = color.toFillOp()
+            if (idx >= 0) {
+                ops.splice(idx, 1, newOp)
+            } else {
+                ops.splice(0, 0, newOp)
+            }
+        } else if (idx >= 0) {
+            ops.splice(idx, 1)
+        }
+        this.updatePaintOp()
     }
 
-    rgb(r: number, g: number, b: number) {
-        this._ops.push(SetStrokeColorRGBOp.create(r, g, b))
-        this._ops.push(SetFillColorRGBOp.create(r, g, b))
+    get strokeColor(): Color | undefined {
+        for (const op of this.ops) {
+            if (op instanceof SetStrokeColorRGBOp)
+                return new RGBColor(op.r, op.g, op.b)
+            if (op instanceof SetStrokeColorCMYKOp)
+                return new CMYKColor(op.c, op.m, op.y, op.k)
+            if (op instanceof SetStrokeColorGrayOp)
+                return new GrayColor(op.gray)
+        }
+        return undefined
+    }
+
+    set strokeColor(color: Color | undefined) {
+        const ops = this.ops
+        // Find existing stroke color op index
+        let idx = -1
+        for (let i = 0; i < ops.length; i++) {
+            if (
+                ops[i] instanceof SetStrokeColorRGBOp ||
+                ops[i] instanceof SetStrokeColorCMYKOp ||
+                ops[i] instanceof SetStrokeColorGrayOp
+            ) {
+                idx = i
+                break
+            }
+        }
+        if (color) {
+            const newOp = color.toStrokeOp()
+            if (idx >= 0) {
+                ops.splice(idx, 1, newOp)
+            } else {
+                ops.splice(0, 0, newOp)
+            }
+        } else if (idx >= 0) {
+            ops.splice(idx, 1)
+        }
+        this.updatePaintOp()
+    }
+
+    isFilled(): boolean | undefined {
+        for (const op of this.ops) {
+            if (
+                op instanceof FillOp ||
+                op instanceof FillAlternateOp ||
+                op instanceof FillEvenOddOp ||
+                op instanceof FillAndStrokeOp ||
+                op instanceof FillAndStrokeEvenOddOp ||
+                op instanceof CloseFillAndStrokeOp ||
+                op instanceof CloseFillAndStrokeEvenOddOp
+            )
+                return true
+            if (op instanceof StrokeOp || op instanceof CloseAndStrokeOp)
+                return false
+        }
+        return undefined
+    }
+
+    private isPaintOp(op: ContentOp): boolean {
+        return (
+            op instanceof FillOp ||
+            op instanceof FillAlternateOp ||
+            op instanceof FillEvenOddOp ||
+            op instanceof StrokeOp ||
+            op instanceof CloseAndStrokeOp ||
+            op instanceof FillAndStrokeOp ||
+            op instanceof FillAndStrokeEvenOddOp ||
+            op instanceof CloseFillAndStrokeOp ||
+            op instanceof CloseFillAndStrokeEvenOddOp
+        )
+    }
+
+    private updatePaintOp(): void {
+        const ops = this.ops
+        const hasFill = this.fillColor !== undefined
+        const hasStroke = this.strokeColor !== undefined
+        let newPaintOp: ContentOp | undefined
+        if (hasFill && hasStroke) {
+            newPaintOp = new FillAndStrokeOp()
+        } else if (hasFill) {
+            newPaintOp = new FillOp()
+        } else if (hasStroke) {
+            newPaintOp = new StrokeOp()
+        }
+
+        // Find existing paint op and replace/remove it
+        let paintIdx = -1
+        for (let i = ops.length - 1; i >= 0; i--) {
+            if (this.isPaintOp(ops[i])) {
+                paintIdx = i
+                break
+            }
+        }
+
+        if (paintIdx >= 0) {
+            if (newPaintOp) {
+                ops.splice(paintIdx, 1, newPaintOp)
+            } else {
+                ops.splice(paintIdx, 1)
+            }
+        } else if (newPaintOp) {
+            ops.push(newPaintOp)
+        }
+    }
+
+    resizeTo(newWidth: number, newHeight: number): void {
+        const bbox = this.getLocalBoundingBox()
+        if (bbox.width <= 0 || bbox.height <= 0) return
+        const sx = newWidth / bbox.width
+        const sy = newHeight / bbox.height
+        const ox = bbox.x
+        const oy = bbox.y
+
+        for (const op of this.ops) {
+            if (op instanceof MoveToOp || op instanceof LineToOp) {
+                op.x = ox + (op.x - ox) * sx
+                op.y = oy + (op.y - oy) * sy
+            } else if (op instanceof RectangleOp) {
+                op.x = ox + (op.x - ox) * sx
+                op.y = oy + (op.y - oy) * sy
+                op.width = op.width * sx
+                op.height = op.height * sy
+            } else if (op instanceof CurveToOp) {
+                op.x1 = ox + (op.x1 - ox) * sx
+                op.y1 = oy + (op.y1 - oy) * sy
+                op.x2 = ox + (op.x2 - ox) * sx
+                op.y2 = oy + (op.y2 - oy) * sy
+                op.x3 = ox + (op.x3 - ox) * sx
+                op.y3 = oy + (op.y3 - oy) * sy
+            } else if (op instanceof CurveToV) {
+                op.x2 = ox + (op.x2 - ox) * sx
+                op.y2 = oy + (op.y2 - oy) * sy
+                op.x3 = ox + (op.x3 - ox) * sx
+                op.y3 = oy + (op.y3 - oy) * sy
+            } else if (op instanceof CurveToY) {
+                op.x1 = ox + (op.x1 - ox) * sx
+                op.y1 = oy + (op.y1 - oy) * sy
+                op.x3 = ox + (op.x3 - ox) * sx
+                op.y3 = oy + (op.y3 - oy) * sy
+            }
+        }
     }
 
     moveBy(dx: number, dy: number): void {

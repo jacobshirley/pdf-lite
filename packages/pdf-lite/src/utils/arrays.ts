@@ -335,28 +335,62 @@ export class ArraySegment<T> implements Iterable<T>, ArrayLike<T> {
     /** Append at the run's trailing edge. */
     push(item: T): void {
         this.array.splice(this.end, 0, item)
+        if (this.endSentinel.value !== null) {
+            this.endSentinel.value = item
+        }
     }
 
     splice(localStart: number, deleteCount: number, ...items: T[]): T[] {
-        const deleted = this.array.splice(
-            this.start + localStart,
-            deleteCount,
-            ...items,
-        )
+        const globalStart = this.start + localStart
+        const deleted = this.array.splice(globalStart, deleteCount, ...items)
 
-        // When a deleted item was a sentinel boundary and replacement items
-        // were provided, rebind the sentinel so neighbouring runs sharing
-        // it stay consistent.
-        if (items.length > 0 && deleted.length > 0) {
+        // Rebind sentinels when deleted items include a sentinel boundary.
+        if (deleted.length > 0) {
             const sVal = this.startSentinel.value
             const eVal = this.endSentinel.value
             for (const d of deleted) {
                 if (sVal !== null && d === sVal) {
-                    this.startSentinel.value = items[0]
+                    if (items.length > 0) {
+                        // Replace with first inserted item
+                        this.startSentinel.value = items[0]
+                    } else {
+                        // No replacement — rebind to the item now at the
+                        // same global position (the one that shifted in),
+                        // or null if segment is now empty.
+                        this.startSentinel.value =
+                            globalStart < this.array.length
+                                ? this.array.get(globalStart)
+                                : null
+                    }
                 }
                 if (eVal !== null && d === eVal) {
-                    this.endSentinel.value = items[items.length - 1]
+                    if (items.length > 0) {
+                        // Replace with last inserted item
+                        this.endSentinel.value = items[items.length - 1]
+                    } else {
+                        // No replacement — rebind to the item now just
+                        // before the deleted position (predecessor).
+                        this.endSentinel.value =
+                            globalStart > 0
+                                ? this.array.get(globalStart - 1)
+                                : null
+                    }
                 }
+            }
+        }
+
+        // When inserting without deleting at position 0 of a segment whose
+        // start sentinel IS the first visible item (startOffset === 0), the
+        // sentinel gets pushed right by the insert and the new items fall
+        // outside the view.  Rebind the sentinel to keep the view intact.
+        if (deleted.length === 0 && items.length > 0) {
+            if (
+                localStart === 0 &&
+                this.startOffset === 0 &&
+                this.startSentinel.value !== null &&
+                this.startSentinel.value !== items[0]
+            ) {
+                this.startSentinel.value = items[0]
             }
         }
 

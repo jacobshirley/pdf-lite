@@ -1,5 +1,5 @@
 import { ContentOp } from '../ops/base'
-import { SetFillColorCMYKOp } from '../ops/color'
+import { SetFillColorCMYKOp, SetStrokeColorCMYKOp } from '../ops/color'
 import { Color } from './color'
 
 export class CMYKColor extends Color {
@@ -16,8 +16,12 @@ export class CMYKColor extends Color {
         this.k = k
     }
 
-    toOp(): ContentOp {
+    toFillOp(): ContentOp {
         return SetFillColorCMYKOp.create(this.c, this.m, this.y, this.k)
+    }
+
+    toStrokeOp(): ContentOp {
+        return SetStrokeColorCMYKOp.create(this.c, this.m, this.y, this.k)
     }
 
     toHexString(): string {

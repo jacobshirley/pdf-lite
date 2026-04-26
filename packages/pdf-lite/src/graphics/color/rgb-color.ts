@@ -1,5 +1,5 @@
 import { ContentOp } from '../ops/base'
-import { SetFillColorRGBOp } from '../ops/color'
+import { SetFillColorRGBOp, SetStrokeColorRGBOp } from '../ops/color'
 import { Color } from './color'
 
 export class RGBColor extends Color {
@@ -14,8 +14,12 @@ export class RGBColor extends Color {
         this.b = b
     }
 
-    toOp(): ContentOp {
+    toFillOp(): ContentOp {
         return SetFillColorRGBOp.create(this.r, this.g, this.b)
+    }
+
+    toStrokeOp(): ContentOp {
+        return SetStrokeColorRGBOp.create(this.r, this.g, this.b)
     }
 
     toHexString(): string {

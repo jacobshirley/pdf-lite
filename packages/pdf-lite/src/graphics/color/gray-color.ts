@@ -1,5 +1,5 @@
 import { ContentOp } from '../ops/base'
-import { SetFillColorGrayOp } from '../ops/color'
+import { SetFillColorGrayOp, SetStrokeColorGrayOp } from '../ops/color'
 import { Color } from './color'
 
 export class GrayColor extends Color {
@@ -10,8 +10,12 @@ export class GrayColor extends Color {
         this.gray = gray
     }
 
-    toOp(): ContentOp {
+    toFillOp(): ContentOp {
         return SetFillColorGrayOp.create(this.gray)
+    }
+
+    toStrokeOp(): ContentOp {
+        return SetStrokeColorGrayOp.create(this.gray)
     }
 
     toHexString(): string {

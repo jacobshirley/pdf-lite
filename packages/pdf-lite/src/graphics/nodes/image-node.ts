@@ -1,10 +1,11 @@
 import { PdfPage } from '../../pdf/pdf-page'
 import { ContentOp } from '../ops/base'
 import { InvokeXObjectOp, SetMatrixOp } from '../ops/state'
+import { Matrix } from '../geom/matrix'
 import { Rect } from '../geom/rect'
 import { ArraySegment } from '../../utils/arrays'
-import { GraphicsBlock } from './graphics-block'
 import { StateNode } from './state-node'
+import { ContentNode } from './content-node'
 
 /**
  * Represents an XObject image invocation (Do), typically inside a
@@ -13,9 +14,9 @@ import { StateNode } from './state-node'
  * The cm (CTM) lives on the parent StateNode as a directOp.
  * ImageNode only holds the Do invocation itself.
  */
-export class ImageNode extends GraphicsBlock {
+export class ImageNode extends ContentNode {
     constructor(page?: PdfPage, ops?: ContentOp[] | ArraySegment<ContentOp>) {
-        super(page, ops)
+        super(ops, page)
     }
 
     private get invokeOp(): InvokeXObjectOp | undefined {
@@ -29,7 +30,11 @@ export class ImageNode extends GraphicsBlock {
         return this.invokeOp?.name ?? ''
     }
 
-    override moveBy(dx: number, dy: number): void {
+    getLocalTransform(): Matrix {
+        return Matrix.identity()
+    }
+
+    moveBy(dx: number, dy: number): void {
         // Delegate entirely to parent StateNode — it holds the cm and
         // will propagate up to move clip rects on ancestor StateNodes.
         if (this.parent instanceof StateNode) {
@@ -40,7 +45,7 @@ export class ImageNode extends GraphicsBlock {
         }
     }
 
-    override getLocalBoundingBox(): Rect {
+    getLocalBoundingBox(): Rect {
         // The parent StateNode's cm maps a unit square to the image
         // rectangle. Return the unit square here; getWorldBoundingBox()
         // applies the parent's transform (which includes cm) to get
@@ -48,7 +53,7 @@ export class ImageNode extends GraphicsBlock {
         return new Rect({ x: 0, y: 0, width: 1, height: 1 })
     }
 
-    override resizeTo(newWidth: number, newHeight: number): void {
+    resizeTo(newWidth: number, newHeight: number): void {
         if (this.parent instanceof StateNode) {
             for (const op of this.parent.directOps) {
                 if (op instanceof SetMatrixOp) {

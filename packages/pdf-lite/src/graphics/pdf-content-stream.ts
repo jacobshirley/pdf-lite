@@ -26,11 +26,36 @@ import {
     ContentNode,
     GraphicsBlock,
     ImageNode,
+    LineNode,
+    RectangleNode,
+    RawShapeNode,
     StateNode,
     TextBlock,
     TextRun,
     VirtualTextBlock,
 } from './nodes'
+import { MoveToOp, LineToOp, RectangleOp } from './ops/path'
+import {
+    StrokeOp,
+    CloseAndStrokeOp,
+    FillOp,
+    FillAlternateOp,
+    FillAndStrokeOp,
+    CloseFillAndStrokeOp,
+} from './ops/paint'
+import {
+    SetFillColorRGBOp,
+    SetFillColorCMYKOp,
+    SetFillColorGrayOp,
+    SetStrokeColorRGBOp,
+    SetStrokeColorCMYKOp,
+    SetStrokeColorGrayOp,
+} from './ops/color'
+import { SetLineWidthOp } from './ops/state'
+import { RGBColor } from './color/rgb-color'
+import { CMYKColor } from './color/cmyk-color'
+import { GrayColor } from './color/gray-color'
+import type { Color } from './color'
 import { ArraySegment, MultiArray } from '../utils/arrays'
 
 export {
@@ -45,6 +70,104 @@ export {
 
 export { isJpeg, getJpegDimensions } from '../utils/jpeg-utils'
 import { isJpeg, getJpegDimensions } from '../utils/jpeg-utils'
+
+function extractColor(ops: ContentOp[], fill: boolean): Color | undefined {
+    for (const op of ops) {
+        if (fill) {
+            if (op instanceof SetFillColorRGBOp)
+                return new RGBColor(op.r, op.g, op.b)
+            if (op instanceof SetFillColorCMYKOp)
+                return new CMYKColor(op.c, op.m, op.y, op.k)
+            if (op instanceof SetFillColorGrayOp) return new GrayColor(op.gray)
+        } else {
+            if (op instanceof SetStrokeColorRGBOp)
+                return new RGBColor(op.r, op.g, op.b)
+            if (op instanceof SetStrokeColorCMYKOp)
+                return new CMYKColor(op.c, op.m, op.y, op.k)
+            if (op instanceof SetStrokeColorGrayOp)
+                return new GrayColor(op.gray)
+        }
+    }
+    return undefined
+}
+
+function extractStrokeWidth(ops: ContentOp[]): number | undefined {
+    for (const op of ops) {
+        if (op instanceof SetLineWidthOp) return op.lineWidth
+    }
+    return undefined
+}
+
+function parseGraphicsOpsToBlock(
+    ops: ContentOp[],
+    page?: PdfPage,
+): GraphicsBlock {
+    const paintOp = ops[ops.length - 1]
+    const isStrokeOnly =
+        paintOp instanceof StrokeOp || paintOp instanceof CloseAndStrokeOp
+    const isFillOnly =
+        paintOp instanceof FillOp || paintOp instanceof FillAlternateOp
+    const isFillAndStroke =
+        paintOp instanceof FillAndStrokeOp ||
+        paintOp instanceof CloseFillAndStrokeOp
+
+    const pathOps = ops.filter(
+        (op) =>
+            op instanceof MoveToOp ||
+            op instanceof LineToOp ||
+            op instanceof RectangleOp,
+    )
+
+    // Detect Line: exactly MoveTo + LineTo + stroke (no fill)
+    if (
+        isStrokeOnly &&
+        pathOps.length === 2 &&
+        pathOps[0] instanceof MoveToOp &&
+        pathOps[1] instanceof LineToOp
+    ) {
+        const block = new GraphicsBlock(page)
+        block.addChild(
+            new LineNode({
+                x1: pathOps[0].x,
+                y1: pathOps[0].y,
+                x2: pathOps[1].x,
+                y2: pathOps[1].y,
+                strokeColor: extractColor(ops, false),
+                strokeWidth: extractStrokeWidth(ops),
+            }),
+        )
+        return block
+    }
+
+    // Detect Rectangle: exactly RectangleOp + fill/stroke
+    if (pathOps.length === 1 && pathOps[0] instanceof RectangleOp) {
+        const rOp = pathOps[0] as RectangleOp
+        const block = new GraphicsBlock(page)
+        block.addChild(
+            new RectangleNode({
+                x: rOp.x,
+                y: rOp.y,
+                width: rOp.width,
+                height: rOp.height,
+                fillColor:
+                    isFillOnly || isFillAndStroke
+                        ? extractColor(ops, true)
+                        : undefined,
+                strokeColor:
+                    isStrokeOnly || isFillAndStroke
+                        ? extractColor(ops, false)
+                        : undefined,
+                strokeWidth: extractStrokeWidth(ops),
+            }),
+        )
+        return block
+    }
+
+    // Unknown/complex shape — use RawShapeNode
+    const block = new GraphicsBlock(page)
+    block.addChild(new RawShapeNode([...ops]))
+    return block
+}
 
 export class PdfContentStream extends PdfStream {
     private _page?: PdfPage
@@ -552,19 +675,7 @@ export class PdfContents extends PdfIndirectObject<
                 }
             } else if (op instanceof PaintOp) {
                 graphicsOps.push(op)
-                let gBlock: GraphicsBlock
-                if (backing && graphicsOps.length > 0) {
-                    const segment = new ArraySegment<ContentOp>(
-                        backing,
-                        graphicsOps[0],
-                        graphicsOps[graphicsOps.length - 1],
-                        0, // include first op
-                        1, // include last op
-                    )
-                    gBlock = new GraphicsBlock(page, segment)
-                } else {
-                    gBlock = new GraphicsBlock(page, graphicsOps)
-                }
+                const gBlock = parseGraphicsOpsToBlock(graphicsOps, page)
                 currentState.addChild(gBlock)
                 graphicsOps = []
             } else if (op instanceof PathOp || op instanceof ColorOp) {

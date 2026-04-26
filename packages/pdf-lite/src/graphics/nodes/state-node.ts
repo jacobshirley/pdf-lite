@@ -46,6 +46,9 @@ export class StateNode extends ContentNode {
                 op.f += dy
             }
         }
+        for (const child of this.children) {
+            child.moveBy(dx, dy)
+        }
     }
 
     addChild(node: ContentNode): void {

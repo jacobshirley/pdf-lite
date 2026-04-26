@@ -61,6 +61,9 @@ export type GraphicsBlockDTO = {
     shapeType?: GraphicsShapeType
     colorHex?: string
     fill?: boolean
+    fillColorHex?: string
+    strokeColorHex?: string
+    strokeWidth?: number
 }
 
 export type ExtractResult = {
@@ -184,7 +187,14 @@ export type WorkerMethods = {
         result: GraphicsBlockDTO
     }
     updateGraphicsBlock: {
-        args: { id: string; rgb?: [number, number, number]; fill?: boolean }
+        args: {
+            id: string
+            rgb?: [number, number, number]
+            fill?: boolean
+            fillRgb?: [number, number, number] | null
+            strokeRgb?: [number, number, number] | null
+            strokeWidth?: number
+        }
         result: GraphicsBlockDTO
     }
     editTextBlock: {

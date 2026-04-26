@@ -97,7 +97,7 @@ export function TopBar() {
                 <DialogContent className="z-[100] max-w-sm rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold tracking-tight">
-                            FOSS PDF Editor
+                            PDF Zero
                         </DialogTitle>
                         <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
                             Free, private, client-side PDF editing

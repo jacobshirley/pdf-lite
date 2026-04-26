@@ -375,6 +375,9 @@ function graphicsBlockToDTO(
         fill = block.isFilled()
     }
 
+    const fillColor = block.fillColor
+    const strokeColor = block.strokeColor
+
     return {
         id,
         page: pageNumber,
@@ -389,6 +392,9 @@ function graphicsBlockToDTO(
         shapeType: meta?.shapeType,
         colorHex,
         fill,
+        fillColorHex: fillColor?.toHexString(),
+        strokeColorHex: strokeColor?.toHexString(),
+        strokeWidth: block.strokeWidth,
     }
 }
 

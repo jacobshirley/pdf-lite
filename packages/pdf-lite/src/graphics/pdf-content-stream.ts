@@ -223,14 +223,19 @@ export class PdfContentStream extends PdfStream {
     }
 
     override get raw(): ByteArray {
-        const ops = this.ops
-        const contentString = ops
-            .map((op) => {
-                const s = op.toString()
-                // Ensure each op ends with whitespace for correct re-parsing
-                return s.endsWith('\n') || s.endsWith(' ') ? s : s + '\n'
-            })
-            .join('')
+        let contentString: string
+        if (this._nodes) {
+            contentString =
+                this._nodes.map((n) => n.toString()).join('\n') + '\n'
+        } else {
+            const ops = this.ops
+            contentString = ops
+                .map((op) => {
+                    const s = op.toString()
+                    return s.endsWith('\n') || s.endsWith(' ') ? s : s + '\n'
+                })
+                .join('')
+        }
         super.raw = PdfStream.encode(
             stringToBytes(contentString),
             this.getFilters(),

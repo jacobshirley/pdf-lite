@@ -40,4 +40,11 @@ export class PdfWhitespaceToken extends PdfToken {
         }
         return byte === 0x20 || byte === 0x0a || byte === 0x0d || byte === 0x09
     }
+
+    get isNewLine(): boolean {
+        return (
+            this.rawBytes.length === 1 &&
+            (this.rawBytes[0] === 0x0a || this.rawBytes[0] === 0x0d)
+        )
+    }
 }

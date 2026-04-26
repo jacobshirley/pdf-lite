@@ -4,7 +4,8 @@ import { PdfObject } from './pdf-object.js'
 import { PdfIndirectObject } from './pdf-indirect-object.js'
 
 export interface IPdfObjectResolver {
-    resolve(objectNumber: number, generationNumber: number): PdfIndirectObject
+    getObject(objectNumber: number, generationNumber: number): PdfIndirectObject
+    getObjectAtOffset(offset: number): PdfObject
 }
 
 export class PdfObjectReference<
@@ -54,7 +55,7 @@ export class PdfObjectReference<
             )
         }
 
-        const object = this.resolver.resolve(
+        const object = this.resolver.getObject(
             this.objectNumber,
             this.generationNumber,
         ) as U

@@ -16,11 +16,8 @@ import {
  * @param data - The data to encrypt.
  * @returns A promise that resolves to the encrypted data.
  */
-async function rc4EncryptWithKey(
-    key: ByteArray,
-    data: ByteArray,
-): Promise<ByteArray> {
-    return await rc4(key).encrypt(data)
+function rc4EncryptWithKey(key: ByteArray, data: ByteArray): ByteArray {
+    return rc4(key).encrypt(data)
 }
 
 /**
@@ -33,25 +30,25 @@ async function rc4EncryptWithKey(
  *
  * @example
  * ```typescript
- * const userPassword = await decryptUserPasswordRc4_128(ownerPw, O)
+ * const userPassword = decryptUserPasswordRc4_128(ownerPw, O)
  * ```
  */
-export async function decryptUserPasswordRc4_128(
+export function decryptUserPasswordRc4_128(
     ownerPw: ByteArray,
     ownerKey: ByteArray,
-): Promise<ByteArray> {
+): ByteArray {
     const ownerPad = padPassword(ownerPw)
-    let digest = await md5(ownerPad)
+    let digest = md5(ownerPad)
 
     for (let i = 0; i < 50; i++) {
-        digest = await md5(digest)
+        digest = md5(digest)
     }
 
     const key = digest.subarray(0, 16)
     let data = ownerKey
     for (let i = 0; i < 20; i++) {
         const roundKey = key.map((b) => b ^ i)
-        data = await rc4EncryptWithKey(roundKey, data)
+        data = rc4EncryptWithKey(roundKey, data)
     }
 
     return removePdfPasswordPadding(data)
@@ -67,28 +64,28 @@ export async function decryptUserPasswordRc4_128(
  *
  * @example
  * ```typescript
- * const O = await computeOValueRc4_128(ownerPassword, userPassword)
+ * const O = computeOValueRc4_128(ownerPassword, userPassword)
  * ```
  */
-export async function computeOValueRc4_128(
+export function computeOValueRc4_128(
     ownerPassword: ByteArray,
     userPassword: ByteArray,
-): Promise<ByteArray> {
+): ByteArray {
     const oPad = padPassword(ownerPassword)
 
-    let digest = await md5(oPad)
+    let digest = md5(oPad)
     for (let i = 0; i < 50; i++) {
-        digest = await md5(digest)
+        digest = md5(digest)
     }
 
     const key = digest.subarray(0, 16)
 
     const uPad = padPassword(userPassword)
-    let data = await rc4EncryptWithKey(key, uPad)
+    let data = rc4EncryptWithKey(key, uPad)
 
     for (let i = 1; i <= 19; i++) {
         const roundKey = key.map((b) => b ^ i)
-        data = await rc4EncryptWithKey(roundKey, data)
+        data = rc4EncryptWithKey(roundKey, data)
     }
 
     return data
@@ -105,17 +102,17 @@ export async function computeOValueRc4_128(
  * @param revision - The encryption revision number.
  * @returns A promise that resolves to the 16-byte encryption key.
  */
-async function computeEncryptionKeyRc4_128(
+function computeEncryptionKeyRc4_128(
     userPad: ByteArray,
     oValue: ByteArray,
     permissions: number,
     id: ByteArray,
     encryptMetadata: boolean,
     revision: number = 3,
-): Promise<ByteArray> {
+): ByteArray {
     const perms = int32ToLittleEndianBytes(permissions)
 
-    let digest = await md5(
+    let digest = md5(
         concatUint8Arrays([
             userPad,
             oValue,
@@ -129,7 +126,7 @@ async function computeEncryptionKeyRc4_128(
 
     // 50 iterations
     for (let i = 0; i < 50; i++) {
-        digest = await md5(digest)
+        digest = md5(digest)
     }
 
     return digest.subarray(0, 16) // RC4-128
@@ -149,21 +146,21 @@ async function computeEncryptionKeyRc4_128(
  *
  * @example
  * ```typescript
- * const U = await computeUValueRc4_128(userPassword, O, permissions, fileId, true)
+ * const U = computeUValueRc4_128(userPassword, O, permissions, fileId, true)
  * ```
  */
-export async function computeUValueRc4_128(
+export function computeUValueRc4_128(
     userPassword: ByteArray,
     oValue: ByteArray,
     permissions: number,
     id: ByteArray,
     encryptMetadata: boolean,
     revision?: number,
-): Promise<ByteArray> {
+): ByteArray {
     const userPad = padPassword(userPassword)
 
     // Step 1: Compute encryption key
-    const encryptionKey = await computeEncryptionKeyRc4_128(
+    const encryptionKey = computeEncryptionKeyRc4_128(
         userPad,
         oValue,
         permissions,
@@ -173,15 +170,15 @@ export async function computeUValueRc4_128(
     )
 
     // Step 2 & 3: MD5 of padding + file ID
-    const hash = await md5(concatUint8Arrays([DEFAULT_PADDING, id])) // 16 bytes
+    const hash = md5(concatUint8Arrays([DEFAULT_PADDING, id])) // 16 bytes
 
     // Step 4: First RC4 encrypt with base key
-    let data = await rc4EncryptWithKey(encryptionKey, hash)
+    let data = rc4EncryptWithKey(encryptionKey, hash)
 
     // Step 5: 19 more rounds of RC4 with key XOR i
     for (let i = 1; i <= 19; i++) {
         const roundKey = encryptionKey.map((b) => b ^ i)
-        data = await rc4EncryptWithKey(roundKey, data)
+        data = rc4EncryptWithKey(roundKey, data)
     }
 
     // Step 6: Append 16 more bytes (usually same padding again, or random)

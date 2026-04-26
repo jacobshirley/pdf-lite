@@ -12,7 +12,7 @@ import { Cipher } from '../../crypto/types.js'
  *     authEvent: 'DocOpen',
  *     securityHandler
  * })
- * const encrypted = await filter.encrypt(data, objectNumber, generationNumber)
+ * const encrypted = filter.encrypt(data, objectNumber, generationNumber)
  * ```
  */
 export class AesV2CryptFilter extends PdfCryptFilter {
@@ -36,16 +36,13 @@ export class AesV2CryptFilter extends PdfCryptFilter {
      * @returns An AES-128 cipher instance.
      * @throws Error if security handler is not set.
      */
-    async getCipher(
-        objectNumber?: number,
-        generationNumber?: number,
-    ): Promise<Cipher> {
+    getCipher(objectNumber?: number, generationNumber?: number): Cipher {
         const securityHandler = this.securityHandler
         if (!securityHandler) {
             throw new Error('Missing security handler for AESV2 crypt filter')
         }
 
-        const objectKey = await securityHandler.computeObjectKey(
+        const objectKey = securityHandler.computeObjectKey(
             objectNumber,
             generationNumber,
             'AES-128-CBC',

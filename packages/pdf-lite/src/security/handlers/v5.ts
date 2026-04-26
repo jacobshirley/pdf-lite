@@ -35,7 +35,7 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
     /** Permissions entry (Perms value). */
     protected perms?: ByteArray
     /** Promise resolving to the file encryption key. */
-    protected fileKey?: Promise<ByteArray>
+    protected fileKey?: ByteArray
 
     /**
      * Creates a new V5 security handler with AES-256 encryption.
@@ -75,8 +75,8 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
     /**
      * Initializes encryption keys, either deriving from existing values or generating new ones.
      */
-    protected async initKeys(): Promise<void> {
-        this.fileKey ||= (async () => {
+    protected initKeys(): void {
+        this.fileKey ||= (() => {
             if (
                 this.userEncryptedFileKey &&
                 this.ownerEncryptedFileKey &&
@@ -84,7 +84,7 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
                 this.ownerKey &&
                 this.perms
             ) {
-                const derivedFileKey = await getFileKey(
+                const derivedFileKey = getFileKey(
                     this.password,
                     this.ownerPassword ?? this.password,
                     this.userKey,
@@ -97,12 +97,12 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
             }
             const fileKey = getRandomBytes(32)
 
-            const { U, UE } = await generateUandUe(this.password, fileKey)
+            const { U, UE } = generateUandUe(this.password, fileKey)
 
             this.userKey = U
             this.userEncryptedFileKey = UE
 
-            const { O, OE } = await generateOandOe(
+            const { O, OE } = generateOandOe(
                 this.ownerPassword ?? this.password,
                 U,
                 fileKey,
@@ -111,7 +111,7 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
             this.ownerKey = O
             this.ownerEncryptedFileKey = OE
 
-            this.perms = await this.buildPermsEntry(
+            this.perms = this.buildPermsEntry(
                 this.permissions ?? 0,
                 this.encryptMetadata,
                 fileKey,
@@ -120,7 +120,7 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
             return fileKey
         })()
 
-        await this.fileKey
+        this.fileKey
     }
 
     /**
@@ -129,8 +129,8 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
      * @returns The file encryption key.
      * @throws Error if file key is not initialized.
      */
-    protected async computeMasterKey(): Promise<ByteArray> {
-        await this.initKeys()
+    protected computeMasterKey(): ByteArray {
+        this.initKeys()
 
         if (!this.fileKey) {
             throw new Error('File key not initialized')
@@ -147,11 +147,11 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
      * @param fileKey - The file encryption key.
      * @returns The encrypted permissions entry.
      */
-    private async buildPermsEntry(
+    private buildPermsEntry(
         flags: number,
         encryptMetadata: boolean,
         fileKey: ByteArray,
-    ): Promise<ByteArray> {
+    ): ByteArray {
         const block = new Uint8Array(16)
 
         // a + b) permissions + 0xFFFFFFFF (little-endian)
@@ -171,7 +171,7 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
         const randomBytes = getRandomBytes(4)
         block.set(randomBytes, 12)
 
-        return await aes256ecbEncrypt(fileKey, block)
+        return aes256ecbEncrypt(fileKey, block)
     }
 
     /**
@@ -188,8 +188,8 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
      *
      * @returns An AES-256 cipher instance.
      */
-    protected async getCipher(): Promise<Cipher> {
-        this.masterKey ||= await this.computeMasterKey()
+    protected getCipher(): Cipher {
+        this.masterKey ||= this.computeMasterKey()
 
         return aes256(this.masterKey)
     }
@@ -217,8 +217,8 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
      *
      * @throws Error if required keys are not computed.
      */
-    async write(): Promise<void> {
-        await super.write()
+    write(): void {
+        super.write()
         const dict = this.dict
 
         assert(this.userEncryptedFileKey, 'User Encrypted File Key not set')
@@ -278,8 +278,8 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
      *
      * @returns The master encryption key.
      */
-    async computeObjectKey(): Promise<ByteArray> {
-        return await this.computeMasterKey()
+    computeObjectKey(): ByteArray {
+        return this.computeMasterKey()
     }
 
     /**
@@ -288,9 +288,7 @@ export class PdfV5SecurityHandler extends PdfV4SecurityHandler {
      *
      * @throws Error always, as this operation is not supported for V5.
      */
-    async recoverUserPassword(
-        ownerPassword?: ByteArray | string,
-    ): Promise<string> {
+    recoverUserPassword(ownerPassword?: ByteArray | string): string {
         throw new Error(
             'Recovering user password from owner password is not supported for AES-256',
         )

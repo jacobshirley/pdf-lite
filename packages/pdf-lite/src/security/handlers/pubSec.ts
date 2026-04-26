@@ -37,8 +37,8 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
     private recipients: PdfEncryptionRecipient[]
     /** Random seed for key generation. */
     private seed: ByteArray
-    /** Promise resolving to PKCS#7 CMS data for each recipient. */
-    private recipientsCms: Promise<ByteArray[]>
+    /** PKCS#7 CMS data for each recipient. */
+    private recipientsCms: ByteArray[] = []
 
     /**
      * Creates a new public key security handler.
@@ -66,7 +66,11 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
         pkcs7Input[22] = (this.permissions >> 8) & 0xff
         pkcs7Input[23] = this.permissions & 0xff
 
-        this.recipientsCms = this.getRecipientsPkcs7(pkcs7Input)
+        this.getRecipientsPkcs7(pkcs7Input)
+    }
+
+    async initHandler(): Promise<void> {
+        await this.getSeed()
     }
 
     clone(): this {
@@ -120,7 +124,7 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
         return this.standardSecurityHandler.isReady()
     }
 
-    async testPassword(): Promise<boolean> {
+    testPassword(): boolean {
         return this.standardSecurityHandler.testPassword()
     }
 
@@ -175,9 +179,9 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
 
         let digest: ByteArray
         if (this.standardSecurityHandler instanceof PdfV5SecurityHandler) {
-            digest = await sha256(digestBytes)
+            digest = sha256(digestBytes)
         } else {
-            digest = await sha1(digestBytes)
+            digest = sha1(digestBytes)
         }
 
         const key = digest.slice(
@@ -192,12 +196,12 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
     /**
      * Writes the encryption dictionary with public key-specific entries.
      */
-    async write(): Promise<void> {
-        await this.standardSecurityHandler.write()
+    write(): void {
+        this.standardSecurityHandler.write()
 
         this.dict.copyFrom(this.standardSecurityHandler.dict)
 
-        const recipientsData = await this.recipientsCms
+        const recipientsData = this.recipientsCms
 
         this.dict.set('Filter', new PdfName('Adobe.PubSec'))
         this.dict.set('SubFilter', new PdfName('adbe.pkcs7.s4'))
@@ -216,19 +220,19 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
      * @returns Array of PKCS#7 CMS bytes for each recipient.
      * @throws Error if any recipient lacks a certificate.
      */
-    private async getRecipientsPkcs7(data: ByteArray): Promise<ByteArray[]> {
-        return await Promise.all(
-            this.recipients.map((recipient) => {
-                if (!recipient.certificate) {
-                    throw new Error('Recipient certificate is required')
-                }
+    private async getRecipientsPkcs7(data: ByteArray): Promise<void> {
+        const recipientCmsArray = this.recipients.map((recipient) => {
+            if (!recipient.certificate) {
+                throw new Error('Recipient certificate is required')
+            }
 
-                return this.pkcs7EnvelopedData({
-                    data: data,
-                    recipientCertificates: [recipient.certificate],
-                })
-            }),
-        )
+            return this.pkcs7EnvelopedData({
+                data,
+                recipientCertificates: [recipient.certificate],
+            })
+        })
+
+        this.recipientsCms = await Promise.all(recipientCmsArray)
     }
 
     /**
@@ -248,14 +252,12 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
             throw new Error('Missing /Recipients in encryption dictionary')
         }
 
-        this.recipientsCms = Promise.resolve(
-            recipients.items.map((value) => {
-                if (!(value instanceof PdfHexadecimal)) {
-                    throw new Error('Invalid recipient type')
-                }
-                return value.raw as ByteArray
-            }),
-        )
+        this.recipientsCms = recipients.items.map((value) => {
+            if (!(value instanceof PdfHexadecimal)) {
+                throw new Error('Invalid recipient type')
+            }
+            return value.raw
+        })
     }
 
     /**
@@ -277,7 +279,7 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
         for (const privateKey of this.recipients
             .filter((x) => x.privateKey)
             .map((x) => x.privateKey!)) {
-            for (const cms of await this.recipientsCms) {
+            for (const cms of this.recipientsCms) {
                 const output = await this.extractSeedAndPermissions(
                     cms,
                     privateKey,
@@ -291,7 +293,7 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
                     permissions = (permissions << 8) | byte
                 }
 
-                await this.initKeys(seed)
+                this.initKeys(seed)
 
                 this.permissions = permissions
 
@@ -311,13 +313,13 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
      * @param generationNumber - The PDF generation number.
      * @returns The decrypted data.
      */
-    async decrypt(
+    decrypt(
         type: 'string' | 'stream' | 'file',
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray> {
-        await this.getSeed()
+    ): ByteArray {
+        this.getSeed()
 
         return this.standardSecurityHandler.decrypt(
             type,
@@ -336,13 +338,13 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
      * @param generationNumber - The PDF generation number.
      * @returns The encrypted data.
      */
-    async encrypt(
+    encrypt(
         type: 'string' | 'stream' | 'file',
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray> {
-        await this.initKeys()
+    ): ByteArray {
+        this.initKeys()
 
         return this.standardSecurityHandler.encrypt(
             type,
@@ -359,11 +361,11 @@ export class PdfPublicKeySecurityHandler extends PdfSecurityHandler {
      * @param generationNumber - The PDF generation number.
      * @returns The computed object key.
      */
-    async computeObjectKey(
+    computeObjectKey(
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray> {
-        await this.getSeed()
+    ): ByteArray {
+        this.getSeed()
         return this.standardSecurityHandler.computeObjectKey(
             objectNumber,
             generationNumber,

@@ -1,6 +1,6 @@
 import { ByteArray } from '../types.js'
 
 export interface Cipher {
-    encrypt(data: ByteArray): Promise<ByteArray>
-    decrypt(data: ByteArray): Promise<ByteArray>
+    encrypt(data: ByteArray): ByteArray
+    decrypt(data: ByteArray): ByteArray
 }

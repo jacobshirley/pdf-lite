@@ -14,7 +14,7 @@ import { ByteArray } from '../../types.js'
  * @param keyLengthBits Usually 40, 128 or 256
  * @param encryptMetadata Whether /EncryptMetadata is false
  */
-export async function computeMasterKey(
+export function computeMasterKey(
     password: ByteArray,
     ownerKey: ByteArray,
     permissions: number,
@@ -22,7 +22,7 @@ export async function computeMasterKey(
     keyLengthBits: number,
     encryptMetadata: boolean,
     revision: number = 3,
-): Promise<ByteArray> {
+): ByteArray {
     if (keyLengthBits % 8 !== 0) {
         throw new Error(
             `keyLengthBits must be a multiple of 8, got ${keyLengthBits}`,
@@ -41,12 +41,12 @@ export async function computeMasterKey(
     }
 
     // Initial MD5 hash
-    let digest = await md5(concatUint8Arrays(hashInputParts))
+    let digest = md5(concatUint8Arrays(hashInputParts))
 
     if (keyLengthBits > 40) {
         // Perform 50 iterations of MD5 rehash
         for (let i = 0; i < 50; i++) {
-            digest = await md5(digest.subarray(0, keyLengthBytes))
+            digest = md5(digest.subarray(0, keyLengthBytes))
         }
     }
 
@@ -62,19 +62,19 @@ export async function computeMasterKey(
  * @param objNumber - The PDF object number.
  * @param objGeneration - The PDF object generation number.
  * @param useAesSalt - Whether to include the AES salt ('sAlT'). Defaults to true.
- * @returns A promise that resolves to the derived object key.
+ * @returns The derived object key.
  *
  * @example
  * ```typescript
- * const objectKey = await deriveObjectKey(masterKey, 5, 0)
+ * const objectKey = deriveObjectKey(masterKey, 5, 0)
  * ```
  */
-export async function deriveObjectKey(
+export function deriveObjectKey(
     mkey: ByteArray,
     objNumber: number,
     objGeneration: number,
     useAesSalt: boolean = true,
-): Promise<ByteArray> {
+): ByteArray {
     const extra = useAesSalt ? 4 : 0 // 4 extra bytes if AES salt
     const buffer = new Uint8Array(mkey.length + 5 + extra) // <--- make room for salt if needed
     buffer.set(mkey, 0)
@@ -88,7 +88,7 @@ export async function deriveObjectKey(
         buffer.set([0x73, 0x41, 0x6c, 0x54], mkey.length + 5) // append 'sAlT'
     }
 
-    const digest = await md5(buffer)
+    const digest = md5(buffer)
 
     const keySize = Math.min(mkey.length + 5, 16)
     return new Uint8Array(digest.subarray(0, keySize))

@@ -38,16 +38,13 @@ export class V2CryptFilter extends PdfCryptFilter {
      * @returns An RC4 cipher instance.
      * @throws Error if security handler is not set.
      */
-    async getCipher(
-        objectNumber?: number,
-        generationNumber?: number,
-    ): Promise<Cipher> {
+    getCipher(objectNumber?: number, generationNumber?: number): Cipher {
         const securityHandler = this.securityHandler
         if (!securityHandler) {
             throw new Error('Missing security handler for V2 crypt filter')
         }
 
-        const objectKey = await securityHandler.computeObjectKey(
+        const objectKey = securityHandler.computeObjectKey(
             objectNumber,
             generationNumber,
         )

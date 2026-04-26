@@ -61,8 +61,8 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
      *
      * @returns The computed owner key.
      */
-    protected async computeOwnerKey(): Promise<ByteArray> {
-        return await computeORc4_40(
+    protected computeOwnerKey(): ByteArray {
+        return computeORc4_40(
             this.ownerPassword ?? this.password,
             this.password,
         )
@@ -74,7 +74,7 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
      * @returns The computed user key.
      * @throws Error if document ID, owner key, or permissions are not set.
      */
-    protected async computeUserKey(): Promise<ByteArray> {
+    protected computeUserKey(): ByteArray {
         if (!this.documentId) {
             throw new Error('Document ID is required to compute U value')
         }
@@ -87,7 +87,7 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
             throw new Error('Permissions are required to compute U value')
         }
 
-        return await computeURc4_40(
+        return computeURc4_40(
             this.password,
             this.ownerKey,
             this.permissions,
@@ -101,8 +101,8 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
      * @returns The computed master key.
      * @throws Error if required parameters are missing or password is incorrect.
      */
-    protected async computeMasterKey(): Promise<ByteArray> {
-        await this.initKeys()
+    protected computeMasterKey(): ByteArray {
+        this.initKeys()
 
         assert(this.ownerKey, 'ownerKey is required')
         assert(this.permissions !== undefined, 'Permissions are required')
@@ -113,11 +113,9 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
         )
 
         if (this.ownerPassword) {
-            const recoverPass = await this.recoverUserPassword(
-                this.ownerPassword,
-            )
+            const recoverPass = this.recoverUserPassword(this.ownerPassword)
 
-            return await computeMasterKey(
+            return computeMasterKey(
                 stringToBytes(recoverPass),
                 this.ownerKey,
                 this.permissions,
@@ -127,7 +125,7 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
                 this.getRevision(),
             )
         } else {
-            const expectedUValue = await this.computeUserKey()
+            const expectedUValue = this.computeUserKey()
 
             // For R=3 and R=4, only compare first 16 bytes of U value
             // The last 16 bytes are arbitrary padding
@@ -144,7 +142,7 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
             )
         }
 
-        return await computeMasterKey(
+        return computeMasterKey(
             this.password,
             this.ownerKey,
             this.permissions,
@@ -164,11 +162,11 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
      * @returns The computed object key.
      * @throws Error if object or generation number is invalid.
      */
-    async computeObjectKey(
+    computeObjectKey(
         objectNumber?: number,
         generationNumber?: number,
         algorithm?: PdfEncryptionAlgorithmType,
-    ): Promise<ByteArray> {
+    ): ByteArray {
         assert(
             objectNumber !== undefined,
             'Object number is required to derive the key',
@@ -181,9 +179,9 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
         assert(objectNumber > 0, 'Object number cannot be zero or negative')
         assert(generationNumber >= 0, 'Generation number cannot be negative')
 
-        this.masterKey ||= await this.computeMasterKey()
+        this.masterKey ||= this.computeMasterKey()
 
-        const key = await deriveObjectKey(
+        const key = deriveObjectKey(
             this.masterKey,
             objectNumber,
             generationNumber,
@@ -200,11 +198,11 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
      * @param generationNumber - The PDF generation number.
      * @returns An RC4 cipher instance.
      */
-    protected async getCipher(
+    protected getCipher(
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<Cipher> {
-        const key = await this.computeObjectKey(objectNumber, generationNumber)
+    ): Cipher {
+        const key = this.computeObjectKey(objectNumber, generationNumber)
 
         return rc4(key)
     }
@@ -215,12 +213,10 @@ export class PdfV1SecurityHandler extends PdfStandardSecurityHandler {
      * @param ownerPassword - The owner password.
      * @returns The recovered user password as a string.
      */
-    async recoverUserPassword(
-        ownerPassword?: ByteArray | string,
-    ): Promise<string> {
+    recoverUserPassword(ownerPassword?: ByteArray | string): string {
         ownerPassword ||= this.ownerPassword
 
-        const password = await decryptUserPasswordRc4_40(
+        const password = decryptUserPasswordRc4_40(
             stringToBytes(ownerPassword!),
             this.ownerKey!,
         )

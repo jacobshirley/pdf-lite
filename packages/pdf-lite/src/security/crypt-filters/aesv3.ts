@@ -37,16 +37,13 @@ export class AesV3CryptFilter extends PdfCryptFilter {
      * @returns An AES-256 cipher instance.
      * @throws Error if security handler is not set.
      */
-    async getCipher(
-        objectNumber?: number,
-        generationNumber?: number,
-    ): Promise<Cipher> {
+    getCipher(objectNumber?: number, generationNumber?: number): Cipher {
         const securityHandler = this.securityHandler
         if (!securityHandler) {
             throw new Error('Missing security handler for AESV3 crypt filter')
         }
 
-        const objectKey = await securityHandler.computeObjectKey(
+        const objectKey = securityHandler.computeObjectKey(
             objectNumber,
             generationNumber,
         )

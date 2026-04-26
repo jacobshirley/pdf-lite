@@ -173,6 +173,10 @@ export class PdfXRefTable extends PdfObject {
         )
     }
 
+    getEntries(): PdfXRefTableEntry[] {
+        return this.entries
+    }
+
     get lastSection(): PdfXRefTableSectionHeader | null {
         if (this.sections.length === 0) {
             return null

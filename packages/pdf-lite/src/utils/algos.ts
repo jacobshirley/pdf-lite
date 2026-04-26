@@ -3,80 +3,87 @@ import { bytesToHex } from './bytesToHex.js'
 import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
 import 'pki-lite-crypto-extended'
 import { ByteArray } from '../types.js'
+import { cbc, ecb } from '@noble/ciphers/aes.js'
+import { sha1 as _sha1, md5 as _md5 } from '@noble/hashes/legacy.js'
+import {
+    sha256 as _sha256,
+    sha384 as _sha384,
+    sha512 as _sha512,
+} from '@noble/hashes/sha2.js'
 
 /**
  * Computes the SHA-1 hash of the input data.
  *
  * @param input - The data to hash.
- * @returns A promise that resolves to the SHA-1 hash as a byte array.
+ * @returns The SHA-1 hash as a byte array.
  *
  * @example
  * ```typescript
- * const hash = await sha1(new Uint8Array([1, 2, 3]))
+ * const hash = sha1(new Uint8Array([1, 2, 3]))
  * ```
  */
-export async function sha1(input: ByteArray): Promise<ByteArray> {
-    return AlgorithmIdentifier.digestAlgorithm('SHA-1').digest(input)
+export function sha1(input: ByteArray): ByteArray {
+    return _sha1(input)
 }
 
 /**
  * Computes the SHA-256 hash of the input data.
  *
  * @param input - The data to hash.
- * @returns A promise that resolves to the SHA-256 hash as a byte array.
+ * @returns The SHA-256 hash as a byte array.
  *
  * @example
  * ```typescript
- * const hash = await sha256(new Uint8Array([1, 2, 3]))
+ * const hash = sha256(new Uint8Array([1, 2, 3]))
  * ```
  */
-export async function sha256(input: ByteArray): Promise<ByteArray> {
-    return AlgorithmIdentifier.digestAlgorithm('SHA-256').digest(input)
+export function sha256(input: ByteArray): ByteArray {
+    return _sha256(input)
 }
 
 /**
  * Computes the SHA-384 hash of the input data.
  *
  * @param input - The data to hash.
- * @returns A promise that resolves to the SHA-384 hash as a byte array.
+ * @returns The SHA-384 hash as a byte array.
  *
  * @example
  * ```typescript
- * const hash = await sha384(new Uint8Array([1, 2, 3]))
+ * const hash = sha384(new Uint8Array([1, 2, 3]))
  * ```
  */
-export async function sha384(input: ByteArray): Promise<ByteArray> {
-    return AlgorithmIdentifier.digestAlgorithm('SHA-384').digest(input)
+export function sha384(input: ByteArray): ByteArray {
+    return _sha384(input)
 }
 
 /**
  * Computes the SHA-512 hash of the input data.
  *
  * @param input - The data to hash.
- * @returns A promise that resolves to the SHA-512 hash as a byte array.
+ * @returns The SHA-512 hash as a byte array.
  *
  * @example
  * ```typescript
- * const hash = await sha512(new Uint8Array([1, 2, 3]))
+ * const hash = sha512(new Uint8Array([1, 2, 3]))
  * ```
  */
-export async function sha512(input: ByteArray): Promise<ByteArray> {
-    return AlgorithmIdentifier.digestAlgorithm('SHA-512').digest(input)
+export function sha512(input: ByteArray): ByteArray {
+    return _sha512(input)
 }
 
 /**
  * Computes the MD5 hash of the input data.
  *
  * @param input - The data to hash.
- * @returns A promise that resolves to the MD5 hash as a byte array.
+ * @returns The MD5 hash as a byte array.
  *
  * @example
  * ```typescript
- * const hash = await md5(new Uint8Array([1, 2, 3]))
+ * const hash = md5(new Uint8Array([1, 2, 3]))
  * ```
  */
-export async function md5(input: ByteArray): Promise<ByteArray> {
-    return AlgorithmIdentifier.digestAlgorithm('MD5').digest(input)
+export function md5(input: ByteArray): ByteArray {
+    return _md5(input)
 }
 
 /**
@@ -89,13 +96,13 @@ export async function md5(input: ByteArray): Promise<ByteArray> {
  *
  * @example
  * ```typescript
- * const hash = await hash(data, 'SHA-256')
+ * const hash = hash(data, 'SHA-256')
  * ```
  */
-export async function hash(
+export function hash(
     input: ByteArray,
     algorithm: 'SHA-256' | 'SHA-384' | 'SHA-512' | 'MD5' | 'SHA-1' = 'SHA-256',
-): Promise<ByteArray> {
+): ByteArray {
     switch (algorithm) {
         case 'SHA-256':
             return sha256(input)
@@ -143,23 +150,18 @@ export function getRandomBytes(length: number): ByteArray {
  * const encrypted = await aes128cbcEncrypt(key, plaintext, iv)
  * ```
  */
-export async function aes128cbcEncrypt(
+export function aes128cbcEncrypt(
     key: ByteArray,
     data: ByteArray,
     iv: ByteArray = new Uint8Array(16), // Zero IV, as per PDF spec
-): Promise<ByteArray> {
+): ByteArray {
     if (key.length !== 16) {
         throw new Error(
             `AES-128 key must be exactly 16 bytes, got ${key.length}`,
         )
     }
 
-    return AlgorithmIdentifier.contentEncryptionAlgorithm({
-        type: 'AES_128_CBC',
-        params: {
-            nonce: iv,
-        },
-    }).encrypt(data, key)
+    return cbc(key, iv).encrypt(data)
 }
 
 /**
@@ -176,11 +178,11 @@ export async function aes128cbcEncrypt(
  * const decrypted = await aes128cbcDecrypt(key, ciphertext, iv)
  * ```
  */
-export async function aes128cbcDecrypt(
+export function aes128cbcDecrypt(
     key: ByteArray,
     encrypted: ByteArray,
     iv: ByteArray = new Uint8Array(16), // Zero IV, as per PDF spec
-): Promise<ByteArray> {
+): ByteArray {
     if (key.length !== 16) {
         throw new Error(
             `AES-128 key must be exactly 16 bytes, got ${key.length}`,
@@ -190,12 +192,7 @@ export async function aes128cbcDecrypt(
         throw new Error('Encrypted stream too short — no IV found')
     }
 
-    return AlgorithmIdentifier.contentEncryptionAlgorithm({
-        type: 'AES_128_CBC',
-        params: {
-            nonce: iv,
-        },
-    }).decrypt(encrypted, key)
+    return cbc(key, iv).decrypt(encrypted)
 }
 
 /**
@@ -208,20 +205,15 @@ export async function aes128cbcDecrypt(
  *
  * @example
  * ```typescript
- * const encrypted = await aes256cbcEncrypt(key, plaintext, iv)
+ * const encrypted = aes256cbcEncrypt(key, plaintext, iv)
  * ```
  */
-export async function aes256cbcEncrypt(
+export function aes256cbcEncrypt(
     fileKey: ByteArray,
     block: ByteArray,
     iv: ByteArray = new Uint8Array(16), // Zero IV, as per PDF spec
-): Promise<ByteArray> {
-    return AlgorithmIdentifier.contentEncryptionAlgorithm({
-        type: 'AES_256_CBC',
-        params: {
-            nonce: iv,
-        },
-    }).encrypt(block, fileKey)
+): ByteArray {
+    return cbc(fileKey, iv).encrypt(block)
 }
 
 /**
@@ -230,24 +222,19 @@ export async function aes256cbcEncrypt(
  * @param fileKey - The 32-byte decryption key.
  * @param ciphertext - The encrypted data to decrypt.
  * @param iv - The 16-byte initialization vector. Defaults to zero IV.
- * @returns A promise that resolves to the decrypted data.
+ * @returns The decrypted data.
  *
  * @example
  * ```typescript
- * const decrypted = await aes256cbcDecrypt(key, ciphertext, iv)
+ * const decrypted = aes256cbcDecrypt(key, ciphertext, iv)
  * ```
  */
-export async function aes256cbcDecrypt(
+export function aes256cbcDecrypt(
     fileKey: ByteArray,
     ciphertext: ByteArray,
     iv: ByteArray = new Uint8Array(16), // Zero IV, as per PDF spec
-): Promise<ByteArray> {
-    return AlgorithmIdentifier.contentEncryptionAlgorithm({
-        type: 'AES_256_CBC',
-        params: {
-            nonce: iv,
-        },
-    }).decrypt(ciphertext, fileKey)
+): ByteArray {
+    return cbc(fileKey, iv).decrypt(ciphertext)
 }
 
 /**
@@ -263,20 +250,17 @@ export async function aes256cbcDecrypt(
  * const encrypted = await aes256ecbEncrypt(key, plaintext)
  * ```
  */
-export async function aes256ecbEncrypt(
+export function aes256ecbEncrypt(
     fileKey: ByteArray,
     data: ByteArray,
-): Promise<ByteArray> {
+): ByteArray {
     if (fileKey.length !== 32) {
         throw new Error(
             `AES-256 key must be exactly 32 bytes, got ${fileKey.length}`,
         )
     }
 
-    return AlgorithmIdentifier.contentEncryptionAlgorithm({
-        type: 'AES_256_ECB',
-        params: {},
-    }).encrypt(data, fileKey)
+    return ecb(fileKey).encrypt(data)
 }
 
 /**
@@ -284,28 +268,25 @@ export async function aes256ecbEncrypt(
  *
  * @param fileKey - The 32-byte decryption key.
  * @param encrypted - The encrypted data to decrypt.
- * @returns A promise that resolves to the decrypted data.
+ * @returns The decrypted data.
  * @throws Error if the key is not exactly 32 bytes.
  *
  * @example
  * ```typescript
- * const decrypted = await aes256ecbDecrypt(key, ciphertext)
+ * const decrypted = aes256ecbDecrypt(key, ciphertext)
  * ```
  */
-export async function aes256ecbDecrypt(
+export function aes256ecbDecrypt(
     fileKey: ByteArray,
     encrypted: ByteArray,
-): Promise<ByteArray> {
+): ByteArray {
     if (fileKey.length !== 32) {
         throw new Error(
             `AES-256 key must be exactly 32 bytes, got ${fileKey.length}`,
         )
     }
 
-    return AlgorithmIdentifier.contentEncryptionAlgorithm({
-        type: 'AES_256_ECB',
-        params: {},
-    }).decrypt(encrypted, fileKey)
+    return ecb(fileKey).decrypt(encrypted)
 }
 
 /**
@@ -318,21 +299,15 @@ export async function aes256ecbDecrypt(
  *
  * @example
  * ```typescript
- * const encrypted = await aes128CbcNoPaddingEncrypt(key, data, iv)
+ * const encrypted = aes128CbcNoPaddingEncrypt(key, data, iv)
  * ```
  */
-export async function aes128CbcNoPaddingEncrypt(
+export function aes128CbcNoPaddingEncrypt(
     key: ByteArray,
     data: ByteArray,
     iv: ByteArray,
-): Promise<ByteArray> {
-    return AlgorithmIdentifier.contentEncryptionAlgorithm({
-        type: 'AES_128_CBC',
-        params: {
-            nonce: iv,
-            disablePadding: true,
-        },
-    }).encrypt(data, key)
+): ByteArray {
+    return cbc(key, iv, { disablePadding: true }).encrypt(data)
 }
 
 /**
@@ -345,21 +320,15 @@ export async function aes128CbcNoPaddingEncrypt(
  *
  * @example
  * ```typescript
- * const encrypted = await aes256CbcNoPaddingEncrypt(key, data, iv)
+ * const encrypted = aes256CbcNoPaddingEncrypt(key, data, iv)
  * ```
  */
-export async function aes256CbcNoPaddingEncrypt(
+export function aes256CbcNoPaddingEncrypt(
     key: ByteArray,
     data: ByteArray,
     iv: ByteArray,
-): Promise<ByteArray> {
-    return AlgorithmIdentifier.contentEncryptionAlgorithm({
-        type: 'AES_256_CBC',
-        params: {
-            nonce: iv,
-            disablePadding: true,
-        },
-    }).encrypt(data, key)
+): ByteArray {
+    return cbc(key, iv, { disablePadding: true }).encrypt(data)
 }
 
 /**
@@ -368,25 +337,19 @@ export async function aes256CbcNoPaddingEncrypt(
  * @param key - The 32-byte decryption key.
  * @param ciphertext - The encrypted data to decrypt.
  * @param iv - The 16-byte initialization vector. Defaults to zero IV.
- * @returns A promise that resolves to the decrypted data.
+ * @returns The decrypted data.
  *
  * @example
  * ```typescript
- * const decrypted = await aes256CbcNoPaddingDecrypt(key, ciphertext, iv)
+ * const decrypted = aes256CbcNoPaddingDecrypt(key, ciphertext, iv)
  * ```
  */
-export async function aes256CbcNoPaddingDecrypt(
+export function aes256CbcNoPaddingDecrypt(
     key: ByteArray,
     ciphertext: ByteArray,
     iv: ByteArray = new Uint8Array(16),
-): Promise<ByteArray> {
-    return AlgorithmIdentifier.contentEncryptionAlgorithm({
-        type: 'AES_256_CBC',
-        params: {
-            nonce: iv,
-            disablePadding: true,
-        },
-    }).decrypt(ciphertext, key)
+): ByteArray {
+    return cbc(key, iv, { disablePadding: true }).decrypt(ciphertext)
 }
 
 /**

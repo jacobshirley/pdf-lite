@@ -35,8 +35,8 @@ export type PdfSecurityHandlerOptions = {
  * @example
  * ```typescript
  * const handler = new PdfV5SecurityHandler({ password: 'secret' })
- * await handler.write()
- * const encryptedData = await handler.encrypt('stream', data, objectNumber, generationNumber)
+ * handler.write()
+ * const encryptedData = handler.encrypt('stream', data, objectNumber, generationNumber)
  * ```
  */
 export abstract class PdfSecurityHandler {
@@ -78,6 +78,8 @@ export abstract class PdfSecurityHandler {
         }
         return perm
     }
+
+    initHandler?(): Promise<void>
 
     /**
      * Checks if the security handler is ready for encryption/decryption.
@@ -128,7 +130,7 @@ export abstract class PdfSecurityHandler {
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray>
+    ): ByteArray
 
     /**
      * Encrypts data of a specific type.
@@ -144,7 +146,7 @@ export abstract class PdfSecurityHandler {
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray>
+    ): ByteArray
 
     /**
      * Computes the object-specific encryption key.
@@ -158,7 +160,7 @@ export abstract class PdfSecurityHandler {
         objectNumber?: number,
         generationNumber?: number,
         algorithm?: PdfEncryptionAlgorithmType,
-    ): Promise<ByteArray>
+    ): ByteArray
 
     /**
      * Gets the document ID array.
@@ -177,13 +179,13 @@ export abstract class PdfSecurityHandler {
     /**
      * Writes the encryption dictionary with computed keys.
      */
-    abstract write(): Promise<void>
+    abstract write(): void
 
     /**
      * Tests whether the current password can decrypt this document.
      * Returns true if the password is valid, false otherwise.
      */
-    abstract testPassword(): Promise<boolean>
+    abstract testPassword(): boolean
 
     /**
      * Builds the numeric permission flags from a PdfPermissions object.
@@ -222,18 +224,18 @@ export abstract class PdfSecurityHandler {
      *
      * @param object - The indirect object to decrypt.
      */
-    async decryptObject(object: PdfIndirectObject): Promise<void> {
+    decryptObject(object: PdfIndirectObject): void {
         const objectNumber = object.objectNumber
         const generationNumber = object.generationNumber
 
-        const decryptObject = async (obj: PdfObject): Promise<void> => {
+        const decryptObject = (obj: PdfObject): void => {
             if (!obj) {
                 return
             }
             if (obj instanceof PdfIndirectObject) {
                 return decryptObject(obj.content)
             } else if (obj instanceof PdfString) {
-                const decryptedData = await this.decrypt(
+                const decryptedData = this.decrypt(
                     'string',
                     obj.raw,
                     objectNumber,
@@ -242,7 +244,7 @@ export abstract class PdfSecurityHandler {
                 obj.raw = decryptedData
                 obj.setModified(false)
             } else if (obj instanceof PdfStream) {
-                const decryptedData = await this.decrypt(
+                const decryptedData = this.decrypt(
                     'stream',
                     obj.raw,
                     objectNumber,
@@ -251,24 +253,24 @@ export abstract class PdfSecurityHandler {
 
                 obj.raw = decryptedData
 
-                await decryptObject(obj.header)
+                decryptObject(obj.header)
                 obj.setModified(false)
                 obj.header.setModified(false)
             } else if (obj instanceof PdfDictionary) {
                 const values = obj.values
                 for (const key in values) {
-                    await decryptObject(values[key])
+                    decryptObject(values[key])
                 }
             } else if (obj instanceof PdfArray) {
                 for (const item of obj.items) {
                     if (item) {
-                        await decryptObject(item)
+                        decryptObject(item)
                     }
                 }
             }
         }
 
-        await decryptObject(object.content)
+        decryptObject(object.content)
     }
 
     /**
@@ -276,15 +278,15 @@ export abstract class PdfSecurityHandler {
      *
      * @param object - The indirect object to encrypt.
      */
-    async encryptObject(object: PdfIndirectObject): Promise<void> {
+    encryptObject(object: PdfIndirectObject): void {
         const objectNumber = object.objectNumber
         const generationNumber = object.generationNumber
 
-        const encryptObject = async (obj: PdfObject): Promise<void> => {
+        const encryptObject = (obj: PdfObject): void => {
             if (obj instanceof PdfIndirectObject) {
                 return encryptObject(obj.content)
             } else if (obj instanceof PdfString) {
-                const encryptedData = await this.encrypt(
+                const encryptedData = this.encrypt(
                     'string',
                     obj.raw,
                     objectNumber,
@@ -292,27 +294,27 @@ export abstract class PdfSecurityHandler {
                 )
                 obj.raw = encryptedData
             } else if (obj instanceof PdfStream) {
-                const encryptedData = await this.encrypt(
+                const encryptedData = this.encrypt(
                     'stream',
                     obj.raw,
                     objectNumber,
                     generationNumber,
                 )
                 obj.raw = encryptedData
-                await encryptObject(obj.header)
+                encryptObject(obj.header)
             } else if (obj instanceof PdfDictionary) {
                 const values = obj.values
                 for (const key in values) {
-                    await encryptObject(values[key])
+                    encryptObject(values[key])
                 }
             } else if (obj instanceof PdfArray) {
                 for (const item of obj.items) {
-                    await encryptObject(item)
+                    encryptObject(item)
                 }
             }
         }
 
-        return await encryptObject(object.content)
+        return encryptObject(object.content)
     }
 }
 
@@ -446,9 +448,9 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
      * Tests whether the current password can decrypt this document.
      * Attempts to compute the master key and returns true if successful.
      */
-    async testPassword(): Promise<boolean> {
+    testPassword(): boolean {
         try {
-            await this.computeMasterKey()
+            this.computeMasterKey()
             return true
         } catch {
             return false
@@ -553,7 +555,7 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
      *
      * @returns The computed user key.
      */
-    protected abstract computeUserKey(): Promise<ByteArray>
+    protected abstract computeUserKey(): ByteArray
 
     /**
      * Computes the master encryption key from the password.
@@ -561,21 +563,21 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
      * @returns The computed master key.
      * @throws Error if the password is incorrect or required parameters are missing.
      */
-    protected abstract computeMasterKey(): Promise<ByteArray>
+    protected abstract computeMasterKey(): ByteArray
 
     /**
      * Computes the owner key (O value) for the encryption dictionary.
      *
      * @returns The computed owner key.
      */
-    protected abstract computeOwnerKey(): Promise<ByteArray>
+    protected abstract computeOwnerKey(): ByteArray
 
     /**
      * Initializes the user and owner keys if not already set.
      */
-    protected async initKeys(): Promise<void> {
-        this.ownerKey ||= await this.computeOwnerKey()
-        this.userKey ||= await this.computeUserKey()
+    protected initKeys(): void {
+        this.ownerKey ||= this.computeOwnerKey()
+        this.userKey ||= this.computeUserKey()
     }
 
     /**
@@ -583,9 +585,9 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
      *
      * @throws Error if required keys are not computed.
      */
-    async write(): Promise<void> {
+    write(): void {
         // Initialise the keys
-        await this.initKeys()
+        this.initKeys()
 
         if (!this.ownerKey) {
             throw new Error('Missing ownerKey')
@@ -619,7 +621,7 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
     protected abstract getCipher(
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<Cipher | null>
+    ): Cipher | null
 
     /**
      * Encrypts data using the appropriate cipher.
@@ -630,19 +632,19 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
      * @param generationNumber - The PDF generation number.
      * @returns The encrypted data.
      */
-    async encrypt(
+    encrypt(
         type: 'string' | 'stream' | 'file',
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray> {
-        const cipher = await this.getCipher(objectNumber, generationNumber)
+    ): ByteArray {
+        const cipher = this.getCipher(objectNumber, generationNumber)
 
         if (!cipher) {
             return data
         }
 
-        return await cipher.encrypt(data)
+        return cipher.encrypt(data)
     }
 
     /**
@@ -654,19 +656,19 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
      * @param generationNumber - The PDF generation number.
      * @returns The decrypted data.
      */
-    async decrypt(
+    decrypt(
         type: 'string' | 'stream' | 'file',
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray> {
-        const cipher = await this.getCipher(objectNumber, generationNumber)
+    ): ByteArray {
+        const cipher = this.getCipher(objectNumber, generationNumber)
 
         if (!cipher) {
             return data
         }
 
-        return await cipher.decrypt(data)
+        return cipher.decrypt(data)
     }
 
     /**
@@ -685,7 +687,5 @@ export abstract class PdfStandardSecurityHandler extends PdfSecurityHandler {
      * @returns The recovered user password.
      * @throws Error if recovery is not supported.
      */
-    abstract recoverUserPassword(
-        ownerPassword?: ByteArray | string,
-    ): Promise<string>
+    abstract recoverUserPassword(ownerPassword?: ByteArray | string): string
 }

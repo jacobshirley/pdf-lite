@@ -14,13 +14,10 @@ import { ByteArray } from '../../types.js'
  *
  * @param key - The encryption key.
  * @param data - The data to encrypt.
- * @returns A promise that resolves to the encrypted data.
+ * @returns The encrypted data.
  */
-async function rc4EncryptWithKey(
-    key: ByteArray,
-    data: ByteArray,
-): Promise<ByteArray> {
-    return await rc4(key).encrypt(data)
+function rc4EncryptWithKey(key: ByteArray, data: ByteArray): ByteArray {
+    return rc4(key).encrypt(data)
 }
 
 /**
@@ -33,20 +30,18 @@ async function rc4EncryptWithKey(
  *
  * @example
  * ```typescript
- * const userPassword = await decryptUserPasswordRc4_40(ownerPw, O)
+ * const userPassword = decryptUserPasswordRc4_40(ownerPw, O)
  * ```
  */
-export async function decryptUserPasswordRc4_40(
+export function decryptUserPasswordRc4_40(
     ownerPw: ByteArray,
     ownerKey: ByteArray,
-): Promise<ByteArray> {
+): ByteArray {
     const ownerPad = padPassword(ownerPw)
-    const digest = await md5(ownerPad)
+    const digest = md5(ownerPad)
     const rc4Key = digest.slice(0, 5) // 40-bit key
 
-    return await removePdfPasswordPadding(
-        await rc4EncryptWithKey(rc4Key, ownerKey),
-    )
+    return removePdfPasswordPadding(rc4EncryptWithKey(rc4Key, ownerKey))
 }
 
 /**
@@ -59,18 +54,18 @@ export async function decryptUserPasswordRc4_40(
  *
  * @example
  * ```typescript
- * const O = await computeORc4_40(ownerPassword, userPassword)
+ * const O = computeORc4_40(ownerPassword, userPassword)
  * ```
  */
-export async function computeORc4_40(
+export function computeORc4_40(
     ownerPw: ByteArray,
     userPw: ByteArray,
-): Promise<ByteArray> {
+): ByteArray {
     const ownerPad = padPassword(ownerPw)
-    const digest = await md5(ownerPad)
+    const digest = md5(ownerPad)
     const rc4Key = digest.slice(0, 5) // 40-bit key
 
-    return await rc4EncryptWithKey(rc4Key, padPassword(userPw))
+    return rc4EncryptWithKey(rc4Key, padPassword(userPw))
 }
 
 /**
@@ -84,18 +79,18 @@ export async function computeORc4_40(
  *
  * @example
  * ```typescript
- * const key = await computeEncryptionKeyRc4_40(userPw, O, permissions, fileId)
+ * const key = computeEncryptionKeyRc4_40(userPw, O, permissions, fileId)
  * ```
  */
-export async function computeEncryptionKeyRc4_40(
+export function computeEncryptionKeyRc4_40(
     userPw: ByteArray,
     oValue: ByteArray,
     permissions: number,
     fileId: ByteArray,
-): Promise<ByteArray> {
+): ByteArray {
     const userPad = padPassword(userPw)
     const permissionsLE = int32ToLittleEndianBytes(permissions)
-    const digest = await md5(
+    const digest = md5(
         concatUint8Arrays([userPad, oValue, permissionsLE, fileId]),
     )
     return digest.slice(0, 5) // 40-bit key
@@ -113,20 +108,20 @@ export async function computeEncryptionKeyRc4_40(
  *
  * @example
  * ```typescript
- * const U = await computeURc4_40(userPassword, O, permissions, fileId)
+ * const U = computeURc4_40(userPassword, O, permissions, fileId)
  * ```
  */
-export async function computeURc4_40(
+export function computeURc4_40(
     userPw: ByteArray,
     oValue: ByteArray,
     permissions: number,
     fileId: ByteArray,
-): Promise<ByteArray> {
-    const encryptionKey = await computeEncryptionKeyRc4_40(
+): ByteArray {
+    const encryptionKey = computeEncryptionKeyRc4_40(
         userPw,
         oValue,
         permissions,
         fileId,
     )
-    return await rc4EncryptWithKey(encryptionKey, DEFAULT_PADDING)
+    return rc4EncryptWithKey(encryptionKey, DEFAULT_PADDING)
 }

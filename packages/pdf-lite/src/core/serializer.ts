@@ -1,3 +1,4 @@
+import { PdfObject, PdfWhitespaceToken } from '../index.js'
 import { ByteArray } from '../types.js'
 import { Parser } from './parser/parser.js'
 import { PdfByteOffsetToken } from './tokens/byte-offset-token.js'
@@ -82,5 +83,37 @@ export class PdfTokenSerializer extends Parser<PdfToken, number> {
      */
     toBytes(): ByteArray {
         return new Uint8Array(Array.from(this.nextItems()))
+    }
+}
+
+export class PdfObjectSerializer extends Parser<PdfObject, number> {
+    private tokenSerializer = new PdfTokenSerializer()
+
+    set offset(value: number) {
+        this.tokenSerializer.offset = value
+    }
+
+    feed(...input: PdfObject[]): void {
+        for (const obj of input) {
+            const tokens = obj.toTokens()
+            if (!(tokens[tokens.length - 1] instanceof PdfWhitespaceToken)) {
+                tokens.push(new PdfWhitespaceToken('\n'))
+            }
+            this.tokenSerializer.feedMany(tokens)
+        }
+    }
+
+    *nextItems(): Generator<number> {
+        yield* this.tokenSerializer.nextItems()
+    }
+
+    toBytes(): ByteArray {
+        return this.tokenSerializer.toBytes()
+    }
+
+    static serialize(objects: PdfObject[]): ByteArray {
+        const serializer = new PdfObjectSerializer()
+        serializer.feed(...objects)
+        return serializer.toBytes()
     }
 }

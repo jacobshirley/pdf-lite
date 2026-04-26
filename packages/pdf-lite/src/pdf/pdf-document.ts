@@ -22,9 +22,11 @@ import {
 } from '../core/objects/pdf-object-reference.js'
 import { PdfXrefLookup } from './pdf-xref-lookup.js'
 import { PdfTokenSerializer } from '../core/serializer.js'
-import { PdfRevision } from './pdf-revision.js'
 import { PdfV5SecurityHandler } from '../security/handlers/v5.js'
-import { PdfEncryptionDictionaryObject } from '../security/types.js'
+import {
+    PdfEncryptionDictionary,
+    PdfEncryptionDictionaryObject,
+} from '../security/types.js'
 import { PdfByteOffsetToken } from '../core/tokens/byte-offset-token.js'
 import { PdfNumberToken } from '../core/tokens/number-token.js'
 import { PdfXRefTableEntryToken } from '../core/tokens/xref-table-entry-token.js'
@@ -44,6 +46,7 @@ import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfAcroForm } from '../acroform/pdf-acro-form.js'
 import { PdfPages } from './pdf-pages.js'
 import { PdfObjectStream } from '../index.js'
+import { PdfLazyObjectManager, PdfObjectManager } from './pdf-object-manager.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -63,10 +66,11 @@ import { PdfObjectStream } from '../index.js'
  * ```
  */
 export class PdfDocument extends PdfObject implements IPdfObjectResolver {
-    /** List of document revisions for incremental updates */
-    revisions: PdfRevision[]
+    objectManager: PdfObjectManager
     /** Signer instance for digital signature operations */
     signer: PdfSigner
+    /** List of document revisions for incremental updates */
+    prev?: PdfDocument
     /** Security handler for encryption/decryption operations */
     securityHandler?: PdfSecurityHandler
     /** Whether the document is currently in incremental mode (appending changes as a new revision) */
@@ -76,7 +80,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
     private hasEncryptionDictionary?: boolean = false
     private _resolvedCache = new Map<string, PdfIndirectObject>()
-    private _objStreamCache = new Map<number, PdfObjStream>()
     private _committing = false
     private _updating = false
     private _finalized = false
@@ -88,7 +91,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * Creates a new PDF document instance.
      *
      * @param options - Configuration options for the document
-     * @param options.revisions - Pre-existing revisions for the document
      * @param options.version - PDF version string (e.g., '1.7', '2.0') or version comment
      * @param options.password - User password for encryption
      * @param options.ownerPassword - Owner password for encryption
@@ -96,7 +98,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @param options.signer - Custom signer for digital signatures
      */
     constructor(options?: {
-        revisions?: PdfRevision[]
+        objectManager?: PdfObjectManager
         version?: string | PdfComment
         password?: string
         ownerPassword?: string
@@ -105,7 +107,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }) {
         super()
 
-        this.revisions = options?.revisions ?? [new PdfRevision()]
+        this.objectManager =
+            options?.objectManager ?? new PdfLazyObjectManager(new Uint8Array())
 
         if (options?.version instanceof PdfComment) {
             this.header = options.version
@@ -115,11 +118,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
 
         this.signer = options?.signer ?? new PdfSigner({ document: this })
 
-        this.linkRevisions()
-        this.wireResolvers(
-            ...this.objects.filter((x) => x instanceof PdfIndirectObject),
-            ...this.revisions.map((rev) => rev.xref.trailerDict),
-        )
         this.calculateOffsets()
 
         this.originalSecurityHandler = options?.securityHandler
@@ -133,7 +131,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
     }
 
-    resolve(objectNumber: number, generationNumber: number): PdfIndirectObject {
+    getObject(
+        objectNumber: number,
+        generationNumber: number,
+    ): PdfIndirectObject {
         const cacheKey = `${objectNumber} ${generationNumber}`
         const cached = this._resolvedCache.get(cacheKey)
         if (cached) return cached
@@ -144,7 +145,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                 `Object ${objectNumber} ${generationNumber} not found`,
             )
         }
-        this.wireResolvers(found)
         this._resolvedCache.set(cacheKey, found)
 
         return found
@@ -174,11 +174,13 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     get header(): PdfComment | undefined {
-        return this.revisions[0].header
+        return this.objectManager.getObjectAtOffset(0)?.as(PdfComment)
     }
 
     set header(comment: PdfComment | undefined) {
-        if (comment) this.revisions[0].header = comment
+        throw new Error(
+            'Not yet implemented: setting header comment is not supported',
+        )
     }
 
     /**
@@ -191,45 +193,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @param options.ownerPassword - Owner password for encrypted documents
      * @param options.incremental - Whether to use incremental mode
      */
-    async loadObjects(
-        objects: PdfObject[],
-        options?: {
-            password?: string
-            ownerPassword?: string
-            incremental?: boolean
-        },
-    ): Promise<this> {
-        let header: PdfComment | undefined
-        const revisions: PdfRevision[] = []
-        let currentObjects: PdfObject[] = []
-
-        for (const obj of objects) {
-            if (obj instanceof PdfComment && obj.isVersionComment()) {
-                header = obj
-                continue
-            }
-
-            currentObjects.push(obj)
-            if (obj instanceof PdfComment && obj.isEOFComment()) {
-                revisions.push(new PdfRevision({ objects: currentObjects }))
-                currentObjects = []
-            }
-        }
-
-        if (currentObjects.length > 0) {
-            revisions.push(new PdfRevision({ objects: currentObjects }))
-        }
-
-        this.revisions = revisions
-        if (header) {
-            this.header = header
-        }
-
-        this.linkRevisions()
-        this.wireResolvers(
-            ...this.objects.filter((x) => x instanceof PdfIndirectObject),
-            ...this.revisions.map((rev) => rev.xref.trailerDict),
-        )
+    async loadObjects(options?: {
+        password?: string
+        ownerPassword?: string
+        incremental?: boolean
+    }): Promise<this> {
         this.calculateOffsets()
 
         // Reset security handler to detect and initialize encryption from the PDF
@@ -285,7 +253,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             // still produce the original encrypted bytes on serialization.
             if (shouldDecrypt) {
                 try {
-                    await this.decryptObjects()
+                    await this.init()
                 } catch (e) {
                     if (!hasExplicitPassword) {
                         throw new PdfPasswordProtectedError()
@@ -295,7 +263,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             }
         } else if (shouldDecrypt) {
             try {
-                await this.decryptObjects()
+                await this.init()
             } catch (e) {
                 if (!hasExplicitPassword) {
                     throw new PdfPasswordProtectedError()
@@ -313,43 +281,16 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns A promise that resolves to the loaded PdfDocument instance
      */
     async load(
-        input: AsyncIterable<ByteArray> | Iterable<ByteArray>,
+        input: ByteArray,
         options?: {
             password?: string
             ownerPassword?: string
             incremental?: boolean
         },
     ): Promise<this> {
-        const objectStream = new PdfObjectStream(input)
-        const objects: PdfObject[] = []
-        for await (const obj of objectStream) {
-            objects.push(obj)
-        }
-        return await this.loadObjects(objects, options)
-    }
-
-    /**
-     * Creates a PdfDocument from an array of PDF objects.
-     * Parses objects into revisions based on EOF comments.
-     *
-     * @param objects - Array of PDF objects to construct the document from
-     * @param options - Optional security and mode configuration
-     * @param options.password - User password for encrypted documents
-     * @param options.ownerPassword - Owner password for encrypted documents
-     * @param options.incremental - Whether to use incremental mode
-     * @returns A promise that resolves to the new PdfDocument instance
-     */
-    static async fromObjects(
-        objects: PdfObject[],
-        options?: {
-            password?: string
-            ownerPassword?: string
-            incremental?: boolean
-        },
-    ): Promise<PdfDocument> {
-        const document = new PdfDocument()
-        await document.loadObjects(objects, options)
-        return document
+        const objectManager = new PdfLazyObjectManager(input)
+        this.objectManager = objectManager
+        return await this.loadObjects(options)
     }
 
     /**
@@ -409,22 +350,12 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns The document instance for method chaining
      */
     startNewRevision(): PdfDocument {
-        const newRevision = new PdfRevision({ prev: this.latestRevision })
-        this.revisions.push(newRevision)
-
-        const lastStartXRef = this.objects.findLast(
-            (x) => x instanceof PdfStartXRef,
-        )
-
-        if (lastStartXRef) {
-            newRevision.xref.offset = lastStartXRef.offset.ref
-        }
-
+        //TODO: object manager should create a new revision that links to this one
         return this
     }
 
-    hasObjectInLatestRevision(obj: PdfObject): boolean {
-        return this.latestRevision.objects.includes(obj)
+    async init(): Promise<void> {
+        await this.securityHandler?.initHandler?.()
     }
 
     /**
@@ -434,48 +365,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @param objects - PDF objects to add to the document
      */
     add(...objects: PdfObject[]): void {
-        if (this.latestRevision.locked) {
-            this.startNewRevision()
-        }
-
-        for (const obj of objects) {
-            this.wireResolvers(obj)
-            if (this.hasObjectInLatestRevision(obj)) {
-                continue
-            }
-            this.latestRevision.addObject(obj)
-        }
-
-        // Auto-add any referenced-but-missing objects recursively in one pass
-        this.addAllMissingReferences(objects)
+        this.objectManager.add(...objects)
 
         if (!this._batching) {
             this.update()
-        }
-
-        for (const obj of objects) {
-            obj.setModified(false)
-        }
-    }
-
-    /**
-     * Recursively collects and adds all missing referenced objects in batches.
-     * More efficient than recursive add() calls since it collects all missing
-     * objects before processing them.
-     * @private
-     */
-    private addAllMissingReferences(objects: PdfObject[]): void {
-        let batch = this.collectMissingReferences(...objects)
-
-        while (batch.length > 0) {
-            for (const obj of batch) {
-                this.wireResolvers(obj)
-                if (!this.hasObjectInLatestRevision(obj)) {
-                    this.latestRevision.addObject(obj)
-                }
-            }
-            // Check if these newly added objects reference more missing objects
-            batch = this.collectMissingReferences(...batch)
         }
     }
 
@@ -538,55 +431,12 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     /**
-     * Gets the latest (most recent) revision of the document.
-     *
-     * @returns The latest PdfRevision
-     * @throws Error if the revision for the last StartXRef cannot be found
-     */
-    get latestRevision(): PdfRevision {
-        const lastStartXRef = this.objects.findLast(
-            (x) => x instanceof PdfStartXRef,
-        )
-        if (!lastStartXRef) {
-            return this.revisions[this.revisions.length - 1]
-        }
-
-        const revision =
-            this.revisions.find(
-                (rev) => rev.xref.offset === lastStartXRef.offset.ref,
-            ) ??
-            this.revisions.find((rev) =>
-                rev.xref.offset.equals(lastStartXRef.offset.value),
-            )
-        if (!revision) {
-            throw new Error(
-                'Cannot find revision for last StartXRef with offset ' +
-                    `${lastStartXRef.offset.value}. Options are: ` +
-                    this.revisions
-                        .map((rev) => rev.xref.offset.value)
-                        .join(', '),
-            )
-        }
-
-        return revision
-    }
-
-    /**
-     * Gets the cross-reference lookup table for the latest revision.
-     *
-     * @returns The PdfXrefLookup for the latest revision
-     */
-    get xrefLookup(): PdfXrefLookup {
-        return this.latestRevision.xref
-    }
-
-    /**
      * Gets the trailer dictionary from the cross-reference lookup.
      *
      * @returns The trailer dictionary containing document metadata references
      */
     get trailerDict(): PdfDictionary<PdfTrailerEntries> {
-        return this.xrefLookup.trailerDict
+        return this.objectManager.trailerDict
     }
 
     /**
@@ -594,8 +444,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      *
      * @returns A readonly array of all PDF objects
      */
-    get objects(): ReadonlyArray<PdfObject> {
-        return this.revisions.flatMap((rev) => rev.objects)
+    get objects(): ReadonlyArray<PdfIndirectObject> {
+        return this.objectManager.getObjects()
     }
 
     /**
@@ -605,26 +455,16 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @throws Error if the encryption dictionary reference points to a non-dictionary object
      */
     get encryptionDictionary(): PdfEncryptionDictionaryObject | undefined {
-        const encryptionDictionaryRef = this.trailerDict
+        const encryptionDictionaryObject = this.trailerDict
             .get('Encrypt')
-            ?.as(PdfObjectReference)
+            ?.resolve(PdfIndirectObject<PdfEncryptionDictionary>)
 
-        if (!encryptionDictionaryRef) {
+        if (!encryptionDictionaryObject) {
             return undefined
         }
 
-        const encryptionDictObject = this.findUncompressedObject(
-            encryptionDictionaryRef,
-        )
-
-        if (!(encryptionDictObject?.content instanceof PdfDictionary)) {
-            throw new Error(
-                `Encryption dictionary object ${encryptionDictionaryRef.objectNumber} ${encryptionDictionaryRef.generationNumber} is not a dictionary, it is a ${encryptionDictObject?.content.objectType}`,
-            )
-        }
-
-        encryptionDictObject.encryptable = false
-        return encryptionDictObject as PdfEncryptionDictionaryObject
+        encryptionDictionaryObject.encryptable = false
+        return encryptionDictionaryObject
     }
 
     get rootReference(): PdfObjectReference {
@@ -638,30 +478,20 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @throws Error if the Root reference points to a non-dictionary object
      */
     get root(): PdfIndirectObject<PdfDictionary> {
-        const rootRef = this.trailerDict.get('Root')?.as(PdfObjectReference)
+        const rootRef = this.trailerDict
+            .get('Root')
+            ?.resolve(PdfIndirectObject<PdfDictionary>)
 
-        if (!rootRef) {
-            const rootObject = new PdfIndirectObject({
-                content: new PdfDictionary(),
-            })
-            this.add(rootObject)
-            this.trailerDict.set('Root', rootObject.reference)
-            return rootObject
+        if (rootRef) {
+            return rootRef
         }
 
-        const rootObject = this.findUncompressedObject(rootRef)
-
-        if (!rootObject) {
-            throw new Error('Root object not found')
-        }
-
-        if (!(rootObject?.content instanceof PdfDictionary)) {
-            throw new Error(
-                `Root object ${rootRef.objectNumber} ${rootRef.generationNumber} is not a dictionary, it is a ${rootObject?.content.objectType}`,
-            )
-        }
-
-        return rootObject as PdfIndirectObject<PdfDictionary>
+        const rootObject = new PdfIndirectObject({
+            content: new PdfDictionary(),
+        })
+        this.add(rootObject)
+        this.trailerDict.set('Root', rootObject.reference)
+        return rootObject
     }
 
     /**
@@ -690,26 +520,10 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     private getSecurityHandler(): PdfSecurityHandler | undefined {
-        const encryptionDictionaryRef = this.trailerDict
-            .get('Encrypt')
-            ?.as(PdfObjectReference)
-
-        if (!encryptionDictionaryRef) {
-            return undefined
-        }
-
-        const encryptionDictObject = this.findUncompressedObject(
-            encryptionDictionaryRef,
-        )
+        const encryptionDictObject = this.encryptionDictionary
 
         if (!encryptionDictObject) {
-            throw new Error('Encryption dictionary object not found')
-        }
-
-        if (!(encryptionDictObject?.content instanceof PdfDictionary)) {
-            throw new Error(
-                `Encryption dictionary object ${encryptionDictionaryRef.objectNumber} ${encryptionDictionaryRef.generationNumber} is not a dictionary, it is a ${encryptionDictObject?.content.objectType}`,
-            )
+            return undefined
         }
 
         this.hasEncryptionDictionary = true
@@ -782,7 +596,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns True if the object exists in the document
      */
     hasObject(obj: PdfObject): boolean {
-        return this.objects.includes(obj)
+        //TODO
+        return false
     }
 
     private isObjectEncryptable(obj: PdfIndirectObject): boolean {
@@ -843,30 +658,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     /**
-     * Decrypts all encrypted object data in-place without removing
-     * the encryption infrastructure. Useful in incremental mode where
-     * the original (encrypted) bytes are preserved via cached tokens
-     * but the live object data needs to be readable.
-     */
-    async decryptObjects(): Promise<void> {
-        if (!this.securityHandler) {
-            return
-        }
-
-        for (const object of this.objects) {
-            if (!(object instanceof PdfIndirectObject)) {
-                continue
-            }
-
-            if (!this.isObjectEncryptable(object)) {
-                continue
-            }
-
-            await this.securityHandler.decryptObject(object)
-        }
-    }
-
-    /**
      * Re-encrypts all objects and updates the document structure.
      * No-op if the document has no security handler (unencrypted document).
      */
@@ -894,7 +685,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             return
         }
 
-        await this.decryptObjects()
+        await this.securityHandler.initHandler?.()
 
         this.hasEncryptionDictionary = false
         this.securityHandler = undefined
@@ -927,7 +718,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
 
         this.initSecurityHandler({})
-        await this.securityHandler.write()
+        await this.securityHandler.initHandler?.()
+        this.securityHandler.write()
 
         for (const object of this.objects) {
             if (!(object instanceof PdfIndirectObject)) {
@@ -972,95 +764,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     /**
-     * Finds a compressed object by its object number within an object stream.
-     *
-     * @param options - Object identifier with objectNumber and optional generationNumber
-     * @returns The found indirect object or undefined if not found
-     * @throws Error if the object cannot be found in the expected object stream
-     */
-    findCompressedObject(
-        options:
-            | {
-                  objectNumber: number
-                  generationNumber?: number
-              }
-            | PdfObjectReference,
-    ): PdfIndirectObject | undefined {
-        const xrefEntry = this.xrefLookup.getObject(options.objectNumber)
-
-        if (!(xrefEntry instanceof PdfXRefStreamCompressedEntry)) {
-            throw new Error(
-                'Cannot find object inside object stream via PdfDocument.findObject',
-            )
-        }
-
-        const streamNumber = xrefEntry.objectStreamNumber.value
-
-        let objectStream = this._objStreamCache.get(streamNumber)
-        if (!objectStream) {
-            const objectStreamIndirect = this.findUncompressedObject({
-                objectNumber: streamNumber,
-            })
-
-            if (!objectStreamIndirect) {
-                throw new Error(
-                    `Cannot find object stream ${streamNumber} for object ${options.objectNumber}`,
-                )
-            }
-
-            objectStream = objectStreamIndirect.content
-                .as(PdfStream)
-                .parseAs(PdfObjStream)
-            this._objStreamCache.set(streamNumber, objectStream)
-        }
-
-        return objectStream.getObject({ objectNumber: options.objectNumber })
-    }
-
-    /**
-     * Finds an uncompressed indirect object by its object number.
-     *
-     * @param options - Object identifier with objectNumber and optional generationNumber
-     * @returns The found indirect object or undefined if not found
-     * @throws FoundCompressedObjectError if the object is compressed (in an object stream)
-     */
-    findUncompressedObject(
-        options:
-            | {
-                  objectNumber: number
-                  generationNumber?: number
-              }
-            | PdfObjectReference,
-    ): PdfIndirectObject | undefined {
-        const xrefEntry = this.xrefLookup.getObject(options.objectNumber)
-
-        if (xrefEntry instanceof PdfXRefStreamCompressedEntry) {
-            throw new FoundCompressedObjectError(
-                `Cannot find object ${options.objectNumber} inside object stream via PdfDocument.findObject`,
-            )
-        }
-
-        if (
-            !xrefEntry ||
-            (options.generationNumber !== undefined &&
-                xrefEntry.generationNumber.value !== options.generationNumber)
-        ) {
-            return undefined
-        }
-
-        const found = this.objects.find(
-            (obj) =>
-                obj instanceof PdfIndirectObject &&
-                obj.objectNumber === options.objectNumber &&
-                (options.generationNumber === undefined ||
-                    obj.generationNumber === options.generationNumber) &&
-                obj.offset.equals(xrefEntry.byteOffset.ref),
-        ) as PdfIndirectObject | undefined
-
-        return found
-    }
-
-    /**
      * Reads and optionally decrypts an object by its object number.
      * Handles both compressed and uncompressed objects.
      *
@@ -1076,17 +779,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         allowUnindexed?: boolean
         cloned?: boolean
     }): PdfIndirectObject | undefined {
-        let foundObject: PdfIndirectObject | undefined
-
-        try {
-            foundObject = this.findUncompressedObject(options)
-        } catch (e) {
-            if (e instanceof FoundCompressedObjectError) {
-                foundObject = this.findCompressedObject(options)
-            } else {
-                throw e
-            }
-        }
+        let foundObject: PdfIndirectObject | undefined =
+            this.objectManager.getObjectByReference({
+                objectNumber: options.objectNumber,
+                generationNumber: options.generationNumber,
+            })
 
         if (!foundObject && options.allowUnindexed) {
             foundObject = this.objects.find(
@@ -1110,16 +807,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     /**
-     * Finds the revision that contains a given PDF object.
-     * Useful for determining the origin of an object across multiple revisions.
-     * @param obj - The PDF object to find the revision for
-     * @returns The PdfRevision that contains the object, or undefined if not found in any revision
-     */
-    findRevisionForObject(obj: PdfObject): PdfRevision | undefined {
-        return this.revisions.find((rev) => rev.objects.includes(obj))
-    }
-
-    /**
      * Deletes an object from all revisions in the document.
      *
      * @param obj - The PDF object to delete
@@ -1127,20 +814,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     deleteObject(obj: PdfObject | undefined): void {
         if (!obj) return
 
-        let deleted = false
-
-        for (const revision of this.revisions) {
-            if (revision.deleteObject(obj)) {
-                deleted = true
-            }
-        }
-
-        if (!deleted) {
-            console.warn(
-                'Attempted to delete object that was not found in any revision',
-            )
-        }
-
+        this.objectManager.delete(obj)
         this.update()
     }
 
@@ -1151,12 +825,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @throws Error if attempting to change version after objects have been added in incremental mode
      */
     setVersion(version: string): void {
-        if (this.revisions[0].locked) {
-            throw new Error(
-                'Cannot change PDF version in incremental mode after objects have been added',
-            )
-        }
-
         this.header = PdfComment.versionComment(version)
     }
 
@@ -1218,36 +886,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         return this.tokensWithObjects().map(({ token }) => token)
     }
 
-    private wireResolvers(...objects: PdfObject[]): void {
-        const seen = new Set<PdfObject>()
-        const walk = (obj: PdfObject) => {
-            if (seen.has(obj)) return
-            seen.add(obj)
-
-            if (
-                obj instanceof PdfObjectReference &&
-                !(obj instanceof PdfIndirectObject)
-            ) {
-                obj.resolver = this
-            } else if (obj instanceof PdfStream) {
-                walk(obj.header)
-            } else if (obj instanceof PdfDictionary) {
-                for (const [, value] of obj.entries()) {
-                    if (value) walk(value)
-                }
-            } else if (obj instanceof PdfArray) {
-                for (const item of obj.items) {
-                    walk(item)
-                }
-            } else if (obj instanceof PdfIndirectObject) {
-                walk(obj.content)
-            }
-        }
-        for (const obj of objects) {
-            walk(obj)
-        }
-    }
-
     private collectMissingReferences(
         ...objects: PdfObject[]
     ): PdfIndirectObject[] {
@@ -1290,23 +928,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             }
         }
         return missing
-    }
-
-    private linkRevisions(): void {
-        const xrefLookups = this.revisions.map((rev) => rev.xref)
-        const indirectObjects = this.objects.filter(
-            (x) => x instanceof PdfIndirectObject,
-        )
-
-        for (const revision of this.revisions) {
-            revision.xref.linkPrev(xrefLookups)
-            // Walk the entire prev chain to link all xref entries
-            let xref: PdfXrefLookup | undefined = revision.xref
-            while (xref) {
-                xref.linkIndirectObjects(indirectObjects)
-                xref = xref.prev
-            }
-        }
     }
 
     private linkOffsets(tokens?: PdfToken[]): void {
@@ -1368,29 +989,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         return tokens
     }
 
-    private updateRevisions(): void {
-        let modified = false
-        this.revisions.forEach((rev) => {
-            if (rev.isModified()) {
-                modified = true
-            }
-
-            if (modified) {
-                rev.update()
-            }
-        })
-
-        // Always rebuild xref binary data to reflect recalculated offsets
-        // This walks the entire prev chain for each revision
-        for (const rev of this.revisions) {
-            let xref: PdfXrefLookup | undefined = rev.xref
-            while (xref) {
-                xref.update()
-                xref = xref.prev
-            }
-        }
-    }
-
     /**
      * Performs a full update cycle to ensure all revisions are consistent and offsets are correct.
      * @internal
@@ -1404,18 +1002,15 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             this.registerNewReferences()
             // First pass: generate tokens and calculate offsets
             this.calculateOffsets()
-            this.updateRevisions()
 
             // Second pass: xref binary may have changed size (e.g. FlateDecode removed
             // from xref stream), shifting objects that follow it. Regenerate tokens
             // to capture xref changes, then recalculate offsets.
             const tokens = this.calculateOffsets()
-            this.updateRevisions()
 
             // Third pass: reuse tokens from second pass since xref should now be stable
             // (xref binary size should not change because W widths and entry count are same).
             this.calculateOffsets(tokens)
-            this.updateRevisions()
         } finally {
             this._updating = false
         }
@@ -1464,7 +1059,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      */
     toBytes(): ByteArray {
         this.update()
-        return concatUint8Arrays(this.revisions.map((x) => x.toBytes()))
+        return this.objectManager.toBytes()
     }
 
     /**
@@ -1487,7 +1082,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     toJSON() {
         return {
             type: 'document',
-            revisions: this.revisions.map((rev) => rev.toJSON()),
+            objects: this.objects.map((obj) => obj.toJSON()),
         }
     }
 
@@ -1509,9 +1104,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     isModified(): boolean {
-        return (
-            super.isModified() || this.revisions.some((rev) => rev.isModified())
-        )
+        return super.isModified()
     }
 
     /**

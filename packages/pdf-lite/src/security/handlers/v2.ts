@@ -55,8 +55,8 @@ export class PdfV2SecurityHandler extends PdfV1SecurityHandler {
      *
      * @returns The computed owner key.
      */
-    protected async computeOwnerKey(): Promise<ByteArray> {
-        return await computeOValueRc4_128(
+    protected computeOwnerKey(): ByteArray {
+        return computeOValueRc4_128(
             this.ownerPassword ?? this.password,
             this.password,
         )
@@ -68,7 +68,7 @@ export class PdfV2SecurityHandler extends PdfV1SecurityHandler {
      * @returns The computed user key.
      * @throws Error if document ID, owner key, or permissions are not set.
      */
-    protected async computeUserKey(): Promise<ByteArray> {
+    protected computeUserKey(): ByteArray {
         if (!this.documentId) {
             throw new Error('Document ID is required to compute U value')
         }
@@ -81,7 +81,7 @@ export class PdfV2SecurityHandler extends PdfV1SecurityHandler {
             throw new Error('Permissions are required to compute U value')
         }
 
-        return await computeUValueRc4_128(
+        return computeUValueRc4_128(
             this.password,
             this.ownerKey,
             this.permissions,
@@ -98,11 +98,11 @@ export class PdfV2SecurityHandler extends PdfV1SecurityHandler {
      * @param generationNumber - The PDF generation number.
      * @returns An RC4 cipher instance.
      */
-    protected async getCipher(
+    protected getCipher(
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<Cipher> {
-        const key = await this.computeObjectKey(objectNumber, generationNumber)
+    ): Cipher {
+        const key = this.computeObjectKey(objectNumber, generationNumber)
 
         return rc4(key)
     }
@@ -113,12 +113,10 @@ export class PdfV2SecurityHandler extends PdfV1SecurityHandler {
      * @param ownerPassword - The owner password.
      * @returns The recovered user password as a string.
      */
-    async recoverUserPassword(
-        ownerPassword?: ByteArray | string,
-    ): Promise<string> {
+    recoverUserPassword(ownerPassword?: ByteArray | string): string {
         ownerPassword ||= this.ownerPassword
 
-        const password = await decryptUserPasswordRc4_128(
+        const password = decryptUserPasswordRc4_128(
             stringToBytes(ownerPassword!),
             this.ownerKey!,
         )

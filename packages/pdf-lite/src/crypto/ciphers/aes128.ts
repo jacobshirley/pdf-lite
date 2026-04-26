@@ -18,8 +18,8 @@ import { Cipher } from '../types.js'
  * @example
  * ```typescript
  * const cipher = aes128(key)
- * const encrypted = await cipher.encrypt(plaintext)
- * const decrypted = await cipher.decrypt(encrypted)
+ * const encrypted = cipher.encrypt(plaintext)
+ * const decrypted = cipher.decrypt(encrypted)
  * ```
  */
 export function aes128(key: ByteArray): Cipher {
@@ -34,11 +34,11 @@ export function aes128(key: ByteArray): Cipher {
          * Generates a random IV and prepends it to the ciphertext.
          *
          * @param data - The data to encrypt.
-         * @returns A promise that resolves to IV followed by ciphertext.
+         * @returns IV followed by ciphertext.
          */
-        encrypt: async (data: ByteArray): Promise<ByteArray> => {
+        encrypt: (data: ByteArray): ByteArray => {
             const iv = getRandomBytes(16) // Generate random IV for each encryption
-            const encrypted = await aes128cbcEncrypt(key, data, iv)
+            const encrypted = aes128cbcEncrypt(key, data, iv)
             const result = new Uint8Array(iv.length + encrypted.length)
 
             result.set(iv, 0)
@@ -51,9 +51,9 @@ export function aes128(key: ByteArray): Cipher {
          * Extracts the IV from the first 16 bytes of the input.
          *
          * @param data - The data to decrypt (IV + ciphertext).
-         * @returns A promise that resolves to the decrypted plaintext.
+         * @returns The decrypted plaintext.
          */
-        decrypt: async (data: ByteArray): Promise<ByteArray> => {
+        decrypt: (data: ByteArray): ByteArray => {
             // If data is too short to contain IV + ciphertext, return as-is (not encrypted)
             if (data.length < 16) {
                 return data
@@ -62,7 +62,7 @@ export function aes128(key: ByteArray): Cipher {
                 const iv = data.slice(0, 16)
                 const ciphertext = data.slice(16)
 
-                return await aes128cbcDecrypt(key, ciphertext, iv)
+                return aes128cbcDecrypt(key, ciphertext, iv)
             } catch (error) {
                 // If decryption fails, the data might not be encrypted - return as-is
                 return data

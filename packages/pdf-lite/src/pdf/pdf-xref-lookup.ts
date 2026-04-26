@@ -17,7 +17,12 @@ import {
 } from '../core/objects/pdf-stream.js'
 import { PdfDictionary } from '../core/objects/pdf-dictionary.js'
 import { Ref } from '../core/ref.js'
-import { PdfObjectReference } from '../core/objects/pdf-object-reference.js'
+import {
+    IPdfObjectResolver,
+    PdfObjectReference,
+} from '../core/objects/pdf-object-reference.js'
+import { ByteArray } from '../types.js'
+import { concatUint8Arrays, PdfObjectSerializer, PdfToken } from '../index.js'
 
 /**
  * Manages cross-reference (xref) lookup for PDF objects.
@@ -31,8 +36,9 @@ export class PdfXrefLookup {
     entries: Map<number, PdfXRefStreamEntry>
     /** Trailer dictionary containing document metadata references */
     trailerDict: PdfDictionary<PdfTrailerEntries>
-    /** Reference to the previous xref lookup in the revision chain */
-    prev?: PdfXrefLookup
+
+    resolver?: IPdfObjectResolver
+
     private type?: 'table' | 'stream'
     private hybridXRefStream?: PdfIndirectObject<PdfXRefStream>
 
@@ -53,8 +59,10 @@ export class PdfXrefLookup {
     }) {
         this.type = options?.type
         this.entries = new Map<number, PdfXRefStreamEntry>()
-        this.prev = options?.prev
         this.trailerDict = options?.trailerDict ?? new PdfDictionary()
+        if (options?.prev) {
+            this.trailerDict.set('Prev', new PdfNumber(options.prev.offset))
+        }
 
         if (options?.object) {
             if (options.object instanceof PdfXRefTable) {
@@ -71,6 +79,23 @@ export class PdfXrefLookup {
                 )
             }
             this.size++
+
+            if (
+                this.object instanceof PdfIndirectObject &&
+                this.object.content instanceof PdfXRefStream
+            ) {
+                this.type = 'stream'
+                this.entries = new Map(
+                    this.object.content
+                        .getEntryStream()
+                        .map((entry) => [entry.objectNumber.value, entry]),
+                )
+            } else if (this.object instanceof PdfXRefTable) {
+                this.type = 'table'
+                this.object.entries.forEach((entry) => {
+                    this.entries.set(entry.objectNumber.value, entry)
+                })
+            }
         } else {
             // PDF spec 7.5.4: object 0 must always be a free entry
             // (head of the free list) with generation number 65535.
@@ -83,6 +108,7 @@ export class PdfXrefLookup {
                     inUse: false,
                 }),
             )
+
             this.object = this.update()
         }
 
@@ -90,41 +116,26 @@ export class PdfXrefLookup {
             this.object.orderIndex = PdfIndirectObject.MAX_ORDER_INDEX
     }
 
-    /**
-     * Links this xref to a previous xref lookup.
-     * Copies missing trailer entries from the previous xref.
-     *
-     * @param xref - The previous xref lookup to link to
-     * @throws Error if trying to set self as previous (would create circular reference) or if offsets match (would create ambiguous or invalid xref chain)
-     */
-    setPrev(xref: PdfXrefLookup) {
-        if (xref === this) {
-            throw new Error('Cannot set XRef lookup as its own previous lookup')
+    get prev(): PdfXrefLookup | undefined {
+        const prevEntry = this.trailerDict.get('Prev')
+        if (prevEntry?.value) {
+            const object = this.resolver?.getObjectAtOffset(prevEntry.value)
+            if (!object) {
+                throw new Error(
+                    `Failed to resolve previous xref object at offset ${prevEntry.value}`,
+                )
+            }
+            return new PdfXrefLookup({
+                type: object instanceof PdfXRefTable ? 'table' : 'stream',
+                object:
+                    object instanceof PdfIndirectObject
+                        ? object.content
+                        : object,
+                trailerDict:
+                    object instanceof PdfTrailer ? object.dict : undefined,
+            })
         }
-
-        if (xref.offset === this.offset) {
-            throw new Error(
-                'Cannot set XRef lookup previous to another lookup with the same offset',
-            )
-        }
-
-        this.prev = xref
-        const prevDict = xref.trailerDict
-        const dict = this.trailerDict
-
-        !dict.has('Info') && dict.set('Info', prevDict.get('Info'))
-        !dict.has('Root') && dict.set('Root', prevDict.get('Root'))
-        !dict.has('Encrypt') && dict.set('Encrypt', prevDict.get('Encrypt'))
-        !dict.has('ID') && dict.set('ID', prevDict.get('ID'))
-        if (!dict.has('Prev')) {
-            const prevNumber = new PdfNumber(xref.offset)
-            prevNumber.isByteOffset = true
-            dict.set('Prev', prevNumber)
-        } else {
-            const prev = dict.get('Prev')!
-            prev.ref.update(xref.offset)
-            prev.isByteOffset = true
-        }
+        return undefined
     }
 
     /**
@@ -139,142 +150,6 @@ export class PdfXrefLookup {
      */
     get offset(): Ref<number> {
         return this.object.offset
-    }
-
-    /**
-     * Creates xref lookups from an array of PDF objects.
-     * Parses both xref tables and xref streams, linking them via the Prev chain.
-     *
-     * @param objects - Array of PDF objects to parse
-     * @returns The most recent xref lookup with linked previous lookups
-     */
-    static fromObjects(objects: PdfObject[]): PdfXrefLookup {
-        const lookups: PdfXrefLookup[] = []
-
-        for (let i = 0; i < objects.length; i++) {
-            const obj = objects[i]
-            if (obj instanceof PdfXRefTable) {
-                const trailer = objects[i + 1]
-                if (!(trailer instanceof PdfTrailer)) {
-                    throw new Error(
-                        'Expected PdfTrailer after PdfXRefTable in objects',
-                    )
-                }
-                lookups.push(PdfXrefLookup.fromXrefTable(obj, trailer, objects))
-            } else if (
-                obj instanceof PdfIndirectObject &&
-                obj.content instanceof PdfStream &&
-                obj.content.isType('XRef')
-            ) {
-                lookups.push(PdfXrefLookup.fromXrefStream(obj))
-            }
-        }
-
-        if (!lookups.length) {
-            return new PdfXrefLookup()
-        }
-
-        const startXref = objects.findLast((x) => x instanceof PdfStartXRef)
-        if (!startXref) {
-            throw new Error('No PdfStartXRef found in provided objects')
-        }
-
-        let lookup = lookups.find((x) => x.offset.equals(startXref.offset.ref))
-        if (!lookup) {
-            return lookups[0]
-        }
-
-        const initialLookup = lookup
-        while (lookup) {
-            const prevEntry: PdfNumber | undefined =
-                lookup.trailerDict.get('Prev')
-            const prevLookup: PdfXrefLookup | undefined = lookups.find((x) =>
-                x.offset.equals(prevEntry?.value),
-            )
-
-            if (prevLookup) {
-                lookup.prev = prevLookup
-                // Link the Prev entry's Ref to the previous xref's offset Ref
-                // so it automatically updates when positions change
-                if (prevEntry) {
-                    prevEntry.ref.update(prevLookup.offset)
-                    prevEntry.isByteOffset = true
-                }
-            }
-
-            lookup = prevLookup
-        }
-
-        return initialLookup
-    }
-
-    /**
-     * Creates an xref lookup from a traditional xref table and trailer.
-     * Handles hybrid xref documents with both table and stream entries.
-     *
-     * @param xrefTable - The xref table object
-     * @param trailer - The trailer object
-     * @param objects - Optional array of objects for resolving hybrid xref streams
-     * @returns A new PdfXrefLookup instance
-     */
-    static fromXrefTable(
-        xrefTable: PdfXRefTable,
-        trailer: PdfTrailer,
-        objects?: PdfObject[],
-    ): PdfXrefLookup {
-        const lookup = new PdfXrefLookup({ object: xrefTable })
-
-        lookup.trailerDict = trailer.dict
-
-        xrefTable.entries.forEach((entry) => {
-            lookup.entries.set(entry.objectNumber.value, entry)
-        })
-
-        // Handle hybrid xref: check for XRefStm in trailer
-        const xrefStmOffset = trailer.dict.get('XRefStm')
-        if (xrefStmOffset instanceof PdfNumber && objects) {
-            // Find the xref stream object at this offset
-            const xrefStreamObj = objects.find(
-                (obj) =>
-                    obj instanceof PdfIndirectObject &&
-                    obj.content instanceof PdfStream &&
-                    obj.content.isType('XRef') &&
-                    obj.offset.equals(xrefStmOffset.value),
-            ) as PdfIndirectObject<PdfStream> | undefined
-
-            if (xrefStreamObj) {
-                const stream = xrefStreamObj.content.parseAs(PdfXRefStream)
-                // Add entries from the xref stream (these are typically compressed objects)
-                for (const entry of stream.getEntryStream()) {
-                    // Only add if not already present in the table
-                    if (!lookup.entries.has(entry.objectNumber.value)) {
-                        lookup.entries.set(entry.objectNumber.value, entry)
-                    }
-                }
-            }
-        }
-
-        return lookup
-    }
-
-    /**
-     * Creates an xref lookup from an xref stream object.
-     *
-     * @param streamObject - The indirect object containing the xref stream
-     * @returns A new PdfXrefLookup instance
-     */
-    static fromXrefStream(
-        streamObject: PdfIndirectObject<PdfStream>,
-    ): PdfXrefLookup {
-        const stream = streamObject.content.parseAs(PdfXRefStream)
-        const lookup = new PdfXrefLookup({ object: streamObject })
-
-        for (const entry of stream.getEntryStream()) {
-            lookup.entries.set(entry.objectNumber.value, entry)
-        }
-
-        lookup.trailerDict = stream.header as PdfDictionary<PdfTrailerEntries>
-        return lookup
     }
 
     /**
@@ -308,66 +183,6 @@ export class PdfXrefLookup {
      */
     get entriesValues(): PdfXRefStreamEntry[] {
         return Array.from(this.entries.values())
-    }
-
-    /**
-     * Links xref entries to their corresponding indirect objects.
-     * Updates byte offset references to point to actual object offsets.
-     *
-     * @param objects - Array of indirect objects to link
-     */
-    linkIndirectObjects(objects: PdfIndirectObject[]): void {
-        for (const entry of this.entriesValues) {
-            if (entry instanceof PdfXRefStreamCompressedEntry) {
-                continue
-            }
-
-            if (!entry.inUse) {
-                continue
-            }
-
-            const [matchedObject] = objects.filter((obj) =>
-                obj.offset.equals(entry.byteOffset.value),
-            )
-
-            if (
-                !matchedObject ||
-                matchedObject.objectNumber !== entry.objectNumber.value
-            ) {
-                continue
-            }
-
-            entry.byteOffset.ref.update(matchedObject.offset)
-        }
-    }
-
-    /**
-     * Links this xref to a previous xref lookup based on the Prev trailer entry.
-     *
-     * @param objects - Array of xref lookups to search for the previous one
-     */
-    linkPrev(objects: PdfXrefLookup[]): void {
-        const prevEntry = this.trailerDict.get('Prev')
-        if (prevEntry?.value === undefined) {
-            return
-        }
-
-        const prevLookup = objects.filter((obj) =>
-            obj.offset.equals(prevEntry.value),
-        )
-
-        if (prevLookup.length === 0) {
-            return
-        } else if (prevLookup.length > 1) {
-            return
-        }
-
-        if (prevLookup[0].offset.equals(0)) return
-
-        this.prev = prevLookup[0]
-        // Link the Prev entry's Ref to the previous xref's offset Ref
-        prevEntry.ref.update(prevLookup[0].offset)
-        prevEntry.isByteOffset = true
     }
 
     /**

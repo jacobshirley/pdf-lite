@@ -27,12 +27,12 @@ export class IdentityCryptFilter extends PdfCryptFilter {
      *
      * @returns A cipher that performs no encryption or decryption.
      */
-    async getCipher(): Promise<Cipher> {
+    getCipher(): Cipher {
         return {
-            encrypt: async (data: ByteArray) => {
+            encrypt: (data: ByteArray) => {
                 return data
             },
-            decrypt: async (data: ByteArray) => {
+            decrypt: (data: ByteArray) => {
                 return data
             },
         }

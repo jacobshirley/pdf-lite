@@ -12,8 +12,8 @@ import { Cipher } from '../types.js'
  * @example
  * ```typescript
  * const cipher = rc4(key)
- * const encrypted = await cipher.encrypt(plaintext)
- * const decrypted = await cipher.decrypt(encrypted)
+ * const encrypted = cipher.encrypt(plaintext)
+ * const decrypted = cipher.decrypt(encrypted)
  * ```
  */
 export function rc4(key: ByteArray): Cipher {
@@ -64,18 +64,18 @@ export function rc4(key: ByteArray): Cipher {
          * Encrypts data using RC4.
          *
          * @param data - The data to encrypt.
-         * @returns A promise that resolves to the encrypted data.
+         * @returns The encrypted data.
          */
-        encrypt: async (data: ByteArray): Promise<ByteArray> => {
+        encrypt: (data: ByteArray): ByteArray => {
             return rc4(data, S)
         },
         /**
          * Decrypts data using RC4.
          *
          * @param data - The data to decrypt.
-         * @returns A promise that resolves to the decrypted data.
+         * @returns The decrypted data.
          */
-        decrypt: async (data: ByteArray): Promise<ByteArray> => {
+        decrypt: (data: ByteArray): ByteArray => {
             return rc4(data, S)
         },
     }

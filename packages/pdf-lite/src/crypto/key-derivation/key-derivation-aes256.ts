@@ -35,21 +35,21 @@ function getUint16ByteBigEndian(input: ByteArray): bigint {
  *
  * @example
  * ```typescript
- * const hash = await computeAlgorithm2bHash(password, salt)
+ * const hash = computeAlgorithm2bHash(password, salt)
  * ```
  */
-export async function computeAlgorithm2bHash(
+export function computeAlgorithm2bHash(
     password: ByteArray,
     salt: ByteArray,
     userKey: ByteArray = new Uint8Array(),
-): Promise<ByteArray> {
+): ByteArray {
     // Step 1: Initial hash
     let K = new Uint8Array(password.length + salt.length + userKey.length)
     K.set(password)
     K.set(salt, password.length)
     K.set(userKey, password.length + salt.length)
 
-    K = await sha256(K)
+    K = sha256(K)
 
     let roundNumber = 0
     let E: ByteArray = new Uint8Array()
@@ -68,18 +68,18 @@ export async function computeAlgorithm2bHash(
         // Step 3: Encrypt K1 with AES-128-CBC using key/iv from K
         const key = K.subarray(0, 16)
         const iv = K.subarray(16, 32)
-        E = await aes128CbcNoPaddingEncrypt(key, K1, iv)
+        E = aes128CbcNoPaddingEncrypt(key, K1, iv)
 
         // Step 4: Choose hash
         const value = getUint16ByteBigEndian(E)
         const mod = Number(value % 3n)
 
         if (mod === 0) {
-            K = await sha256(E)
+            K = sha256(E)
         } else if (mod === 1) {
-            K = await sha384(E)
+            K = sha384(E)
         } else if (mod === 2) {
-            K = await sha512(E)
+            K = sha512(E)
         } else {
             throw new Error('Invalid mod')
         }
@@ -102,24 +102,24 @@ export async function computeAlgorithm2bHash(
  * @example
  * ```typescript
  * try {
- *   await validatePasswordHash(password, storedKey)
+ *   validatePasswordHash(password, storedKey)
  *   console.log('Password is valid')
  * } catch (e) {
  *   console.log('Invalid password')
  * }
  * ```
  */
-export async function validatePasswordHash(
+export function validatePasswordHash(
     password: ByteArray,
     key: ByteArray,
     extra?: ByteArray,
-): Promise<ByteArray> {
+): ByteArray {
     const validationSalt = key.slice(32, 40)
     if (validationSalt.length !== 8) {
         throw new Error('Invalid salt length')
     }
 
-    const hash = await computeAlgorithm2bHash(password, validationSalt, extra)
+    const hash = computeAlgorithm2bHash(password, validationSalt, extra)
 
     if (hash.length !== 32) {
         throw new Error('Invalid hash length')
@@ -149,17 +149,17 @@ export async function validatePasswordHash(
  *
  * @example
  * ```typescript
- * const fileKey = await getFileKey(userPw, ownerPw, U, UE, O, OE)
+ * const fileKey = getFileKey(userPw, ownerPw, U, UE, O, OE)
  * ```
  */
-export async function getFileKey(
+export function getFileKey(
     userPassword: ByteArray,
     ownerPassword: ByteArray,
     u: ByteArray,
     ue: ByteArray,
     o: ByteArray,
     oe: ByteArray,
-): Promise<ByteArray> {
+): ByteArray {
     if (userPassword.length > 128) {
         userPassword = userPassword.subarray(0, 128)
     }
@@ -202,36 +202,28 @@ export async function getFileKey(
     )
     try {
         // First try owner password
-        await validatePasswordHash(ownerPassword, o, u)
+        validatePasswordHash(ownerPassword, o, u)
 
-        const hash = await computeAlgorithm2bHash(
+        const hash = computeAlgorithm2bHash(
             ownerPassword,
             o.subarray(40, 48),
             u,
         )
 
-        const key = await aes256CbcNoPaddingDecrypt(
-            hash,
-            oe,
-            new Uint8Array(16),
-        )
+        const key = aes256CbcNoPaddingDecrypt(hash, oe, new Uint8Array(16))
 
         return key
     } catch (e) {
         try {
             // Then try user password
 
-            await validatePasswordHash(userPassword, u)
+            validatePasswordHash(userPassword, u)
 
-            const hash = await computeAlgorithm2bHash(
+            const hash = computeAlgorithm2bHash(
                 userPassword,
                 u.subarray(40, 48),
             )
-            const key = await aes256CbcNoPaddingDecrypt(
-                hash,
-                ue,
-                new Uint8Array(16),
-            )
+            const key = aes256CbcNoPaddingDecrypt(hash, ue, new Uint8Array(16))
 
             return key
         } catch (e) {

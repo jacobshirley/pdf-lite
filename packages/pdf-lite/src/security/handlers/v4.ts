@@ -148,11 +148,11 @@ export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
      * @returns The computed object key.
      * @throws Error if object or generation number is invalid.
      */
-    async computeObjectKey(
+    computeObjectKey(
         objectNumber?: number,
         generationNumber?: number,
         algorithm?: PdfEncryptionAlgorithmType,
-    ): Promise<ByteArray> {
+    ): ByteArray {
         assert(
             objectNumber !== undefined,
             'Object number is required to derive the key',
@@ -165,9 +165,9 @@ export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
         assert(objectNumber > 0, 'Object number cannot be zero or negative')
         assert(generationNumber >= 0, 'Generation number cannot be negative')
 
-        this.masterKey ||= await this.computeMasterKey()
+        this.masterKey ||= this.computeMasterKey()
 
-        const key = await deriveObjectKey(
+        const key = deriveObjectKey(
             this.masterKey,
             objectNumber,
             generationNumber,
@@ -184,11 +184,11 @@ export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
      * @param generationNumber - The PDF generation number.
      * @returns An AES-128 cipher instance.
      */
-    protected async getCipher(
+    protected getCipher(
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<Cipher> {
-        const key = await this.computeObjectKey(objectNumber, generationNumber)
+    ): Cipher {
+        const key = this.computeObjectKey(objectNumber, generationNumber)
 
         return aes128(key)
     }
@@ -306,8 +306,8 @@ export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
     /**
      * Writes the encryption dictionary including crypt filter definitions.
      */
-    async write(): Promise<void> {
-        await super.write()
+    write(): void {
+        super.write()
 
         const dict = this.dict
 
@@ -352,7 +352,7 @@ export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray> {
+    ): ByteArray {
         const cryptFilter = this.getCryptFilterByType(type)
         if (cryptFilter) {
             return cryptFilter.encrypt(data, objectNumber, generationNumber)
@@ -375,7 +375,7 @@ export class PdfV4SecurityHandler extends PdfV2SecurityHandler {
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray> {
+    ): ByteArray {
         const cryptFilter = this.getCryptFilterByType(type)
         if (cryptFilter) {
             return cryptFilter.decrypt(data, objectNumber, generationNumber)

@@ -80,10 +80,7 @@ export abstract class PdfCryptFilter {
      * @param generationNumber - The PDF generation number for key derivation.
      * @returns A cipher instance for encryption/decryption operations.
      */
-    abstract getCipher(
-        objectNumber?: number,
-        generationNumber?: number,
-    ): Promise<Cipher>
+    abstract getCipher(objectNumber?: number, generationNumber?: number): Cipher
 
     /**
      * Encrypts data using this crypt filter.
@@ -93,12 +90,12 @@ export abstract class PdfCryptFilter {
      * @param generationNumber - The PDF generation number for key derivation.
      * @returns The encrypted data.
      */
-    async encrypt(
+    encrypt(
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray> {
-        const cipher = await this.getCipher(objectNumber, generationNumber)
+    ): ByteArray {
+        const cipher = this.getCipher(objectNumber, generationNumber)
         return cipher.encrypt(data)
     }
 
@@ -110,12 +107,12 @@ export abstract class PdfCryptFilter {
      * @param generationNumber - The PDF generation number for key derivation.
      * @returns The decrypted data.
      */
-    async decrypt(
+    decrypt(
         data: ByteArray,
         objectNumber?: number,
         generationNumber?: number,
-    ): Promise<ByteArray> {
-        const cipher = await this.getCipher(objectNumber, generationNumber)
+    ): ByteArray {
+        const cipher = this.getCipher(objectNumber, generationNumber)
         return cipher.decrypt(data)
     }
 

@@ -814,6 +814,14 @@ export class PdfXRefStreamCompressedEntry {
                 ? options.index
                 : new PdfNumber(options.index)
     }
+
+    toJSON() {
+        return {
+            objectNumber: this.objectNumber.value,
+            objectStreamNumber: this.objectStreamNumber.value,
+            index: this.index.value,
+        }
+    }
 }
 
 export type PdfXRefStreamStandardEntry = PdfXRefTableEntry
@@ -1075,6 +1083,15 @@ export class PdfXRefStream extends PdfStream {
                 yield entry
             }
         }
+    }
+
+    getEntry(objectNumber: number): PdfXRefStreamEntry | undefined {
+        for (const entry of this.getEntryStream()) {
+            if (entry.objectNumber.value === objectNumber) {
+                return entry
+            }
+        }
+        return undefined
     }
 
     getEntries(): PdfXRefStreamEntry[] {

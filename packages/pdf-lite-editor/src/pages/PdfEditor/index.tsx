@@ -206,8 +206,9 @@ export function PdfEditor() {
                         <div className="fixed right-4 top-4 bottom-4 w-80 z-50">
                             <GraphicsPropertiesPanel
                                 graphicsBlock={editor.selectedGraphicsBlock}
-                                onColorChange={editor.handleGraphicsBlockColorChange}
-                                onFillChange={editor.handleGraphicsBlockFillChange}
+                                onFillColorChange={editor.handleGraphicsBlockFillColorChange}
+                                onStrokeColorChange={editor.handleGraphicsBlockStrokeColorChange}
+                                onStrokeWidthChange={editor.handleGraphicsBlockStrokeWidthChange}
                                 onRemove={() =>
                                     editor.handleRemoveGraphicsBlock(
                                         editor.selectedGraphicsBlock!.id,

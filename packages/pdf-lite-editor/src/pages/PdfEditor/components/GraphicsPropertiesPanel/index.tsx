@@ -9,20 +9,24 @@ import type { ExtractedGraphicsBlock } from '../../types'
 
 type Props = {
     graphicsBlock: ExtractedGraphicsBlock
-    onColorChange: (hex: string) => void
-    onFillChange: (fill: boolean) => void
+    onFillColorChange: (hex: string | null) => void
+    onStrokeColorChange: (hex: string | null) => void
+    onStrokeWidthChange: (width: number) => void
     onRemove: () => void
     onClose: () => void
 }
 
 export function GraphicsPropertiesPanel({
     graphicsBlock,
-    onColorChange,
-    onFillChange,
+    onFillColorChange,
+    onStrokeColorChange,
+    onStrokeWidthChange,
     onRemove,
     onClose,
 }: Props) {
     const bbox = graphicsBlock.bbox
+    const hasFill = !!graphicsBlock.fillColorHex
+    const hasStroke = !!graphicsBlock.strokeColorHex
 
     return (
         <Card className="sticky top-6 h-[calc(100vh-48px)] rounded-[24px] border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-800">
@@ -62,48 +66,121 @@ export function GraphicsPropertiesPanel({
                     {graphicsBlock.shapeType !== 'Image' && (
                     <div className="space-y-2">
                         <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                            Appearance
+                            Fill
                         </Label>
                         <div className="space-y-3">
                             <div className="space-y-1">
-                                <Label className="text-xs text-slate-600 dark:text-slate-400">
-                                    Color
-                                </Label>
-                                <div className="flex items-center gap-1.5 h-8">
+                                <label className="flex items-center gap-2 cursor-pointer">
                                     <input
-                                        type="color"
-                                        value={graphicsBlock.colorHex || '#000000'}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                            onColorChange(e.target.value)
-                                        }
-                                        className="w-8 h-8 rounded border border-slate-300 dark:border-slate-600 cursor-pointer p-0"
+                                        type="checkbox"
+                                        checked={hasFill}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                onFillColorChange(graphicsBlock.strokeColorHex || '#000000')
+                                            } else {
+                                                onFillColorChange(null)
+                                            }
+                                        }}
+                                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-600"
                                     />
-                                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                                        {graphicsBlock.colorHex || '#000000'}
+                                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                                        Enable fill
                                     </span>
-                                </div>
+                                </label>
                             </div>
-
-                            {graphicsBlock.shapeType !== 'Line' && (
+                            {hasFill && (
                                 <div className="space-y-1">
                                     <Label className="text-xs text-slate-600 dark:text-slate-400">
-                                        Fill
+                                        Fill Color
                                     </Label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
+                                    <div className="flex items-center gap-1.5 h-8">
                                         <input
-                                            type="checkbox"
-                                            checked={graphicsBlock.fill ?? false}
-                                            onChange={(e) => onFillChange(e.target.checked)}
-                                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600"
+                                            type="color"
+                                            value={graphicsBlock.fillColorHex || '#000000'}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                onFillColorChange(e.target.value)
+                                            }
+                                            className="w-8 h-8 rounded border border-slate-300 dark:border-slate-600 cursor-pointer p-0"
                                         />
-                                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                                            Fill shape
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            {graphicsBlock.fillColorHex || '#000000'}
                                         </span>
-                                    </label>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
+                    )}
+
+                    {graphicsBlock.shapeType !== 'Image' && (
+                    <>
+                    <Separator />
+
+                    <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            Stroke
+                        </Label>
+                        <div className="space-y-3">
+                            <div className="space-y-1">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={hasStroke}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                onStrokeColorChange(graphicsBlock.fillColorHex || '#000000')
+                                            } else {
+                                                onStrokeColorChange(null)
+                                            }
+                                        }}
+                                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-600"
+                                    />
+                                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                                        Enable stroke
+                                    </span>
+                                </label>
+                            </div>
+                            {hasStroke && (
+                                <>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-slate-600 dark:text-slate-400">
+                                        Stroke Color
+                                    </Label>
+                                    <div className="flex items-center gap-1.5 h-8">
+                                        <input
+                                            type="color"
+                                            value={graphicsBlock.strokeColorHex || '#000000'}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                onStrokeColorChange(e.target.value)
+                                            }
+                                            className="w-8 h-8 rounded border border-slate-300 dark:border-slate-600 cursor-pointer p-0"
+                                        />
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            {graphicsBlock.strokeColorHex || '#000000'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-slate-600 dark:text-slate-400">
+                                        Stroke Width
+                                    </Label>
+                                    <Input
+                                        type="number"
+                                        min={0.1}
+                                        max={50}
+                                        step={0.5}
+                                        value={graphicsBlock.strokeWidth ?? 1}
+                                        onChange={(e) =>
+                                            onStrokeWidthChange(parseFloat(e.target.value) || 1)
+                                        }
+                                        className="h-8 text-sm"
+                                    />
+                                </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    </>
                     )}
 
                     <Separator />

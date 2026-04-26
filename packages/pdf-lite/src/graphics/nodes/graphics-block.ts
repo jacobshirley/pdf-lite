@@ -95,24 +95,16 @@ export class GraphicsBlock extends ContentNode {
     }): GraphicsBlock {
         const { x, y, radiusX, radiusY, rgb, fill } = options
         const block = new GraphicsBlock()
-        // Approximate ellipse with Bezier curves
+        // Approximate ellipse with four cubic Bezier curves
         const kappa = 0.552284749831
-        const controlX = radiusX * kappa
-        const controlY = radiusY * kappa
+        const cx = radiusX * kappa
+        const cy = radiusY * kappa
 
         block.moveTo(x + radiusX, y)
-        block.lineTo(x + radiusX, y + controlY)
-        block.lineTo(x + controlX, y + radiusY)
-        block.lineTo(x, y + radiusY)
-        block.lineTo(x - controlX, y + radiusY)
-        block.lineTo(x - radiusX, y + controlY)
-        block.lineTo(x - radiusX, y)
-        block.lineTo(x - radiusX, y - controlY)
-        block.lineTo(x - controlX, y - radiusY)
-        block.lineTo(x, y - radiusY)
-        block.lineTo(x + controlX, y - radiusY)
-        block.lineTo(x + radiusX, y - controlY)
-        block.lineTo(x + radiusX, y)
+        block.curveTo(x + radiusX, y + cy, x + cx, y + radiusY, x, y + radiusY)
+        block.curveTo(x - cx, y + radiusY, x - radiusX, y + cy, x - radiusX, y)
+        block.curveTo(x - radiusX, y - cy, x - cx, y - radiusY, x, y - radiusY)
+        block.curveTo(x + cx, y - radiusY, x + radiusX, y - cy, x + radiusX, y)
 
         const color = new RGBColor(rgb?.[0] ?? 0, rgb?.[1] ?? 0, rgb?.[2] ?? 0)
         if (fill) {
@@ -125,6 +117,17 @@ export class GraphicsBlock extends ContentNode {
 
     moveTo(x: number, y: number) {
         this._ops.push(MoveToOp.create(x, y))
+    }
+
+    curveTo(
+        x1: number,
+        y1: number,
+        x2: number,
+        y2: number,
+        x3: number,
+        y3: number,
+    ) {
+        this._ops.push(CurveToOp.create(x1, y1, x2, y2, x3, y3))
     }
 
     lineTo(x: number, y: number) {

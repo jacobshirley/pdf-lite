@@ -73,6 +73,7 @@ type Props = {
     ) => void
     selectedGraphicsBlockId: string | null
     onGraphicsBlockSelect: (id: string) => void
+    onLineEndpointMove: (blockId: string, endpointIndex: 0 | 1, dx: number, dy: number) => void
     onBackgroundClick: () => void
     onPageDrop: (
         e: React.DragEvent,
@@ -124,6 +125,7 @@ export function CanvasPanel({
     onGraphicsBlockResize,
     selectedGraphicsBlockId,
     onGraphicsBlockSelect,
+    onLineEndpointMove,
     onBackgroundClick,
     onPageDrop,
     onRemovePage,
@@ -588,6 +590,9 @@ export function CanvasPanel({
                                                                     }
                                                                     onSelect={
                                                                         onGraphicsBlockSelect
+                                                                    }
+                                                                    onEndpointMove={
+                                                                        onLineEndpointMove
                                                                     }
                                                                 />
                                                             ),

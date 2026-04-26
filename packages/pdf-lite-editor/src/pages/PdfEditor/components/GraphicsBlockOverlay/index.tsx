@@ -9,10 +9,11 @@ type Props = {
     onPositionChange: (blockId: string, dx: number, dy: number) => void
     onResize?: (blockId: string, newWidth: number, newHeight: number, dx: number, dy: number) => void
     onSelect?: (blockId: string) => void
+    onEndpointMove?: (blockId: string, endpointIndex: 0 | 1, dx: number, dy: number) => void
 }
 
-export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChange, onResize, onSelect }: Props) {
-    const { bbox, pageHeight, pageWidth } = graphicsBlock
+export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChange, onResize, onSelect, onEndpointMove }: Props) {
+    const { bbox, pageHeight, pageWidth, shapeType, linePoints } = graphicsBlock
 
     const [isDragging, setIsDragging] = useState(false)
     const [isResizing, setIsResizing] = useState(false)
@@ -23,7 +24,12 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
     const [tempSize, setTempSize] = useState<{ width: number; height: number; left: number; top: number } | null>(null)
     const [resizeStart, setResizeStart] = useState({ clientX: 0, clientY: 0, parentWidth: 0, parentHeight: 0 })
 
-    if (bbox.width === 0 && bbox.height === 0) return null
+    // Line endpoint drag state
+    const [draggingEndpoint, setDraggingEndpoint] = useState<0 | 1 | null>(null)
+    const [endpointDragStart, setEndpointDragStart] = useState({ clientX: 0, clientY: 0, parentWidth: 0, parentHeight: 0 })
+    const [tempLinePoints, setTempLinePoints] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
+
+    if (bbox.width === 0 && bbox.height === 0 && shapeType !== 'Line') return null
 
     const leftPercent = (bbox.x / pageWidth) * 100
     const topPercent = ((pageHeight - (bbox.y + bbox.height)) / pageHeight) * 100
@@ -35,7 +41,10 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
     const displayWidth = tempSize ? `${tempSize.width}%` : `${widthPercent}%`
     const displayHeight = tempSize ? `${tempSize.height}%` : `${Math.max(heightPercent, 0.3)}%`
 
+    const isLine = shapeType === 'Line'
+
     const handleMouseDown = (e: React.MouseEvent) => {
+        if (isLine) return // lines are dragged by endpoints only
         e.preventDefault()
         e.stopPropagation()
         const target = e.currentTarget as HTMLElement
@@ -43,6 +52,12 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
         setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top })
         setIsDragging(true)
         setDidDrag(false)
+    }
+
+    const handleLineClick = (e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        onSelect?.(graphicsBlock.id)
     }
 
     const handleResizeStart = (e: React.MouseEvent, edge: ResizeEdge) => {
@@ -63,7 +78,41 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
         })
     }
 
+    const handleEndpointMouseDown = (e: React.MouseEvent, idx: 0 | 1) => {
+        e.preventDefault()
+        e.stopPropagation()
+        // The SVG covers inset:0 of the page container, so its own bounding rect == page rect
+        const el = document.querySelector(`[data-graphics-id="${graphicsBlock.id}"]`)
+        if (!el) return
+        const rect = el.getBoundingClientRect()
+        setDraggingEndpoint(idx)
+        setEndpointDragStart({
+            clientX: e.clientX,
+            clientY: e.clientY,
+            parentWidth: rect.width,
+            parentHeight: rect.height,
+        })
+        setTempLinePoints(linePoints ? { ...linePoints } : null)
+    }
+
     const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (draggingEndpoint !== null && linePoints) {
+            const dxPx = e.clientX - endpointDragStart.clientX
+            const dyPx = e.clientY - endpointDragStart.clientY
+            const dxPdf = (dxPx / endpointDragStart.parentWidth) * pageWidth
+            const dyPdf = -(dyPx / endpointDragStart.parentHeight) * pageHeight
+
+            setTempLinePoints(prev => {
+                if (!prev) return null
+                if (draggingEndpoint === 0) {
+                    return { ...prev, x1: linePoints.x1 + dxPdf, y1: linePoints.y1 + dyPdf }
+                } else {
+                    return { ...prev, x2: linePoints.x2 + dxPdf, y2: linePoints.y2 + dyPdf }
+                }
+            })
+            return
+        }
+
         if (isResizing && resizeEdge) {
             const dxPx = e.clientX - resizeStart.clientX
             const dyPx = e.clientY - resizeStart.clientY
@@ -103,9 +152,24 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
             left: ((e.clientX - parentRect.left - dragOffset.x) / parentRect.width) * 100,
             top: ((e.clientY - parentRect.top - dragOffset.y) / parentRect.height) * 100,
         })
-    }, [isDragging, isResizing, resizeEdge, dragOffset, resizeStart, graphicsBlock.id, leftPercent, topPercent, widthPercent, heightPercent])
+    }, [isDragging, isResizing, resizeEdge, dragOffset, resizeStart, graphicsBlock.id, leftPercent, topPercent, widthPercent, heightPercent, draggingEndpoint, endpointDragStart, linePoints, pageWidth, pageHeight])
 
     const handleMouseUp = useCallback(() => {
+        if (draggingEndpoint !== null && linePoints && tempLinePoints) {
+            const dx = draggingEndpoint === 0
+                ? tempLinePoints.x1 - linePoints.x1
+                : tempLinePoints.x2 - linePoints.x2
+            const dy = draggingEndpoint === 0
+                ? tempLinePoints.y1 - linePoints.y1
+                : tempLinePoints.y2 - linePoints.y2
+            if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                onEndpointMove?.(graphicsBlock.id, draggingEndpoint, dx, dy)
+            }
+            setDraggingEndpoint(null)
+            setTempLinePoints(null)
+            return
+        }
+
         if (isResizing && tempSize) {
             const newPdfWidth = (tempSize.width / 100) * pageWidth
             const newPdfHeight = (tempSize.height / 100) * pageHeight
@@ -129,10 +193,10 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
             onSelect?.(graphicsBlock.id)
         }
         setIsDragging(false)
-    }, [isDragging, isResizing, tempPosition, tempSize, didDrag, leftPercent, topPercent, pageWidth, pageHeight, graphicsBlock.id, onPositionChange, onResize, onSelect])
+    }, [isDragging, isResizing, tempPosition, tempSize, didDrag, leftPercent, topPercent, pageWidth, pageHeight, graphicsBlock.id, onPositionChange, onResize, onSelect, draggingEndpoint, endpointDragStart, tempLinePoints, linePoints, onEndpointMove])
 
     React.useEffect(() => {
-        if (isDragging || isResizing) {
+        if (isDragging || isResizing || draggingEndpoint !== null) {
             window.addEventListener('mousemove', handleMouseMove)
             window.addEventListener('mouseup', handleMouseUp)
             return () => {
@@ -140,7 +204,7 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
                 window.removeEventListener('mouseup', handleMouseUp)
             }
         }
-    }, [isDragging, isResizing, handleMouseMove, handleMouseUp])
+    }, [isDragging, isResizing, draggingEndpoint, handleMouseMove, handleMouseUp])
 
     const handleStyle: React.CSSProperties = {
         position: 'absolute',
@@ -150,6 +214,73 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
         border: '1.5px solid rgba(59, 130, 246, 0.9)',
         borderRadius: 1,
         zIndex: 25,
+    }
+
+    // Line rendering using SVG overlay positioned over the whole page
+    if (isLine && linePoints) {
+        const pts = tempLinePoints ?? linePoints
+
+        // Convert PDF coords to percentages (Y-flipped)
+        const x1Pct = (pts.x1 / pageWidth) * 100
+        const y1Pct = ((pageHeight - pts.y1) / pageHeight) * 100
+        const x2Pct = (pts.x2 / pageWidth) * 100
+        const y2Pct = ((pageHeight - pts.y2) / pageHeight) * 100
+
+        return (
+            <svg
+                data-graphics-id={graphicsBlock.id}
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    overflow: 'visible',
+                    pointerEvents: 'none',
+                    zIndex: isSelected ? 15 : 5,
+                }}
+            >
+                {/* Invisible wide hit area for selecting the line */}
+                <line
+                    x1={`${x1Pct}%`} y1={`${y1Pct}%`}
+                    x2={`${x2Pct}%`} y2={`${y2Pct}%`}
+                    stroke="transparent"
+                    strokeWidth={12}
+                    style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+                    onClick={handleLineClick}
+                />
+                {/* Selection highlight */}
+                {isSelected && (
+                    <line
+                        x1={`${x1Pct}%`} y1={`${y1Pct}%`}
+                        x2={`${x2Pct}%`} y2={`${y2Pct}%`}
+                        stroke="rgba(59,130,246,0.5)"
+                        strokeWidth={6}
+                        style={{ pointerEvents: 'none' }}
+                    />
+                )}
+                {/* Endpoint handles */}
+                {isSelected && (
+                    <>
+                        <circle
+                            cx={`${x1Pct}%`} cy={`${y1Pct}%`} r={6}
+                            fill="white"
+                            stroke="rgba(59,130,246,0.9)"
+                            strokeWidth={1.5}
+                            style={{ pointerEvents: 'all', cursor: 'crosshair' }}
+                            onMouseDown={(e) => handleEndpointMouseDown(e, 0)}
+                        />
+                        <circle
+                            cx={`${x2Pct}%`} cy={`${y2Pct}%`} r={6}
+                            fill="white"
+                            stroke="rgba(59,130,246,0.9)"
+                            strokeWidth={1.5}
+                            style={{ pointerEvents: 'all', cursor: 'crosshair' }}
+                            onMouseDown={(e) => handleEndpointMouseDown(e, 1)}
+                        />
+                    </>
+                )}
+            </svg>
+        )
     }
 
     return (

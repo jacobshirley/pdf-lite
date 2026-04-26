@@ -343,6 +343,27 @@ export class GraphicsBlock extends ContentNode {
         }
     }
 
+    getLinePoints(): { x1: number; y1: number; x2: number; y2: number } | null {
+        const moveTo = this.ops.find((op) => op instanceof MoveToOp) as
+            | MoveToOp
+            | undefined
+        const lineTo = this.ops.find((op) => op instanceof LineToOp) as
+            | LineToOp
+            | undefined
+        if (!moveTo || !lineTo) return null
+        return { x1: moveTo.x, y1: moveTo.y, x2: lineTo.x, y2: lineTo.y }
+    }
+
+    moveLineEndpoint(endpointIndex: 0 | 1, dx: number, dy: number): void {
+        const targets = this.ops.filter(
+            (op) => op instanceof MoveToOp || op instanceof LineToOp,
+        )
+        const target = targets[endpointIndex] as MoveToOp | LineToOp | undefined
+        if (!target) return
+        target.x += dx
+        target.y += dy
+    }
+
     moveBy(dx: number, dy: number): void {
         for (const op of this.ops) {
             if (op instanceof MoveToOp || op instanceof LineToOp) {

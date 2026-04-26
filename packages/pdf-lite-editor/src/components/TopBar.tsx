@@ -1,4 +1,6 @@
 import { useState } from 'react'
+
+const BTC_ADDRESS = 'YOUR_BTC_ADDRESS_HERE'
 import { Button } from '@/components/shadcn/button'
 import {
     Dialog,
@@ -8,14 +10,79 @@ import {
     DialogDescription,
     DialogTrigger,
 } from '@/components/shadcn/dialog'
-import { Coffee, Github, Info } from 'lucide-react'
+import { Coffee, Github, Info, AlertCircle, Mail, Bitcoin, Copy, Check } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
 export function TopBar() {
     const [aboutOpen, setAboutOpen] = useState(false)
+    const [reportOpen, setReportOpen] = useState(false)
+    const [btcOpen, setBtcOpen] = useState(false)
+    const [copied, setCopied] = useState(false)
+
+    const copyBtc = () => {
+        navigator.clipboard.writeText(BTC_ADDRESS)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
 
     return (
         <div className="flex items-center justify-end gap-2 mb-3">
+            <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+                <DialogTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 shadow-sm"
+                    >
+                        <AlertCircle className="h-4 w-4" />
+                        <span className="hidden sm:inline">Report an Issue</span>
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="z-[100] max-w-sm rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold tracking-tight">
+                            Report an Issue
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                            Found a bug or something not working as expected?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 text-[13px] leading-relaxed text-slate-600 dark:text-slate-400">
+                        <p>
+                            Please send the <strong className="text-slate-800 dark:text-slate-200">PDF file</strong> along with a description of the problem and the steps to reproduce it.
+                        </p>
+                        <div className="flex flex-col gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 justify-start"
+                                asChild
+                            >
+                                <a href="mailto:jakeshirley2@gmail.com">
+                                    <Mail className="h-4 w-4" />
+                                    Email me
+                                </a>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 justify-start"
+                                asChild
+                            >
+                                <a
+                                    href="https://github.com/jacobshirley/pdf-lite/issues/new"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Github className="h-4 w-4" />
+                                    Raise a GitHub issue
+                                </a>
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
                 <DialogTrigger asChild>
                     <Button
@@ -100,6 +167,43 @@ export function TopBar() {
                     <span className="hidden sm:inline">Buy Me a Coffee</span>
                 </a>
             </Button>
+
+            <Dialog open={btcOpen} onOpenChange={setBtcOpen}>
+                <DialogTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 bg-orange-50 border-orange-200 text-orange-900 hover:bg-orange-100 dark:bg-orange-950 dark:border-orange-800 dark:text-orange-200 dark:hover:bg-orange-900 shadow-sm"
+                    >
+                        <Bitcoin className="h-4 w-4" />
+                        <span className="hidden sm:inline">Bitcoin</span>
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="z-[100] max-w-sm rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold tracking-tight">
+                            Donate Bitcoin
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                            Send BTC to support development
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 text-[13px]">
+                        <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-800 p-3">
+                            <span className="flex-1 font-mono text-xs break-all text-slate-700 dark:text-slate-300 select-all">
+                                {BTC_ADDRESS}
+                            </span>
+                            <button
+                                onClick={copyBtc}
+                                className="shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                                title="Copy address"
+                            >
+                                {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <ThemeToggle />
         </div>

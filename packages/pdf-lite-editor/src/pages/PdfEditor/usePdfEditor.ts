@@ -529,28 +529,21 @@ export function usePdfEditor() {
         }
     }
 
-    const handleGraphicsBlockResize = async (
+    const handleGraphicsBlockSetGeometry = async (
         blockId: string,
-        newWidth: number,
-        newHeight: number,
-        dx: number,
-        dy: number,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
     ) => {
         try {
-            // First resize, then move if origin shifted (e.g. from north/west edge drag)
-            const resized = await client.call('resizeGraphicsBlock', {
+            const updated = await client.call('setGraphicsBlockGeometry', {
                 id: blockId,
-                newWidth,
-                newHeight,
+                x,
+                y,
+                width,
+                height,
             })
-            let updated = resized
-            if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
-                updated = await client.call('moveGraphicsBlock', {
-                    id: blockId,
-                    dx,
-                    dy,
-                })
-            }
             setExtractedGraphicsBlocks((prev) =>
                 prev.map((b) => (b.id === updated.id ? updated : b)),
             )
@@ -558,6 +551,29 @@ export function usePdfEditor() {
             updateUndoRedoState()
         } catch (error) {
             console.error('Error resizing graphics block:', error)
+        }
+    }
+
+    const handleLineEndpointMove = async (
+        blockId: string,
+        endpointIndex: 0 | 1,
+        dx: number,
+        dy: number,
+    ) => {
+        try {
+            const updated = await client.call('moveLineEndpoint', {
+                id: blockId,
+                endpointIndex,
+                dx,
+                dy,
+            })
+            setExtractedGraphicsBlocks((prev) =>
+                prev.map((b) => (b.id === updated.id ? updated : b)),
+            )
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error moving line endpoint:', error)
         }
     }
 
@@ -1320,8 +1336,9 @@ export function usePdfEditor() {
         handleColorChange,
         handleTextBlockPositionChange,
         handleGraphicsBlockPositionChange,
-        handleGraphicsBlockResize,
+        handleGraphicsBlockSetGeometry,
         handleGraphicsBlockSelect,
+        handleLineEndpointMove,
         handleAddGraphicsBlock,
         handleRemoveGraphicsBlock,
         handleGraphicsBlockColorChange,

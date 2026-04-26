@@ -64,6 +64,7 @@ export type GraphicsBlockDTO = {
     fillColorHex?: string
     strokeColorHex?: string
     strokeWidth?: number
+    linePoints?: { x1: number; y1: number; x2: number; y2: number }
 }
 
 export type ExtractResult = {
@@ -182,8 +183,18 @@ export type WorkerMethods = {
         args: { id: string; dx: number; dy: number }
         result: GraphicsBlockDTO
     }
-    resizeGraphicsBlock: {
-        args: { id: string; newWidth: number; newHeight: number }
+    setGraphicsBlockGeometry: {
+        args: {
+            id: string
+            x: number
+            y: number
+            width: number
+            height: number
+        }
+        result: GraphicsBlockDTO
+    }
+    moveLineEndpoint: {
+        args: { id: string; endpointIndex: 0 | 1; dx: number; dy: number }
         result: GraphicsBlockDTO
     }
     updateGraphicsBlock: {

@@ -378,6 +378,11 @@ function graphicsBlockToDTO(
     const fillColor = block.fillColor
     const strokeColor = block.strokeColor
 
+    const linePoints =
+        meta?.shapeType === 'Line'
+            ? (block.getLinePoints() ?? undefined)
+            : undefined
+
     return {
         id,
         page: pageNumber,
@@ -395,6 +400,7 @@ function graphicsBlockToDTO(
         fillColorHex: fillColor?.toHexString(),
         strokeColorHex: strokeColor?.toHexString(),
         strokeWidth: block.strokeWidth,
+        linePoints,
     }
 }
 
@@ -781,11 +787,44 @@ const handlers: {
         return graphicsBlockToDTO(block, id, pageNumber, pageHeight, pageWidth)
     },
 
-    resizeGraphicsBlock({ id, newWidth, newHeight }) {
+    setGraphicsBlockGeometry({ id, x, y, width, height }) {
         const block = graphicsBlockRefs.get(id)
         if (!block || !pdfDoc) throw new Error(`Graphics block ${id} not found`)
 
-        block.resizeTo(newWidth, newHeight)
+        block.setGeometry(x, y, width, height)
+
+        const pages = pdfDoc.pages.toArray()
+        const blockPage = block.page
+        let pageNumber = 1
+        let pageHeight = 792
+        let pageWidth = 612
+        if (blockPage) {
+            const idx = pages.findIndex((p) => p === blockPage)
+            if (idx !== -1) {
+                pageNumber = idx + 1
+                pageHeight = blockPage.height
+                pageWidth = blockPage.width
+            }
+        }
+        saveToHistory()
+        return graphicsBlockToDTO(block, id, pageNumber, pageHeight, pageWidth)
+    },
+
+    moveLineEndpoint({
+        id,
+        endpointIndex,
+        dx,
+        dy,
+    }: {
+        id: string
+        endpointIndex: 0 | 1
+        dx: number
+        dy: number
+    }) {
+        const block = graphicsBlockRefs.get(id)
+        if (!block || !pdfDoc) throw new Error(`Graphics block ${id} not found`)
+
+        block.moveLineEndpoint(endpointIndex, dx, dy)
 
         const pages = pdfDoc.pages.toArray()
         const blockPage = block.page

@@ -64,12 +64,12 @@ type Props = {
         dx: number,
         dy: number,
     ) => void
-    onGraphicsBlockResize: (
+    onGraphicsBlockSetGeometry: (
         blockId: string,
-        newWidth: number,
-        newHeight: number,
-        dx: number,
-        dy: number,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
     ) => void
     selectedGraphicsBlockId: string | null
     onGraphicsBlockSelect: (id: string) => void
@@ -122,7 +122,7 @@ export function CanvasPanel({
     onTextEditCancel,
     onTextBlockPositionChange,
     onGraphicsBlockPositionChange,
-    onGraphicsBlockResize,
+    onGraphicsBlockSetGeometry,
     selectedGraphicsBlockId,
     onGraphicsBlockSelect,
     onLineEndpointMove,
@@ -585,8 +585,8 @@ export function CanvasPanel({
                                                                     onPositionChange={
                                                                         onGraphicsBlockPositionChange
                                                                     }
-                                                                    onResize={
-                                                                        onGraphicsBlockResize
+                                                                    onSetGeometry={
+                                                                        onGraphicsBlockSetGeometry
                                                                     }
                                                                     onSelect={
                                                                         onGraphicsBlockSelect

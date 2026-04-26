@@ -7,12 +7,12 @@ type Props = {
     graphicsBlock: ExtractedGraphicsBlock
     isSelected?: boolean
     onPositionChange: (blockId: string, dx: number, dy: number) => void
-    onResize?: (blockId: string, newWidth: number, newHeight: number, dx: number, dy: number) => void
+    onSetGeometry?: (blockId: string, x: number, y: number, width: number, height: number) => void
     onSelect?: (blockId: string) => void
     onEndpointMove?: (blockId: string, endpointIndex: 0 | 1, dx: number, dy: number) => void
 }
 
-export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChange, onResize, onSelect, onEndpointMove }: Props) {
+export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChange, onSetGeometry, onSelect, onEndpointMove }: Props) {
     const { bbox, pageHeight, pageWidth, shapeType, linePoints } = graphicsBlock
 
     const [isDragging, setIsDragging] = useState(false)
@@ -171,11 +171,11 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
         }
 
         if (isResizing && tempSize) {
-            const newPdfWidth = (tempSize.width / 100) * pageWidth
-            const newPdfHeight = (tempSize.height / 100) * pageHeight
-            const pdfDx = ((tempSize.left - leftPercent) / 100) * pageWidth
-            const pdfDy = -((tempSize.top - topPercent) / 100) * pageHeight
-            onResize?.(graphicsBlock.id, newPdfWidth, newPdfHeight, pdfDx, pdfDy)
+            const newX = (tempSize.left / 100) * pageWidth
+            const newY = (1 - (tempSize.top + tempSize.height) / 100) * pageHeight
+            const newW = (tempSize.width / 100) * pageWidth
+            const newH = (tempSize.height / 100) * pageHeight
+            onSetGeometry?.(graphicsBlock.id, newX, newY, newW, newH)
             setTempSize(null)
             setIsResizing(false)
             setResizeEdge(null)
@@ -193,7 +193,7 @@ export function GraphicsBlockOverlay({ graphicsBlock, isSelected, onPositionChan
             onSelect?.(graphicsBlock.id)
         }
         setIsDragging(false)
-    }, [isDragging, isResizing, tempPosition, tempSize, didDrag, leftPercent, topPercent, pageWidth, pageHeight, graphicsBlock.id, onPositionChange, onResize, onSelect, draggingEndpoint, endpointDragStart, tempLinePoints, linePoints, onEndpointMove])
+    }, [isDragging, isResizing, tempPosition, tempSize, didDrag, leftPercent, topPercent, pageWidth, pageHeight, graphicsBlock.id, onPositionChange, onSetGeometry, onSelect, draggingEndpoint, endpointDragStart, tempLinePoints, linePoints, onEndpointMove])
 
     React.useEffect(() => {
         if (isDragging || isResizing || draggingEndpoint !== null) {

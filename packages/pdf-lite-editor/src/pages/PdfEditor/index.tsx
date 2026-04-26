@@ -107,11 +107,12 @@ export function PdfEditor() {
                     onGraphicsBlockPositionChange={
                         editor.handleGraphicsBlockPositionChange
                     }
-                    onGraphicsBlockResize={
-                        editor.handleGraphicsBlockResize
+                    onGraphicsBlockSetGeometry={
+                        editor.handleGraphicsBlockSetGeometry
                     }
                     selectedGraphicsBlockId={editor.selectedGraphicsBlockId}
                     onGraphicsBlockSelect={editor.handleGraphicsBlockSelect}
+                    onLineEndpointMove={editor.handleLineEndpointMove}
                     onBackgroundClick={editor.handleBackgroundClick}
                     onPageDrop={editor.handlePageDrop}
                     onRemovePage={editor.handleRemovePage}

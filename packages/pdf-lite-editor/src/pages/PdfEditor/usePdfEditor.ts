@@ -1115,6 +1115,75 @@ export function usePdfEditor() {
         }
     }
 
+    const handleGraphicsBlockFillColorChange = async (hex: string | null) => {
+        if (!selectedGraphicsBlockId) return
+        let fillRgb: [number, number, number] | null = null
+        if (hex) {
+            const h = hex.replace('#', '')
+            fillRgb = [
+                parseInt(h.slice(0, 2), 16) / 255,
+                parseInt(h.slice(2, 4), 16) / 255,
+                parseInt(h.slice(4, 6), 16) / 255,
+            ]
+        }
+        try {
+            const updated = await client.call('updateGraphicsBlock', {
+                id: selectedGraphicsBlockId,
+                fillRgb,
+            })
+            setExtractedGraphicsBlocks((prev) =>
+                prev.map((b) => (b.id === updated.id ? updated : b)),
+            )
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error updating fill color:', error)
+        }
+    }
+
+    const handleGraphicsBlockStrokeColorChange = async (hex: string | null) => {
+        if (!selectedGraphicsBlockId) return
+        let strokeRgb: [number, number, number] | null = null
+        if (hex) {
+            const h = hex.replace('#', '')
+            strokeRgb = [
+                parseInt(h.slice(0, 2), 16) / 255,
+                parseInt(h.slice(2, 4), 16) / 255,
+                parseInt(h.slice(4, 6), 16) / 255,
+            ]
+        }
+        try {
+            const updated = await client.call('updateGraphicsBlock', {
+                id: selectedGraphicsBlockId,
+                strokeRgb,
+            })
+            setExtractedGraphicsBlocks((prev) =>
+                prev.map((b) => (b.id === updated.id ? updated : b)),
+            )
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error updating stroke color:', error)
+        }
+    }
+
+    const handleGraphicsBlockStrokeWidthChange = async (width: number) => {
+        if (!selectedGraphicsBlockId) return
+        try {
+            const updated = await client.call('updateGraphicsBlock', {
+                id: selectedGraphicsBlockId,
+                strokeWidth: width,
+            })
+            setExtractedGraphicsBlocks((prev) =>
+                prev.map((b) => (b.id === updated.id ? updated : b)),
+            )
+            setPdfVersion((v) => v + 1)
+            updateUndoRedoState()
+        } catch (error) {
+            console.error('Error updating stroke width:', error)
+        }
+    }
+
     const handleAddImage = () => {
         imageInputRef.current?.click()
     }
@@ -1257,6 +1326,9 @@ export function usePdfEditor() {
         handleRemoveGraphicsBlock,
         handleGraphicsBlockColorChange,
         handleGraphicsBlockFillChange,
+        handleGraphicsBlockFillColorChange,
+        handleGraphicsBlockStrokeColorChange,
+        handleGraphicsBlockStrokeWidthChange,
         handleAddImage,
         handleImageUpload,
         selectedGraphicsBlockId,

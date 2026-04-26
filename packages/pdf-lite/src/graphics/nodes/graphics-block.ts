@@ -30,6 +30,7 @@ import {
     SetStrokeColorGrayOp,
     SetStrokeColorRGBOp,
 } from '../ops/color'
+import { SetLineWidthOp } from '../ops/state'
 import { Rect } from '../geom/rect'
 import { ArraySegment } from '../../utils/arrays'
 import { ContentNode } from './content-node'
@@ -227,6 +228,34 @@ export class GraphicsBlock extends ContentNode {
                 return false
         }
         return undefined
+    }
+
+    get strokeWidth(): number | undefined {
+        for (const op of this.ops) {
+            if (op instanceof SetLineWidthOp) return op.lineWidth
+        }
+        return undefined
+    }
+
+    set strokeWidth(width: number | undefined) {
+        const ops = this.ops
+        let idx = -1
+        for (let i = 0; i < ops.length; i++) {
+            if (ops[i] instanceof SetLineWidthOp) {
+                idx = i
+                break
+            }
+        }
+        if (width !== undefined) {
+            const newOp = SetLineWidthOp.create(width)
+            if (idx >= 0) {
+                ops.splice(idx, 1, newOp)
+            } else {
+                ops.splice(0, 0, newOp)
+            }
+        } else if (idx >= 0) {
+            ops.splice(idx, 1)
+        }
     }
 
     private isPaintOp(op: ContentOp): boolean {

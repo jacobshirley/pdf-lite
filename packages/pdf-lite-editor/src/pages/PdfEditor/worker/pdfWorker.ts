@@ -956,27 +956,47 @@ const handlers: {
         return result
     },
 
-    updateGraphicsBlock({ id, rgb, fill }) {
+    updateGraphicsBlock({ id, rgb, fill, fillRgb, strokeRgb, strokeWidth }) {
         const block = graphicsBlockRefs.get(id)
         if (!block || !pdfDoc) throw new Error(`Graphics block ${id} not found`)
 
+        // New granular fill/stroke color args
+        if (fillRgb !== undefined) {
+            block.fillColor = fillRgb
+                ? new RGBColor(fillRgb[0], fillRgb[1], fillRgb[2])
+                : undefined
+        }
+        if (strokeRgb !== undefined) {
+            block.strokeColor = strokeRgb
+                ? new RGBColor(strokeRgb[0], strokeRgb[1], strokeRgb[2])
+                : undefined
+        }
+
+        // Legacy single-color + fill toggle
         if (rgb || fill !== undefined) {
-            const currentColor = block.fillColor ?? block.strokeColor
-            const newColor = rgb
-                ? new RGBColor(rgb[0], rgb[1], rgb[2])
-                : currentColor
-            const shouldFill = fill ?? block.fillColor !== undefined
+            // Only apply legacy logic when new args weren't used
+            if (fillRgb === undefined && strokeRgb === undefined) {
+                const currentColor = block.fillColor ?? block.strokeColor
+                const newColor = rgb
+                    ? new RGBColor(rgb[0], rgb[1], rgb[2])
+                    : currentColor
+                const shouldFill = fill ?? block.fillColor !== undefined
 
-            block.fillColor = undefined
-            block.strokeColor = undefined
+                block.fillColor = undefined
+                block.strokeColor = undefined
 
-            if (newColor) {
-                if (shouldFill) {
-                    block.fillColor = newColor
-                } else {
-                    block.strokeColor = newColor
+                if (newColor) {
+                    if (shouldFill) {
+                        block.fillColor = newColor
+                    } else {
+                        block.strokeColor = newColor
+                    }
                 }
             }
+        }
+
+        if (strokeWidth !== undefined) {
+            block.strokeWidth = strokeWidth > 0 ? strokeWidth : undefined
         }
 
         // Update metadata

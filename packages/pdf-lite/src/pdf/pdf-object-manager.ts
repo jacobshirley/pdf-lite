@@ -49,7 +49,7 @@ export abstract class PdfObjectManager implements IPdfObjectResolver {
         return obj
     }
 
-    abstract toBytes(): ByteArray
+    abstract toBytes(mode?: 'append' | 'rewrite'): ByteArray
     abstract add(...objects: PdfObject[]): void
     abstract delete(...objects: PdfObject[]): void
     abstract getObjectAtOffset(offset: number): PdfObject
@@ -70,6 +70,8 @@ export class PdfLazyObjectManager extends PdfObjectManager {
     private documentBytes: ByteArray
     private offset: number
     protected xrefObject?: PdfXrefLookup
+    protected objectCache: Map<string, PdfObject> = new Map()
+    protected bodyObjects: PdfObject[] = []
 
     constructor(documentBytes?: ByteArray, offset?: number) {
         super()
@@ -117,20 +119,125 @@ export class PdfLazyObjectManager extends PdfObjectManager {
         for (const obj of objects) {
             if (obj instanceof PdfIndirectObject) {
                 xrefObject.addObject(obj)
+                this.objectCache.set(
+                    `${obj.objectNumber} ${obj.generationNumber}`,
+                    obj,
+                )
+            } else if (
+                !(
+                    obj instanceof PdfComment &&
+                    obj.asString().startsWith('PDF-')
+                )
+            ) {
+                // Exclude version comments (%PDF-x.x) — handled separately as the file header
+                this.bodyObjects.push(obj)
             }
 
             serializer.feed(obj)
         }
         serializer.feed(...xrefObject.toTrailerSection())
         this.documentBytes = concatUint8Arrays([part1, serializer.toBytes()])
+
+        for (const obj of objects) {
+            obj.setModified(false)
+        }
     }
 
-    toBytes(): ByteArray {
+    toBytes(mode: 'append' | 'rewrite' = 'append'): ByteArray {
+        const modifiedObjects = this.getObjects().filter((obj) =>
+            obj.isModified(),
+        )
+        if (modifiedObjects.length === 0) return this.documentBytes
+        return mode === 'rewrite' ? this.toBytesRewrite() : this.toBytesAppend()
+    }
+
+    private toBytesAppend(): ByteArray {
+        const xrefObject = this.getXrefObject()
+        const modifiedObjects = this.getObjects().filter((obj) =>
+            obj.isModified(),
+        )
+        const part1 = this.documentBytes.slice(0, this.xrefOffset)
+        const serializer = new PdfObjectSerializer()
+        serializer.offset = part1.length
+
+        for (const obj of modifiedObjects) {
+            xrefObject.addObject(obj)
+            serializer.feed(obj)
+            obj.setModified(false)
+        }
+
+        serializer.feed(...xrefObject.toTrailerSection())
+        this.documentBytes = concatUint8Arrays([part1, serializer.toBytes()])
+        return this.documentBytes
+    }
+
+    private getPdfHeaderBytes(): ByteArray {
+        // Extract the %PDF-x.x version header line from the start of documentBytes, if present
+        const b = this.documentBytes
+        if (
+            b.length >= 5 &&
+            b[0] === 0x25 &&
+            b[1] === 0x50 &&
+            b[2] === 0x44 &&
+            b[3] === 0x46
+        ) {
+            let end = 0
+            while (end < b.length && b[end] !== 0x0a && b[end] !== 0x0d) end++
+            if (end < b.length) end++ // include newline
+            return b.slice(0, end)
+        }
+        return new Uint8Array()
+    }
+
+    private toBytesRewrite(): ByteArray {
+        const allObjects = this.getObjects()
+        const headerBytes = this.getPdfHeaderBytes()
+
+        // Copy trailer entries (Root, Info, etc.) into a fresh dict, dropping Prev and Size
+        const existingTrailerDict = this.getXrefObject().trailerDict
+        const freshTrailerDict = new PdfDictionary<PdfTrailerEntries>()
+        for (const key of Object.keys(
+            existingTrailerDict.values,
+        ) as (keyof PdfTrailerEntries)[]) {
+            if (key !== 'Prev' && key !== 'Size') {
+                const value = existingTrailerDict.get(key)
+                if (value) freshTrailerDict.set(key, value)
+            }
+        }
+
+        const freshXref = new PdfXrefLookup({
+            type: 'table',
+            trailerDict: freshTrailerDict,
+        })
+        freshXref.resolver = this
+
+        const serializer = new PdfObjectSerializer()
+        serializer.offset = headerBytes.length
+
+        for (const obj of allObjects) {
+            freshXref.addObject(obj)
+            serializer.feed(obj)
+            obj.setModified(false)
+        }
+
+        // Re-emit non-indirect body objects (comments, etc.) before the xref
+        for (const obj of this.bodyObjects) {
+            serializer.feed(obj)
+        }
+
+        serializer.feed(...freshXref.toTrailerSection())
+        this.documentBytes = concatUint8Arrays([
+            headerBytes,
+            serializer.toBytes(),
+        ])
+        this.xrefObject = freshXref
+        this.objectCache.clear()
+
         return this.documentBytes
     }
 
     toString(): string {
-        return bytesToString(this.documentBytes)
+        return bytesToString(this.toBytes())
     }
 
     parseObject(offset: number = this.offset): PdfObject | undefined {
@@ -173,11 +280,19 @@ export class PdfLazyObjectManager extends PdfObjectManager {
         objectNumber: number,
         generationNumber: number,
     ): PdfLazyObject {
-        return new PdfLazyObject(this, {
+        if (this.objectCache.has(`${objectNumber} ${generationNumber}`)) {
+            return this.objectCache.get(
+                `${objectNumber} ${generationNumber}`,
+            ) as PdfLazyObject
+        }
+
+        const lazyObject = new PdfLazyObject(this, {
             objectNumber: objectNumber,
             generationNumber: generationNumber,
             offset: offset,
         })
+        this.objectCache.set(`${objectNumber} ${generationNumber}`, lazyObject)
+        return lazyObject
     }
 
     private attachResolver(obj: PdfObject): PdfObject {
@@ -278,8 +393,26 @@ export class PdfLazyObjectManager extends PdfObjectManager {
     }
 
     getXrefEntries(): Map<number, PdfXRefStreamEntry> {
-        const xref = this.getXrefObject()
-        return xref.entries
+        // Walk the full prev chain, collecting each xref from newest to oldest
+        const chain: PdfXrefLookup[] = []
+        const seenOffsets = new Set<number>()
+        let xref: PdfXrefLookup | undefined = this.getXrefObject()
+        while (xref) {
+            const off = xref.offset.resolve()
+            if (seenOffsets.has(off)) break
+            seenOffsets.add(off)
+            chain.push(xref)
+            xref = xref.prev
+        }
+
+        // Process oldest-first so newer revisions override older ones
+        const entries = new Map<number, PdfXRefStreamEntry>()
+        for (const x of chain.reverse()) {
+            for (const entry of x.entriesValues) {
+                entries.set(entry.objectNumber.value, entry)
+            }
+        }
+        return entries
     }
 
     getObjects(): PdfIndirectObject[] {
@@ -289,6 +422,7 @@ export class PdfLazyObjectManager extends PdfObjectManager {
                 console.log('TODO: handle compressed xref stream entries')
                 continue
             }
+            if (entry instanceof PdfXRefTableEntry && !entry.inUse) continue
             results.push(
                 this.getIndirectObject(
                     entry.byteOffset.value,

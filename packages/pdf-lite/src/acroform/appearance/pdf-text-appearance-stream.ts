@@ -45,7 +45,12 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         fontVariantNames?: FontVariantNames
         quadding?: number
     }) {
-        const [x1, y1, x2, y2] = ctx.rect
+        // Normalize rect coordinates: some PDFs have inverted y-axis where y1 > y2
+        // This ensures width and height are always positive
+        let [x1, y1, x2, y2] = ctx.rect
+        if (x2 < x1) [x1, x2] = [x2, x1]
+        if (y2 < y1) [y1, y2] = [y2, y1]
+
         const width = x2 - x1
         const height = y2 - y1
 

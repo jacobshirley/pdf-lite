@@ -63,6 +63,58 @@ describe('PdfAppearanceStream', () => {
                     expect(content).toContain('(Hi) Tj')
                 })
 
+                it('should normalize inverted rect coordinates (negative height)', () => {
+                    // PDF has rect [x1, y1, x2, y2] where y1 > y2 (inverted y-axis)
+                    const stream = new PdfTextAppearanceStream(
+                        createContext({
+                            value: 'Test',
+                            rect: [10, 100, 200, 50], // y1=100 > y2=50, height would be -50
+                        }),
+                    )
+
+                    const content = stream.content.rawAsString
+                    expect(content).toContain('BT')
+                    expect(content).toContain('ET')
+                    expect(content).toContain('(Test) Tj')
+                    // Should use reasonable font size, not 0.5pt
+                    expect(content).toContain('/TestFont 12 Tf 0 g')
+                    // Should not have tiny font size from negative height
+                    expect(content).not.toContain('0.5 Tf')
+                })
+
+                it('should normalize inverted rect coordinates (negative width)', () => {
+                    // PDF has rect where x1 > x2 (inverted x-axis)
+                    const stream = new PdfTextAppearanceStream(
+                        createContext({
+                            value: 'Test',
+                            rect: [200, 0, 10, 100], // x1=200 > x2=10, width would be -190
+                        }),
+                    )
+
+                    const content = stream.content.rawAsString
+                    expect(content).toContain('BT')
+                    expect(content).toContain('ET')
+                    expect(content).toContain('(Test) Tj')
+                    // Should handle text normally despite inverted x-axis
+                    expect(content).toContain('/TestFont 12 Tf 0 g')
+                })
+
+                it('should normalize fully inverted rect coordinates', () => {
+                    // PDF has both x and y inverted
+                    const stream = new PdfTextAppearanceStream(
+                        createContext({
+                            value: 'Test',
+                            rect: [200, 100, 10, 50], // both axes inverted
+                        }),
+                    )
+
+                    const content = stream.content.rawAsString
+                    expect(content).toContain('BT')
+                    expect(content).toContain('ET')
+                    expect(content).toContain('(Test) Tj')
+                    expect(content).toContain('/TestFont 12 Tf 0 g')
+                })
+
                 it('should scale font down for long single-line text', () => {
                     // Create text that's too wide for field
                     const longText =

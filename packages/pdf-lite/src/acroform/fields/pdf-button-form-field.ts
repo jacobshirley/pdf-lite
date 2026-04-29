@@ -103,7 +103,11 @@ export class PdfButtonFormField extends PdfFormField {
         const rect = this.rect
         if (!rect || rect.length !== 4) return false
 
-        const [x1, y1, x2, y2] = rect
+        // Normalize rect coordinates: some PDFs have inverted y-axis where y1 > y2
+        let [x1, y1, x2, y2] = rect
+        if (x2 < x1) [x1, x2] = [x2, x1]
+        if (y2 < y1) [y1, y2] = [y2, y1]
+
         const width = x2 - x1
         const height = y2 - y1
 

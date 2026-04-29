@@ -36,7 +36,11 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         selectedIndex?: number
         quadding?: number
     }) {
-        const [x1, y1, x2, y2] = ctx.rect
+        // Normalize rect coordinates: some PDFs have inverted y-axis where y1 > y2
+        let [x1, y1, x2, y2] = ctx.rect
+        if (x2 < x1) [x1, x2] = [x2, x1]
+        if (y2 < y1) [y1, y2] = [y2, y1]
+
         const width = x2 - x1
         const height = y2 - y1
 

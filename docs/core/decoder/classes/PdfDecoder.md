@@ -171,7 +171,7 @@ Compacts the buffer by removing consumed items
 
 `void`
 
-#### Inherited from
+#### Overrides
 
 [`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`compact`](../../parser/incremental-parser/classes/IncrementalParser.md#compact)
 
@@ -233,7 +233,7 @@ Input items to add to the buffer
 
 `void`
 
-#### Inherited from
+#### Overrides
 
 [`IncrementalParser`](../../parser/incremental-parser/classes/IncrementalParser.md).[`feed`](../../parser/incremental-parser/classes/IncrementalParser.md#feed)
 

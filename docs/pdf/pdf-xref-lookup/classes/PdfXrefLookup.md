@@ -227,7 +227,7 @@ The xref entry or undefined if not found
 
 ### linkIndirectObjects()
 
-> **linkIndirectObjects**(`objects`): `void`
+> **linkIndirectObjects**(`objects`, `offsetMap?`): `void`
 
 Links xref entries to their corresponding indirect objects.
 Updates byte offset references to point to actual object offsets.
@@ -239,6 +239,10 @@ Updates byte offset references to point to actual object offsets.
 [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>[]
 
 Array of indirect objects to link
+
+##### offsetMap?
+
+`Map`\<`number`, [`PdfIndirectObject`](../../../core/objects/pdf-indirect-object/classes/PdfIndirectObject.md)\<[`PdfObject`](../../../core/objects/pdf-object/classes/PdfObject.md)\>\>
 
 #### Returns
 

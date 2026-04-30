@@ -123,11 +123,15 @@ export class PdfChoiceFormField extends PdfFormField {
             da: parsed,
             flags: this.flags,
             fontResources,
+            resolvedFonts: font
+                ? new Map([[parsed.fontName, font]])
+                : undefined,
             isUnicode,
             reverseEncodingMap,
             displayOptions: this.options.map((opt) => opt.label),
             selectedIndex: this.selectedIndex,
             quadding: this.quadding,
+            rotation: this.page?.rotate ?? 0,
         })
 
         if (options?.makeReadOnly) {

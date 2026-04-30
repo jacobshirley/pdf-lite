@@ -65,6 +65,7 @@ export class PdfTextFormField extends PdfFormField {
             markdown: this.markdownValue,
             fontVariantNames: variantNames,
             quadding: this.quadding,
+            rotation: this.page?.rotate ?? 0,
         })
 
         if (options?.makeReadOnly) {

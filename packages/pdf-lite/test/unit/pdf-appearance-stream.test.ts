@@ -3,6 +3,8 @@ import { PdfTextAppearanceStream } from '../../src/acroform/appearance/pdf-text-
 import { PdfDefaultAppearance } from '../../src/acroform/fields/pdf-default-appearance'
 import { PdfDictionary } from '../../src/core/objects/pdf-dictionary'
 import { PdfFont } from '../../src/fonts/pdf-font'
+import { PdfArray } from '../../src/core/objects/pdf-array'
+import { PdfNumber } from '../../src/core/objects/pdf-number'
 
 describe('PdfAppearanceStream', () => {
     describe('PdfTextAppearanceStream', () => {
@@ -409,6 +411,131 @@ describe('PdfAppearanceStream', () => {
                     expect(lines[lines.length - 2]).toBe('Q')
                     expect(lines[lines.length - 1]).toBe('EMC')
                 })
+            })
+        })
+
+        describe('Rotation (page /Rotate)', () => {
+            let mockFont: PdfFont
+            let fontResources: PdfDictionary
+            let resolvedFonts: Map<string, PdfFont>
+
+            beforeEach(() => {
+                mockFont = new PdfFont('TestFont')
+                mockFont.firstChar = 32
+                mockFont.lastChar = 126
+                const widths = []
+                for (let i = 32; i <= 126; i++) {
+                    if (i === 32) widths.push(250)
+                    else if ((i >= 65 && i <= 90) || (i >= 97 && i <= 122))
+                        widths.push(500)
+                    else if (i >= 48 && i <= 57) widths.push(600)
+                    else widths.push(400)
+                }
+                mockFont.widths = widths
+                fontResources = new PdfDictionary()
+                resolvedFonts = new Map()
+                resolvedFonts.set('TestFont', mockFont)
+            })
+
+            const createContext = (overrides = {}) => ({
+                rect: [0, 0, 40, 330] as [number, number, number, number],
+                value: 'Hello',
+                da: PdfDefaultAppearance.parse('/TestFont 11 Tf 0 g')!,
+                multiline: false,
+                comb: false,
+                maxLen: null,
+                fontResources,
+                resolvedFonts,
+                isUnicode: false,
+                ...overrides,
+            })
+
+            it('should not add Matrix when rotation is 0', () => {
+                const stream = new PdfTextAppearanceStream(
+                    createContext({ rotation: 0 }),
+                )
+                const header = stream.content.header
+                expect(header.get('Matrix')).toBeUndefined()
+                // BBox should use original dimensions
+                const bbox = header.get('BBox') as PdfArray<PdfNumber>
+                expect(bbox.items[2].value).toBe(40) // width
+                expect(bbox.items[3].value).toBe(330) // height
+            })
+
+            it('should add Matrix and swap BBox for rotation 90', () => {
+                const stream = new PdfTextAppearanceStream(
+                    createContext({ rotation: 90 }),
+                )
+                const header = stream.content.header
+                // BBox should be swapped: [0 0 rectHeight rectWidth]
+                const bbox = header.get('BBox') as PdfArray<PdfNumber>
+                expect(bbox.items[2].value).toBe(330) // rectHeight as width
+                expect(bbox.items[3].value).toBe(40) // rectWidth as height
+
+                // Matrix should be [0 1 -1 0 rectWidth 0]
+                const matrix = header.get('Matrix') as PdfArray<PdfNumber>
+                expect(matrix.items[0].value).toBe(0)
+                expect(matrix.items[1].value).toBe(1)
+                expect(matrix.items[2].value).toBe(-1)
+                expect(matrix.items[3].value).toBe(0)
+                expect(matrix.items[4].value).toBe(40) // rectWidth
+                expect(matrix.items[5].value).toBe(0)
+            })
+
+            it('should add Matrix and swap BBox for rotation 270', () => {
+                const stream = new PdfTextAppearanceStream(
+                    createContext({ rotation: 270 }),
+                )
+                const header = stream.content.header
+                const bbox = header.get('BBox') as PdfArray<PdfNumber>
+                expect(bbox.items[2].value).toBe(330) // rectHeight as width
+                expect(bbox.items[3].value).toBe(40) // rectWidth as height
+
+                // Matrix should be [0 -1 1 0 0 rectHeight]
+                const matrix = header.get('Matrix') as PdfArray<PdfNumber>
+                expect(matrix.items[0].value).toBe(0)
+                expect(matrix.items[1].value).toBe(-1)
+                expect(matrix.items[2].value).toBe(1)
+                expect(matrix.items[3].value).toBe(0)
+                expect(matrix.items[4].value).toBe(0)
+                expect(matrix.items[5].value).toBe(330) // rectHeight
+            })
+
+            it('should add Matrix for rotation 180 without swapping BBox', () => {
+                const stream = new PdfTextAppearanceStream(
+                    createContext({ rotation: 180 }),
+                )
+                const header = stream.content.header
+                const bbox = header.get('BBox') as PdfArray<PdfNumber>
+                expect(bbox.items[2].value).toBe(40) // no swap
+                expect(bbox.items[3].value).toBe(330)
+
+                // Matrix should be [-1 0 0 -1 rectWidth rectHeight]
+                const matrix = header.get('Matrix') as PdfArray<PdfNumber>
+                expect(matrix.items[0].value).toBe(-1)
+                expect(matrix.items[1].value).toBe(0)
+                expect(matrix.items[2].value).toBe(0)
+                expect(matrix.items[3].value).toBe(-1)
+                expect(matrix.items[4].value).toBe(40) // rectWidth
+                expect(matrix.items[5].value).toBe(330) // rectHeight
+            })
+
+            it('should not have cm rotation operator in content stream', () => {
+                const stream = new PdfTextAppearanceStream(
+                    createContext({ rotation: 90 }),
+                )
+                const content = stream.content.rawAsString
+                expect(content).not.toContain(' cm')
+            })
+
+            it('should layout text using swapped dimensions for rotation 90', () => {
+                const stream = new PdfTextAppearanceStream(
+                    createContext({ rotation: 90 }),
+                )
+                const content = stream.content.rawAsString
+                expect(content).toContain('BT')
+                expect(content).toContain('(Hello) Tj')
+                expect(content).toContain('ET')
             })
         })
     })

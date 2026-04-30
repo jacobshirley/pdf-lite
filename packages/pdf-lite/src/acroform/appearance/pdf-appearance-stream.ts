@@ -18,6 +18,7 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
         height?: number
         contentStream?: string
         resources?: PdfDictionary
+        matrix?: [number, number, number, number, number, number]
     }) {
         const appearanceDict = new PdfDictionary()
         appearanceDict.set('Type', new PdfName('XObject'))
@@ -32,6 +33,13 @@ export class PdfAppearanceStream extends PdfIndirectObject<PdfStream> {
                 new PdfNumber(options.height ?? 100),
             ]),
         )
+
+        if (options.matrix) {
+            appearanceDict.set(
+                'Matrix',
+                new PdfArray(options.matrix.map((v) => new PdfNumber(v))),
+            )
+        }
 
         if (options.resources) {
             appearanceDict.set('Resources', options.resources)

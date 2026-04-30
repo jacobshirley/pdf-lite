@@ -44,6 +44,7 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         markdown?: string
         fontVariantNames?: FontVariantNames
         quadding?: number
+        rotation?: number
     }) {
         // Normalize rect coordinates: some PDFs have inverted y-axis where y1 > y2
         // This ensures width and height are always positive
@@ -51,8 +52,18 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         if (x2 < x1) [x1, x2] = [x2, x1]
         if (y2 < y1) [y1, y2] = [y2, y1]
 
-        const width = x2 - x1
-        const height = y2 - y1
+        const rectWidth = x2 - x1
+        const rectHeight = y2 - y1
+
+        // For rotated pages, the field rect is in the unrotated coordinate
+        // space. A 90° or 270° page rotation swaps how the field appears on
+        // screen (tall/narrow rect becomes wide/short when viewed). We swap
+        // the layout dimensions so text is laid out for the displayed shape,
+        // then apply a rotation matrix to map back into the BBox.
+        const rotation = ctx.rotation ?? 0
+        const needsSwap = rotation === 90 || rotation === 270
+        const width = needsSwap ? rectHeight : rectWidth
+        const height = needsSwap ? rectWidth : rectHeight
 
         const value = ctx.value
         const isUnicode = ctx.isUnicode ?? false
@@ -290,11 +301,23 @@ export class PdfTextAppearanceStream extends PdfAppearanceStream {
         g.restore()
         g.endMarkedContent()
 
+        // For rotated pages, the BBox uses the displayed (swapped)
+        // dimensions and a Matrix entry maps back to annotation space.
+        let matrix: [number, number, number, number, number, number] | undefined
+        if (rotation === 90) {
+            matrix = [0, 1, -1, 0, rectWidth, 0]
+        } else if (rotation === 270) {
+            matrix = [0, -1, 1, 0, 0, rectHeight]
+        } else if (rotation === 180) {
+            matrix = [-1, 0, 0, -1, rectWidth, rectHeight]
+        }
+
         super({
             width,
             height,
             contentStream: g.build(),
             resources: ctx.fontResources,
+            matrix,
         })
     }
 }

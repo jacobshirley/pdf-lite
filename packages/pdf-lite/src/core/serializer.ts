@@ -71,7 +71,7 @@ export class PdfTokenSerializer extends Parser<PdfToken, number> {
             if (token instanceof PdfByteOffsetToken) {
                 token.update(currentOffset)
             }
-            currentOffset += token.toBytes().length
+            currentOffset += token.byteLength
         }
     }
 

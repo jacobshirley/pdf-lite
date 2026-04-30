@@ -35,15 +35,37 @@ export class PdfChoiceAppearanceStream extends PdfAppearanceStream {
         displayOptions?: string[]
         selectedIndex?: number
         quadding?: number
+        rotation?: number
     }) {
-        const [x1, y1, x2, y2] = ctx.rect
-        const width = x2 - x1
-        const height = y2 - y1
+        // Normalize rect coordinates: some PDFs have inverted y-axis where y1 > y2
+        let [x1, y1, x2, y2] = ctx.rect
+        if (x2 < x1) [x1, x2] = [x2, x1]
+        if (y2 < y1) [y1, y2] = [y2, y1]
+
+        const rectWidth = x2 - x1
+        const rectHeight = y2 - y1
+
+        const rotation = ctx.rotation ?? 0
+        const needsSwap = rotation === 90 || rotation === 270
+        const width = needsSwap ? rectHeight : rectWidth
+        const height = needsSwap ? rectWidth : rectHeight
+
+        // For rotated pages, the BBox uses the displayed (swapped)
+        // dimensions and a Matrix entry maps back to annotation space.
+        let matrix: [number, number, number, number, number, number] | undefined
+        if (rotation === 90) {
+            matrix = [0, 1, -1, 0, rectWidth, 0]
+        } else if (rotation === 270) {
+            matrix = [0, -1, 1, 0, 0, rectHeight]
+        } else if (rotation === 180) {
+            matrix = [-1, 0, 0, -1, rectWidth, rectHeight]
+        }
 
         super({
             width,
             height,
             resources: ctx.fontResources,
+            matrix,
         })
 
         const isUnicode = ctx.isUnicode ?? false

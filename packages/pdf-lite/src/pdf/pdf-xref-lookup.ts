@@ -305,7 +305,17 @@ export class PdfXrefLookup {
      *
      * @param objects - Array of indirect objects to link
      */
-    linkIndirectObjects(objects: PdfIndirectObject[]): void {
+    linkIndirectObjects(
+        objects: PdfIndirectObject[],
+        offsetMap?: Map<number, PdfIndirectObject>,
+    ): void {
+        // Use provided map or build one for O(1) lookup
+        const byOffset =
+            offsetMap ??
+            new Map<number, PdfIndirectObject>(
+                objects.map((obj) => [obj.offset.resolve(), obj]),
+            )
+
         for (const entry of this.entriesValues) {
             if (entry instanceof PdfXRefStreamCompressedEntry) {
                 continue
@@ -315,9 +325,7 @@ export class PdfXrefLookup {
                 continue
             }
 
-            const [matchedObject] = objects.filter((obj) =>
-                obj.offset.equals(entry.byteOffset.value),
-            )
+            const matchedObject = byOffset.get(entry.byteOffset.value)
 
             if (
                 !matchedObject ||

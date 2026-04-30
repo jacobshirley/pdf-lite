@@ -5,6 +5,7 @@ import { PdfToken } from './token.js'
 
 export class PdfNumberToken extends PdfToken {
     #value: Ref<number>
+    #cachedBytes: ByteArray | undefined
     padTo: number
     decimalPlaces: number
     isByteToken: boolean = false
@@ -48,11 +49,18 @@ export class PdfNumberToken extends PdfToken {
     }
 
     toBytes(): ByteArray {
-        return PdfNumberToken.toBytes(
+        if (this.#cachedBytes && !this.isByteToken) {
+            return this.#cachedBytes
+        }
+        const bytes = PdfNumberToken.toBytes(
             this.#value,
             this.padTo,
             this.decimalPlaces,
         )
+        if (!this.isByteToken) {
+            this.#cachedBytes = bytes
+        }
+        return bytes
     }
 
     get ref(): Ref<number> {
@@ -61,6 +69,7 @@ export class PdfNumberToken extends PdfToken {
 
     set ref(newRef: Ref<number>) {
         this.#value = newRef
+        this.#cachedBytes = undefined
     }
 
     get value(): number {
@@ -69,6 +78,7 @@ export class PdfNumberToken extends PdfToken {
 
     set value(newValue: number) {
         this.#value.update(newValue)
+        this.#cachedBytes = undefined
     }
 
     static getValue(

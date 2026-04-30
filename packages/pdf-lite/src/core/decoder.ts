@@ -56,6 +56,7 @@ const DEFAULT_MAX_BUFFER_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
 export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
     private ignoreWhitespace: boolean = false
     private maxBufferSizeBytes: number = DEFAULT_MAX_BUFFER_SIZE_BYTES
+    private _bufferByteSize: number = 0
 
     /**
      * Creates a new PDF decoder.
@@ -72,6 +73,20 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
         this.ignoreWhitespace = options?.ignoreWhitespace ?? false
         this.maxBufferSizeBytes =
             options?.maxBufferSizeBytes ?? DEFAULT_MAX_BUFFER_SIZE_BYTES
+    }
+
+    feed(...input: (PdfToken | PdfToken[])[]): void {
+        for (const item of input) {
+            if (Array.isArray(item)) {
+                for (const subItem of item) {
+                    this._bufferByteSize += subItem.byteLength
+                    this.buffer.push(subItem)
+                }
+            } else {
+                this._bufferByteSize += item.byteLength
+                this.buffer.push(item)
+            }
+        }
     }
 
     private nextName(): PdfName {
@@ -439,12 +454,23 @@ export class PdfDecoder extends IncrementalParser<PdfToken, PdfObject> {
     }
 
     protected bufferSize(): number {
-        return this.buffer.reduce((acc, obj) => acc + obj.byteLength, 0)
+        return this._bufferByteSize
+    }
+
+    protected compact(): void {
+        if (this.bufferIndex > 0) {
+            for (let i = 0; i < this.bufferIndex; i++) {
+                this._bufferByteSize -= this.buffer[i].byteLength
+            }
+            this.buffer = this.buffer.slice(this.bufferIndex)
+            this.bufferIndex = 0
+        }
     }
 
     protected canCompact(): boolean {
         return (
-            this.bufferIndex > 50 && this.bufferSize() > this.maxBufferSizeBytes
+            this.bufferIndex > 50 &&
+            this._bufferByteSize > this.maxBufferSizeBytes
         )
     }
 

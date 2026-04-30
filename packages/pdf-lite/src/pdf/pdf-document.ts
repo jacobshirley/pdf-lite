@@ -1236,12 +1236,18 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             (x) => x instanceof PdfIndirectObject,
         )
 
+        // Build offset map once for O(1) lookups across all xrefs
+        const offsetMap = new Map<number, PdfIndirectObject>()
+        for (const obj of indirectObjects) {
+            offsetMap.set(obj.offset.resolve(), obj)
+        }
+
         for (const revision of this.revisions) {
             revision.xref.linkPrev(xrefLookups)
             // Walk the entire prev chain to link all xref entries
             let xref: PdfXrefLookup | undefined = revision.xref
             while (xref) {
-                xref.linkIndirectObjects(indirectObjects)
+                xref.linkIndirectObjects(indirectObjects, offsetMap)
                 xref = xref.prev
             }
         }
@@ -1408,7 +1414,9 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns A cloned PdfDocument instance
      */
     cloneImpl(): this {
-        this.update()
+        if (this.isModified()) {
+            this.update()
+        }
         const clonedRevisions = this.revisions.map((rev) => rev.clone())
         const cloned = new PdfDocument({
             revisions: clonedRevisions,

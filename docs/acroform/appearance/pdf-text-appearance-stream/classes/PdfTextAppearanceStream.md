@@ -71,6 +71,10 @@ Enhanced with word wrapping and automatic font scaling.
 
 `Map`\<`string`, `number`\>
 
+###### rotation?
+
+`number`
+
 ###### value
 
 `string`

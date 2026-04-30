@@ -37,6 +37,10 @@ Wraps a PdfStream as a PdfIndirectObject so it can be added directly to a docume
 
 `number`
 
+###### matrix?
+
+\[`number`, `number`, `number`, `number`, `number`, `number`\]
+
 ###### resources?
 
 [`PdfDictionary`](../../../../core/objects/pdf-dictionary/classes/PdfDictionary.md)\<[`PdfDictionaryEntries`](../../../../core/objects/pdf-dictionary/type-aliases/PdfDictionaryEntries.md)\>

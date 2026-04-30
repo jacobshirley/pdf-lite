@@ -59,6 +59,10 @@ Wraps a PdfStream as a PdfIndirectObject so it can be added directly to a docume
 
 `Map`\<`string`, `number`\>
 
+###### rotation?
+
+`number`
+
 ###### selectedIndex?
 
 `number`

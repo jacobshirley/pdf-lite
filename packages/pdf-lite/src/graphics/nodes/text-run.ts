@@ -1,6 +1,6 @@
 import { PdfHexadecimal, PdfNumber, PdfString } from '../../core'
 import { PdfFont } from '../../fonts/pdf-font'
-import { PdfPage } from '../../pdf/pdf-page'
+import type { PdfPage } from '../../pdf/pdf-page'
 import { Matrix } from '../geom/matrix'
 import {
     MoveTextLeadingOp,

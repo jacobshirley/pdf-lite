@@ -1,4 +1,4 @@
-import { PdfPage } from '../../pdf/pdf-page'
+import type { PdfPage } from '../../pdf/pdf-page'
 import { ContentOp } from '../ops/base'
 import { InvokeXObjectOp, SetMatrixOp } from '../ops/state'
 import { Matrix } from '../geom/matrix'

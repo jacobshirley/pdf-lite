@@ -1,4 +1,4 @@
-import { PdfPage } from '../../pdf/pdf-page'
+import type { PdfPage } from '../../pdf/pdf-page'
 import { Color, RGBColor } from '../color'
 import { StateNode } from './state-node'
 import { LineNode } from './line-node'

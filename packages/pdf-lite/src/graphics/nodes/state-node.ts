@@ -1,4 +1,4 @@
-import { PdfPage } from '../../pdf/pdf-page'
+import type { PdfPage } from '../../pdf/pdf-page'
 import { ArraySegment } from '../../utils/arrays'
 import { Matrix } from '../geom/matrix'
 import { Rect } from '../geom/rect'

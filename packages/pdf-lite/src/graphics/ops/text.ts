@@ -1,4 +1,4 @@
-import { PdfFont } from '../..'
+import { PdfFont } from '../../fonts/pdf-font.js'
 import { PdfHexadecimal, PdfNumber, PdfString } from '../../core'
 import { ByteArray } from '../../types'
 import { Matrix } from '../geom/matrix'

@@ -189,12 +189,12 @@ export class PdfAcroForm<
         for (const field of this.fields) {
             const name = field.name
             if (name && name in fields) {
-                const result = this._fireValidate(field, fields[name])
-                if (!result.rc) continue
-                field.value = result.value
+                const saved = field.defaultGenerateAppearance
+                field.defaultGenerateAppearance = false
+                field.value = fields[name]
+                field.defaultGenerateAppearance = saved
             }
         }
-        this._fireCalculate()
     }
 
     private _fireValidate(

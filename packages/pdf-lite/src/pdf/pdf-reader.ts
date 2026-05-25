@@ -1,7 +1,6 @@
 import { PdfObject } from '../core/objects/pdf-object.js'
-import { PdfObjectStream } from '../core/streams/object-stream.js'
-import { PdfPasswordProtectedError } from '../errors.js'
 import { ByteArray } from '../types.js'
+import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfDocument } from './pdf-document.js'
 
 /**
@@ -28,21 +27,6 @@ export class PdfReader {
     }
 
     /**
-     * Reads all objects from the stream and constructs a PdfDocument.
-     *
-     * @returns A promise that resolves to the parsed PdfDocument
-     */
-    async read(): Promise<PdfDocument> {
-        const objects: PdfObject[] = []
-
-        for await (const obj of this.objectStream) {
-            objects.push(obj)
-        }
-
-        return await PdfDocument.fromObjects(objects)
-    }
-
-    /**
      * Creates a PdfDocument directly from a byte stream.
      * Convenience method that creates a reader internally.
      *
@@ -57,8 +41,13 @@ export class PdfReader {
             incremental?: boolean
         },
     ): Promise<PdfDocument> {
+        const chunks: ByteArray[] = []
+        for await (const chunk of input) {
+            chunks.push(chunk)
+        }
+        const bytes = concatUint8Arrays(chunks)
         const document = new PdfDocument()
-        await document.load(input, options)
+        await document.load(bytes, options)
         return document
     }
 }

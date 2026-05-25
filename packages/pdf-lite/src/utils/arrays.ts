@@ -335,9 +335,6 @@ export class ArraySegment<T> implements Iterable<T>, ArrayLike<T> {
     /** Append at the run's trailing edge. */
     push(item: T): void {
         this.array.splice(this.end, 0, item)
-        if (this.endSentinel.value !== null) {
-            this.endSentinel.value = item
-        }
     }
 
     splice(localStart: number, deleteCount: number, ...items: T[]): T[] {

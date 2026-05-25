@@ -1,11 +1,11 @@
 import { PdfIndirectObject, PdfObject } from '../core'
-import { PdfLazyObjectManager } from './pdf-object-manager'
+import { PdfObjectManager } from './pdf-object-manager'
 
 export class PdfLazyObject extends PdfIndirectObject {
     private _resolvedObject?: PdfObject
 
     constructor(
-        objectManager: PdfLazyObjectManager,
+        objectManager: PdfObjectManager,
         options: {
             objectNumber: number
             generationNumber?: number
@@ -16,8 +16,9 @@ export class PdfLazyObject extends PdfIndirectObject {
 
         return new Proxy(this, {
             get: (target, prop, receiver) => {
-                if (typeof prop === 'string' && Object.hasOwn(options, prop)) {
-                    return options[prop as keyof typeof options]
+                // Only short-circuit object identity properties before resolve
+                if (prop === 'objectNumber' || prop === 'generationNumber') {
+                    return options[prop as 'objectNumber' | 'generationNumber']
                 }
 
                 target._resolvedObject ??= objectManager.parseObject(
@@ -27,6 +28,21 @@ export class PdfLazyObject extends PdfIndirectObject {
                     throw new Error(
                         `Failed to resolve object at offset ${options.offset}`,
                     )
+                }
+
+                // For 'becomes', delegate to _resolvedObject so prototype
+                // mutations (e.g. PdfPage getters) take effect on the resolved
+                // object that all subsequent accesses forward to.
+                if (prop === 'becomes') {
+                    const becomes = Reflect.get(
+                        target._resolvedObject,
+                        'becomes',
+                        target._resolvedObject,
+                    ) as Function
+                    return (cls: any) => {
+                        const result = becomes.call(target._resolvedObject, cls)
+                        return result
+                    }
                 }
 
                 return Reflect.get(target._resolvedObject, prop, receiver)

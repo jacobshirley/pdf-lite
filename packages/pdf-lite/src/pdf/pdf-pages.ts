@@ -6,7 +6,6 @@ import { PdfNumber } from '../core/objects/pdf-number.js'
 import { PdfName } from '../core/objects/pdf-name.js'
 import { PdfStream } from '../core/objects/pdf-stream.js'
 import { PdfPage } from './pdf-page.js'
-import type { PdfDocument } from './pdf-document.js'
 
 type PdfPagesDictionary = PdfDictionary<{
     Type: PdfName<'Pages'>

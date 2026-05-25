@@ -7,7 +7,6 @@ import { createFromDictionary } from '../security/handlers/utils.js'
 import { PdfIndirectObject } from '../core/objects/pdf-indirect-object.js'
 import { PdfComment } from '../core/objects/pdf-comment.js'
 import { PdfToken } from '../core/tokens/token.js'
-import { PdfWhitespaceToken } from '../core/tokens/whitespace-token.js'
 import {
     PdfObjStream,
     PdfStream,
@@ -21,16 +20,12 @@ import {
     PdfObjectReference,
 } from '../core/objects/pdf-object-reference.js'
 import { PdfXrefLookup } from './pdf-xref-lookup.js'
-import { PdfTokenSerializer } from '../core/serializer.js'
+import { PdfObjectSerializer } from '../core/serializer.js'
 import { PdfV5SecurityHandler } from '../security/handlers/v5.js'
 import {
     PdfEncryptionDictionary,
     PdfEncryptionDictionaryObject,
 } from '../security/types.js'
-import { PdfByteOffsetToken } from '../core/tokens/byte-offset-token.js'
-import { PdfNumberToken } from '../core/tokens/number-token.js'
-import { PdfXRefTableEntryToken } from '../core/tokens/xref-table-entry-token.js'
-import { Ref } from '../core/ref.js'
 import { PdfStartXRef } from '../core/objects/pdf-start-xref.js'
 import { PdfTrailerEntries } from '../core/objects/pdf-trailer.js'
 import {
@@ -46,7 +41,7 @@ import { concatUint8Arrays } from '../utils/concatUint8Arrays.js'
 import { PdfAcroForm } from '../acroform/pdf-acro-form.js'
 import { PdfPages } from './pdf-pages.js'
 import { PdfObjectStream } from '../index.js'
-import { PdfLazyObjectManager, PdfObjectManager } from './pdf-object-manager.js'
+import { PdfObjectManager } from './pdf-object-manager.js'
 
 /**
  * Represents a PDF document with support for reading, writing, and modifying PDF files.
@@ -65,7 +60,7 @@ import { PdfLazyObjectManager, PdfObjectManager } from './pdf-object-manager.js'
  * await document.commit()
  * ```
  */
-export class PdfDocument extends PdfObject implements IPdfObjectResolver {
+export class PdfDocument extends PdfObject {
     objectManager: PdfObjectManager
     /** Signer instance for digital signature operations */
     signer: PdfSigner
@@ -79,13 +74,9 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     private originalSecurityHandler?: PdfSecurityHandler
 
     private hasEncryptionDictionary?: boolean = false
-    private _resolvedCache = new Map<string, PdfIndirectObject>()
     private _committing = false
-    private _updating = false
     private _finalized = false
     private _signed = false
-    /** @internal */
-    _batching = false
 
     /**
      * Creates a new PDF document instance.
@@ -108,17 +99,9 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         super()
 
         this.objectManager =
-            options?.objectManager ?? new PdfLazyObjectManager(new Uint8Array())
-
-        if (options?.version instanceof PdfComment) {
-            this.header = options.version
-        } else {
-            this.setVersion(options?.version ?? '2.0')
-        }
+            options?.objectManager ?? new PdfObjectManager(new Uint8Array())
 
         this.signer = options?.signer ?? new PdfSigner({ document: this })
-
-        this.calculateOffsets()
 
         this.originalSecurityHandler = options?.securityHandler
         this.resetSecurityHandler()
@@ -135,19 +118,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         objectNumber: number,
         generationNumber: number,
     ): PdfIndirectObject {
-        const cacheKey = `${objectNumber} ${generationNumber}`
-        const cached = this._resolvedCache.get(cacheKey)
-        if (cached) return cached
-
-        const found = this.readObject({ objectNumber, generationNumber })
-        if (!found) {
-            throw new Error(
-                `Object ${objectNumber} ${generationNumber} not found`,
-            )
-        }
-        this._resolvedCache.set(cacheKey, found)
-
-        return found
+        return this.objectManager.getObject(objectNumber, generationNumber)
     }
 
     get acroform(): PdfAcroForm | null {
@@ -178,9 +149,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
     }
 
     set header(comment: PdfComment | undefined) {
-        throw new Error(
-            'Not yet implemented: setting header comment is not supported',
-        )
+        if (!comment) return
+        this.objectManager.updateHeader(comment)
     }
 
     /**
@@ -198,8 +168,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         ownerPassword?: string
         incremental?: boolean
     }): Promise<this> {
-        this.calculateOffsets()
-
         // Reset security handler to detect and initialize encryption from the PDF
         // Preserve any passwords that were set before load() was called
         let presetPassword: string | undefined = options?.password
@@ -271,6 +239,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
                 this.resetSecurityHandler()
             }
         }
+
+        // Propagate the initialized security handler to the object manager
+        // so lazy-parsed objects are automatically decrypted on access.
+        this.objectManager.securityHandler = this.securityHandler
+
         return this
     }
 
@@ -288,8 +261,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             incremental?: boolean
         },
     ): Promise<this> {
-        const objectManager = new PdfLazyObjectManager(input)
-        this.objectManager = objectManager
+        this.objectManager = new PdfObjectManager(input)
         return await this.loadObjects(options)
     }
 
@@ -365,11 +337,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @param objects - PDF objects to add to the document
      */
     add(...objects: PdfObject[]): void {
-        this.objectManager.add(...objects)
-
-        if (!this._batching) {
-            this.update()
-        }
+        this.objectManager.append(...objects)
     }
 
     /**
@@ -412,7 +380,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             )
 
             // Pre-assign a contiguous block of object numbers for the batch
-            const xref = this.latestRevision.xref
+            const xref = this.objectManager.getXrefObject()
             const startNum = xref.reserveObjectNumbers(batch.length)
             for (let i = 0; i < batch.length; i++) {
                 if (!batch[i].inPdf()) {
@@ -444,7 +412,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      *
      * @returns A readonly array of all PDF objects
      */
-    get objects(): ReadonlyArray<PdfIndirectObject> {
+    get objects(): ReadonlyArray<PdfObject> {
         return this.objectManager.getObjects()
     }
 
@@ -623,40 +591,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         return true
     }
 
-    commitIncrementalUpdates(): void {
-        if (!this.incremental || this._committing) {
-            return
-        }
-
-        this._committing = true
-        try {
-            for (const revision of this.revisions) {
-                if (!revision.locked) continue
-                for (const obj of revision.objects) {
-                    if (!(obj instanceof PdfIndirectObject)) {
-                        continue
-                    }
-                    if (obj.isModified()) {
-                        // Pre-register any new objects referenced by obj before
-                        // cloning so the clone gets correct object numbers.
-                        // Without this, proxy references (objectNumber = -1) get
-                        // frozen into the clone as "-1 0 R" — a dangling reference.
-                        const missing = this.collectMissingReferences(obj)
-                        if (missing.length > 0) {
-                            this.add(...missing)
-                        }
-                        const adding = obj.clone()
-                        this.add(adding)
-                        adding.setModified(false)
-                        obj.setModified(false)
-                    }
-                }
-            }
-        } finally {
-            this._committing = false
-        }
-    }
-
     /**
      * Re-encrypts all objects and updates the document structure.
      * No-op if the document has no security handler (unencrypted document).
@@ -667,7 +601,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         }
 
         this._finalized = true
-        this.update()
 
         if (this.securityHandler) {
             await this.encrypt()
@@ -696,8 +629,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         if (encryptionDict) {
             this.deleteObject(encryptionDict)
         }
-
-        this.update()
     }
 
     /**
@@ -710,57 +641,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             return
         }
 
-        const addingEncryption = !this.hasEncryptionDictionary
-        const wasIncremental = this.incremental
-
-        if (addingEncryption) {
-            this.setIncremental(false)
-        }
-
-        this.initSecurityHandler({})
-        await this.securityHandler.initHandler?.()
-        this.securityHandler.write()
-
-        for (const object of this.objects) {
-            if (!(object instanceof PdfIndirectObject)) {
-                continue
-            }
-
-            if (!this.isObjectEncryptable(object)) {
-                continue
-            }
-
-            await this.securityHandler.encryptObject(object)
-            object.setModified(false)
-        }
-
-        if (addingEncryption) {
-            const encryptionDictObject = new PdfIndirectObject({
-                content: this.securityHandler.dict,
-                encryptable: false,
-            })
-
-            this.add(encryptionDictObject)
-            this.hasEncryptionDictionary = true
-
-            for (const revision of this.revisions) {
-                revision.xref.trailerDict.set(
-                    'Encrypt',
-                    encryptionDictObject.reference,
-                )
-
-                if (!revision.xref.trailerDict.get('ID')) {
-                    revision.xref.trailerDict.set(
-                        'ID',
-                        this.securityHandler.getDocumentId(),
-                    )
-                }
-            }
-
-            this.setIncremental(wasIncremental)
-        }
-
-        this.update()
+        // NO OP: object manager handles this
     }
 
     /**
@@ -806,6 +687,16 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         return foundObject
     }
 
+    findUncompressedObject(options: {
+        objectNumber: number
+        generationNumber?: number
+    }): PdfIndirectObject | undefined {
+        return this.objectManager.getObjectByReference({
+            objectNumber: options.objectNumber,
+            generationNumber: options.generationNumber ?? 0,
+        })
+    }
+
     /**
      * Deletes an object from all revisions in the document.
      *
@@ -813,9 +704,7 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      */
     deleteObject(obj: PdfObject | undefined): void {
         if (!obj) return
-
         this.objectManager.delete(obj)
-        this.update()
     }
 
     /**
@@ -835,15 +724,8 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @param value - True to enable incremental mode, false to disable. Defaults to true.
      */
     setIncremental(value: boolean = true): void {
-        if (value === this.isIncremental()) {
-            return
-        }
-
-        this.incremental = value
-
-        for (const revision of this.revisions) {
-            revision.locked = value
-        }
+        //No op: currently only incremental mode is supported
+        //TODO: support non-incremental writes (i.e. full PDF rewrite)
     }
 
     /**
@@ -855,187 +737,15 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
         return this.incremental
     }
 
-    /**
-     * Returns tokens paired with their source objects.
-     * Useful for debugging and analysis of document structure.
-     *
-     * @returns Array of token-object pairs
-     */
     tokensWithObjects(): {
         token: PdfToken
         object: PdfObject | undefined
     }[] {
-        const documentTokens: {
-            token: PdfToken
-            object: PdfObject | undefined
-        }[] = this.objects.flatMap((obj) => {
-            const tokens = obj.toTokens()
-            if (
-                tokens.length > 0 &&
-                !(tokens[tokens.length - 1] instanceof PdfWhitespaceToken)
-            ) {
-                tokens.push(PdfWhitespaceToken.NEWLINE)
-            }
-            return tokens.map((token) => ({ token, object: obj }))
-        })
-
-        return documentTokens
+        return this.objectManager.tokensWithObjects()
     }
 
     protected tokenize(): PdfToken[] {
         return this.tokensWithObjects().map(({ token }) => token)
-    }
-
-    private collectMissingReferences(
-        ...objects: PdfObject[]
-    ): PdfIndirectObject[] {
-        const seen = new Set<PdfObject>()
-        const missing: PdfIndirectObject[] = []
-        const queue: PdfObject[] = [...objects]
-        while (queue.length > 0) {
-            const obj = queue.pop()!
-            if (seen.has(obj)) continue
-            seen.add(obj)
-
-            if (
-                obj instanceof PdfObjectReference &&
-                !(obj instanceof PdfIndirectObject)
-            ) {
-                if (obj.resolver) {
-                    try {
-                        const resolved = obj.resolve()
-                        if (
-                            resolved instanceof PdfIndirectObject &&
-                            !resolved.inPdf()
-                        ) {
-                            missing.push(resolved)
-                            queue.push(resolved)
-                        }
-                    } catch {
-                        // Skip unresolvable references
-                    }
-                }
-            } else if (obj instanceof PdfStream) {
-                queue.push(obj.header)
-            } else if (obj instanceof PdfDictionary) {
-                for (const [, value] of obj.entries()) {
-                    if (value) queue.push(value)
-                }
-            } else if (obj instanceof PdfArray) {
-                for (const item of obj.items) queue.push(item)
-            } else if (obj instanceof PdfIndirectObject) {
-                queue.push(obj.content)
-            }
-        }
-        return missing
-    }
-
-    private linkOffsets(tokens?: PdfToken[]): void {
-        const refMap = new Map<
-            number,
-            {
-                main?: Ref<number>
-                others?: Set<Ref<number>>
-            }
-        >()
-
-        tokens = tokens ?? this.toTokens()
-
-        for (let i = 0; i < tokens.length; i++) {
-            const token = tokens[i]
-            let main: Ref<number> | undefined
-            let other: Ref<number> | undefined
-
-            if (token instanceof PdfByteOffsetToken) {
-                main = token.value
-            } else if (token instanceof PdfXRefTableEntryToken) {
-                other = token.offset.ref
-            } else if (token instanceof PdfNumberToken && token.isByteToken) {
-                other = token.ref
-            }
-
-            if (!other && !main) {
-                continue
-            }
-
-            const id = (main ?? other)!.resolve()
-            if (!refMap.has(id)) {
-                refMap.set(id, { main: main, others: new Set<Ref<number>>() })
-            }
-
-            if (main) {
-                refMap.get(id)!.main = main
-            }
-            if (other) refMap.get(id)!.others!.add(other)
-        }
-
-        for (const [, { main, others }] of refMap) {
-            if (!main) continue
-
-            for (const other of others ?? []) {
-                other.update(main)
-            }
-        }
-    }
-
-    private calculateOffsets(cachedTokens?: PdfToken[]): PdfToken[] {
-        const serializer = new PdfTokenSerializer()
-        const tokens = cachedTokens ?? this.toTokens()
-        this.linkOffsets(tokens)
-
-        serializer.feedMany(tokens)
-        serializer.calculateOffsets()
-
-        return tokens
-    }
-
-    /**
-     * Performs a full update cycle to ensure all revisions are consistent and offsets are correct.
-     * @internal
-     */
-    update(): void {
-        if (this._updating) return
-        this._updating = true
-        try {
-            this.commitIncrementalUpdates()
-            this.flushResolvedCache()
-            this.registerNewReferences()
-            // First pass: generate tokens and calculate offsets
-            this.calculateOffsets()
-
-            // Second pass: xref binary may have changed size (e.g. FlateDecode removed
-            // from xref stream), shifting objects that follow it. Regenerate tokens
-            // to capture xref changes, then recalculate offsets.
-            const tokens = this.calculateOffsets()
-
-            // Third pass: reuse tokens from second pass since xref should now be stable
-            // (xref binary size should not change because W widths and entry count are same).
-            this.calculateOffsets(tokens)
-        } finally {
-            this._updating = false
-        }
-    }
-
-    /**
-     * Walks all objects in the document and registers any newly created
-     * PdfIndirectObjects that are referenced but not yet part of the document
-     * (e.g. appearance streams created by generateAppearance).
-     */
-    private registerNewReferences(): void {
-        const missing = this.collectMissingReferences(...this.objects)
-        if (missing.length > 0) {
-            this.add(...missing)
-        }
-    }
-
-    private flushResolvedCache(): void {
-        const existing = new Set(this.objects)
-        for (const [, obj] of this._resolvedCache) {
-            if (obj.isModified() && !existing.has(obj)) {
-                this.add(obj)
-                existing.add(obj)
-            }
-        }
     }
 
     async sign() {
@@ -1047,7 +757,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
             return
         }
 
-        this.update()
         await this.signer.sign()
         this._signed = true
     }
@@ -1058,7 +767,6 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns The PDF document as a Uint8Array
      */
     toBytes(): ByteArray {
-        this.update()
         return this.objectManager.toBytes()
     }
 
@@ -1068,13 +776,11 @@ export class PdfDocument extends PdfObject implements IPdfObjectResolver {
      * @returns A cloned PdfDocument instance
      */
     cloneImpl(): this {
-        this.update()
-        const clonedRevisions = this.revisions.map((rev) => rev.clone())
+        const bytes = this.toBytes()
         const cloned = new PdfDocument({
-            revisions: clonedRevisions,
-            version: this.header?.clone(),
             securityHandler: this.securityHandler?.clone(),
         }) as this
+        cloned.objectManager = new PdfObjectManager(bytes)
         cloned.hasEncryptionDictionary = this.hasEncryptionDictionary
         return cloned
     }
@@ -1129,11 +835,10 @@ export class PdfDocumentBatch {
     /** @internal */
     constructor(document: PdfDocument) {
         this._document = document
-        this._document._batching = true
     }
 
     /**
-     * Adds one or more objects to the document without triggering an update.
+     * Adds one or more objects to the document.
      *
      * @param objects - PDF objects to add
      */
@@ -1149,7 +854,7 @@ export class PdfDocumentBatch {
     }
 
     /**
-     * Commits the batch, running a single update pass for all added objects.
+     * Commits the batch.
      */
     commit(): void {
         if (this._completed) {
@@ -1158,8 +863,6 @@ export class PdfDocumentBatch {
             )
         }
         this._completed = true
-        this._document._batching = false
-        this._document.update()
     }
 
     /**
@@ -1173,7 +876,6 @@ export class PdfDocumentBatch {
             )
         }
         this._completed = true
-        this._document._batching = false
 
         // Remove all objects that were added during this batch
         for (const obj of this._addedObjects) {

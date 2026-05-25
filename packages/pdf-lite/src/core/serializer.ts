@@ -1,7 +1,12 @@
-import { PdfObject, PdfWhitespaceToken } from '../index.js'
+import { PdfObject } from './objects/pdf-object.js'
+import { PdfIndirectObject } from './objects/pdf-indirect-object.js'
+import { PdfWhitespaceToken } from './tokens/whitespace-token.js'
+import { PdfSecurityHandler } from '../security/handlers/base.js'
 import { ByteArray } from '../types.js'
 import { Parser } from './parser/parser.js'
 import { PdfByteOffsetToken } from './tokens/byte-offset-token.js'
+import { PdfStreamChunkToken } from './tokens/stream-chunk-token.js'
+import { PdfStringToken } from './tokens/string-token.js'
 import { PdfToken } from './tokens/token.js'
 
 /**
@@ -88,6 +93,13 @@ export class PdfTokenSerializer extends Parser<PdfToken, number> {
 
 export class PdfObjectSerializer extends Parser<PdfObject, number> {
     private tokenSerializer = new PdfTokenSerializer()
+    private securityHandler?: PdfSecurityHandler
+
+    constructor(offset?: number, securityHandler?: PdfSecurityHandler) {
+        super()
+        if (offset) this.offset = offset
+        this.securityHandler = securityHandler
+    }
 
     set offset(value: number) {
         this.tokenSerializer.offset = value
@@ -95,7 +107,37 @@ export class PdfObjectSerializer extends Parser<PdfObject, number> {
 
     feed(...input: PdfObject[]): void {
         for (const obj of input) {
-            const tokens = obj.toTokens()
+            let tokens = obj.toTokens()
+            if (
+                obj instanceof PdfIndirectObject &&
+                obj.isEncryptable() &&
+                this.securityHandler
+            ) {
+                const { objectNumber, generationNumber } = obj
+                const handler = this.securityHandler
+                tokens = tokens.map((token) => {
+                    if (token instanceof PdfStringToken) {
+                        return new PdfStringToken(
+                            handler.encrypt(
+                                'string',
+                                token.value,
+                                objectNumber,
+                                generationNumber,
+                            ),
+                        )
+                    } else if (token instanceof PdfStreamChunkToken) {
+                        return new PdfStreamChunkToken(
+                            handler.encrypt(
+                                'stream',
+                                token.toBytes(),
+                                objectNumber,
+                                generationNumber,
+                            ),
+                        )
+                    }
+                    return token
+                })
+            }
             if (!(tokens[tokens.length - 1] instanceof PdfWhitespaceToken)) {
                 tokens.push(new PdfWhitespaceToken('\n'))
             }

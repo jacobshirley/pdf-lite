@@ -111,6 +111,18 @@ export class PdfIndirectObject<
         return this.encryptable ?? true
     }
 
+    /**
+     * Returns true if this object may be stored inside a compressed object
+     * stream (PDF 1.5+, §7.5.7).  The spec forbids: stream objects, objects
+     * with generation > 0, and objects whose offset must be in the xref
+     * (e.g. xref streams themselves).
+     */
+    isObjStmCompatible(): boolean {
+        if (this.generationNumber !== 0) return false
+        if (this.content instanceof PdfStream) return false
+        return true
+    }
+
     static createPlaceholder<T extends PdfObject>(
         objectNumber?: number,
         generationNumber?: number,

@@ -206,18 +206,69 @@ export class PdfObjectManager implements IPdfObjectResolver {
             }
         }
 
+        // Partition: ObjStm-compatible objects go into a compressed stream;
+        // streams, gen>0 objects, and non-indirect objects go direct.
+        const forObjStream: PdfIndirectObject[] = []
+        const directObjects: PdfObject[] = []
+        for (const obj of [...added, ...edited]) {
+            if (obj instanceof PdfIndirectObject && obj.isObjStmCompatible()) {
+                forObjStream.push(obj)
+            } else {
+                directObjects.push(obj)
+            }
+        }
+
+        // Pre-assign object numbers for ObjStm objects (without xref entry yet)
+        for (const obj of forObjStream) {
+            if (!obj.inPdf()) {
+                obj.objectNumber = newXref.size++
+            } else {
+                newXref.size = Math.max(newXref.size, obj.objectNumber + 1)
+            }
+        }
+
+        // Build compressed ObjStream for compatible objects
+        if (forObjStream.length > 0) {
+            const objStreamContent = PdfObjStream.fromObjects(forObjStream)
+            objStreamContent.addFilter('FlateDecode')
+            const objStreamWrapper = new PdfIndirectObject({
+                content: objStreamContent,
+                encryptable: false,
+            })
+            newXref.addObject(objStreamWrapper)
+
+            // Register each contained object as a compressed xref entry
+            for (let i = 0; i < forObjStream.length; i++) {
+                const obj = forObjStream[i]
+                newXref.entries.set(
+                    obj.objectNumber,
+                    new PdfXRefStreamCompressedEntry({
+                        objectNumber: obj.objectNumber,
+                        objectStreamNumber: objStreamWrapper.objectNumber,
+                        index: i,
+                    }),
+                )
+            }
+            newXref.update()
+            directObjects.push(objStreamWrapper)
+        }
+
+        // Register direct indirect objects in xref
+        for (const obj of directObjects) {
+            if (obj instanceof PdfIndirectObject) {
+                newXref.addObject(obj)
+            }
+        }
+
         const baseOffset = this.documentBytes.length
 
-        // Phase 1: serialize all objects and collect their bytes (sets byteOffset Refs)
+        // Phase 1: serialize direct objects → sets byteOffset Refs
         const objSerializer = new PdfObjectSerializer(
             baseOffset,
             this.securityHandler,
         )
-        for (const newObject of [...added, ...edited]) {
-            if (newObject instanceof PdfIndirectObject) {
-                newXref.addObject(newObject)
-            }
-            objSerializer.feed(newObject)
+        for (const obj of directObjects) {
+            objSerializer.feed(obj)
         }
         const objectBytes = objSerializer.toBytes()
 
@@ -671,12 +722,22 @@ export class PdfObjectManager implements IPdfObjectResolver {
                 .as(PdfStream)
                 ?.parseAs(PdfObjStream)
             if (!objStream) return undefined
-            // Cache all objects from the stream at once to avoid re-decompressing
+            // Cache all objects from the stream at once to avoid re-decompressing,
+            // but only objects whose current xref entry still points to THIS stream
+            // (objects from older revisions of the same stream must not overwrite
+            // entries that were superseded by newer revisions).
             for (const obj of objStream.getObjects()) {
                 const objKey = `${obj.objectNumber} 0`
                 if (!this.objectCache.has(objKey)) {
-                    this.attachResolver(obj)
-                    this.objectCache.set(objKey, obj)
+                    const objEntry = entries.get(obj.objectNumber)
+                    if (
+                        objEntry instanceof PdfXRefStreamCompressedEntry &&
+                        objEntry.objectStreamNumber.value ===
+                            entry.objectStreamNumber.value
+                    ) {
+                        this.attachResolver(obj)
+                        this.objectCache.set(objKey, obj)
+                    }
                 }
             }
             return this.objectCache.get(key) as PdfIndirectObject | undefined

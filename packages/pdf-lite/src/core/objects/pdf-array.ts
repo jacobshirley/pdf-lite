@@ -12,7 +12,7 @@ export class PdfArray<T extends PdfObject = PdfObject>
     implements Iterable<T>
 {
     items: T[]
-    innerTokens: PdfWhitespaceToken[] = []
+    innerTokens: PdfToken[] = []
 
     constructor(items: T[] = []) {
         super()

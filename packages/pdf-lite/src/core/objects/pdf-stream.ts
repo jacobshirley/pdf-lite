@@ -868,8 +868,33 @@ export class PdfXRefStream extends PdfStream {
         entries: PdfXRefStreamEntry[],
         headerDict: PdfDictionary = new PdfDictionary(),
     ): PdfXRefStream {
+        // Xref-stream header keys — must appear in this exact order per convention
+        const xrefKeys = new Set([
+            'DecodeParms',
+            'Filter',
+            'Type',
+            'W',
+            'Index',
+            'Size',
+            'Length',
+        ])
+        // Save and remove all non-xref (trailer) keys so they can be appended after
+        const trailerEntries: [string, PdfObject][] = []
+        for (const [key, value] of headerDict.entries()) {
+            if (!xrefKeys.has(key) && value) {
+                trailerEntries.push([key, value])
+            }
+        }
+        for (const [key] of trailerEntries) {
+            headerDict.delete(key as any)
+        }
         headerDict.delete('DecodeParms')
         headerDict.delete('Filter')
+        headerDict.delete('Type')
+        headerDict.delete('W')
+        headerDict.delete('Index')
+        headerDict.delete('Size')
+        headerDict.delete('Length')
         headerDict.set('Type', new PdfName('XRef'))
         entries.sort((a, b) => a.objectNumber.value - b.objectNumber.value)
 
@@ -948,6 +973,11 @@ export class PdfXRefStream extends PdfStream {
 
         const rawData = new Uint8Array(streamBytes)
         headerDict.set('Length', new PdfNumber(rawData.length))
+
+        // Re-append trailer entries (Prev, Root, Info, Encrypt, ID, etc.) after xref keys
+        for (const [key, value] of trailerEntries) {
+            headerDict.set(key as any, value as any)
+        }
 
         return new PdfXRefStream({
             header: headerDict,

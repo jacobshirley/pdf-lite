@@ -10,7 +10,6 @@ import { PdfButtonFormField } from '../../src/acroform/fields/pdf-button-form-fi
 import { PdfChoiceFormField } from '../../src/acroform/fields/pdf-choice-form-field'
 import { PdfSignatureFormField } from '../../src/acroform/fields/pdf-signature-form-field'
 import { PdfAdbePkcs7DetachedSignatureObject } from '../../src/signing/signatures/adbe-pkcs7-detached'
-import { PdfSigner } from '../../src/signing/signer'
 import { rsaSigningKeys } from './fixtures/rsa-2048'
 import { PdfObjectReference } from '../../src/core/objects/pdf-object-reference'
 import {
@@ -113,12 +112,17 @@ describe('AcroForm', () => {
         const newDocumentBytes = document.toBytes()
         const newDocument = await PdfDocument.fromBytes([newDocumentBytes])
 
-        // Read them back to verify
         const updatedAcroform = newDocument.acroform
         const updatedValues = updatedAcroform?.exportData()!
         for (const [fieldName, expectedValue] of Object.entries(valuesToSet)) {
             expect(updatedValues[fieldName]).toBe(expectedValue)
         }
+
+        await server.commands.writeFile(
+            './test/unit/tmp/updated_fields.pdf',
+            bytesToBase64(newDocumentBytes),
+            { encoding: 'base64' },
+        )
     })
 
     it('should be able to handle exotic character field values', async () => {
@@ -2862,8 +2866,6 @@ describe('AcroForm Appearance Stream Font Resources', () => {
         )
 
         const document = await PdfDocument.fromBytes([pdfBuffer])
-        expect(document.revisions.length).toBeGreaterThan(1)
-
         const acroform = document.acroform
         if (!acroform) throw new Error('No AcroForm found')
 

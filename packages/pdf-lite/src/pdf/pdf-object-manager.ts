@@ -38,6 +38,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
     private toDelete: PdfObject[] = []
     protected xrefObject?: PdfXrefLookup
     protected objectCache: Map<string, PdfObject> = new Map()
+    private _xrefEntriesCache?: Map<number, PdfXRefStreamEntry>
 
     constructor(documentBytes?: ByteArray, offset?: number) {
         if (!documentBytes || documentBytes.length === 0) {
@@ -205,25 +206,31 @@ export class PdfObjectManager implements IPdfObjectResolver {
             }
         }
 
-        const write = () => {
-            const serializer = new PdfObjectSerializer(
-                this.documentBytes.length,
-                this.securityHandler,
-            )
+        const baseOffset = this.documentBytes.length
 
-            for (const newObject of [...added, ...edited]) {
-                if (newObject instanceof PdfIndirectObject) {
-                    newXref.addObject(newObject)
-                }
-                serializer.feed(newObject)
+        // Phase 1: serialize all objects and collect their bytes (sets byteOffset Refs)
+        const objSerializer = new PdfObjectSerializer(
+            baseOffset,
+            this.securityHandler,
+        )
+        for (const newObject of [...added, ...edited]) {
+            if (newObject instanceof PdfIndirectObject) {
+                newXref.addObject(newObject)
             }
-
-            serializer.feed(...newXref.toTrailerSection())
-            return serializer.toBytes()
+            objSerializer.feed(newObject)
         }
+        const objectBytes = objSerializer.toBytes()
 
-        write()
-        const newBytes = write()
+        // Phase 2: rebuild xref with now-correct offsets, then serialize trailer
+        newXref.update()
+        const trailerSerializer = new PdfObjectSerializer(
+            baseOffset + objectBytes.length,
+            this.securityHandler,
+        )
+        trailerSerializer.feed(...newXref.toTrailerSection())
+        const trailerBytes = trailerSerializer.toBytes()
+
+        const newBytes = concatUint8Arrays([objectBytes, trailerBytes])
 
         return {
             newBytes: concatUint8Arrays([this.documentBytes, newBytes]),
@@ -242,6 +249,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
         this.toDelete = []
         this.documentBytes = bytes.newBytes
         this.xrefObject = bytes.newXref
+        this._xrefEntriesCache = undefined
     }
 
     prepend(...objects: PdfObject[]): void {
@@ -565,6 +573,8 @@ export class PdfObjectManager implements IPdfObjectResolver {
     }
 
     getXrefEntries(): Map<number, PdfXRefStreamEntry> {
+        if (this._xrefEntriesCache) return this._xrefEntriesCache
+
         // Walk the full prev chain, collecting each xref from newest to oldest
         const chain: PdfXrefLookup[] = []
         const seenOffsets = new Set<number>()
@@ -595,6 +605,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
                 }
             }
         }
+        this._xrefEntriesCache = entries
         return entries
     }
 
@@ -660,13 +671,15 @@ export class PdfObjectManager implements IPdfObjectResolver {
                 .as(PdfStream)
                 ?.parseAs(PdfObjStream)
             if (!objStream) return undefined
-            const objects = objStream.getObjects()
-            const result = objects[entry.index.value]
-            if (result) {
-                this.attachResolver(result)
-                this.objectCache.set(key, result)
+            // Cache all objects from the stream at once to avoid re-decompressing
+            for (const obj of objStream.getObjects()) {
+                const objKey = `${obj.objectNumber} 0`
+                if (!this.objectCache.has(objKey)) {
+                    this.attachResolver(obj)
+                    this.objectCache.set(objKey, obj)
+                }
             }
-            return result ?? undefined
+            return this.objectCache.get(key) as PdfIndirectObject | undefined
         }
 
         return undefined

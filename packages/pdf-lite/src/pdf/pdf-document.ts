@@ -322,7 +322,7 @@ export class PdfDocument extends PdfObject {
      * @returns The document instance for method chaining
      */
     startNewRevision(): PdfDocument {
-        //TODO: object manager should create a new revision that links to this one
+        this.objectManager.write() // Creates a new revision
         return this
     }
 
@@ -568,29 +568,6 @@ export class PdfDocument extends PdfObject {
         return false
     }
 
-    private isObjectEncryptable(obj: PdfIndirectObject): boolean {
-        if (!this.securityHandler) {
-            return false
-        }
-
-        if (!obj.isEncryptable()) {
-            return false
-        }
-
-        if (obj.matchesReference(this.encryptionDictionary?.reference)) {
-            return false
-        }
-
-        if (
-            !this.securityHandler.encryptMetadata &&
-            obj.matchesReference(this.metadataStreamReference)
-        ) {
-            return false
-        }
-
-        return true
-    }
-
     /**
      * Re-encrypts all objects and updates the document structure.
      * No-op if the document has no security handler (unencrypted document).
@@ -601,10 +578,6 @@ export class PdfDocument extends PdfObject {
         }
 
         this._finalized = true
-
-        if (this.securityHandler) {
-            await this.encrypt()
-        }
 
         await this.sign()
     }
@@ -620,15 +593,7 @@ export class PdfDocument extends PdfObject {
 
         await this.securityHandler.initHandler?.()
 
-        this.hasEncryptionDictionary = false
-        this.securityHandler = undefined
-
-        const encryptionDict = this.encryptionDictionary
-
-        this.trailerDict.delete('Encrypt')
-        if (encryptionDict) {
-            this.deleteObject(encryptionDict)
-        }
+        //TODO: objectManager.removeEncryption()
     }
 
     /**
@@ -641,6 +606,7 @@ export class PdfDocument extends PdfObject {
             return
         }
 
+        await this.securityHandler.initHandler?.()
         // NO OP: object manager handles this
     }
 

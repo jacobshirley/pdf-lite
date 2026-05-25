@@ -71,7 +71,7 @@ export class PdfTokenSerializer extends Parser<PdfToken, number> {
      * Does not consume the buffer.
      */
     calculateOffsets(): void {
-        let currentOffset = 0
+        let currentOffset = this.offset
 
         for (const token of this.buffer) {
             if (token instanceof PdfByteOffsetToken) {
@@ -143,6 +143,10 @@ export class PdfObjectSerializer extends Parser<PdfObject, number> {
             }
             this.tokenSerializer.feedMany(tokens)
         }
+    }
+
+    calculateOffsets(): void {
+        this.tokenSerializer.calculateOffsets()
     }
 
     *nextItems(): Generator<number> {

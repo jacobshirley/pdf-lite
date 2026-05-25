@@ -21,6 +21,12 @@ export class PdfLazyObject extends PdfIndirectObject {
                     return options[prop as 'objectNumber' | 'generationNumber']
                 }
 
+                // isModified should not trigger lazy resolution; an unresolved
+                // lazy object has not been modified.
+                if (prop === 'isModified' && !target._resolvedObject) {
+                    return () => false
+                }
+
                 target._resolvedObject ??= objectManager.parseObject(
                     options.offset,
                 )

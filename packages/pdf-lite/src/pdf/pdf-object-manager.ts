@@ -660,9 +660,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
         return entries
     }
 
-    private _startXRef?: PdfStartXRef
-
-    getObjects(): PdfObject[] {
+    getObjects(): PdfIndirectObject[] {
         const results: PdfIndirectObject[] = []
         for (const entry of this.getXrefEntries().values()) {
             if (entry instanceof PdfXRefStreamCompressedEntry) {
@@ -682,14 +680,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
                 ),
             )
         }
-
-        // Include persistent startxref so tests can find it via document.objects
-        if (!this._startXRef) {
-            this._startXRef = new PdfStartXRef(
-                this.getXrefObject().object.offset,
-            )
-        }
-        return [...results, this._startXRef]
+        return results
     }
 
     getObjectByReference(ref: {

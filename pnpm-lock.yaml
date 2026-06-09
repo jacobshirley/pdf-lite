@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  playwright: ^1.56.1
+  playwright: ^1.60.0
   typescript: 6.0.3
 
 packageExtensionsChecksum: sha256-fs+wgeupzGGg0M6KwlbG5R01NsuvBcnqoXO88MxaUls=
@@ -528,7 +528,7 @@ packages:
   '@vitest/browser-playwright@4.0.14':
     resolution: {integrity: sha512-rUvyz6wX6wDjcYzf/7fgXYfca2bAu0Axoq/v9LYdELzcBSS9UKjnZ7MaMY4UDP78HHHCdmdtceuSao1s51ON8A==}
     peerDependencies:
-      playwright: ^1.56.1
+      playwright: ^1.60.0
       vitest: 4.0.14
 
   '@vitest/browser@4.0.14':

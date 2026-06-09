@@ -371,6 +371,19 @@ export class PdfXrefLookup {
     }
 
     /**
+     * Assigns a proper object number to the xref stream if it doesn't have one yet.
+     * Must be called after all content objects have been numbered, before serialization.
+     */
+    finalizeObjectNumber(): void {
+        if (this.object instanceof PdfIndirectObject && !this.object.inPdf()) {
+            // Read Size directly from trailerDict to avoid triggering the prev chain.
+            const currentSize = this.trailerDict.get('Size')?.value ?? 0
+            this.object.objectNumber = currentSize
+            this.trailerDict.set('Size', new PdfNumber(currentSize + 1))
+        }
+    }
+
+    /**
      * Generates the trailer section objects for this xref.
      * Includes xref table/stream, trailer (if using table), startxref, and EOF.
      *

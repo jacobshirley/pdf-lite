@@ -272,7 +272,8 @@ export class PdfObjectManager implements IPdfObjectResolver {
         }
         const objectBytes = objSerializer.toBytes()
 
-        // Phase 2: rebuild xref with now-correct offsets, then serialize trailer
+        // Phase 2: finalize xref stream object number, rebuild with correct offsets, serialize trailer
+        newXref.finalizeObjectNumber()
         newXref.update()
         const trailerSerializer = new PdfObjectSerializer(
             baseOffset + objectBytes.length,
@@ -301,6 +302,134 @@ export class PdfObjectManager implements IPdfObjectResolver {
         this.documentBytes = bytes.newBytes
         this.xrefObject = bytes.newXref
         this._xrefEntriesCache = undefined
+    }
+
+    /**
+     * Collapses all revisions into a single new revision, re-numbering objects
+     * from scratch. The result is a linearised document with no incremental
+     * update history.  Encryption is NOT carried forward — the caller is
+     * responsible for setting a new security handler before or after calling
+     * this method.
+     */
+    rewrite(): void {
+        // Identify ObjStream container object numbers — those serve only as
+        // packaging and will be replaced by a new container below.
+        const objStreamContainerNums = new Set<number>()
+        for (const entry of this.getXrefEntries().values()) {
+            if (entry instanceof PdfXRefStreamCompressedEntry) {
+                objStreamContainerNums.add(entry.objectStreamNumber.value)
+            }
+        }
+
+        // Exclude ObjStream containers and the current xref stream — new ones
+        // will be built below.
+        const xrefObjectNum =
+            this.xrefObject?.object instanceof PdfIndirectObject
+                ? this.xrefObject.object.objectNumber
+                : -1
+        const objects = this.getObjects().filter(
+            (obj) =>
+                !objStreamContainerNums.has(obj.objectNumber) &&
+                obj.objectNumber !== xrefObjectNum,
+        )
+
+        const newXref = new PdfXrefLookup({ type: this.xrefType })
+        newXref.resolver = this
+
+        // Carry forward Root / Info / ID from the current trailer (drop Encrypt).
+        const prevTrailer = this.getXrefObject().trailerDict
+        for (const key of ['Root', 'Info', 'ID'] as const) {
+            const val = prevTrailer.get(key)
+            if (val) newXref.trailerDict.set(key, val as never)
+        }
+
+        // Partition: ObjStm-compatible objects → compressed stream; rest → direct.
+        const forObjStream: PdfIndirectObject[] = []
+        const directObjects: PdfObject[] = []
+        for (const obj of objects) {
+            if (obj.isObjStmCompatible()) {
+                forObjStream.push(obj)
+            } else {
+                directObjects.push(obj)
+            }
+        }
+
+        // PdfLazyObject's proxy hard-wires the objectNumber getter to the
+        // original parsed value, so we cannot renumber lazily-loaded objects.
+        // Instead, seed newXref.size from the existing numbers so that any
+        // freshly-created wrapper objects (ObjStream container) get numbers
+        // that don't collide with the existing ones.
+        for (const obj of objects) {
+            newXref.size = Math.max(newXref.size, obj.objectNumber + 1)
+        }
+
+        // Build compressed ObjStream.
+        if (forObjStream.length > 0) {
+            const objStreamContent = PdfObjStream.fromObjects(forObjStream)
+            objStreamContent.addFilter('FlateDecode')
+            const objStreamWrapper = new PdfIndirectObject({
+                content: objStreamContent,
+                encryptable: false,
+            })
+            newXref.addObject(objStreamWrapper)
+
+            for (let i = 0; i < forObjStream.length; i++) {
+                const obj = forObjStream[i]
+                newXref.entries.set(
+                    obj.objectNumber,
+                    new PdfXRefStreamCompressedEntry({
+                        objectNumber: obj.objectNumber,
+                        objectStreamNumber: objStreamWrapper.objectNumber,
+                        index: i,
+                    }),
+                )
+            }
+            newXref.update()
+            directObjects.push(objStreamWrapper)
+        }
+
+        // Register direct indirect objects in xref.
+        for (const obj of directObjects) {
+            if (obj instanceof PdfIndirectObject) {
+                newXref.addObject(obj)
+            }
+        }
+
+        // Preserve the PDF header comment from the current document bytes.
+        const headerObj = this.parseObject(0)
+        const headerSerializer = new PdfObjectSerializer(0)
+        if (headerObj instanceof PdfComment) {
+            headerSerializer.feed(headerObj)
+        }
+        const headerBytes = headerSerializer.toBytes()
+
+        // Phase 1: serialize objects → sets byteOffset Refs.
+        const objSerializer = new PdfObjectSerializer(headerBytes.length)
+        for (const obj of directObjects) {
+            objSerializer.feed(obj)
+        }
+        const objectBytes = objSerializer.toBytes()
+
+        // Phase 2: finalize xref stream object number, then serialize trailer.
+        newXref.finalizeObjectNumber()
+        newXref.update()
+        const trailerSerializer = new PdfObjectSerializer(
+            headerBytes.length + objectBytes.length,
+        )
+        trailerSerializer.feed(...newXref.toTrailerSection())
+        const trailerBytes = trailerSerializer.toBytes()
+
+        this.documentBytes = concatUint8Arrays([
+            headerBytes,
+            objectBytes,
+            trailerBytes,
+        ])
+        this.xrefObject = newXref
+        this.objectCache = new Map()
+        this._xrefEntriesCache = undefined
+        this.toAdd = []
+        this.toDelete = []
+        this.offset = this.getStartXRef()
     }
 
     prepend(...objects: PdfObject[]): void {
@@ -353,7 +482,8 @@ export class PdfObjectManager implements IPdfObjectResolver {
 
     toBytes(mode: 'append' | 'rewrite' = 'append'): ByteArray {
         if (mode === 'rewrite') {
-            throw new Error('Rewrite not implemented yet')
+            this.rewrite()
+            return this.documentBytes
         }
         return this.getBytes()?.newBytes ?? this.documentBytes
     }

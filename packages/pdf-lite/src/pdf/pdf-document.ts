@@ -19,7 +19,7 @@ import {
     IPdfObjectResolver,
     PdfObjectReference,
 } from '../core/objects/pdf-object-reference.js'
-import { PdfXrefLookup } from './pdf-xref-lookup.js'
+import { PdfXrefHandler } from './pdf-xref-handler.js'
 import { PdfObjectSerializer } from '../core/serializer.js'
 import { PdfV5SecurityHandler } from '../security/handlers/v5.js'
 import {

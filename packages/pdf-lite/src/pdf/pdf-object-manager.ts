@@ -24,7 +24,7 @@ import { Ref } from '../core/ref'
 import { ByteArray } from '../types'
 import { bytesToString, concatUint8Arrays } from '../utils'
 import { PdfLazyObject } from './pdf-lazy-indirect-object'
-import { PdfXrefLookup } from './pdf-xref-lookup'
+import { PdfXrefHandler } from './pdf-xref-handler'
 import { PdfToken } from '../core/tokens/token'
 import { PdfWhitespaceToken } from '../core/tokens/whitespace-token'
 
@@ -36,7 +36,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
     private offset: number
     private toAdd: PdfObject[] = []
     private toDelete: PdfObject[] = []
-    protected xrefObject?: PdfXrefLookup
+    protected xrefObject?: PdfXrefHandler
     protected objectCache: Map<string, PdfObject> = new Map()
     private _xrefEntriesCache?: Map<number, PdfXRefStreamEntry>
 
@@ -44,7 +44,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
         if (!documentBytes || documentBytes.length === 0) {
             this.documentBytes = new Uint8Array()
             this.offset = 0
-            this.xrefObject = new PdfXrefLookup({
+            this.xrefObject = new PdfXrefHandler({
                 type: this.xrefType,
             })
             this.xrefObject.resolver = this
@@ -117,7 +117,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
 
     private newRevision() {
         const prev = this.getXrefObject()
-        const newXref = new PdfXrefLookup({
+        const newXref = new PdfXrefHandler({
             type: this.xrefType,
             prev,
         })
@@ -180,7 +180,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
     private getBytes():
         | {
               newBytes: Uint8Array<ArrayBuffer>
-              newXref: PdfXrefLookup
+              newXref: PdfXrefHandler
           }
         | undefined {
         const added: PdfObject[] = [...this.toAdd]
@@ -229,8 +229,9 @@ export class PdfObjectManager implements IPdfObjectResolver {
 
         // Build compressed ObjStream for compatible objects
         if (forObjStream.length > 0) {
-            const objStreamContent = PdfObjStream.fromObjects(forObjStream)
-            objStreamContent.addFilter('FlateDecode')
+            const objStreamContent = PdfObjStream.fromObjects(forObjStream, [
+                'FlateDecode',
+            ])
             const objStreamWrapper = new PdfIndirectObject({
                 content: objStreamContent,
                 encryptable: false,
@@ -333,7 +334,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
                 obj.objectNumber !== xrefObjectNum,
         )
 
-        const newXref = new PdfXrefLookup({ type: this.xrefType })
+        const newXref = new PdfXrefHandler({ type: this.xrefType })
         newXref.resolver = this
 
         // Carry forward Root / Info / ID from the current trailer (drop Encrypt).
@@ -643,7 +644,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
         throw new Error('StartXRef not found')
     }
 
-    getXrefObject(): PdfXrefLookup {
+    getXrefObject(): PdfXrefHandler {
         if (this.xrefObject) {
             return this.xrefObject
         }
@@ -663,7 +664,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
                 )
             }
 
-            this.xrefObject = new PdfXrefLookup({
+            this.xrefObject = new PdfXrefHandler({
                 type: 'stream',
                 object: obj,
                 trailerDict: obj.content.header,
@@ -681,7 +682,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
             if (!(trailer instanceof PdfTrailer)) {
                 throw new Error('Expected trailer, got ' + trailer?.objectType)
             }
-            this.xrefObject = new PdfXrefLookup({
+            this.xrefObject = new PdfXrefHandler({
                 type: 'table',
                 object: obj,
                 trailerDict: trailer.dict,
@@ -712,18 +713,18 @@ export class PdfObjectManager implements IPdfObjectResolver {
         }
     }
 
-    private parseXrefAt(offset: number): PdfXrefLookup {
+    private parseXrefAt(offset: number): PdfXrefHandler {
         const obj = this.parseObject(offset)
         if (!obj) throw new Error(`No xref object at offset ${offset}`)
 
-        let xref: PdfXrefLookup
+        let xref: PdfXrefHandler
         if (obj instanceof PdfIndirectObject) {
             if (!(obj.content instanceof PdfStream)) {
                 throw new Error(
                     'Expected xref stream, got ' + obj.content.objectType,
                 )
             }
-            xref = new PdfXrefLookup({
+            xref = new PdfXrefHandler({
                 type: 'stream',
                 object: obj,
                 trailerDict: obj.content.header,
@@ -736,7 +737,7 @@ export class PdfObjectManager implements IPdfObjectResolver {
             )
             const trailer =
                 trailerOff !== -1 ? this.parseObject(trailerOff) : undefined
-            xref = new PdfXrefLookup({
+            xref = new PdfXrefHandler({
                 type: 'table',
                 object: obj,
                 trailerDict:
@@ -757,9 +758,9 @@ export class PdfObjectManager implements IPdfObjectResolver {
         if (this._xrefEntriesCache) return this._xrefEntriesCache
 
         // Walk the full prev chain, collecting each xref from newest to oldest
-        const chain: PdfXrefLookup[] = []
+        const chain: PdfXrefHandler[] = []
         const seenOffsets = new Set<number>()
-        let xref: PdfXrefLookup | undefined = this.getXrefObject()
+        let xref: PdfXrefHandler | undefined = this.getXrefObject()
         while (xref) {
             const off = xref.offset.resolve()
             if (seenOffsets.has(off)) break

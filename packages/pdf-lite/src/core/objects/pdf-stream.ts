@@ -325,7 +325,12 @@ export class PdfStream<
 
     constructor(
         options:
-            | { header: T; original: ByteArray | string; isModified?: boolean }
+            | {
+                  header: T
+                  original: ByteArray | string
+                  isModified?: boolean
+                  filters?: PdfStreamFilterType[]
+              }
             | ByteArray
             | string = '',
     ) {
@@ -344,6 +349,7 @@ export class PdfStream<
         if (!this.header.get('Length')) {
             this.header.set('Length', new PdfNumber(this.original.length))
         }
+        this.addFilters(options.filters ?? [])
     }
 
     get raw(): ByteArray {
@@ -424,6 +430,13 @@ export class PdfStream<
 
         const filter = PdfStream.getFilter(filterName)
         this.raw = filter.encode(this.raw)
+        return this
+    }
+
+    addFilters(filterNames: PdfStreamFilterType[]) {
+        for (const filterName of filterNames) {
+            this.addFilter(filterName)
+        }
         return this
     }
 
@@ -654,6 +667,7 @@ export class PdfObjStream extends PdfStream {
         header: PdfDictionary
         original: ByteArray | string
         isModified?: boolean
+        filters?: PdfStreamFilterType[]
     }) {
         super(options)
 
@@ -662,7 +676,10 @@ export class PdfObjStream extends PdfStream {
         }
     }
 
-    static fromObjects(objects: Iterable<PdfIndirectObject>): PdfObjStream {
+    static fromObjects(
+        objects: Iterable<PdfIndirectObject>,
+        filters?: PdfStreamFilterType[],
+    ): PdfObjStream {
         const objByteChunks: ByteArray[] = []
         const headerParts: string[] = []
         let offset = 0
@@ -714,6 +731,7 @@ export class PdfObjStream extends PdfStream {
         return new PdfObjStream({
             header: headerDict,
             original: streamBytes,
+            filters,
         })
     }
 

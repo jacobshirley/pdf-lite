@@ -29,7 +29,7 @@ import { concatUint8Arrays, PdfObjectSerializer, PdfToken } from '../index.js'
  * Handles both traditional xref tables and xref streams, including hybrid documents.
  * Supports linking multiple revisions through the Prev chain.
  */
-export class PdfXrefLookup {
+export class PdfXrefHandler {
     /** The underlying xref object (either a table or stream) */
     object: PdfIndirectObject<PdfXRefStream> | PdfXRefTable
     /** Map of object numbers to their xref entries */
@@ -55,13 +55,16 @@ export class PdfXrefLookup {
         type?: 'table' | 'stream'
         object?: PdfIndirectObject<PdfStream> | PdfXRefTable
         trailerDict?: PdfDictionary<PdfTrailerEntries>
-        prev?: PdfXrefLookup
+        prev?: PdfXrefHandler
     }) {
         this.type = options?.type
         this.entries = new Map<number, PdfXRefStreamEntry>()
         this.trailerDict = options?.trailerDict ?? new PdfDictionary()
         if (options?.prev) {
-            this.trailerDict.set('Prev', new PdfNumber(options.prev.offset))
+            const prevOffset = options.prev.offset.resolve()
+            if (prevOffset > 0) {
+                this.trailerDict.set('Prev', new PdfNumber(prevOffset))
+            }
         }
 
         if (options?.object) {
@@ -78,7 +81,8 @@ export class PdfXrefLookup {
                     'Provided object is not a valid XRef table or stream',
                 )
             }
-            this.size++
+            const s = this.trailerDict.get('Size')?.value ?? 0
+            this.trailerDict.set('Size', new PdfNumber(s + 1))
 
             if (
                 this.object instanceof PdfIndirectObject &&
@@ -116,23 +120,36 @@ export class PdfXrefLookup {
             this.object.orderIndex = PdfIndirectObject.MAX_ORDER_INDEX
     }
 
-    get prev(): PdfXrefLookup | undefined {
+    get prev(): PdfXrefHandler | undefined {
         const prevEntry = this.trailerDict.get('Prev')
         if (prevEntry?.value) {
-            const object = this.resolver?.getObjectAtOffset(prevEntry.value)
+            if (!this.resolver)
+                throw new Error(
+                    'PdfXrefHandler: resolver not set, cannot follow Prev chain',
+                )
+            const object = this.resolver.getObjectAtOffset(prevEntry.value)
             if (!object) {
                 throw new Error(
                     `Failed to resolve previous xref object at offset ${prevEntry.value}`,
                 )
             }
-            return new PdfXrefLookup({
+            const trailerDict =
+                object instanceof PdfTrailer
+                    ? object.dict
+                    : object instanceof PdfIndirectObject &&
+                        object.content instanceof PdfStream
+                      ? object.content.header
+                      : undefined
+            return new PdfXrefHandler({
                 type: object instanceof PdfXRefTable ? 'table' : 'stream',
                 object:
-                    object instanceof PdfIndirectObject
-                        ? object.content
-                        : object,
-                trailerDict:
-                    object instanceof PdfTrailer ? object.dict : undefined,
+                    object instanceof PdfIndirectObject ||
+                    object instanceof PdfXRefTable
+                        ? (object as
+                              | PdfIndirectObject<PdfStream>
+                              | PdfXRefTable)
+                        : undefined,
+                trailerDict,
             })
         }
         return undefined

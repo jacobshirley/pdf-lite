@@ -148,4 +148,6 @@ docs-html/
 .release-version
 
 todo/
-packages/pdf-lite/java
+
+# direnv
+.direnv/

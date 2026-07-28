@@ -49,19 +49,6 @@
     "lint-staged": {
         "*.{js,ts,json,md}": "pnpm format"
     },
-    "pnpm": {
-        "overrides": {
-            "playwright": "$playwright",
-            "typescript": "$typescript"
-        },
-        "packageExtensions": {
-            "@vitest/browser": {
-                "peerDependencies": {
-                    "@vitest/runner": "*"
-                }
-            }
-        }
-    },
     "devDependencies": {
         "@commitlint/cli": "^20.1.0",
         "@commitlint/config-conventional": "^20.0.0",

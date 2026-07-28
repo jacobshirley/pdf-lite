@@ -1,4 +1,14 @@
 packages:
     - 'packages/*'
+
+overrides:
+    playwright: $playwright
+    typescript: $typescript
+
+packageExtensions:
+    '@vitest/browser':
+        peerDependencies:
+            '@vitest/runner': '*'
+
 allowBuilds:
-    esbuild: false
+    esbuild: true

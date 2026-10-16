@@ -45,7 +45,7 @@
         "url": "https://github.com/jacobshirley/pdf-lite/issues"
     },
     "homepage": "https://jacobshirley.github.io/pdf-lite",
-    "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
+    "packageManager": "pnpm@12.13.0+sha512.1e55719bf26e809dce5c5084fdebaa64efb3da9038ae5d68a9f8a68311f1a45841c8c3b76a37298c3b66f6bcc80409a9b7f33c78a7168a3e90fb65a5d8235ae4",
     "lint-staged": {
         "*.{js,ts,json,md}": "pnpm format"
     },

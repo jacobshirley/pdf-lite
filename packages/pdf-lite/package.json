@@ -63,7 +63,7 @@
         "EXAMPLES.md"
     ],
     "dependencies": {
-        "pako": "2.1.0",
+        "pako": "2.2.0",
         "pki-lite": "^1.0.14",
         "pki-lite-crypto-extended": "^1.0.14"
     }

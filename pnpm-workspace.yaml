@@ -2,3 +2,9 @@ packages:
     - 'packages/*'
 allowBuilds:
     esbuild: false
+
+linkWorkspacePackages: true
+preferWorkspacePackages: true
+
+hoist: false
+saveWorkspaceProtocol: false
